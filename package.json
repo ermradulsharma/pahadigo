@@ -6,15 +6,27 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
-    "lint": "eslint"
+    "lint": "eslint",
+    "test": "jest --detectOpenHandles"
   },
   "dependencies": {
+    "@tailwindcss/postcss": "^4.1.17",
+    "google-auth-library": "^10.5.0",
+    "jsonwebtoken": "^9.0.3",
+    "mongoose": "^9.0.1",
     "next": "16.0.7",
+    "razorpay": "^2.9.6",
     "react": "19.2.0",
     "react-dom": "19.2.0"
   },
   "devDependencies": {
+    "autoprefixer": "^10.4.22",
     "eslint": "^9",
-    "eslint-config-next": "16.0.7"
+    "eslint-config-next": "16.0.7",
+    "jest": "^30.2.0",
+    "mongodb-memory-server": "^11.0.1",
+    "postcss": "^8.5.6",
+    "supertest": "^7.2.2",
+    "tailwindcss": "^4.1.17"
   }
 }
