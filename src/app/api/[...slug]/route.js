@@ -1,23 +1,34 @@
 import { NextResponse } from 'next/server';
-import routes from '../../../routes/api'; 
-import dbConnect from '../../../config/db'; 
+import routesImport from '../../../routes/api';
+import dbConnect from '../../../config/db';
 import authMiddleware from '../../../middleware/auth';
+
+// Ensure routes is an array even if imported as CommonJS default object
+const routes = Array.isArray(routesImport) ? routesImport : (routesImport.default || []);
 
 // Helper to match route to list
 function findRoute(method, slug) {
-  const path = '/' + slug.join('/');
-  return routes.find(r => r.method === method && r.path === path);
+  // Normalize slug: join and remove possible trailing slash
+  const path = '/' + slug.join('/').replace(/\/$/, '');
+
+  return routes.find(r =>
+    r.method.toUpperCase() === method.toUpperCase() &&
+    r.path.replace(/\/$/, '') === path
+  );
 }
 
 async function handler(req, { params }) {
   await dbConnect();
   const { slug } = await params;
   const method = req.method;
-  
+
   const routeDef = findRoute(method, slug);
 
   if (!routeDef) {
-    return NextResponse.json({ error: 'Route not found' }, { status: 404 });
+    return NextResponse.json({
+      error: 'Route not found',
+      debug: { method, path: '/' + slug.join('/') }
+    }, { status: 404 });
   }
 
   // Middleware execution
@@ -31,12 +42,16 @@ async function handler(req, { params }) {
   }
 
   try {
-    // Inject user context into req if needed, or pass as second arg?
-    // Since we are calling controller methods defined in pure JS, we can attach to req object if customizable, 
-    // or just pass a context object. Laravel controllers usually access Request object.
-    // Let's attach to req for now.
     if (userContext) {
       req.user = userContext;
+    }
+
+    // Determine how to parse body based on Content-Type
+    const contentType = req.headers.get('content-type') || '';
+    if (contentType.includes('multipart/form-data')) {
+      req.formDataBody = await req.formData();
+    } else if (contentType.includes('application/json')) {
+      req.jsonBody = await req.json();
     }
 
     const result = await routeDef.handler(req);

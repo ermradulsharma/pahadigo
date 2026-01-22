@@ -4,6 +4,8 @@ const SECRET = process.env.JWT_SECRET;
 
 if (!SECRET) {
   console.warn('WARNING: JWT_SECRET is not defined in environment variables. JWT operations will fail.');
+} else {
+  console.log(`[JWT] Secret loaded. Prefix: ${SECRET.substring(0, 4)}`);
 }
 
 const generateToken = (payload) => {

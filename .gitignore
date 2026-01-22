@@ -49,3 +49,7 @@ test_output.txt
 .idea/
 *.swp
 *.swo
+
+
+/public/uploads/
+/scripts/*.js

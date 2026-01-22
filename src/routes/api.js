@@ -17,26 +17,50 @@ const routes = [
   // { method: 'POST', path: '/vendor/register', handler: VendorController.register.bind(VendorController) }, // Deprecated
   // { method: 'POST', path: '/vendor/verify-otp', handler: VendorController.verifyOTP.bind(VendorController) }, // Deprecated
   { method: 'GET', path: '/vendor/categories', handler: VendorController.getCategories.bind(VendorController) },
-  { 
-    method: 'POST', 
-    path: '/vendor/profile', 
+  {
+    method: 'POST',
+    path: '/vendor/profile/update',
     handler: VendorController.updateProfile.bind(VendorController),
-    middleware: ['auth'] 
+    middleware: ['auth']
   },
-  
+  {
+    method: 'GET',
+    path: '/vendor/profile',
+    handler: VendorController.getProfile.bind(VendorController),
+    middleware: ['auth']
+  },
+  {
+    method: 'POST',
+    path: '/vendor/profile/create',
+    handler: VendorController.createProfile.bind(VendorController),
+    middleware: ['auth']
+  },
+  {
+    method: 'POST',
+    path: '/vendor/document/upload',
+    handler: VendorController.uploadDocuments.bind(VendorController),
+    middleware: ['auth']
+  },
+  {
+    method: 'GET',
+    path: '/vendor/documents',
+    handler: VendorController.getDocuments.bind(VendorController),
+    middleware: ['auth']
+  },
+
   // Vendor Packages (Protected)
-  { 
-    method: 'POST', 
-    path: '/vendor/create-package', 
+  {
+    method: 'POST',
+    path: '/vendor/create-package',
     handler: VendorController.createPackage.bind(VendorController),
-    middleware: ['auth'] 
+    middleware: ['auth']
   },
 
   // User
   { method: 'GET', path: '/user/packages', handler: UserController.browsePackages.bind(UserController) },
-  { 
-    method: 'POST', 
-    path: '/user/book', 
+  {
+    method: 'POST',
+    path: '/user/book',
     handler: UserController.bookPackage.bind(UserController),
     middleware: ['auth']
   },
@@ -56,53 +80,53 @@ const routes = [
   },
 
   // Admin
-  { 
-    method: 'GET', 
-    path: '/admin/stats', 
+  {
+    method: 'GET',
+    path: '/admin/stats',
     handler: AdminController.getStats.bind(AdminController),
     middleware: ['auth']
   },
-  { 
-    method: 'GET', 
-    path: '/admin/bookings', 
+  {
+    method: 'GET',
+    path: '/admin/bookings',
     handler: AdminController.getBookings.bind(AdminController),
-    middleware: ['auth'] 
+    middleware: ['auth']
   },
-  { 
-    method: 'GET', 
-    path: '/admin/vendors', 
+  {
+    method: 'GET',
+    path: '/admin/vendors',
     handler: AdminController.getVendors.bind(AdminController),
-    middleware: ['auth'] 
+    middleware: ['auth']
   },
-  { 
-    method: 'POST', 
-    path: '/admin/approve-vendor', 
+  {
+    method: 'POST',
+    path: '/admin/approve-vendor',
     handler: AdminController.approveVendor.bind(AdminController),
-    middleware: ['auth'] 
+    middleware: ['auth']
   },
-  { 
-    method: 'POST', 
-    path: '/admin/add-package', 
+  {
+    method: 'POST',
+    path: '/admin/add-package',
     handler: AdminController.addPackageOnBehalf.bind(AdminController),
-    middleware: ['auth'] 
+    middleware: ['auth']
   },
-  { 
-    method: 'POST', 
-    path: '/admin/payout', 
+  {
+    method: 'POST',
+    path: '/admin/payout',
     handler: AdminController.markPayout.bind(AdminController),
-    middleware: ['auth'] 
+    middleware: ['auth']
   },
-  { 
-    method: 'POST', 
-    path: '/admin/refund', 
+  {
+    method: 'POST',
+    path: '/admin/refund',
     handler: AdminController.refundBooking.bind(AdminController),
-    middleware: ['auth'] 
+    middleware: ['auth']
   },
-  { 
-    method: 'GET', 
-    path: '/admin/payment-history', 
+  {
+    method: 'GET',
+    path: '/admin/payment-history',
     handler: AdminController.getPaymentHistory.bind(AdminController),
-    middleware: ['auth'] 
+    middleware: ['auth']
   }
 ];
 

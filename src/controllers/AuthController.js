@@ -6,7 +6,7 @@ class AuthController {
     // POST /auth/otp (Send OTP for Email or Phone)
     async sendOtp(req) {
         try {
-            const body = await req.json();
+            const body = req.jsonBody || await req.json();
             let { email, phone, role } = body;
 
             if (email) email = email.toLowerCase().trim();
@@ -28,7 +28,7 @@ class AuthController {
             // In production, this would be sent via SMS/Email service
             console.log(`[AUTH] OTP for ${identifier}: ${otp}`);
 
-            return { status: 200, data: { message: 'OTP sent successfully' } };
+            return { status: 200, data: { message: 'OTP sent successfully', otp } };
         } catch (error) {
             console.error("Send OTP Error:", error);
             return { status: 500, data: { error: 'Failed to send OTP' } };
@@ -38,7 +38,7 @@ class AuthController {
     // POST /auth/verify (Verify OTP and Login/Signup)
     async verifyOtp(req) {
         try {
-            const body = await req.json();
+            const body = req.jsonBody || await req.json();
             let { email, phone, otp } = body;
 
             if (email) email = email.toLowerCase().trim();

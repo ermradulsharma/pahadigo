@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:3001/api';
+const BASE_URL = 'http://localhost:3000/api';
 
 async function testAuthFlow() {
   const timestamp = Date.now();
@@ -14,14 +14,14 @@ async function testAuthFlow() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, phone, password })
   });
-  
+
   const registerData = await registerRes.json();
   console.log('Reg Status:', registerRes.status);
-  
+
   if (registerRes.status === 201 && registerData.token) {
-      console.log('SUCCESS: Direct Signup worked. Token received.');
+    console.log('SUCCESS: Direct Signup worked. Token received.');
   } else {
-      console.error('FAILED: Registration response:', registerData);
+    console.error('FAILED: Registration response:', registerData);
   }
 
   console.log('\n--- 2. Testing Login with Password ---');
@@ -33,11 +33,11 @@ async function testAuthFlow() {
 
   const loginData = await loginRes.json();
   console.log('Login Status:', loginRes.status);
-  
+
   if (loginRes.status === 200 && loginData.token) {
-      console.log('SUCCESS: Login worked. Token received.');
+    console.log('SUCCESS: Login worked. Token received.');
   } else {
-      console.error('FAILED: Login response:', loginData);
+    console.error('FAILED: Login response:', loginData);
   }
 
   console.log('\n--- 3. Testing Login with WRONG Password ---');
@@ -48,9 +48,9 @@ async function testAuthFlow() {
   });
   console.log('Fail Status:', failRes.status);
   if (failRes.status === 401) {
-      console.log('SUCCESS: Verification failed as expected.');
+    console.log('SUCCESS: Verification failed as expected.');
   } else {
-      console.error('FAILED: Should have returned 401. Got:', failRes.status);
+    console.error('FAILED: Should have returned 401. Got:', failRes.status);
   }
 
   // Note: Cannot verify Google Auth automatically without a real ID Token.

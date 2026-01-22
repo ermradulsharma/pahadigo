@@ -2,19 +2,36 @@ const Vendor = require('../models/Vendor');
 
 class VendorService {
     async upsertProfile(userId, profileData) {
+        const updateData = { ...profileData };
+
+        // If profileData has documents, we want to update them as nested fields
+        // to avoid overwriting the entire documents object if partial updates happen
+        if (profileData.documents) {
+            delete updateData.documents;
+            for (const key in profileData.documents) {
+                updateData[`documents.${key}`] = profileData.documents[key];
+            }
+        }
+
         const vendor = await Vendor.findOneAndUpdate(
             { user: userId },
             {
                 user: userId,
-                ...profileData
+                ...updateData
             },
-            { new: true, upsert: true, setDefaultsOnInsert: true }
+            { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: false }
         );
         return vendor;
     }
 
     async findByUserId(userId) {
         return await Vendor.findOne({ user: userId });
+    }
+
+    async getFullProfile(userId) {
+        return await Vendor.findOne({ user: userId })
+            .populate('user', 'email phone role')
+            .lean();
     }
 
     getCategories() {

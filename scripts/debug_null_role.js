@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:3001/api';
+const BASE_URL = 'http://localhost:3000/api';
 
 async function debugNullRole() {
   const email = `null_role_${Date.now()}@test.com`;
@@ -9,7 +9,7 @@ async function debugNullRole() {
     method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ email })
   });
   let data = await res.json();
-  const otp = data.dev_otp; 
+  const otp = data.dev_otp;
   console.log('OTP:', otp);
 
   // 2. Verify
@@ -21,12 +21,12 @@ async function debugNullRole() {
   console.log('Response:', res.status, text);
 
   try {
-      const json = JSON.parse(text);
-      if (res.status === 200 && json.role === 'user') {
-          console.log('SUCCESS: Defaulted to User role correctly.');
-      } else {
-          console.log('FAILURE: Did not default to User role.');
-      }
+    const json = JSON.parse(text);
+    if (res.status === 200 && json.role === 'user') {
+      console.log('SUCCESS: Defaulted to User role correctly.');
+    } else {
+      console.log('FAILURE: Did not default to User role.');
+    }
   } catch (e) { console.log('FAILURE: Invalid JSON'); }
 }
 

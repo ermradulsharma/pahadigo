@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:3001/api';
+const BASE_URL = 'http://localhost:3000/api';
 
 async function testOtpFlow() {
   const timestamp = Date.now();
@@ -16,7 +16,7 @@ async function testOtpFlow() {
   });
   const emailOtpData = await emailOtpRes.json();
   console.log('Email OTP Status:', emailOtpRes.status);
-  
+
   if (emailOtpRes.status !== 200) throw new Error('Email OTP failed');
   const emailCode = emailOtpData.dev_otp;
   console.log('Got Email OTP:', emailCode);
@@ -39,7 +39,7 @@ async function testOtpFlow() {
   });
   const phoneOtpData = await phoneOtpRes.json();
   console.log('Phone OTP Status:', phoneOtpRes.status);
-  
+
   if (phoneOtpRes.status !== 200) throw new Error('Phone OTP failed');
   const phoneCode = phoneOtpData.dev_otp;
   console.log('Got Phone OTP:', phoneCode);
@@ -71,11 +71,11 @@ async function testOtpFlow() {
   });
   const verifyLoginData = await verifyLoginRes.json();
   console.log('Login Verify Status:', verifyLoginRes.status, 'IsNewUser:', verifyLoginData.isNewUser);
-  
+
   if (verifyLoginData.isNewUser === false) {
-      console.log('SUCCESS: Correctly identified existing user.');
+    console.log('SUCCESS: Correctly identified existing user.');
   } else {
-      console.error('FAILED: Should detect existing user.');
+    console.error('FAILED: Should detect existing user.');
   }
 }
 

@@ -8,7 +8,7 @@ class OTPService {
     // Expires in 5 minutes
     const expiresAt = Date.now() + 5 * 60 * 1000;
     this.otps.set(identifier, { otp, expiresAt, role });
-    
+
     console.log(`[OTPService] Generated OTP for ${identifier} (Role: ${role}): ${otp}`);
     return otp;
   }
@@ -22,10 +22,12 @@ class OTPService {
       return null;
     }
 
-    if (record.otp === code) {
+    // Convert to string to avoid type mismatch (e.g. string vs number from JSON)
+    if (record.otp.toString() === code.toString()) {
       this.otps.delete(identifier);
-      return record; // Return the whole record (includes role)
+      return record;
     }
+
     return null;
   }
 }

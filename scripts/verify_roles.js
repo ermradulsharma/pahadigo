@@ -1,16 +1,16 @@
-const BASE_URL = 'http://localhost:3001/api';
+const BASE_URL = 'http://localhost:3000/api';
 
 async function testRoles() {
   const timestamp = Date.now();
-  
+
   // --- 1. Traveller Flow ---
   console.log('\n=== 1. Traveller Flow ===');
   const travellerEmail = `traveller_${timestamp}@test.com`;
-  
+
   // A. Send OTP
   console.log('Sending OTP for Traveller...');
   let res = await fetch(`${BASE_URL}/auth/otp`, {
-    method: 'POST', 
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: travellerEmail, role: 'user' })
   });
@@ -21,14 +21,14 @@ async function testRoles() {
   // B. Verify & Signup (Default Role)
   console.log('Verifying Traveller Signup (No Role param)...');
   res = await fetch(`${BASE_URL}/auth/verify`, {
-    method: 'POST', 
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: travellerEmail, otp })
   });
   if (!res.ok) { let t = await res.text(); console.error('T-Signup Failed:', res.status, t); return; }
   data = await res.json();
   console.log(`Traveller Signup: Status ${res.status}, Role: ${data.role}, IsNew: ${data.isNewUser}`);
-  
+
   if (data.role !== 'user') console.error('FAILED: Role should be user');
 
   // C. Login Again
@@ -42,14 +42,14 @@ async function testRoles() {
 
   console.log('Verifying Traveller Login...');
   res = await fetch(`${BASE_URL}/auth/verify`, {
-    method: 'POST', 
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: travellerEmail, otp: loginOtpT })
   });
   if (!res.ok) { let t = await res.text(); console.error('T-Login Failed:', res.status, t); return; }
   data = await res.json();
   console.log(`Traveller Login: Status ${res.status}, IsNew: ${data.isNewUser}`);
-  
+
   if (data.isNewUser !== false) console.error('FAILED: Traveller should be existing user');
 
 
@@ -60,7 +60,7 @@ async function testRoles() {
   // A. Send OTP
   console.log('Sending OTP for Vendor...');
   res = await fetch(`${BASE_URL}/auth/otp`, {
-    method: 'POST', 
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: vendorEmail, role: 'vendor' })
   });
@@ -71,7 +71,7 @@ async function testRoles() {
   // B. Verify & Signup (Roles remembered from OTP)
   console.log('Verifying Vendor Signup (role: vendor implied)...');
   res = await fetch(`${BASE_URL}/auth/verify`, {
-    method: 'POST', 
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: vendorEmail, otp: vendorOtp })
   });
@@ -93,25 +93,25 @@ async function testRoles() {
 
   console.log('Verifying Vendor Login (No Profile)...');
   res = await fetch(`${BASE_URL}/auth/verify`, {
-    method: 'POST', 
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: vendorEmail, otp: loginOtpV1 })
   });
   if (!res.ok) { let t = await res.text(); console.error('V-LoginNoProf Failed:', res.status, t); return; }
   data = await res.json();
   console.log(`Vendor Login (No Profile): IsNew: ${data.isNewUser}`);
-  
+
   if (data.isNewUser !== true) console.error('FAILED: Vendor without profile should be treated as new');
 
   // D. Create Profile
   console.log('Creating Vendor Profile...');
   res = await fetch(`${BASE_URL}/vendor/profile`, {
-    method: 'POST', 
+    method: 'POST',
     headers: { 'Authorization': `Bearer ${vendorToken}`, 'Content-Type': 'application/json' },
     body: JSON.stringify({
-        businessName: 'Test Biz',
-        category: ['Hotel'],
-        address: 'Test Addr'
+      businessName: 'Test Biz',
+      category: ['Hotel'],
+      address: 'Test Addr'
     })
   });
   if (!res.ok) { let t = await res.text(); console.error('Profile Create Failed:', res.status, t); return; }
@@ -128,7 +128,7 @@ async function testRoles() {
 
   console.log('Verifying Vendor Login (With Profile)...');
   res = await fetch(`${BASE_URL}/auth/verify`, {
-    method: 'POST', 
+    method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email: vendorEmail, otp: loginOtpV2 })
   });

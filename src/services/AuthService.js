@@ -40,7 +40,7 @@ class AuthService {
             }
         }
 
-        const token = generateToken({ id: user._id, role: user.role, email: user.email });
+        const token = generateToken({ id: user._id, role: user.role, identifier: user.email || user.phone });
 
         // Check if vendor profile exists
         if (!isNewUser && user.role === 'vendor') {

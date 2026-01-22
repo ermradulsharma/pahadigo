@@ -1,4 +1,4 @@
-const BASE_URL = 'http://localhost:3001/api';
+const BASE_URL = 'http://localhost:3000/api';
 
 async function testVendorFlow() {
   const timestamp = Date.now();
@@ -11,13 +11,13 @@ async function testVendorFlow() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ email, phone })
   });
-  
+
   const registerData = await registerRes.json();
   console.log('Status:', registerRes.status);
   console.log('Response:', registerData);
 
   if (registerRes.status !== 200) throw new Error('Registration failed');
-  const otp = registerData.dev_otp; 
+  const otp = registerData.dev_otp;
   console.log('Got OTP:', otp);
 
   console.log('\n--- 2. Testing OTP Verification ---');
@@ -52,18 +52,18 @@ async function testVendorFlow() {
     category: ["Travel Agency", "Guide"], // Array
     address: "123 Main St",
     bankDetails: {
-        accountHolder: "John Doe",
-        accountNumber: "1234567890",
-        ifscCode: "SBIN0001234",
-        bankName: "SBI"
+      accountHolder: "John Doe",
+      accountNumber: "1234567890",
+      ifscCode: "SBIN0001234",
+      bankName: "SBI"
     }
   };
 
   const profileRes = await fetch(`${BASE_URL}/vendor/profile`, {
     method: 'POST',
-    headers: { 
-        'Content-Type': 'application/json',
-        'Authorization': `Bearer ${token}` // Assuming Middleware expects Bearer token
+    headers: {
+      'Content-Type': 'application/json',
+      'Authorization': `Bearer ${token}` // Assuming Middleware expects Bearer token
     },
     body: JSON.stringify(profilePayload)
   });
@@ -71,7 +71,7 @@ async function testVendorFlow() {
   const profileData = await profileRes.json();
   console.log('Status:', profileRes.status);
   console.log('Response:', profileData);
-  
+
   if (profileRes.status !== 200) throw new Error('Profile Update failed');
 
   console.log('\n--- SUCCESS: All steps passed ---');

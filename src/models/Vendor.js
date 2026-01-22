@@ -6,6 +6,7 @@ const VendorSchema = new mongoose.Schema({
   ownerName: { type: String }, // New field
   profileImage: { type: String }, // New field (URL)
   businessPhone: { type: String }, // New field
+  businessRegistration: { type: String }, // New field
   description: { type: String },
   category: [{ type: String, required: true }], // Changed to Array of Strings for multiples
   address: { type: String },
@@ -16,7 +17,33 @@ const VendorSchema = new mongoose.Schema({
     bankName: { type: String }
   },
   isApproved: { type: Boolean, default: false }, // Admin approval
+  documents: {
+    aadharCardFront: { type: String, required: true },
+    aadharCardBack: { type: String, required: true },
+    panCard: { type: String, required: true },
+    businessRegistration: { type: String, required: true },
+    travelAgentPermit: [{ type: String }],
+    passengerInsurancePolicy: [{ type: String }],
+    adventureSportLicense: [{ type: String }],
+    guidCertification: [{ type: String }],
+    liabilityWaiverForm: [{ type: String }],
+    safetyEmergencyPlan: [{ type: String }],
+    riverRaftingPermit: [{ type: String }],
+    technicalSafetyCertificate: [{ type: String }],
+    insuranceCoverageDocument: [{ type: String }],
+    homestayRegistrationCertificate: [{ type: String }],
+    gstCertificate: [{ type: String, required: true }],
+    hotelLicense: [{ type: String }],
+    fssaiLicense: [{ type: String }],
+    safetyAuditReport: [{ type: String }],
+    structuralFitnessCertificate: [{ type: String }],
+    rtoPermit: [{ type: String }],
+    insuranceTaxReceipt: [{ type: String }]
+  },
   createdAt: { type: Date, default: Date.now },
 });
 
-module.exports = mongoose.models.Vendor || mongoose.model('Vendor', VendorSchema);
+if (mongoose.models.Vendor) {
+  delete mongoose.models.Vendor;
+}
+module.exports = mongoose.model('Vendor', VendorSchema);
