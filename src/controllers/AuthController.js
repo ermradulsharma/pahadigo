@@ -90,8 +90,20 @@ class AuthController {
     }
 
     // POST /auth/apple
+    // POST /auth/apple
     async appleLogin(req) {
-        return { status: 501, data: { error: 'Apple Login Not Implemented' } };
+        try {
+            const body = await req.json();
+            const { idToken, user, email, role } = body;
+            if (!idToken) return { status: 400, data: { error: 'Apple ID Token required' } };
+
+            // user and email are optional fields sent by Apple client on first login
+            const result = await AuthService.appleAuth(idToken, role, user, email);
+            return { status: 200, data: { message: 'Apple Login successful', token: result.token, isNewUser: result.isNewUser, user: result.user } };
+        } catch (error) {
+            console.error("Apple Auth Error:", error);
+            return { status: 400, data: { error: error.message || 'Invalid Apple Token' } };
+        }
     }
 
     // POST /auth/logout

@@ -110,25 +110,96 @@ class AuthService {
 
     async facebookAuth(accessToken, targetRole) {
         if (!accessToken) throw new Error('Facebook Token required');
-        const email = `fb_user_${Date.now()}@example.com`;
-        const name = "Facebook User";
-        const fbId = `fb_${Date.now()}`;
 
-        let user = await User.findOne({ email });
+        // Verify token with Facebook Graph API
+        const response = await fetch(`https://graph.facebook.com/me?access_token=${accessToken}&fields=id,name,email`);
+        const data = await response.json();
+
+        if (data.error) {
+            throw new Error(data.error.message || 'Invalid Facebook Token');
+        }
+
+        const { id: facebookId, name, email } = data;
+
+        // Fallback for email if not provided by Facebook
+        const userEmail = email || `fb_${facebookId}@example.com`;
+
+        let user = await User.findOne({ $or: [{ facebookId }, { email: userEmail }] });
         let isNewUser = false;
 
         if (!user) {
             const validRoles = ['user', 'vendor'];
             const userRole = (targetRole && validRoles.includes(targetRole)) ? targetRole : 'user';
             user = await User.create({
-                email,
+                email: userEmail,
                 name,
-                facebookId: fbId,
+                facebookId,
                 role: userRole,
                 isVerified: true,
                 authProvider: 'facebook'
             });
             isNewUser = true;
+        } else {
+            if (!user.facebookId) {
+                user.facebookId = facebookId;
+                if (user.authProvider === 'phone') user.authProvider = 'facebook';
+                await user.save();
+            }
+        }
+
+        let vendorData = {};
+        if (user.role === 'vendor') {
+            vendorData = await this._getVendorStatus(user);
+        }
+
+        const token = generateToken({ id: user._id, role: user.role, email: user.email });
+        return { token, isNewUser, user, ...vendorData };
+    }
+
+    async appleAuth(idToken, targetRole, userFn, userEmail) {
+        if (!idToken) throw new Error('Apple ID Token required');
+
+        const jwt = require('jsonwebtoken');
+        // Decode the token to get user info (sub is the Apple ID)
+        // In production, you should verify the signature using Apple's public keys
+        const decoded = jwt.decode(idToken);
+
+        if (!decoded || !decoded.sub) {
+            throw new Error('Invalid Apple ID Token');
+        }
+
+        const { sub: appleId, email: tokenEmail } = decoded;
+        const email = userEmail || tokenEmail; // Apple only sends email on first login in the token or separate payload
+
+        // If we don't have an email, we might encounter issues creating a new user if validation requires it
+        // and we cannot key off just appleId for legacy lookups easily without it.
+        // For now, assume we get it or handle it.
+        const finalEmail = email || `apple_${appleId}@privaterelay.appleid.com`;
+
+        let user = await User.findOne({ $or: [{ appleId }, { email: finalEmail }] });
+        let isNewUser = false;
+
+        if (!user) {
+            const validRoles = ['user', 'vendor'];
+            const userRole = (targetRole && validRoles.includes(targetRole)) ? targetRole : 'user';
+
+            const name = (userFn) ? `${userFn.firstName || ''} ${userFn.lastName || ''}`.trim() : 'Apple User';
+
+            user = await User.create({
+                email: finalEmail,
+                name: name || 'Apple User',
+                appleId,
+                role: userRole,
+                isVerified: true,
+                authProvider: 'apple'
+            });
+            isNewUser = true;
+        } else {
+            if (!user.appleId) {
+                user.appleId = appleId;
+                if (user.authProvider === 'phone') user.authProvider = 'apple';
+                await user.save();
+            }
         }
 
         let vendorData = {};
