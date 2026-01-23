@@ -23,6 +23,12 @@ const routes = [
     { method: 'POST', path: '/vendor/document/delete', handler: VendorController.deleteDocument.bind(VendorController), middleware: ['auth'] },
     { method: 'POST', path: '/vendor/document/update', handler: VendorController.updateDocument.bind(VendorController), middleware: ['auth'] },
 
+    // Vendor Bank Details
+    { method: 'POST', path: '/vendor/bank/create', handler: VendorController.createBankDetails.bind(VendorController), middleware: ['auth'] },
+    { method: 'GET', path: '/vendor/bank', handler: VendorController.getBankDetails.bind(VendorController), middleware: ['auth'] },
+    { method: 'POST', path: '/vendor/bank/update', handler: VendorController.updateBankDetails.bind(VendorController), middleware: ['auth'] },
+    { method: 'POST', path: '/vendor/bank/delete', handler: VendorController.deleteBankDetails.bind(VendorController), middleware: ['auth'] },
+
     // Vendor Packages
     { method: 'POST', path: '/vendor/create-package', handler: VendorController.createPackage.bind(VendorController), middleware: ['auth'] },
 

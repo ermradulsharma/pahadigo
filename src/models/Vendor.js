@@ -1,49 +1,50 @@
 const mongoose = require('mongoose');
 
 const VendorSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
-  businessName: { type: String, required: true },
-  ownerName: { type: String }, // New field
-  profileImage: { type: String }, // New field (URL)
-  businessPhone: { type: String }, // New field
-  businessRegistration: { type: String }, // New field
-  description: { type: String },
-  category: [{ type: String, required: true }], // Changed to Array of Strings for multiples
-  address: { type: String },
-  bankDetails: {
-    accountHolder: { type: String },
-    accountNumber: { type: String },
-    ifscCode: { type: String },
-    bankName: { type: String }
-  },
-  isApproved: { type: Boolean, default: false }, // Admin approval
-  documents: {
-    aadharCardFront: { type: String, required: true },
-    aadharCardBack: { type: String, required: true },
-    panCard: { type: String, required: true },
-    businessRegistration: { type: String, required: true },
-    travelAgentPermit: [{ type: String }],
-    passengerInsurancePolicy: [{ type: String }],
-    adventureSportLicense: [{ type: String }],
-    guidCertification: [{ type: String }],
-    liabilityWaiverForm: [{ type: String }],
-    safetyEmergencyPlan: [{ type: String }],
-    riverRaftingPermit: [{ type: String }],
-    technicalSafetyCertificate: [{ type: String }],
-    insuranceCoverageDocument: [{ type: String }],
-    homestayRegistrationCertificate: [{ type: String }],
-    gstCertificate: [{ type: String, required: true }],
-    hotelLicense: [{ type: String }],
-    fssaiLicense: [{ type: String }],
-    safetyAuditReport: [{ type: String }],
-    structuralFitnessCertificate: [{ type: String }],
-    rtoPermit: [{ type: String }],
-    insuranceTaxReceipt: [{ type: String }]
-  },
-  createdAt: { type: Date, default: Date.now },
+    user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
+    businessName: { type: String, required: true },
+    ownerName: { type: String },
+    profileImage: { type: String },
+    businessPhone: { type: String },
+    businessRegistration: { type: String },
+    description: { type: String },
+    category: [{ type: String, required: true }],
+    address: { type: String },
+    bankDetails: {
+        accountHolder: { type: String },
+        accountNumber: { type: String },
+        ifscCode: { type: String },
+        bankName: { type: String },
+        cancelledCheque: { type: String }
+    },
+    isApproved: { type: Boolean, default: false },
+    documents: {
+        aadharCardFront: { type: String, required: true },
+        aadharCardBack: { type: String, required: true },
+        panCard: { type: String, required: true },
+        businessRegistration: { type: String, required: true },
+        travelAgentPermit: [{ type: String }],
+        passengerInsurancePolicy: [{ type: String }],
+        adventureSportLicense: [{ type: String }],
+        guidCertification: [{ type: String }],
+        liabilityWaiverForm: [{ type: String }],
+        safetyEmergencyPlan: [{ type: String }],
+        riverRaftingPermit: [{ type: String }],
+        technicalSafetyCertificate: [{ type: String }],
+        insuranceCoverageDocument: [{ type: String }],
+        homestayRegistrationCertificate: [{ type: String }],
+        gstCertificate: [{ type: String, required: true }],
+        hotelLicense: [{ type: String }],
+        fssaiLicense: [{ type: String }],
+        safetyAuditReport: [{ type: String }],
+        structuralFitnessCertificate: [{ type: String }],
+        rtoPermit: [{ type: String }],
+        insuranceTaxReceipt: [{ type: String }]
+    },
+    createdAt: { type: Date, default: Date.now },
 });
 
 if (mongoose.models.Vendor) {
-  delete mongoose.models.Vendor;
+    delete mongoose.models.Vendor;
 }
 module.exports = mongoose.model('Vendor', VendorSchema);
