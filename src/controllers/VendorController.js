@@ -79,13 +79,25 @@ class VendorController {
                     const buffer = Buffer.from(await value.arrayBuffer());
                     fs.writeFileSync(filePath, buffer);
                     data.profileImage = `/uploads/${fileName}`;
+                } else if (key === 'businessRegistration' && value instanceof File) {
+                    // Handle businessRegistration file upload
+                    const fs = require('fs');
+                    const path = require('path');
+                    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+                    if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+                    const fileName = `${Date.now()}-biz-reg-${value.name}`;
+                    const filePath = path.join(uploadsDir, fileName);
+                    const buffer = Buffer.from(await value.arrayBuffer());
+                    fs.writeFileSync(filePath, buffer);
+                    data.businessRegistration = `/uploads/${fileName}`;
                 } else if (key.startsWith('businessCategory[')) {
                     businessCategory.push(value);
                 } else if (key === 'businessNumber') {
                     data.businessPhone = value;
                 } else if (key === 'businessAbout') {
                     data.description = value;
-                } else if (key === 'businessRegistration') {
+                } else if (key === 'businessRegistration' && typeof value === 'string') {
                     data.businessRegistration = value;
                 } else {
                     data[key] = value;
@@ -215,6 +227,17 @@ class VendorController {
         const categories = VendorService.getCategories();
         return { status: 200, data: { categories } };
     }
+
+    // POST /vendor/document/delete
+    async deleteDocument(req) {
+        return { status: 501, data: { error: 'Not Implemented' } };
+    }
+
+    // POST /vendor/document/update
+    async updateDocument(req) {
+        return { status: 501, data: { error: 'Not Implemented' } };
+    }
+
 }
 
 module.exports = new VendorController();
