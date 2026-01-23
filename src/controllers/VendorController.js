@@ -144,7 +144,7 @@ class VendorController {
 
             for (const [key, value] of formData.entries()) {
                 if (value instanceof File || (value instanceof Blob && value.name)) {
-                    const fileName = `${Date.now()}-${key}-${value.name}`;
+                    const fileName = `${Date.now()}-${value.name}`;
                     const filePath = path.join(uploadsDir, fileName);
                     const buffer = Buffer.from(await value.arrayBuffer());
                     fs.writeFileSync(filePath, buffer);
@@ -166,15 +166,12 @@ class VendorController {
                 return { status: 400, data: { error: 'No files uploaded' } };
             }
 
-            // Validate mandatory fields
             const mandatoryFields = ['aadharCardFront', 'aadharCardBack', 'panCard', 'businessRegistration', 'gstCertificate'];
             for (const field of mandatoryFields) {
                 if (!documents[field] || (Array.isArray(documents[field]) && documents[field].length === 0)) {
                     return { status: 400, data: { error: `Mandatory document missing: ${field}` } };
                 }
             }
-
-
 
             const vendor = await VendorService.upsertProfile(user.id, { documents });
             return {
