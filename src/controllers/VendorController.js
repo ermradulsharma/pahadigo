@@ -3,57 +3,6 @@ const PackageService = require('../services/PackageService');
 
 class VendorController {
 
-    // POST /vendor/profile (Create or Update)
-    async updateProfile(req) {
-        try {
-            const user = req.user;
-            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
-
-            const body = await req.json();
-            const { businessName, category } = body;
-
-            if (!businessName || !category) {
-                return { status: 400, data: { error: 'Business name and category are required' } };
-            }
-
-            const vendor = await VendorService.upsertProfile(user.id, body);
-
-            return { status: 200, data: { message: 'Profile updated', vendor } };
-        } catch (error) {
-            console.error('Update Profile Error:', error);
-            return { status: 500, data: { error: 'Internal Server Error' } };
-        }
-    }
-
-    // POST /vendor/create-package
-    async createPackage(req) {
-        try {
-            const user = req.user;
-            if (!user || user.role !== 'vendor') {
-                return { status: 403, data: { error: 'Access denied. Vendors only.' } };
-            }
-
-            const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) {
-                return { status: 400, data: { error: 'Vendor profile not completed' } };
-            }
-
-            const body = await req.json();
-            const { title, price } = body;
-
-            if (!title || !price) {
-                return { status: 400, data: { error: 'Package title and price are required' } };
-            }
-
-            const newPackage = await PackageService.createPackage(vendor._id, body);
-
-            return { status: 201, data: { message: 'Package created', package: newPackage } };
-        } catch (error) {
-            console.error('Create Package Error:', error);
-            return { status: 500, data: { error: 'Internal Server Error' } };
-        }
-    }
-
     // POST /vendor/profile/create (Multipart Form Data)
     async createProfile(req) {
         try {
@@ -111,9 +60,8 @@ class VendorController {
             }
 
             const vendor = await VendorService.upsertProfile(user.id, data);
-            return { status: 201, data: { message: 'Profile created successfully', vendor } };
+            return { status: 201, data: { message: 'Profile created successfully' } };
         } catch (error) {
-            console.error('Create Profile Error:', error);
             return { status: 500, data: { error: 'Internal Server Error', details: error.message } };
         }
     }
@@ -152,12 +100,18 @@ class VendorController {
 
                     // Match array fields like travelAgentPermit[0]
                     const arrayMatch = key.match(/^(.+)\[\d+\]$/);
+                    const docObject = {
+                        url: relativePath,
+                        status: 'pending',
+                        reason: null
+                    };
+
                     if (arrayMatch) {
                         const fieldName = arrayMatch[1];
                         if (!documents[fieldName]) documents[fieldName] = [];
-                        documents[fieldName].push(relativePath);
+                        documents[fieldName].push(docObject);
                     } else {
-                        documents[key] = relativePath;
+                        documents[key] = docObject;
                     }
                 }
             }
@@ -173,17 +127,70 @@ class VendorController {
                 }
             }
 
-            const vendor = await VendorService.upsertProfile(user.id, { documents });
+            const vendor = await VendorService.upsertProfile(user.id, {
+                documents
+            });
             return {
                 status: 200,
                 data: {
-                    message: 'Documents uploaded successfully',
-                    documents: vendor.documents
+                    message: 'Documents uploaded successfully'
                 }
             };
         } catch (error) {
-            console.error('Document Upload Error:', error);
             return { status: 500, data: { error: 'Internal Server Error', details: error.message } };
+        }
+    }
+
+    // POST /vendor/profile (Create or Update)
+    async updateProfile(req) {
+        try {
+            const user = req.user;
+            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+
+            console.log(`[VendorController] updateProfile called by User ID: ${user.id}`);
+
+            const body = req.jsonBody || await req.json();
+            const { businessName, category } = body;
+
+            if (!businessName || !category) {
+                return { status: 400, data: { error: 'Business name and category are required' } };
+            }
+
+            const vendor = await VendorService.upsertProfile(user.id, body);
+
+            return { status: 200, data: { message: 'Profile updated', vendor } };
+        } catch (error) {
+            console.error('Update Profile Error:', error);
+            return { status: 500, data: { error: 'Internal Server Error' } };
+        }
+    }
+
+    // POST /vendor/create-package
+    async createPackage(req) {
+        try {
+            const user = req.user;
+            if (!user || user.role !== 'vendor') {
+                return { status: 403, data: { error: 'Access denied. Vendors only.' } };
+            }
+
+            const vendor = await VendorService.findByUserId(user.id);
+            if (!vendor) {
+                return { status: 400, data: { error: 'Vendor profile not completed' } };
+            }
+
+            const body = await req.json();
+            const { title, price } = body;
+
+            if (!title || !price) {
+                return { status: 400, data: { error: 'Package title and price are required' } };
+            }
+
+            const newPackage = await PackageService.createPackage(vendor._id, body);
+
+            return { status: 201, data: { message: 'Package created', package: newPackage } };
+        } catch (error) {
+            console.error('Create Package Error:', error);
+            return { status: 500, data: { error: 'Internal Server Error' } };
         }
     }
 
@@ -275,7 +282,7 @@ class VendorController {
             }
 
             const vendor = await VendorService.upsertProfile(user.id, { bankDetails: bankData });
-            return { status: 201, data: { message: 'Bank details added successfully', bankDetails: vendor.bankDetails } };
+            return { status: 201, data: { message: 'Bank details added successfully' } };
         } catch (error) {
             console.error('Create Bank Details Error:', error);
             return { status: 500, data: { error: 'Internal Server Error' } };
@@ -300,7 +307,6 @@ class VendorController {
 
     // POST /vendor/bank/update
     async updateBankDetails(req) {
-        // Reuse create logic as upsert is used
         return this.createBankDetails(req);
     }
 

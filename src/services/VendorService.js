@@ -3,9 +3,6 @@ const Vendor = require('../models/Vendor');
 class VendorService {
     async upsertProfile(userId, profileData) {
         const updateData = { ...profileData };
-
-        // If profileData has documents, we want to update them as nested fields
-        // to avoid overwriting the entire documents object if partial updates happen
         if (profileData.documents) {
             delete updateData.documents;
             for (const key in profileData.documents) {

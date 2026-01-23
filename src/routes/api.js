@@ -12,6 +12,16 @@ const routes = [
     { method: 'POST', path: '/auth/google', handler: AuthController.googleLogin.bind(AuthController) },
     { method: 'POST', path: '/auth/facebook', handler: AuthController.facebookLogin.bind(AuthController) },
     { method: 'POST', path: '/auth/apple', handler: AuthController.appleLogin.bind(AuthController) },
+    { method: 'POST', path: '/auth/logout', handler: AuthController.logout.bind(AuthController) },
+    { method: 'GET', path: '/auth/verify', handler: AuthController.verify.bind(AuthController) },
+    { method: 'GET', path: '/auth/refresh', handler: AuthController.refresh.bind(AuthController) },
+    { method: 'GET', path: '/auth/me', handler: AuthController.me.bind(AuthController) },
+    { method: 'GET', path: '/auth/forget-password', handler: AuthController.forgetPassword.bind(AuthController) },
+    { method: 'POST', path: '/auth/reset-password', handler: AuthController.resetPassword.bind(AuthController) },
+    { method: 'POST', path: '/auth/change-password', handler: AuthController.changePassword.bind(AuthController) },
+    { method: 'POST', path: '/auth/update-profile', handler: AuthController.updateProfile.bind(AuthController) },
+    { method: 'POST', path: '/auth/delete-profile', handler: AuthController.deleteProfile.bind(AuthController) },
+    { method: 'POST', path: '/auth/logout-all', handler: AuthController.logoutAll.bind(AuthController) },
 
     // Vendor
     { method: 'GET', path: '/vendor/categories', handler: VendorController.getCategories.bind(VendorController) },
@@ -52,6 +62,7 @@ const routes = [
     { method: 'GET', path: '/admin/bookings', handler: AdminController.getBookings.bind(AdminController), middleware: ['auth'] },
     { method: 'GET', path: '/admin/vendors', handler: AdminController.getVendors.bind(AdminController), middleware: ['auth'] },
     { method: 'POST', path: '/admin/approve-vendor', handler: AdminController.approveVendor.bind(AdminController), middleware: ['auth'] },
+    { method: 'POST', path: '/admin/verify-document', handler: AdminController.verifyDocument.bind(AdminController), middleware: ['auth'] },
     { method: 'POST', path: '/admin/add-package', handler: AdminController.addPackageOnBehalf.bind(AdminController), middleware: ['auth'] },
     { method: 'POST', path: '/admin/payout', handler: AdminController.markPayout.bind(AdminController), middleware: ['auth'] },
 ];

@@ -7,18 +7,13 @@ class AuthController {
     async sendOtp(req) {
         try {
             let body = req.jsonBody;
-
-            // If body wasn't parsed by middleware, try to parse it safely
             if (!body) {
                 try {
                     body = await req.json();
                 } catch (e) {
-                    console.error("AuthController: Error parsing req.json():", e);
                     return { status: 400, data: { error: 'Invalid or missing JSON body' } };
                 }
             }
-
-            console.log("[AUTH] sendOtp body:", JSON.stringify(body));
             let { email, phone, role } = body;
             if (email) email = email.toLowerCase().trim();
             if (phone) phone = phone.trim();
@@ -33,11 +28,6 @@ class AuthController {
             const otp = OTPService.generateOTP(identifier, role);
             return { status: 200, data: { message: 'OTP sent successfully', otp } };
         } catch (error) {
-            console.error("Send OTP Error:", error);
-            const fs = require('fs');
-            const path = require('path');
-            const logPath = path.join(process.cwd(), 'debug_log.txt');
-            fs.appendFileSync(logPath, "Send OTP Error: " + error.message + '\n' + error.stack + '\n');
             return { status: 500, data: { error: 'Failed to send OTP' } };
         }
     }
@@ -60,11 +50,12 @@ class AuthController {
                     message: 'Login successful',
                     token: result.token,
                     role: result.role,
-                    isNewUser: result.isNewUser
+                    isNewUser: result.isNewUser,
+                    vendorStatus: result.vendorStatus,
+                    vendorProfile: result.vendorProfile
                 }
             };
         } catch (error) {
-            console.error("Verify OTP Error:", error);
             const status = error.message === 'Invalid or expired OTP' ? 400 : 500;
             return { status, data: { error: error.message } };
         }

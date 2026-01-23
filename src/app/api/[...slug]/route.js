@@ -31,6 +31,7 @@ async function handler(req, { params }) {
             return NextResponse.json({ error: authResult.message }, { status: 401 });
         }
         userContext = authResult.user;
+        console.log(`[API] Middleware Authenticated User ID: ${userContext.id} (Role: ${userContext.role})`);
     }
 
     try {
@@ -43,10 +44,13 @@ async function handler(req, { params }) {
             if (contentType.includes('multipart/form-data')) {
                 req.formDataBody = await req.formData();
             } else if (contentType.includes('application/json')) {
+                // Only read if not already read (NextRequest body can be read once)
+                // However, checking 'bodyUsed' might be needed, or we rely on catch
                 req.jsonBody = await req.json();
             }
         } catch (parseError) {
-            console.warn("API: Body parsing failed (continuing without body):", parseError.message);
+            // If body already read or other error, meaningful to log but continue
+            console.warn("API: Body parsing attempt failed (might be already consumed or empty):", parseError.message);
         }
 
         const result = await routeDef.handler(req);

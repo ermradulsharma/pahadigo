@@ -19,27 +19,111 @@ const VendorSchema = new mongoose.Schema({
     },
     isApproved: { type: Boolean, default: false },
     documents: {
-        aadharCardFront: { type: String, required: true },
-        aadharCardBack: { type: String, required: true },
-        panCard: { type: String, required: true },
-        businessRegistration: { type: String, required: true },
-        travelAgentPermit: [{ type: String }],
-        passengerInsurancePolicy: [{ type: String }],
-        adventureSportLicense: [{ type: String }],
-        guidCertification: [{ type: String }],
-        liabilityWaiverForm: [{ type: String }],
-        safetyEmergencyPlan: [{ type: String }],
-        riverRaftingPermit: [{ type: String }],
-        technicalSafetyCertificate: [{ type: String }],
-        insuranceCoverageDocument: [{ type: String }],
-        homestayRegistrationCertificate: [{ type: String }],
-        gstCertificate: [{ type: String, required: true }],
-        hotelLicense: [{ type: String }],
-        fssaiLicense: [{ type: String }],
-        safetyAuditReport: [{ type: String }],
-        structuralFitnessCertificate: [{ type: String }],
-        rtoPermit: [{ type: String }],
-        insuranceTaxReceipt: [{ type: String }]
+        aadharCardFront: {
+            url: { type: String, required: true },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        },
+        aadharCardBack: {
+            url: { type: String, required: true },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        },
+        panCard: {
+            url: { type: String, required: true },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        },
+        businessRegistration: {
+            url: { type: String, required: true },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        },
+        travelAgentPermit: [{
+            url: { type: String },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        }],
+        passengerInsurancePolicy: [{
+            url: { type: String },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        }],
+        adventureSportLicense: [{
+            url: { type: String },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        }],
+        guidCertification: [{
+            url: { type: String },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        }],
+        liabilityWaiverForm: [{
+            url: { type: String },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        }],
+        safetyEmergencyPlan: [{
+            url: { type: String },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        }],
+        riverRaftingPermit: [{
+            url: { type: String },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        }],
+        technicalSafetyCertificate: [{
+            url: { type: String },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        }],
+        insuranceCoverageDocument: [{
+            url: { type: String },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        }],
+        homestayRegistrationCertificate: [{
+            url: { type: String },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        }],
+        gstCertificate: [{
+            url: { type: String, required: true },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        }],
+        hotelLicense: [{
+            url: { type: String },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        }],
+        fssaiLicense: [{
+            url: { type: String },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        }],
+        safetyAuditReport: [{
+            url: { type: String },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        }],
+        structuralFitnessCertificate: [{
+            url: { type: String },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        }],
+        rtoPermit: [{
+            url: { type: String },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        }],
+        insuranceTaxReceipt: [{
+            url: { type: String },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        }]
     },
     createdAt: { type: Date, default: Date.now },
 });
