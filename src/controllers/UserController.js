@@ -1,9 +1,9 @@
-const User = require('../models/User');
-const Package = require('../models/Package');
-const Booking = require('../models/Booking');
-const Vendor = require('../models/Vendor');
-const BookingService = require('../services/BookingService');
-const PackageService = require('../services/PackageService');
+import User from '../models/User.js';
+import Package from '../models/Package.js';
+import Booking from '../models/Booking.js';
+import Vendor from '../models/Vendor.js';
+import BookingService from '../services/BookingService.js';
+import PackageService from '../services/PackageService.js';
 
 class UserController {
 
@@ -58,4 +58,4 @@ class UserController {
   }
 }
 
-module.exports = new UserController();
+export default new UserController();

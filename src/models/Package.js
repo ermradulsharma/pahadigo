@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 // --- Service Sub-Schemas ---
 
@@ -97,4 +97,4 @@ const VendorPackageSchema = new mongoose.Schema({
     createdAt: { type: Date, default: Date.now }
 });
 
-module.exports = mongoose.models.Package || mongoose.model('Package', VendorPackageSchema);
+export default mongoose.models.Package || mongoose.model('Package', VendorPackageSchema);

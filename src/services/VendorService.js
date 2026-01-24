@@ -1,4 +1,4 @@
-const Vendor = require('../models/Vendor');
+import Vendor from '../models/Vendor.js';
 
 class VendorService {
     async upsertProfile(userId, profileData) {
@@ -50,4 +50,4 @@ class VendorService {
     }
 }
 
-module.exports = new VendorService();
+export default new VendorService();

@@ -1,5 +1,7 @@
-const VendorService = require('../services/VendorService');
-const PackageService = require('../services/PackageService');
+import VendorService from '../services/VendorService.js';
+import PackageService from '../services/PackageService.js';
+import fs from 'fs';
+import path from 'path';
 
 class VendorController {
 
@@ -18,8 +20,6 @@ class VendorController {
             for (const [key, value] of formData.entries()) {
                 if (key === 'profile_image' && value instanceof File) {
                     // Handle file upload
-                    const fs = require('fs');
-                    const path = require('path');
                     const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
                     if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -30,8 +30,6 @@ class VendorController {
                     data.profileImage = `/uploads/${fileName}`;
                 } else if (key === 'businessRegistration' && value instanceof File) {
                     // Handle businessRegistration file upload
-                    const fs = require('fs');
-                    const path = require('path');
                     const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
                     if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -75,8 +73,6 @@ class VendorController {
             const formData = req.formDataBody;
             if (!formData) return { status: 400, data: { error: 'Multipart form data required' } };
 
-            const fs = require('fs');
-            const path = require('path');
             const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'documents');
             if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -256,8 +252,7 @@ class VendorController {
 
             for (const [key, value] of formData.entries()) {
                 if (key === 'cancelChequered' && value instanceof File) {
-                    const fs = require('fs');
-                    const path = require('path');
+                    // fs and path imported at top
                     const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'bank');
                     if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
@@ -479,4 +474,4 @@ class VendorController {
     }
 }
 
-module.exports = new VendorController();
+export default new VendorController();

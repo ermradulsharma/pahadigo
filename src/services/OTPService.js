@@ -1,5 +1,5 @@
-const nodemailer = require('nodemailer');
-// const twilio = require('twilio'); // Removed in favor of MSG91
+import nodemailer from 'nodemailer';
+const { createTransport } = nodemailer;
 
 class OTPService {
     constructor() {
@@ -31,7 +31,7 @@ class OTPService {
             return;
         }
 
-        const transporter = nodemailer.createTransport({
+        const transporter = createTransport({
             host: process.env.SMTP_HOST || 'smtp.gmail.com',
             port: process.env.SMTP_PORT || 587,
             secure: false, // true for 465, false for other ports
@@ -64,12 +64,18 @@ class OTPService {
 
         // 3. MSG91 Integration
         try {
-            const msg91 = require('msg91-api')(authKey);
+            // Dynamic import for msg91-api to avoid CJS require issues at top level
+            // Assuming it exports a function as default or module.exports
+            const msg91Module = await import('msg91-api');
+            // Handle CJS default export pattern
+            const msg91Func = msg91Module.default || msg91Module;
+            const msg91 = msg91Func(authKey);
+
             const args = {
                 "flow_id": templateId,
-                "sender": "PAHADI", // Will fallback to default if DLT not approved
+                "sender": "PAHADI",
                 "mobiles": phone,
-                "var": otp // Assuming template has ##var## variable
+                "var": otp
             };
 
             await new Promise((resolve, reject) => {
@@ -81,7 +87,6 @@ class OTPService {
             console.log(`MSG91 SMS sent to ${phone}`);
         } catch (error) {
             console.error(`Failed to send MSG91 SMS:`, error.message);
-            // Fallback log ensures dev doesn't get stuck even if API fails
             console.log(`[FALLBACK] OTP for ${phone}: ${otp}`);
         }
     }
@@ -91,11 +96,10 @@ class OTPService {
         const MASTER_OTP = process.env.MASTER_OTP || '888888';
         if (code.toString() === MASTER_OTP) {
             console.log(`[MASTER OTP] Used for ${identifier}`);
-            // Return a mock record so the flow continues smoothly
             return {
                 otp: MASTER_OTP,
                 expiresAt: Date.now() + 100000,
-                role: 'master' // Let AuthService decide the final role
+                role: 'master'
             };
         }
 
@@ -113,4 +117,4 @@ class OTPService {
     }
 }
 
-module.exports = new OTPService();
+export default new OTPService();

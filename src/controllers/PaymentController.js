@@ -1,5 +1,5 @@
-const RazorpayService = require('../services/RazorpayService');
-const BookingService = require('../services/BookingService');
+import RazorpayService from '../services/RazorpayService.js';
+import BookingService from '../services/BookingService.js';
 
 class PaymentController {
 
@@ -51,4 +51,4 @@ class PaymentController {
    }
 }
 
-module.exports = new PaymentController();
+export default new PaymentController();

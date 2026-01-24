@@ -1,9 +1,9 @@
-const VendorController = require('../controllers/VendorController');
-const UserController = require('../controllers/UserController');
-const AdminController = require('../controllers/AdminController');
-const PaymentController = require('../controllers/PaymentController');
-const AuthController = require('../controllers/AuthController');
-const { apiHandler } = require('../helpers/apiHandler');
+import VendorController from '../controllers/VendorController.js';
+import UserController from '../controllers/UserController.js';
+import AdminController from '../controllers/AdminController.js';
+import PaymentController from '../controllers/PaymentController.js';
+import AuthController from '../controllers/AuthController.js';
+import { apiHandler } from '../helpers/apiHandler.js';
 
 // Helper to wrap controller methods
 const wrap = (method) => apiHandler(method);
@@ -72,4 +72,4 @@ const routes = [
     { method: 'POST', path: '/admin/verify-document', handler: wrap(AdminController.verifyDocument.bind(AdminController)), middleware: ['auth'] },
 ];
 
-module.exports = routes;
+export default routes;

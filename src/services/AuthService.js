@@ -1,11 +1,12 @@
-const User = require('../models/User');
-const OTPService = require('./OTPService');
-const { generateToken } = require('../helpers/jwt');
-const { OAuth2Client } = require('google-auth-library');
-const Vendor = require('../models/Vendor');
+import User from '../models/User.js';
+import OTPService from './OTPService.js';
+import { generateToken, verifyToken } from '../helpers/jwt.js';
+import googleAuthLib from 'google-auth-library';
+const { OAuth2Client } = googleAuthLib;
+import Vendor from '../models/Vendor.js';
+import jwt from 'jsonwebtoken';
 
 class AuthService {
-
     async _getVendorStatus(user) {
         const vendorProfile = await Vendor.findOne({ user: user._id });
         let status = "setBusinessProfile";
@@ -28,13 +29,9 @@ class AuthService {
             throw new Error('Invalid or expired OTP');
         }
 
-        // Determine role:
-        // 1. If 'master', use targetRole (if provided) or default to 'user'
-        // 2. If normal OTP, use the role bound to that OTP (otpRecord.role)
         let role = otpRecord.role;
         if (role === 'master') {
             const validRoles = ['user', 'vendor'];
-            // If targetRole is valid, use it. Otherwise, we'll see if user exists below.
             role = (targetRole && validRoles.includes(targetRole)) ? targetRole : 'user';
         }
 
@@ -74,7 +71,6 @@ class AuthService {
     }
 
     async googleAuth(idToken, targetRole) {
-        // --- MASTER TOKEN CHECK ---
         if (idToken === 'MASTER_TOKEN' || idToken === 'master_token') {
             console.log(`[MASTER TOKEN] Direct Google Login`);
             return this._mockSocialLogin('master_google_user@example.com', 'Master Google User', 'google_master_id', targetRole);
@@ -125,7 +121,6 @@ class AuthService {
     }
 
     async facebookAuth(accessToken, targetRole) {
-        // --- MASTER TOKEN CHECK ---
         if (accessToken === 'MASTER_TOKEN' || accessToken === 'master_token') {
             console.log(`[MASTER TOKEN] Direct Facebook Login`);
             return this._mockSocialLogin('master_fb_user@example.com', 'Master FB User', 'fb_master_id', targetRole);
@@ -133,7 +128,6 @@ class AuthService {
 
         if (!accessToken) throw new Error('Facebook Token required');
 
-        // Verify token with Facebook Graph API
         const response = await fetch(`https://graph.facebook.com/me?access_token=${accessToken}&fields=id,name,email`);
         const data = await response.json();
 
@@ -142,8 +136,6 @@ class AuthService {
         }
 
         const { id: facebookId, name, email } = data;
-
-        // Fallback for email if not provided by Facebook
         const userEmail = email || `fb_${facebookId}@example.com`;
 
         let user = await User.findOne({ $or: [{ facebookId }, { email: userEmail }] });
@@ -179,7 +171,6 @@ class AuthService {
     }
 
     async appleAuth(idToken, targetRole, userFn, userEmail) {
-        // --- MASTER TOKEN CHECK ---
         if (idToken === 'MASTER_TOKEN' || idToken === 'master_token') {
             console.log(`[MASTER TOKEN] Direct Apple Login`);
             return this._mockSocialLogin('master_apple_user@example.com', 'Master Apple User', 'apple_master_id', targetRole);
@@ -187,21 +178,13 @@ class AuthService {
 
         if (!idToken) throw new Error('Apple ID Token required');
 
-        const jwt = require('jsonwebtoken');
-        // Decode the token to get user info (sub is the Apple ID)
-        // In production, you should verify the signature using Apple's public keys
         const decoded = jwt.decode(idToken);
-
         if (!decoded || !decoded.sub) {
             throw new Error('Invalid Apple ID Token');
         }
 
         const { sub: appleId, email: tokenEmail } = decoded;
-        const email = userEmail || tokenEmail; // Apple only sends email on first login in the token or separate payload
-
-        // If we don't have an email, we might encounter issues creating a new user if validation requires it
-        // and we cannot key off just appleId for legacy lookups easily without it.
-        // For now, assume we get it or handle it.
+        const email = userEmail || tokenEmail;
         const finalEmail = email || `apple_${appleId}@privaterelay.appleid.com`;
 
         let user = await User.findOne({ $or: [{ appleId }, { email: finalEmail }] });
@@ -244,7 +227,6 @@ class AuthService {
     }
 
     async verify(token) {
-        const { verifyToken } = require('../helpers/jwt');
         const decoded = verifyToken(token);
         if (!decoded) throw new Error('Invalid or expired Token');
 
@@ -260,14 +242,12 @@ class AuthService {
     }
 
     async refresh(token) {
-        const { verifyToken, generateToken } = require('../helpers/jwt');
         const decoded = verifyToken(token);
         const newToken = generateToken({ id: decoded.id, role: decoded.role, email: decoded.email });
         return { token: newToken };
     }
 
     async me(token) {
-        const { verifyToken } = require('../helpers/jwt');
         const decoded = verifyToken(token);
         const user = await User.findById(decoded.id).select('-password');
         if (!user) throw new Error('User not found');
@@ -305,12 +285,9 @@ class AuthService {
     }
 
     async logoutAll(email) {
-        // Invalidating all tokens would require a 'tokenVersion' in User model 
-        // to be incremented and checked in JWT payload.
-        // Valid placeholder:
         return true;
     }
-    // --- HELPER FOR MASTER TOKEN LOGIN ---
+
     async _mockSocialLogin(email, name, id, targetRole) {
         let user = await User.findOne({ email });
         let isNewUser = false;
@@ -335,4 +312,4 @@ class AuthService {
     }
 }
 
-module.exports = new AuthService();
+export default new AuthService();

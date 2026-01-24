@@ -1,5 +1,5 @@
-const Razorpay = require('razorpay');
-const crypto = require('crypto');
+import Razorpay from 'razorpay';
+import crypto from 'crypto';
 
 const key_id = process.env.RAZORPAY_KEY_ID;
 const key_secret = process.env.RAZORPAY_KEY_SECRET;
@@ -41,4 +41,4 @@ class RazorpayService {
     }
 }
 
-module.exports = new RazorpayService();
+export default new RazorpayService();

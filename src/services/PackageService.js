@@ -1,5 +1,5 @@
-const Package = require('../models/Package');
-const Vendor = require('../models/Vendor');
+import Package from '../models/Package.js';
+import Vendor from '../models/Vendor.js';
 
 class PackageService {
 
@@ -85,4 +85,4 @@ class PackageService {
     }
 }
 
-module.exports = new PackageService();
+export default new PackageService();

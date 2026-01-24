@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const VendorSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
@@ -133,4 +133,4 @@ const VendorSchema = new mongoose.Schema({
 if (mongoose.models.Vendor) {
     delete mongoose.models.Vendor;
 }
-module.exports = mongoose.model('Vendor', VendorSchema);
+export default mongoose.model('Vendor', VendorSchema);

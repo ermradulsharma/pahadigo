@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
-import routesImport from '../../../routes/api';
-import dbConnect from '../../../config/db';
-import authMiddleware from '../../../middleware/auth';
+import routesImport from '../../../routes/api.js';
+import dbConnect from '../../../config/db.js';
+import authMiddleware from '../../../middleware/auth.js';
 
 const routes = Array.isArray(routesImport) ? routesImport : (routesImport.default || []);
 
@@ -54,6 +54,13 @@ async function handler(req, { params }) {
         }
 
         const result = await routeDef.handler(req);
+
+        // Support standard Response objects (New Standard)
+        if (result instanceof Response) {
+            return result;
+        }
+
+        // Support Legacy Format { status, data }
         return NextResponse.json(result.data, { status: result.status || 200 });
     } catch (error) {
         console.error('API Error:', error);

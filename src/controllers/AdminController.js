@@ -1,6 +1,7 @@
-const AdminService = require('../services/AdminService');
-const PackageService = require('../services/PackageService');
-const BookingService = require('../services/BookingService');
+import AdminService from '../services/AdminService.js';
+import PackageService from '../services/PackageService.js';
+import BookingService from '../services/BookingService.js';
+import Vendor from '../models/Vendor.js';
 
 class AdminController {
 
@@ -74,7 +75,6 @@ class AdminController {
                 updateData.isApproved = true;
             }
 
-            const Vendor = require('../models/Vendor');
             await Vendor.findByIdAndUpdate(vendorId, updateData);
 
             return { status: 200, data: { message: `Vendor ${status || 'approved'}` } };
@@ -95,7 +95,6 @@ class AdminController {
                 return { status: 400, data: { error: 'Vendor ID, document field, and status are required' } };
             }
 
-            const Vendor = require('../models/Vendor');
             const vendor = await Vendor.findById(vendorId);
             if (!vendor) return { status: 404, data: { error: 'Vendor not found' } };
 
@@ -197,4 +196,4 @@ class AdminController {
     }
 }
 
-module.exports = new AdminController();
+export default new AdminController();

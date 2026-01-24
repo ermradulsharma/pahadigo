@@ -1,6 +1,6 @@
-const User = require('../models/User');
-const Vendor = require('../models/Vendor');
-const Booking = require('../models/Booking');
+import User from '../models/User.js';
+import Vendor from '../models/Vendor.js';
+import Booking from '../models/Booking.js';
 
 class AdminService {
     async getDashboardStats() {
@@ -87,4 +87,4 @@ class AdminService {
     }
 }
 
-module.exports = new AdminService();
+export default new AdminService();

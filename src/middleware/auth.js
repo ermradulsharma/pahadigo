@@ -1,4 +1,4 @@
-const { verifyToken } = require('../helpers/jwt');
+import { verifyToken } from '../helpers/jwt.js';
 
 const authMiddleware = async (req) => {
   const authHeader = req.headers.get('authorization');
@@ -17,4 +17,4 @@ const authMiddleware = async (req) => {
   return { authorized: true, user: decoded };
 };
 
-module.exports = authMiddleware;
+export default authMiddleware;

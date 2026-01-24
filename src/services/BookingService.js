@@ -1,4 +1,4 @@
-const Booking = require('../models/Booking');
+import Booking from '../models/Booking.js';
 
 class BookingService {
     async createBooking({ userId, packageId, travelDate, price }) {
@@ -50,4 +50,4 @@ class BookingService {
     }
 }
 
-module.exports = new BookingService();
+export default new BookingService();

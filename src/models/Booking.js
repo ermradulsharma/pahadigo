@@ -1,4 +1,4 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
 
 const BookingSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
@@ -8,9 +8,9 @@ const BookingSchema = new mongoose.Schema({
   status: { type: String, enum: ['pending', 'confirmed', 'cancelled', 'completed'], default: 'pending' },
   paymentStatus: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
   razorpay: {
-     orderId: String,
-     paymentId: String,
-     signature: String
+    orderId: String,
+    paymentId: String,
+    signature: String
   },
   payoutStatus: { type: String, enum: ['pending', 'paid'], default: 'pending' }, // Admin to Vendor
   refundStatus: { type: String, enum: ['none', 'refunded'], default: 'none' },
@@ -18,4 +18,4 @@ const BookingSchema = new mongoose.Schema({
   totalPrice: { type: Number },
 });
 
-module.exports = mongoose.models.Booking || mongoose.model('Booking', BookingSchema);
+export default mongoose.models.Booking || mongoose.model('Booking', BookingSchema);
