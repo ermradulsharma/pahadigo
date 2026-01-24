@@ -40,6 +40,7 @@ class VendorService {
             'Cafe/Restaurant',
             'Bike/Car Rental',
             'Adventure Sports',
+            'Rafting', // Added to match Package Schema
             'Bungee Jumping',
             'Taxi/Driver',
             'Local Guide',

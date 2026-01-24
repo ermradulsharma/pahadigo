@@ -36,14 +36,15 @@ class AuthController {
     async verifyOtp(req) {
         try {
             const body = req.jsonBody || await req.json();
-            let { email, phone, otp } = body;
+            let { email, phone, otp, role } = body;
             if (email) email = email.toLowerCase().trim();
             if (phone) phone = phone.trim();
+            if (role) role = role.toLowerCase().trim();
             const identifier = email || phone;
             if (!identifier || !otp) {
                 return { status: 400, data: { error: 'Identifier (Email/Phone) and OTP required' } };
             }
-            const result = await AuthService.verifyAndLogin({ identifier, otp, email, phone });
+            const result = await AuthService.verifyAndLogin({ identifier, otp, email, phone, targetRole: role });
             return {
                 status: 200,
                 data: {

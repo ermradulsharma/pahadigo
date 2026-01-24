@@ -15,7 +15,9 @@ const VendorSchema = new mongoose.Schema({
         accountNumber: { type: String },
         ifscCode: { type: String },
         bankName: { type: String },
-        cancelledCheque: { type: String }
+        cancelledCheque: { type: String },
+        status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+        reason: { type: String }
     },
     isApproved: { type: Boolean, default: false },
     documents: {

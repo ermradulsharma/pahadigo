@@ -324,6 +324,159 @@ class VendorController {
         }
     }
 
+    // GET /vendor/packages -> Returns the Single Catalog
+    async getPackages(req) {
+        try {
+            const user = req.user;
+            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+
+            const packages = await VendorService.findByUserId(user.id);
+            if (!packages) return { status: 400, data: { error: 'Vendor profile not found' } };
+
+            // Get Catalog
+            const catalog = await PackageService.getVendorCatalog(packages._id);
+
+            // Filter services based on Vendor Profile Categories
+            // Map Profile Category Strings to Schema Keys
+            const categoryMap = {
+                'Homestay': 'homestay',
+                'Hotel': 'homestay', // Fallback
+                'Camping': 'camping',
+                'Trekking': 'trekking',
+                'Rafting': 'rafting',
+                'River Rafting': 'rafting',
+                'Bungee Jumping': 'bungeeJumping',
+                'Bike/Car Rental': 'vehicleRental',
+                'Chardham Tour': 'chardhamTour'
+            };
+
+            const allowedServices = packages.category.map(c => categoryMap[c]).filter(Boolean);
+
+            // Convert to Object to filter
+            const catalogObj = catalog.toObject();
+            const filteredServices = {};
+
+            allowedServices.forEach(key => {
+                if (catalogObj.services[key]) {
+                    filteredServices[key] = catalogObj.services[key];
+                }
+            });
+
+            // Return filtered view
+            return {
+                status: 200,
+                data: {
+                    catalog: {
+                        ...catalogObj,
+                        services: filteredServices
+                    }
+                }
+            };
+        } catch (error) {
+            console.error('Get Vendor Catalog Error:', error);
+            return { status: 500, data: { error: 'Internal Server Error' } };
+        }
+    }
+
+    // POST /vendor/package/add-item -> Add Service Item
+    async addItem(req) {
+        try {
+            const user = req.user;
+            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            const vendor = await VendorService.findByUserId(user.id);
+            if (!vendor) return { status: 400, data: { error: 'Vendor profile not found' } };
+
+            const body = await req.json();
+            // Expect: { category: 'homestay', item: { ... } }
+            const { category, item } = body;
+            if (!category || !item) return { status: 400, data: { error: 'Category and Item data required' } };
+
+            const updatedCatalog = await PackageService.addServiceItem(vendor._id, category, item);
+            return { status: 200, data: { message: 'Item added', catalog: updatedCatalog } };
+        } catch (error) {
+            console.error('Add Item Error:', error);
+            return { status: 500, data: { error: error.message } };
+        }
+    }
+
+    // POST /vendor/package/update-item
+    async updateItem(req) {
+        try {
+            const user = req.user;
+            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            const vendor = await VendorService.findByUserId(user.id);
+            if (!vendor) return { status: 400, data: { error: 'Vendor profile not found' } };
+
+            const body = await req.json();
+            const { category, itemId, updates } = body;
+            if (!category || !itemId || !updates) return { status: 400, data: { error: 'Category, Item ID and Updates required' } };
+
+            const updatedCatalog = await PackageService.updateServiceItem(vendor._id, category, itemId, updates);
+            return { status: 200, data: { message: 'Item updated', catalog: updatedCatalog } };
+        } catch (error) {
+            console.error('Update Item Error:', error);
+            return { status: 500, data: { error: error.message } };
+        }
+    }
+
+    // POST /vendor/package/delete-item
+    async deleteItem(req) {
+        try {
+            const user = req.user;
+            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            const vendor = await VendorService.findByUserId(user.id);
+            if (!vendor) return { status: 400, data: { error: 'Vendor profile not found' } };
+
+            const body = await req.json();
+            const { category, itemId } = body;
+            if (!category || !itemId) return { status: 400, data: { error: 'Category and Item ID required' } };
+
+            const updatedCatalog = await PackageService.removeServiceItem(vendor._id, category, itemId);
+            return { status: 200, data: { message: 'Item deleted', catalog: updatedCatalog } };
+        } catch (error) {
+            console.error('Delete Item Error:', error);
+            return { status: 500, data: { error: error.message } };
+        }
+    }
+
+    // POST /vendor/package/toggle-category
+    async toggleCategoryStatus(req) {
+        try {
+            const user = req.user;
+            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            const vendor = await VendorService.findByUserId(user.id);
+            if (!vendor) return { status: 400, data: { error: 'Vendor profile not found' } };
+
+            const body = await req.json();
+            const { category, isActive } = body;
+            if (!category || typeof isActive !== 'boolean') return { status: 400, data: { error: 'Category and Status required' } };
+
+            const updatedCatalog = await PackageService.toggleCategoryStatus(vendor._id, category, isActive);
+            return { status: 200, data: { message: `Category ${category} status updated`, catalog: updatedCatalog } };
+        } catch (error) {
+            console.error('Toggle Category Error:', error);
+            return { status: 500, data: { error: error.message } };
+        }
+    }
+    // POST /vendor/package/toggle-item
+    async toggleItemStatus(req) {
+        try {
+            const user = req.user;
+            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            const vendor = await VendorService.findByUserId(user.id);
+            if (!vendor) return { status: 400, data: { error: 'Vendor profile not found' } };
+
+            const body = await req.json();
+            const { category, itemId, isActive } = body;
+            if (!category || !itemId || typeof isActive !== 'boolean') return { status: 400, data: { error: 'Category, Item ID and Status required' } };
+
+            const updatedCatalog = await PackageService.toggleItemStatus(vendor._id, category, itemId, isActive);
+            return { status: 200, data: { message: 'Item status updated', catalog: updatedCatalog } };
+        } catch (error) {
+            console.error('Toggle Item Status Error:', error);
+            return { status: 500, data: { error: error.message } };
+        }
+    }
 }
 
 module.exports = new VendorController();

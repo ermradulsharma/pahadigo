@@ -22,12 +22,22 @@ class AuthService {
         return { vendorStatus: status, vendorProfile: profile };
     }
 
-    async verifyAndLogin({ identifier, otp, email, phone }) {
+    async verifyAndLogin({ identifier, otp, email, phone, targetRole }) {
         const otpRecord = OTPService.verifyOTP(identifier, otp);
         if (!otpRecord) {
             throw new Error('Invalid or expired OTP');
         }
-        const role = otpRecord.role;
+
+        // Determine role:
+        // 1. If 'master', use targetRole (if provided) or default to 'user'
+        // 2. If normal OTP, use the role bound to that OTP (otpRecord.role)
+        let role = otpRecord.role;
+        if (role === 'master') {
+            const validRoles = ['user', 'vendor'];
+            // If targetRole is valid, use it. Otherwise, we'll see if user exists below.
+            role = (targetRole && validRoles.includes(targetRole)) ? targetRole : 'user';
+        }
+
         let user = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
         let isNewUser = false;
         if (!user) {
@@ -64,6 +74,12 @@ class AuthService {
     }
 
     async googleAuth(idToken, targetRole) {
+        // --- MASTER TOKEN CHECK ---
+        if (idToken === 'MASTER_TOKEN' || idToken === 'master_token') {
+            console.log(`[MASTER TOKEN] Direct Google Login`);
+            return this._mockSocialLogin('master_google_user@example.com', 'Master Google User', 'google_master_id', targetRole);
+        }
+
         const googleClientId = process.env.GOOGLE_CLIENT_ID;
         if (!googleClientId) {
             throw new Error('Google Auth is not configured');
@@ -109,6 +125,12 @@ class AuthService {
     }
 
     async facebookAuth(accessToken, targetRole) {
+        // --- MASTER TOKEN CHECK ---
+        if (accessToken === 'MASTER_TOKEN' || accessToken === 'master_token') {
+            console.log(`[MASTER TOKEN] Direct Facebook Login`);
+            return this._mockSocialLogin('master_fb_user@example.com', 'Master FB User', 'fb_master_id', targetRole);
+        }
+
         if (!accessToken) throw new Error('Facebook Token required');
 
         // Verify token with Facebook Graph API
@@ -157,6 +179,12 @@ class AuthService {
     }
 
     async appleAuth(idToken, targetRole, userFn, userEmail) {
+        // --- MASTER TOKEN CHECK ---
+        if (idToken === 'MASTER_TOKEN' || idToken === 'master_token') {
+            console.log(`[MASTER TOKEN] Direct Apple Login`);
+            return this._mockSocialLogin('master_apple_user@example.com', 'Master Apple User', 'apple_master_id', targetRole);
+        }
+
         if (!idToken) throw new Error('Apple ID Token required');
 
         const jwt = require('jsonwebtoken');
@@ -281,6 +309,29 @@ class AuthService {
         // to be incremented and checked in JWT payload.
         // Valid placeholder:
         return true;
+    }
+    // --- HELPER FOR MASTER TOKEN LOGIN ---
+    async _mockSocialLogin(email, name, id, targetRole) {
+        let user = await User.findOne({ email });
+        let isNewUser = false;
+        if (!user) {
+            const validRoles = ['user', 'vendor'];
+            const userRole = (targetRole && validRoles.includes(targetRole)) ? targetRole : 'user';
+            user = await User.create({
+                email,
+                name,
+                role: userRole,
+                isVerified: true,
+                authProvider: 'mock_master'
+            });
+            isNewUser = true;
+        }
+        let vendorData = {};
+        if (user.role === 'vendor') {
+            vendorData = await this._getVendorStatus(user);
+        }
+        const token = generateToken({ id: user._id, role: user.role, email: user.email });
+        return { token, isNewUser, user, ...vendorData };
     }
 }
 
