@@ -3,6 +3,7 @@ import UserController from '../controllers/UserController.js';
 import AdminController from '../controllers/AdminController.js';
 import PaymentController from '../controllers/PaymentController.js';
 import AuthController from '../controllers/AuthController.js';
+import CategoryController from '../controllers/CategoryController.js';
 import { apiHandler } from '../helpers/apiHandler.js';
 
 // Helper to wrap controller methods
@@ -70,6 +71,14 @@ const routes = [
     { method: 'POST', path: '/admin/refund', handler: wrap(AdminController.refundBooking.bind(AdminController)), middleware: ['auth'] },
     { method: 'GET', path: '/admin/payment-history', handler: wrap(AdminController.getPaymentHistory.bind(AdminController)), middleware: ['auth'] },
     { method: 'POST', path: '/admin/verify-document', handler: wrap(AdminController.verifyDocument.bind(AdminController)), middleware: ['auth'] },
+
+    // Categories (Admin management)
+    { method: 'GET', path: '/categories', handler: wrap(CategoryController.getAll.bind(CategoryController)) },
+    { method: 'GET', path: '/categories/:id', handler: wrap(CategoryController.getById.bind(CategoryController)) },
+    { method: 'POST', path: '/categories', handler: wrap(CategoryController.create.bind(CategoryController)), middleware: ['auth'] },
+    { method: 'PUT', path: '/categories/:id', handler: wrap(CategoryController.update.bind(CategoryController)), middleware: ['auth'] }, // Using PUT for update
+    { method: 'DELETE', path: '/categories/:id', handler: wrap(CategoryController.delete.bind(CategoryController)), middleware: ['auth'] },
+    { method: 'POST', path: '/categories/seed', handler: wrap(CategoryController.seed.bind(CategoryController)), middleware: ['auth'] },
 ];
 
 export default routes;

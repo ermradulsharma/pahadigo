@@ -1,5 +1,6 @@
 import VendorService from '../services/VendorService.js';
 import PackageService from '../services/PackageService.js';
+import { successResponse, errorResponse } from '../helpers/response.js';
 import fs from 'fs';
 import path from 'path';
 
@@ -9,10 +10,10 @@ class VendorController {
     async createProfile(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            if (!user || user.role !== 'vendor') return errorResponse(403, 'Vendors only', {});
 
             const formData = req.formDataBody;
-            if (!formData) return { status: 400, data: { error: 'Multipart form data required' } };
+            if (!formData) return errorResponse(400, 'Multipart form data required', {});
 
             const data = {};
             const businessCategory = [];
@@ -54,13 +55,13 @@ class VendorController {
             if (businessCategory.length > 0) data.category = businessCategory;
 
             if (!data.businessName || !data.category) {
-                return { status: 400, data: { error: 'Business name and category are required' } };
+                return errorResponse('Business name and category are required', 400,);
             }
 
             const vendor = await VendorService.upsertProfile(user.id, data);
-            return { status: 201, data: { message: 'Profile created successfully' } };
+            return successResponse('Profile created successfully', 201);
         } catch (error) {
-            return { status: 500, data: { error: 'Internal Server Error', details: error.message } };
+            return errorResponse(error.message, 500);
         }
     }
 
@@ -68,10 +69,10 @@ class VendorController {
     async uploadDocuments(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            if (!user || user.role !== 'vendor') return errorResponse(403, 'Vendors only', {});
 
             const formData = req.formDataBody;
-            if (!formData) return { status: 400, data: { error: 'Multipart form data required' } };
+            if (!formData) return errorResponse(400, 'Multipart form data required', {});
 
             const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'documents');
             if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
@@ -113,27 +114,22 @@ class VendorController {
             }
 
             if (Object.keys(documents).length === 0) {
-                return { status: 400, data: { error: 'No files uploaded' } };
+                return errorResponse(400, 'No files uploaded', {});
             }
 
             const mandatoryFields = ['aadharCardFront', 'aadharCardBack', 'panCard', 'businessRegistration', 'gstCertificate'];
             for (const field of mandatoryFields) {
                 if (!documents[field] || (Array.isArray(documents[field]) && documents[field].length === 0)) {
-                    return { status: 400, data: { error: `Mandatory document missing: ${field}` } };
+                    return errorResponse(400, `Mandatory document missing: ${field}`, {});
                 }
             }
 
             const vendor = await VendorService.upsertProfile(user.id, {
                 documents
             });
-            return {
-                status: 200,
-                data: {
-                    message: 'Documents uploaded successfully'
-                }
-            };
+            return successResponse(200, 'Documents uploaded successfully', {});
         } catch (error) {
-            return { status: 500, data: { error: 'Internal Server Error', details: error.message } };
+            return errorResponse(500, 'Internal Server Error', {});
         }
     }
 
@@ -141,7 +137,7 @@ class VendorController {
     async updateProfile(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            if (!user || user.role !== 'vendor') return errorResponse(403, 'Vendors only', {});
 
             console.log(`[VendorController] updateProfile called by User ID: ${user.id}`);
 
@@ -149,15 +145,15 @@ class VendorController {
             const { businessName, category } = body;
 
             if (!businessName || !category) {
-                return { status: 400, data: { error: 'Business name and category are required' } };
+                return errorResponse(400, 'Business name and category are required', {});
             }
 
             const vendor = await VendorService.upsertProfile(user.id, body);
 
-            return { status: 200, data: { message: 'Profile updated', vendor } };
+            return successResponse(200, 'Profile updated', {});
         } catch (error) {
             console.error('Update Profile Error:', error);
-            return { status: 500, data: { error: 'Internal Server Error' } };
+            return errorResponse(500, 'Internal Server Error', {});
         }
     }
 
@@ -165,28 +161,24 @@ class VendorController {
     async createPackage(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') {
-                return { status: 403, data: { error: 'Access denied. Vendors only.' } };
-            }
+            if (!user || user.role !== 'vendor') return errorResponse(403, 'Access denied. Vendors only.', {});
 
             const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) {
-                return { status: 400, data: { error: 'Vendor profile not completed' } };
-            }
+            if (!vendor) return errorResponse(400, 'Vendor profile not completed', {});
 
             const body = await req.json();
             const { title, price } = body;
 
             if (!title || !price) {
-                return { status: 400, data: { error: 'Package title and price are required' } };
+                return errorResponse(400, 'Package title and price are required', {});
             }
 
             const newPackage = await PackageService.createPackage(vendor._id, body);
 
-            return { status: 201, data: { message: 'Package created', package: newPackage } };
+            return successResponse(201, 'Package created', {});
         } catch (error) {
             console.error('Create Package Error:', error);
-            return { status: 500, data: { error: 'Internal Server Error' } };
+            return errorResponse(500, 'Internal Server Error', {});
         }
     }
 
@@ -194,15 +186,15 @@ class VendorController {
     async getDocuments(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            if (!user || user.role !== 'vendor') return errorResponse(403, 'Vendors only', {});
 
             const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return { status: 404, data: { error: 'Vendor profile not found' } };
+            if (!vendor) return errorResponse(404, 'Vendor profile not found', {});
 
-            return { status: 200, data: { documents: vendor.documents || {} } };
+            return successResponse(200, 'Documents retrieved', { documents: vendor.documents || {} });
         } catch (error) {
             console.error('Get Documents Error:', error);
-            return { status: 500, data: { error: 'Internal Server Error' } };
+            return errorResponse(500, 'Internal Server Error', {});
         }
     }
 
@@ -210,42 +202,42 @@ class VendorController {
     async getProfile(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            if (!user || user.role !== 'vendor') return errorResponse(403, 'Vendors only', {});
 
             const vendor = await VendorService.getFullProfile(user.id);
-            if (!vendor) return { status: 404, data: { error: 'Vendor profile not found' } };
+            if (!vendor) return errorResponse(404, 'Vendor profile not found', {});
 
-            return { status: 200, data: { profile: vendor } };
+            return successResponse(200, 'Profile retrieved', { profile: vendor });
         } catch (error) {
             console.error('Get Profile Error:', error);
-            return { status: 500, data: { error: 'Internal Server Error' } };
+            return errorResponse(500, 'Internal Server Error', {});
         }
     }
 
     // GET /vendor/categories
     async getCategories(req) {
         const categories = VendorService.getCategories();
-        return { status: 200, data: { categories } };
+        return successResponse(200, 'Categories retrieved', { categories });
     }
 
     // POST /vendor/document/delete
     async deleteDocument(req) {
-        return { status: 501, data: { error: 'Not Implemented' } };
+        return errorResponse(501, 'Not Implemented', {});
     }
 
     // POST /vendor/document/update
     async updateDocument(req) {
-        return { status: 501, data: { error: 'Not Implemented' } };
+        return errorResponse(501, 'Not Implemented', {});
     }
 
     // POST /vendor/bank/create (Multipart Form Data)
     async createBankDetails(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            if (!user || user.role !== 'vendor') return errorResponse(403, 'Vendors only', {});
 
             const formData = req.formDataBody;
-            if (!formData) return { status: 400, data: { error: 'Multipart form data required' } };
+            if (!formData) return errorResponse(400, 'Multipart form data required', {});
 
             const bankData = {};
             let cancelledChequePath = '';
@@ -277,10 +269,10 @@ class VendorController {
             }
 
             const vendor = await VendorService.upsertProfile(user.id, { bankDetails: bankData });
-            return { status: 201, data: { message: 'Bank details added successfully' } };
+            return successResponse(201, 'Bank details added successfully', {});
         } catch (error) {
             console.error('Create Bank Details Error:', error);
-            return { status: 500, data: { error: 'Internal Server Error' } };
+            return errorResponse(500, 'Internal Server Error', {});
         }
     }
 
@@ -288,15 +280,15 @@ class VendorController {
     async getBankDetails(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            if (!user || user.role !== 'vendor') return errorResponse(403, 'Vendors only', {});
 
             const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return { status: 404, data: { error: 'Vendor profile not found' } };
+            if (!vendor) return errorResponse(404, 'Vendor profile not found', {});
 
-            return { status: 200, data: { bankDetails: vendor.bankDetails || {} } };
+            return successResponse(200, 'Bank details retrieved', { bankDetails: vendor.bankDetails || {} });
         } catch (error) {
             console.error('Get Bank Details Error:', error);
-            return { status: 500, data: { error: 'Internal Server Error' } };
+            return errorResponse(500, 'Internal Server Error', {});
         }
     }
 
@@ -309,13 +301,13 @@ class VendorController {
     async deleteBankDetails(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            if (!user || user.role !== 'vendor') return errorResponse(403, 'Vendors only', {});
 
             await VendorService.upsertProfile(user.id, { bankDetails: {} });
-            return { status: 200, data: { message: 'Bank details deleted successfully' } };
+            return successResponse(200, 'Bank details deleted successfully', {});
         } catch (error) {
             console.error('Delete Bank Details Error:', error);
-            return { status: 500, data: { error: 'Internal Server Error' } };
+            return errorResponse(500, 'Internal Server Error', {});
         }
     }
 
@@ -323,10 +315,10 @@ class VendorController {
     async getPackages(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            if (!user || user.role !== 'vendor') return errorResponse(403, 'Vendors only', {});
 
             const packages = await VendorService.findByUserId(user.id);
-            if (!packages) return { status: 400, data: { error: 'Vendor profile not found' } };
+            if (!packages) return errorResponse(400, 'Vendor profile not found', {});
 
             // Get Catalog
             const catalog = await PackageService.getVendorCatalog(packages._id);
@@ -358,18 +350,15 @@ class VendorController {
             });
 
             // Return filtered view
-            return {
-                status: 200,
-                data: {
-                    catalog: {
-                        ...catalogObj,
-                        services: filteredServices
-                    }
+            return successResponse(200, 'Vendor catalog retrieved', {
+                catalog: {
+                    ...catalogObj,
+                    services: filteredServices
                 }
-            };
+            });
         } catch (error) {
             console.error('Get Vendor Catalog Error:', error);
-            return { status: 500, data: { error: 'Internal Server Error' } };
+            return errorResponse(500, 'Internal Server Error', {});
         }
     }
 
@@ -377,20 +366,20 @@ class VendorController {
     async addItem(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            if (!user || user.role !== 'vendor') return errorResponse(403, 'Vendors only', {});
             const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return { status: 400, data: { error: 'Vendor profile not found' } };
+            if (!vendor) return errorResponse(400, 'Vendor profile not found', {});
 
             const body = await req.json();
             // Expect: { category: 'homestay', item: { ... } }
             const { category, item } = body;
-            if (!category || !item) return { status: 400, data: { error: 'Category and Item data required' } };
+            if (!category || !item) return errorResponse(400, 'Category and Item data required', {});
 
             const updatedCatalog = await PackageService.addServiceItem(vendor._id, category, item);
-            return { status: 200, data: { message: 'Item added', catalog: updatedCatalog } };
+            return successResponse(200, 'Item added', { catalog: updatedCatalog });
         } catch (error) {
             console.error('Add Item Error:', error);
-            return { status: 500, data: { error: error.message } };
+            return errorResponse(500, 'Internal Server Error', {});
         }
     }
 
@@ -398,19 +387,19 @@ class VendorController {
     async updateItem(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            if (!user || user.role !== 'vendor') return errorResponse(403, 'Vendors only', {});
             const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return { status: 400, data: { error: 'Vendor profile not found' } };
+            if (!vendor) return errorResponse(400, 'Vendor profile not found', {});
 
             const body = await req.json();
             const { category, itemId, updates } = body;
-            if (!category || !itemId || !updates) return { status: 400, data: { error: 'Category, Item ID and Updates required' } };
+            if (!category || !itemId || !updates) return errorResponse(400, 'Category, Item ID and Updates required', {});
 
             const updatedCatalog = await PackageService.updateServiceItem(vendor._id, category, itemId, updates);
-            return { status: 200, data: { message: 'Item updated', catalog: updatedCatalog } };
+            return successResponse(200, 'Item updated', { catalog: updatedCatalog });
         } catch (error) {
             console.error('Update Item Error:', error);
-            return { status: 500, data: { error: error.message } };
+            return errorResponse(500, 'Internal Server Error', {});
         }
     }
 
@@ -418,19 +407,19 @@ class VendorController {
     async deleteItem(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            if (!user || user.role !== 'vendor') return errorResponse(403, 'Vendors only', {});
             const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return { status: 400, data: { error: 'Vendor profile not found' } };
+            if (!vendor) return errorResponse(400, 'Vendor profile not found', {});
 
             const body = await req.json();
             const { category, itemId } = body;
-            if (!category || !itemId) return { status: 400, data: { error: 'Category and Item ID required' } };
+            if (!category || !itemId) return errorResponse(400, 'Category and Item ID required', {});
 
             const updatedCatalog = await PackageService.removeServiceItem(vendor._id, category, itemId);
-            return { status: 200, data: { message: 'Item deleted', catalog: updatedCatalog } };
+            return successResponse(200, 'Item deleted', { catalog: updatedCatalog });
         } catch (error) {
             console.error('Delete Item Error:', error);
-            return { status: 500, data: { error: error.message } };
+            return errorResponse(500, 'Internal Server Error', {});
         }
     }
 
@@ -438,38 +427,38 @@ class VendorController {
     async toggleCategoryStatus(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            if (!user || user.role !== 'vendor') return errorResponse(403, 'Vendors only', {});
             const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return { status: 400, data: { error: 'Vendor profile not found' } };
+            if (!vendor) return errorResponse(400, 'Vendor profile not found', {});
 
             const body = await req.json();
             const { category, isActive } = body;
-            if (!category || typeof isActive !== 'boolean') return { status: 400, data: { error: 'Category and Status required' } };
+            if (!category || typeof isActive !== 'boolean') return errorResponse(400, 'Category and Status required', {});
 
             const updatedCatalog = await PackageService.toggleCategoryStatus(vendor._id, category, isActive);
-            return { status: 200, data: { message: `Category ${category} status updated`, catalog: updatedCatalog } };
+            return successResponse(200, `Category ${category} status updated`, { catalog: updatedCatalog });
         } catch (error) {
             console.error('Toggle Category Error:', error);
-            return { status: 500, data: { error: error.message } };
+            return errorResponse(500, 'Internal Server Error', {});
         }
     }
     // POST /vendor/package/toggle-item
     async toggleItemStatus(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return { status: 403, data: { error: 'Vendors only' } };
+            if (!user || user.role !== 'vendor') return errorResponse(403, 'Vendors only', {});
             const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return { status: 400, data: { error: 'Vendor profile not found' } };
+            if (!vendor) return errorResponse(400, 'Vendor profile not found', {});
 
             const body = await req.json();
             const { category, itemId, isActive } = body;
-            if (!category || !itemId || typeof isActive !== 'boolean') return { status: 400, data: { error: 'Category, Item ID and Status required' } };
+            if (!category || !itemId || typeof isActive !== 'boolean') return errorResponse(400, 'Category, Item ID and Status required', {});
 
             const updatedCatalog = await PackageService.toggleItemStatus(vendor._id, category, itemId, isActive);
-            return { status: 200, data: { message: 'Item status updated', catalog: updatedCatalog } };
+            return successResponse(200, 'Item status updated', { catalog: updatedCatalog });
         } catch (error) {
             console.error('Toggle Item Status Error:', error);
-            return { status: 500, data: { error: error.message } };
+            return errorResponse(500, 'Internal Server Error', {});
         }
     }
 }

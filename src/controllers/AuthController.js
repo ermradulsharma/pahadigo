@@ -14,46 +14,42 @@ class AuthController {
             if (phone) phone = phone.trim();
             if (role) role = role.toLowerCase().trim();
             if (!email && !phone) {
-                return { status: 400, data: { error: 'Email OR Phone is required' } };
+                return errorResponse(400, 'Email OR Phone is required', {});
             }
             if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                return { status: 400, data: { error: 'Invalid email format' } };
+                return errorResponse(400, 'Invalid email format', {});
             }
             const identifier = email || phone;
             const otp = OTPService.generateOTP(identifier, role);
-            return { status: 200, data: { message: 'OTP sent successfully', otp } };
+            return successResponse(200, 'OTP sent successfully', { otp });
         } catch (error) {
-            return { status: 500, data: { error: 'Failed to send OTP' } };
+            return errorResponse(500, 'Failed to send OTP', {});
         }
     }
 
     // POST /auth/verify (Verify OTP and Login/Signup)
     async verifyOtp(req) {
         try {
-            const body = req.jsonBody || await req.json();
+            const body = await parseBody(req);
             let { email, phone, otp, role } = body;
             if (email) email = email.toLowerCase().trim();
             if (phone) phone = phone.trim();
             if (role) role = role.toLowerCase().trim();
             const identifier = email || phone;
             if (!identifier || !otp) {
-                return { status: 400, data: { error: 'Identifier (Email/Phone) and OTP required' } };
+                return errorResponse(400, 'Identifier (Email/Phone) and OTP required', {});
             }
             const result = await AuthService.verifyAndLogin({ identifier, otp, email, phone, targetRole: role });
-            return {
-                status: 200,
-                data: {
-                    message: 'Login successful',
-                    token: result.token,
-                    role: result.role,
-                    isNewUser: result.isNewUser,
-                    vendorStatus: result.vendorStatus,
-                    vendorProfile: result.vendorProfile
-                }
-            };
+            return successResponse(200, 'Login successful', {
+                token: result.token,
+                role: result.role,
+                isNewUser: result.isNewUser,
+                vendorStatus: result.vendorStatus,
+                vendorProfile: result.vendorProfile
+            });
         } catch (error) {
             const status = error.message === 'Invalid or expired OTP' ? 400 : 500;
-            return { status, data: { error: error.message } };
+            return errorResponse(status, error.message, {});
         }
     }
 
@@ -62,12 +58,12 @@ class AuthController {
         try {
             const body = await parseBody(req);
             const { idToken, role } = body;
-            if (!idToken) return errorResponse('Google ID Token required');
+            if (!idToken) return errorResponse(400, 'Google ID Token required', {});
             const result = await AuthService.googleAuth(idToken, role);
-            return successResponse('Google Login successful', { token: result.token, isNewUser: result.isNewUser, user: result.user });
+            return successResponse(200, 'Google Login successful', { token: result.token, isNewUser: result.isNewUser, user: result.user });
         } catch (error) {
             console.error("Google Auth Error:", error);
-            return errorResponse(error.message || 'Invalid Google Token', 400);
+            return errorResponse(500, error.message || 'Invalid Google Token', {});
         }
     }
 
@@ -76,12 +72,12 @@ class AuthController {
         try {
             const body = await parseBody(req);
             const { accessToken, role } = body;
-            if (!accessToken) return errorResponse('Facebook Access Token required');
+            if (!accessToken) return errorResponse(400, 'Facebook Access Token required', {});
             const result = await AuthService.facebookAuth(accessToken, role);
-            return successResponse('Facebook Login successful', { token: result.token, isNewUser: result.isNewUser, user: result.user });
+            return successResponse(200, 'Facebook Login successful', { token: result.token, isNewUser: result.isNewUser, user: result.user });
         } catch (error) {
             console.error("Facebook Auth Error:", error);
-            return errorResponse(error.message || 'Invalid Facebook Token', 400);
+            return errorResponse(500, error.message || 'Invalid Facebook Token', {});
         }
     }
 
@@ -90,51 +86,51 @@ class AuthController {
         try {
             const body = await parseBody(req);
             const { idToken, user, email, role } = body;
-            if (!idToken) return errorResponse('Apple ID Token required');
+            if (!idToken) return errorResponse(400, 'Apple ID Token required', {});
 
             // user and email are optional fields sent by Apple client on first login
             const result = await AuthService.appleAuth(idToken, role, user, email);
-            return successResponse('Apple Login successful', { token: result.token, isNewUser: result.isNewUser, user: result.user });
+            return successResponse(200, 'Apple Login successful', { token: result.token, isNewUser: result.isNewUser, user: result.user });
         } catch (error) {
             console.error("Apple Auth Error:", error);
-            return errorResponse(error.message || 'Invalid Apple Token', 400);
+            return errorResponse(500, error.message || 'Invalid Apple Token', {});
         }
     }
 
     async logout(req) {
-        return successResponse('Logged out successfully');
+        return successResponse(200, 'Logged out successfully', {});
     }
 
     async verify(req) {
         try {
             const token = req.headers.get('authorization')?.split(' ')[1];
-            if (!token) return errorResponse('No token provided', 401);
+            if (!token) return errorResponse(401, 'No token provided', {});
             const result = await AuthService.verify(token);
-            return successResponse('Token is valid', result);
+            return successResponse(200, 'Token is valid', { result });
         } catch (error) {
-            return errorResponse(error.message, 401);
+            return errorResponse(401, error.message, {});
         }
     }
 
     async refresh(req) {
         try {
             const token = req.headers.get('authorization')?.split(' ')[1];
-            if (!token) return errorResponse('No token provided', 401);
+            if (!token) return errorResponse(401, 'No token provided', {});
             const result = await AuthService.refresh(token);
-            return successResponse('Token refreshed', result);
+            return successResponse(200, 'Token refreshed', { result });
         } catch (error) {
-            return errorResponse(error.message, 401);
+            return errorResponse(401, error.message, {});
         }
     }
 
     async me(req) {
         try {
             const token = req.headers.get('authorization')?.split(' ')[1];
-            if (!token) return errorResponse('No token provided', 401);
+            if (!token) return errorResponse(401, 'No token provided', {});
             const user = await AuthService.me(token);
-            return successResponse('User profile', { user });
+            return successResponse(200, 'User profile', { user });
         } catch (error) {
-            return errorResponse(error.message, 401);
+            return errorResponse(401, error.message, {});
         }
     }
 
@@ -142,11 +138,11 @@ class AuthController {
         try {
             const body = await parseBody(req);
             const { email } = body;
-            if (!email) return errorResponse('Email is required');
+            if (!email) return errorResponse(400, 'Email is required', {});
             await AuthService.forgetPassword(email);
-            return successResponse('Reset link sent');
+            return successResponse(200, 'Reset link sent', {});
         } catch (error) {
-            return errorResponse(error.message);
+            return errorResponse(500, error.message, {});
         }
     }
 
@@ -154,11 +150,11 @@ class AuthController {
         try {
             const body = await parseBody(req);
             const { email, password } = body;
-            if (!email || !password) return errorResponse('Email and Password required');
+            if (!email || !password) return errorResponse(400, 'Email and Password required', {});
             await AuthService.resetPassword(email, password);
-            return successResponse('Password reset successfully');
+            return successResponse(200, 'Password reset successfully', {});
         } catch (error) {
-            return errorResponse(error.message);
+            return errorResponse(500, error.message, {});
         }
     }
 
@@ -175,11 +171,11 @@ class AuthController {
             const { email, ...updates } = body;
             // Better: use req.user.email from token middleware
             // But for simple implementation assuming body has email or handled by service
-            if (!email) return errorResponse('Email required');
+            if (!email) return errorResponse(400, 'Email required', {});
             const user = await AuthService.updateProfile(email, updates);
-            return successResponse('Profile updated', { user });
+            return successResponse(200, 'Profile updated', { user });
         } catch (error) {
-            return errorResponse(error.message);
+            return errorResponse(500, error.message, {});
         }
     }
 
@@ -187,20 +183,21 @@ class AuthController {
         try {
             const body = await parseBody(req);
             const { email } = body;
-            if (!email) return errorResponse('Email required');
+            if (!email) return errorResponse(400, 'Email required', {});
             await AuthService.deleteProfile(email);
-            return successResponse('Profile deleted');
+            return successResponse(200, 'Profile deleted', {});
         } catch (error) {
-            return errorResponse(error.message);
+            return errorResponse(500, error.message, {});
         }
     }
 
     async logoutAll(req) {
-        return successResponse('Logged out from all devices');
+        return successResponse(200, 'Logged out from all devices', {});
     }
 
 
 
 }
 
-export default new AuthController();
+const authController = new AuthController();
+export default authController;
