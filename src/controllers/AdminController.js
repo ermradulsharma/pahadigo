@@ -2,7 +2,8 @@ import AdminService from '../services/AdminService.js';
 import PackageService from '../services/PackageService.js';
 import BookingService from '../services/BookingService.js';
 import Vendor from '../models/Vendor.js';
-import { errorResponse, successResponse } from '../utils/responseHandler.js';
+import { errorResponse, successResponse } from '../helpers/response.js';
+
 class AdminController {
 
     // Helper to verify admin
@@ -196,4 +197,5 @@ class AdminController {
     }
 }
 
-export default new AdminController();
+const adminController = new AdminController();
+export default adminController;

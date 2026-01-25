@@ -10,9 +10,20 @@ class AuthController {
         try {
             const body = await parseBody(req);
             let { email, phone, role } = body;
+            if (body.hasOwnProperty('email') && !body.email) {
+                return errorResponse(400, 'Email is required', {});
+            }
+            if (body.hasOwnProperty('phone') && !body.phone) {
+                return errorResponse(400, 'Phone is required', {});
+            }
+
             if (email) email = email.toLowerCase().trim();
             if (phone) phone = phone.trim();
             if (role) role = role.toLowerCase().trim();
+            if (role && !['traveller', 'vendor'].includes(role)) {
+                return errorResponse(400, 'Invalid role. Allowed: traveller, vendor', {});
+            }
+
             if (!email && !phone) {
                 return errorResponse(400, 'Email OR Phone is required', {});
             }
@@ -21,7 +32,7 @@ class AuthController {
             }
             const identifier = email || phone;
             const otp = OTPService.generateOTP(identifier, role);
-            return successResponse(200, 'OTP sent successfully', { otp });
+            return successResponse(200, 'OTP sent successfully', { otp, email, phone });
         } catch (error) {
             return errorResponse(500, 'Failed to send OTP', {});
         }
@@ -41,8 +52,8 @@ class AuthController {
             }
             const result = await AuthService.verifyAndLogin({ identifier, otp, email, phone, targetRole: role });
             return successResponse(200, 'Login successful', {
+                user: result.user,
                 token: result.token,
-                role: result.role,
                 isNewUser: result.isNewUser,
                 vendorStatus: result.vendorStatus,
                 vendorProfile: result.vendorProfile

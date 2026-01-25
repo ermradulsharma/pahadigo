@@ -21,22 +21,22 @@ const VendorSchema = new mongoose.Schema({
     },
     isApproved: { type: Boolean, default: false },
     documents: {
-        aadharCardFront: {
+        aadharCard: [{
             url: { type: String, required: true },
             status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
             reason: { type: String }
-        },
-        aadharCardBack: {
-            url: { type: String, required: true },
-            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
-            reason: { type: String }
-        },
+        }],
         panCard: {
             url: { type: String, required: true },
             status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
             reason: { type: String }
         },
         businessRegistration: {
+            url: { type: String, required: true },
+            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
+            reason: { type: String }
+        },
+        gstRegistration: {
             url: { type: String, required: true },
             status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
             reason: { type: String }
@@ -88,11 +88,6 @@ const VendorSchema = new mongoose.Schema({
         }],
         homestayRegistrationCertificate: [{
             url: { type: String },
-            status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
-            reason: { type: String }
-        }],
-        gstCertificate: [{
-            url: { type: String, required: true },
             status: { type: String, enum: ['pending', 'verified', 'rejected'], default: 'pending' },
             reason: { type: String }
         }],

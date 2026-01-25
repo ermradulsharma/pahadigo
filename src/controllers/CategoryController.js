@@ -1,6 +1,6 @@
 import CategoryService from '../services/CategoryService.js';
 import { seedCategories } from '../seeders/categorySeeder.js';
-import { errorResponse, successResponse } from '../utils/responseHandler.js';
+import { errorResponse, successResponse } from '../helpers/response.js';
 class CategoryController {
 
     // Helper to verify admin

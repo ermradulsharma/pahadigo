@@ -3,6 +3,7 @@ import PackageService from '../services/PackageService.js';
 import { successResponse, errorResponse } from '../helpers/response.js';
 import fs from 'fs';
 import path from 'path';
+import CategoryService from '../services/CategoryService.js'
 
 class VendorController {
 
@@ -21,24 +22,24 @@ class VendorController {
             for (const [key, value] of formData.entries()) {
                 if (key === 'profile_image' && value instanceof File) {
                     // Handle file upload
-                    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+                    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'profile', user.id);
                     if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
                     const fileName = `${Date.now()}-${value.name}`;
                     const filePath = path.join(uploadsDir, fileName);
                     const buffer = Buffer.from(await value.arrayBuffer());
                     fs.writeFileSync(filePath, buffer);
-                    data.profileImage = `/uploads/${fileName}`;
+                    data.profileImage = `/uploads/profile/${user.id}/${fileName}`;
                 } else if (key === 'businessRegistration' && value instanceof File) {
                     // Handle businessRegistration file upload
-                    const uploadsDir = path.join(process.cwd(), 'public', 'uploads');
+                    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'profile', user.id);
                     if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
                     const fileName = `${Date.now()}-biz-reg-${value.name}`;
                     const filePath = path.join(uploadsDir, fileName);
                     const buffer = Buffer.from(await value.arrayBuffer());
                     fs.writeFileSync(filePath, buffer);
-                    data.businessRegistration = `/uploads/${fileName}`;
+                    data.businessRegistration = `/uploads/profile/${user.id}/${fileName}`;
                 } else if (key.startsWith('businessCategory[')) {
                     businessCategory.push(value);
                 } else if (key === 'businessNumber') {
@@ -55,13 +56,25 @@ class VendorController {
             if (businessCategory.length > 0) data.category = businessCategory;
 
             if (!data.businessName || !data.category) {
-                return errorResponse('Business name and category are required', 400,);
+                return errorResponse(400, 'Business name and category are required', {});
             }
 
             const vendor = await VendorService.upsertProfile(user.id, data);
-            return successResponse('Profile created successfully', 201);
+
+            // Enrich response with Base URL
+            const baseUrl = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000';
+            const vendorObj = vendor.toObject ? vendor.toObject() : { ...vendor };
+
+            if (vendorObj.profileImage && !vendorObj.profileImage.startsWith('http')) {
+                vendorObj.profileImage = `${baseUrl}${vendorObj.profileImage}`;
+            }
+            if (vendorObj.businessRegistration && !vendorObj.businessRegistration.startsWith('http')) {
+                vendorObj.businessRegistration = `${baseUrl}${vendorObj.businessRegistration}`;
+            }
+
+            return successResponse(201, 'Profile created successfully', { vendor: vendorObj });
         } catch (error) {
-            return errorResponse(error.message, 500);
+            return errorResponse(500, error.message, {});
         }
     }
 
@@ -70,65 +83,77 @@ class VendorController {
         try {
             const user = req.user;
             if (!user || user.role !== 'vendor') return errorResponse(403, 'Vendors only', {});
-
+            const currentVendor = await VendorService.findByUserId(user.id);
             const formData = req.formDataBody;
             if (!formData) return errorResponse(400, 'Multipart form data required', {});
-
-            const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'documents');
-            if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-
+            const baseUploadsDir = path.join(process.cwd(), 'public', 'uploads', 'documents', user.id);
             const documents = {};
-            const arrayFields = [
-                'travelAgentPermit', 'passengerInsurancePolicy', 'adventureSportLicense',
-                'guidCertification', 'liabilityWaiverForm', 'safetyEmergencyPlan',
-                'riverRaftingPermit', 'technicalSafetyCertificate', 'insuranceCoverageDocument',
-                'homestayRegistrationCertificate', 'gstCertificate', 'hotelLicense',
-                'fssaiLicense', 'safetyAuditReport', 'structuralFitnessCertificate',
-                'rtoPermit', 'insuranceTaxReceipt'
-            ];
-
+            const handledDeletions = new Set();
+            const deleteOldFile = (relativeUrl) => {
+                if (!relativeUrl) return;
+                try {
+                    const cleanUrl = relativeUrl.split('?')[0];
+                    const fullPath = path.join(process.cwd(), 'public', cleanUrl);
+                    if (fs.existsSync(fullPath)) {
+                        fs.unlinkSync(fullPath);
+                    }
+                } catch (e) {
+                    console.error(`Failed to delete old file: ${relativeUrl}`, e.message);
+                }
+            };
             for (const [key, value] of formData.entries()) {
                 if (value instanceof File || (value instanceof Blob && value.name)) {
+                    let targetField = key;
+                    const arrayMatch = key.match(/^(.+)\[\d+\]$/);
+                    if (arrayMatch) {
+                        targetField = arrayMatch[1];
+                    }
+                    if (currentVendor && currentVendor.documents && !handledDeletions.has(targetField)) {
+                        const oldDoc = currentVendor.documents[targetField];
+                        if (oldDoc) {
+                            if (Array.isArray(oldDoc)) {
+                                oldDoc.forEach(doc => deleteOldFile(doc.url));
+                            } else if (oldDoc.url) {
+                                deleteOldFile(oldDoc.url);
+                            }
+                        }
+                        handledDeletions.add(targetField);
+                    }
+                    const fieldUploadsDir = path.join(baseUploadsDir, targetField);
+                    if (!fs.existsSync(fieldUploadsDir)) fs.mkdirSync(fieldUploadsDir, { recursive: true });
                     const fileName = `${Date.now()}-${value.name}`;
-                    const filePath = path.join(uploadsDir, fileName);
+                    const filePath = path.join(fieldUploadsDir, fileName);
                     const buffer = Buffer.from(await value.arrayBuffer());
                     fs.writeFileSync(filePath, buffer);
-                    const relativePath = `/uploads/documents/${fileName}`;
-
-                    // Match array fields like travelAgentPermit[0]
-                    const arrayMatch = key.match(/^(.+)\[\d+\]$/);
+                    const relativePath = `/uploads/documents/${user.id}/${targetField}/${fileName}`;
                     const docObject = {
                         url: relativePath,
                         status: 'pending',
                         reason: null
                     };
-
-                    if (arrayMatch) {
-                        const fieldName = arrayMatch[1];
-                        if (!documents[fieldName]) documents[fieldName] = [];
-                        documents[fieldName].push(docObject);
+                    if (['panCard', 'businessRegistration', 'gstRegistration'].includes(targetField)) {
+                        documents[targetField] = docObject;
                     } else {
-                        documents[key] = docObject;
+                        if (!documents[targetField]) documents[targetField] = [];
+                        documents[targetField].push(docObject);
                     }
                 }
             }
-
             if (Object.keys(documents).length === 0) {
                 return errorResponse(400, 'No files uploaded', {});
             }
-
-            const mandatoryFields = ['aadharCardFront', 'aadharCardBack', 'panCard', 'businessRegistration', 'gstCertificate'];
+            const mandatoryFields = ['aadharCard', 'panCard', 'businessRegistration', 'gstRegistration'];
             for (const field of mandatoryFields) {
                 if (!documents[field] || (Array.isArray(documents[field]) && documents[field].length === 0)) {
                     return errorResponse(400, `Mandatory document missing: ${field}`, {});
                 }
             }
-
             const vendor = await VendorService.upsertProfile(user.id, {
                 documents
             });
-            return successResponse(200, 'Documents uploaded successfully', {});
+            return successResponse(201, 'Documents uploaded successfully', {});
         } catch (error) {
+            console.error(error);
             return errorResponse(500, 'Internal Server Error', {});
         }
     }
@@ -138,21 +163,14 @@ class VendorController {
         try {
             const user = req.user;
             if (!user || user.role !== 'vendor') return errorResponse(403, 'Vendors only', {});
-
-            console.log(`[VendorController] updateProfile called by User ID: ${user.id}`);
-
             const body = req.jsonBody || await req.json();
             const { businessName, category } = body;
-
             if (!businessName || !category) {
                 return errorResponse(400, 'Business name and category are required', {});
             }
-
             const vendor = await VendorService.upsertProfile(user.id, body);
-
             return successResponse(200, 'Profile updated', {});
         } catch (error) {
-            console.error('Update Profile Error:', error);
             return errorResponse(500, 'Internal Server Error', {});
         }
     }
@@ -216,7 +234,7 @@ class VendorController {
 
     // GET /vendor/categories
     async getCategories(req) {
-        const categories = VendorService.getCategories();
+        const categories = await CategoryService.getAllCategories();
         return successResponse(200, 'Categories retrieved', { categories });
     }
 
@@ -245,14 +263,14 @@ class VendorController {
             for (const [key, value] of formData.entries()) {
                 if (key === 'cancelChequered' && value instanceof File) {
                     // fs and path imported at top
-                    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'bank');
+                    const uploadsDir = path.join(process.cwd(), 'public', 'uploads', 'bank', user.id);
                     if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
 
                     const fileName = `${Date.now()}-cheque-${value.name}`;
                     const filePath = path.join(uploadsDir, fileName);
                     const buffer = Buffer.from(await value.arrayBuffer());
                     fs.writeFileSync(filePath, buffer);
-                    cancelledChequePath = `/uploads/bank/${fileName}`;
+                    cancelledChequePath = `/uploads/bank/${user.id}/${fileName}`;
                 } else if (key === 'accountHolderName') {
                     bankData.accountHolder = value;
                 } else if (key === 'bankAccount') {
@@ -463,4 +481,5 @@ class VendorController {
     }
 }
 
-export default new VendorController();
+const vendorController = new VendorController();
+export default vendorController;
