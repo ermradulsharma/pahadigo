@@ -22,7 +22,7 @@ const routes = [
     { method: 'GET', path: '/auth/verify', handler: wrap(AuthController.verify.bind(AuthController)) },
     { method: 'GET', path: '/auth/refresh', handler: wrap(AuthController.refresh.bind(AuthController)) },
     { method: 'GET', path: '/auth/me', handler: wrap(AuthController.me.bind(AuthController)) },
-    { method: 'GET', path: '/auth/forget-password', handler: wrap(AuthController.forgetPassword.bind(AuthController)) },
+    { method: 'POST', path: '/auth/forget-password', handler: wrap(AuthController.forgetPassword.bind(AuthController)) },
     { method: 'POST', path: '/auth/reset-password', handler: wrap(AuthController.resetPassword.bind(AuthController)) },
     { method: 'POST', path: '/auth/change-password', handler: wrap(AuthController.changePassword.bind(AuthController)) },
     { method: 'POST', path: '/auth/update-profile', handler: wrap(AuthController.updateProfile.bind(AuthController)) },

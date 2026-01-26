@@ -23,7 +23,7 @@ class AuthService {
         return { vendorStatus: status, vendorProfile: profile };
     }
 
-    async loginWithPassword({ email, password }) {
+    async loginWithPassword({ email, password, rememberMe = false }) {
         const user = await User.findOne({ email }).select('+password');
         if (!user) throw new Error('Invalid credentials');
 
@@ -38,7 +38,8 @@ class AuthService {
             vendorData = await this._getVendorStatus(user);
         }
 
-        const token = generateToken({ id: user._id, role: user.role, email: user.email });
+        const tokenExpiry = rememberMe ? '30d' : '1d';
+        const token = generateToken({ id: user._id, role: user.role, email: user.email }, tokenExpiry);
         return {
             token,
             user: { ...user.toObject(), password: undefined },

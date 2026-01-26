@@ -42,10 +42,10 @@ class AuthController {
     async login(req) {
         try {
             const body = await parseBody(req);
-            const { email, password } = body;
+            const { email, password, rememberMe } = body;
             if (!email || !password) return errorResponse(400, 'Email and Password required', {});
 
-            const result = await AuthService.loginWithPassword({ email, password });
+            const result = await AuthService.loginWithPassword({ email, password, rememberMe });
             return successResponse(200, 'Login successful', result);
         } catch (error) {
             return errorResponse(401, error.message, {});

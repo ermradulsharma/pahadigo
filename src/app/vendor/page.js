@@ -11,7 +11,7 @@ function VendorDashboard() {
 
   // Fetch initial profile data if needed? 
   // currently we don't have a GET /vendor/profile, but we can assume we might add it or just submit
-  
+
   return (
     <div className="flex h-screen bg-gray-50 font-sans">
       <aside className="w-64 bg-white border-r flex flex-col shadow-sm">
@@ -44,8 +44,8 @@ function VendorDashboard() {
 function NavButton({ name, label, active, set }) {
   const isActive = active === name;
   return (
-    <button 
-      onClick={() => set(name)} 
+    <button
+      onClick={() => set(name)}
       className={`w-full text-left py-2.5 px-4 rounded-lg transition-all duration-200 ${isActive ? 'bg-indigo-50 text-indigo-700 font-semibold' : 'text-gray-600 hover:bg-gray-100 hover:pl-5'}`}
     >
       {label}
@@ -56,7 +56,7 @@ function NavButton({ name, label, active, set }) {
 function PackagesList() {
   return (
     <div className="bg-white rounded-xl shadow-sm border p-12 text-center text-gray-500">
-        <p>No packages created yet. Click "Create Package" to start.</p>
+      <p>No packages created yet. Click Create Package to start.</p>
     </div>
   );
 }
@@ -102,20 +102,20 @@ function ProfileSettings({ getAuth }) {
   return (
     <div className="bg-white rounded-xl shadow-sm border p-8 max-w-3xl">
       <form onSubmit={handleSubmit} className="space-y-8">
-        
+
         {/* Business Info */}
         <section>
           <h3 className="text-lg font-bold text-gray-800 mb-4 border-b pb-2">Business Information</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Business Name</label>
-              <input type="text" className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" 
-                value={form.businessName} onChange={e => setForm({...form, businessName: e.target.value})} />
+              <input type="text" className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={form.businessName} onChange={e => setForm({ ...form, businessName: e.target.value })} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Category</label>
-              <select className="w-full border rounded-lg p-2.5 bg-white" 
-                 value={form.category} onChange={e => setForm({...form, category: e.target.value})}>
+              <select className="w-full border rounded-lg p-2.5 bg-white"
+                value={form.category} onChange={e => setForm({ ...form, category: e.target.value })}>
                 <option>Travel Agency</option>
                 <option>Tour Guide</option>
                 <option>Hotel</option>
@@ -123,14 +123,14 @@ function ProfileSettings({ getAuth }) {
               </select>
             </div>
             <div className="md:col-span-2">
-               <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
-               <textarea className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" rows="3"
-                 value={form.description} onChange={e => setForm({...form, description: e.target.value})}></textarea>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Description</label>
+              <textarea className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" rows="3"
+                value={form.description} onChange={e => setForm({ ...form, description: e.target.value })}></textarea>
             </div>
-             <div className="md:col-span-2">
+            <div className="md:col-span-2">
               <label className="block text-sm font-medium text-gray-700 mb-1">Address</label>
-              <input type="text" className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" 
-                value={form.address} onChange={e => setForm({...form, address: e.target.value})} />
+              <input type="text" className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={form.address} onChange={e => setForm({ ...form, address: e.target.value })} />
             </div>
           </div>
         </section>
@@ -141,27 +141,27 @@ function ProfileSettings({ getAuth }) {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Account Holder Name</label>
-              <input type="text" className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" 
-                value={form.bankDetails.accountHolder} 
-                onChange={e => setForm({...form, bankDetails: { ...form.bankDetails, accountHolder: e.target.value }})} />
+              <input type="text" className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={form.bankDetails.accountHolder}
+                onChange={e => setForm({ ...form, bankDetails: { ...form.bankDetails, accountHolder: e.target.value } })} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Account Number</label>
-              <input type="text" className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" 
-                 value={form.bankDetails.accountNumber} 
-                 onChange={e => setForm({...form, bankDetails: { ...form.bankDetails, accountNumber: e.target.value }})} />
+              <input type="text" className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={form.bankDetails.accountNumber}
+                onChange={e => setForm({ ...form, bankDetails: { ...form.bankDetails, accountNumber: e.target.value } })} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">IFSC Code</label>
-              <input type="text" className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" 
-                 value={form.bankDetails.ifscCode} 
-                 onChange={e => setForm({...form, bankDetails: { ...form.bankDetails, ifscCode: e.target.value }})} />
+              <input type="text" className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={form.bankDetails.ifscCode}
+                onChange={e => setForm({ ...form, bankDetails: { ...form.bankDetails, ifscCode: e.target.value } })} />
             </div>
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Bank Name</label>
-              <input type="text" className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none" 
-                 value={form.bankDetails.bankName} 
-                 onChange={e => setForm({...form, bankDetails: { ...form.bankDetails, bankName: e.target.value }})} />
+              <input type="text" className="w-full border rounded-lg p-2.5 focus:ring-2 focus:ring-indigo-500 outline-none"
+                value={form.bankDetails.bankName}
+                onChange={e => setForm({ ...form, bankDetails: { ...form.bankDetails, bankName: e.target.value } })} />
             </div>
           </div>
         </section>

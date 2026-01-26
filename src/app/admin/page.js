@@ -1,5 +1,7 @@
-'use client';
+"use client";
 import { useEffect, useState } from 'react';
+import { getToken } from '../../helpers/authUtils';
+import Link from 'next/link';
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState({ users: 0, vendors: 0, bookings: 0, revenue: 0 });
@@ -7,7 +9,7 @@ export default function AdminDashboard() {
     useEffect(() => {
         const fetchStats = async () => {
             try {
-                const token = localStorage.getItem('token');
+                const token = getToken();
                 const res = await fetch('/api/admin/stats', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
@@ -40,8 +42,8 @@ export default function AdminDashboard() {
                 <div className="mt-8 bg-white p-6 rounded-lg shadow">
                     <h2 className="text-lg font-bold mb-4 text-gray-700">Quick Actions</h2>
                     <div className="flex gap-4">
-                        <a href="/admin/vendors" className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition">Manage Vendors</a>
-                        <a href="/admin/bookings" className="px-4 py-2 bg-purple-50 text-purple-600 rounded-md hover:bg-purple-100 transition">View Bookings</a>
+                        <Link href="/admin/vendors" className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition">Manage Vendors</Link>
+                        <Link href="/admin/bookings" className="px-4 py-2 bg-purple-50 text-purple-600 rounded-md hover:bg-purple-100 transition">View Bookings</Link>
                     </div>
                 </div>
             </div>

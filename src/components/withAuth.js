@@ -1,36 +1,32 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
+import { getToken, getRole } from '../helpers/authUtils';
 
-export default function withAuth(Component, allowedRole) {
+export default function withAuth(Component, allowedRoles = []) {
     return function ProtectedRoute(props) {
         const router = useRouter();
-        const [authorized, setAuthorized] = useState(false);
+        const [auth, setAuth] = useState(false);
 
         useEffect(() => {
-            const token = localStorage.getItem('token');
-            const role = localStorage.getItem('role');
+            const token = getToken();
+            const userRole = getRole();
 
             if (!token) {
                 router.push('/login');
-            } else if (allowedRole && role !== allowedRole) {
-                // Redirect to their appropriate dashboard if logged in but wrong role
-                if (role === 'admin') router.push('/admin');
-                else if (role === 'vendor') router.push('/vendor');
-                else router.push('/user');
             } else {
-                setAuthorized(true);
+                if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
+                    // Redirect based on actual role to prevent loop or show forbidden
+                    if (userRole === 'admin') router.push('/admin');
+                    else if (userRole === 'vendor') router.push('/vendor');
+                    else router.push('/user');
+                } else {
+                    setAuth(true);
+                }
             }
-        }, [router]);
+        }, []);
 
-        if (!authorized) {
-            return (
-                <div className="flex h-screen items-center justify-center bg-gray-50">
-                    <div className="text-gray-500 animate-pulse">Verifying Access...</div>
-                </div>
-            );
-        }
-
+        if (!auth) return null;
         return <Component {...props} />;
     };
 }
