@@ -2,6 +2,8 @@
 import { useState, useEffect } from 'react';
 
 import withAuth from '../../components/withAuth';
+import DashboardHeader from '../../components/admin/Header';
+import DashboardFooter from '../../components/admin/Footer';
 
 function VendorDashboard() {
   const [activeTab, setActiveTab] = useState('packages');
@@ -15,7 +17,7 @@ function VendorDashboard() {
   return (
     <div className="flex h-screen bg-gray-50 font-sans">
       <aside className="w-64 bg-white border-r flex flex-col shadow-sm">
-        <div className="p-6 text-2xl font-bold text-indigo-700 tracking-tight">VendorPortal</div>
+        <div className="p-6 text-2xl font-bold text-indigo-700 tracking-tight border-b h-16 flex items-center">VendorPortal</div>
         <nav className="flex-1 px-4 space-y-2 mt-4">
           <NavButton name="packages" label="My Packages" active={activeTab} set={setActiveTab} />
           <NavButton name="bookings" label="Bookings" active={activeTab} set={setActiveTab} />
@@ -23,19 +25,23 @@ function VendorDashboard() {
         </nav>
       </aside>
 
-      <main className="flex-1 p-8 overflow-y-auto">
-        <header className="flex justify-between items-center mb-8">
-          <h1 className="text-2xl font-bold text-gray-800 capitalize">{activeTab}</h1>
-          {activeTab === 'packages' && (
-            <button className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700 shadow-md transition-all">
-              Create Package
-            </button>
-          )}
-        </header>
+      <main className="flex-1 p-0 overflow-y-auto flex flex-col">
+        <DashboardHeader title="Vendor Portal" />
+        <div className="p-8 flex-1">
+          <header className="flex justify-between items-center mb-8">
+            <h1 className="text-2xl font-bold text-gray-800 capitalize">{activeTab}</h1>
+            {activeTab === 'packages' && (
+              <button className="bg-indigo-600 text-white px-5 py-2.5 rounded-lg font-medium hover:bg-indigo-700 shadow-md transition-all">
+                Create Package
+              </button>
+            )}
+          </header>
 
-        {activeTab === 'packages' && <PackagesList />}
-        {activeTab === 'bookings' && <BookingsList />}
-        {activeTab === 'profile' && <ProfileSettings getAuth={getAuth} />}
+          {activeTab === 'packages' && <PackagesList />}
+          {activeTab === 'bookings' && <BookingsList />}
+          {activeTab === 'profile' && <ProfileSettings getAuth={getAuth} />}
+        </div>
+        <DashboardFooter />
       </main>
     </div>
   );

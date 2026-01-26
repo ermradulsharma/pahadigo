@@ -1,21 +1,20 @@
 import User from '../models/User.js';
 import bcrypt from 'bcryptjs';
+import { USER_ROLES, USER_STATUS, AUTH_PROVIDERS, GENDER, SEED_ACCOUNTS } from '../constants/index.js';
 
 export const seedUsers = async () => {
     try {
-        console.log('Seeding Users...');
-
         const users = [
             {
-                name: 'System Admin',
-                email: 'admin@pahadigo.com',
+                name: `${SEED_ACCOUNTS.SUPER_ADMIN.FIRST_NAME} ${SEED_ACCOUNTS.SUPER_ADMIN.LAST_NAME}`,
+                email: SEED_ACCOUNTS.SUPER_ADMIN.EMAIL,
                 password: await bcrypt.hash('password', 10),
-                role: 'admin',
-                authProvider: 'local',
+                role: USER_ROLES.ADMIN,
+                authProvider: AUTH_PROVIDERS.LOCAL,
                 isVerified: true,
-                status: 'active',
+                status: USER_STATUS.ACTIVE,
                 phone: '1111111111',
-                gender: 'other',
+                gender: GENDER.OTHER,
                 dateOfBirth: new Date('1990-01-01'),
                 address: {
                     line1: 'HQ',
@@ -26,15 +25,15 @@ export const seedUsers = async () => {
                 }
             },
             {
-                name: 'Lead Developer',
-                email: 'dev@pahadigo.com',
+                name: `${SEED_ACCOUNTS.DEVELOPER.FIRST_NAME} ${SEED_ACCOUNTS.DEVELOPER.LAST_NAME}`,
+                email: SEED_ACCOUNTS.DEVELOPER.EMAIL,
                 password: await bcrypt.hash('password', 10),
-                role: 'admin', // Developer as admin as requested
-                authProvider: 'local',
+                role: USER_ROLES.ADMIN, // Developer as admin as requested
+                authProvider: AUTH_PROVIDERS.LOCAL,
                 isVerified: true,
-                status: 'active',
+                status: USER_STATUS.ACTIVE,
                 phone: '2222222222',
-                gender: 'male',
+                gender: GENDER.MALE,
                 address: {
                     line1: 'Tech Park',
                     city: 'Bangalore',
@@ -46,12 +45,12 @@ export const seedUsers = async () => {
             {
                 name: 'Partner Vendor',
                 phone: '9876543210',
-                role: 'vendor',
-                authProvider: 'phone',
+                role: USER_ROLES.VENDOR,
+                authProvider: AUTH_PROVIDERS.PHONE,
                 isVerified: true,
-                status: 'active',
+                status: USER_STATUS.ACTIVE,
                 email: 'vendor@pahadigo.com', // Optional but good for record
-                gender: 'female',
+                gender: GENDER.FEMALE,
                 address: {
                     line1: 'Market Road',
                     city: 'Manali',
@@ -67,10 +66,10 @@ export const seedUsers = async () => {
             {
                 name: 'Happy Traveller',
                 email: 'traveller@gmail.com',
-                role: 'traveller',
-                authProvider: 'phone',
+                role: USER_ROLES.TRAVELLER,
+                authProvider: AUTH_PROVIDERS.PHONE,
                 isVerified: true,
-                status: 'active',
+                status: USER_STATUS.ACTIVE,
                 phone: '9998887776',
                 preferences: {
                     language: 'en',
@@ -84,10 +83,8 @@ export const seedUsers = async () => {
         ];
 
         await User.insertMany(users);
-        console.log('Users seeded successfully.');
         return { count: users.length };
     } catch (error) {
-        console.error('Error seeding users:', error);
         throw error;
     }
 };

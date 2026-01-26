@@ -8,7 +8,8 @@
     "build": "next build",
     "start": "next start",
     "lint": "eslint",
-    "test": "jest --detectOpenHandles"
+    "test": "jest --detectOpenHandles",
+    "seed": "node src/seeders/resetAndSeed.js"
   },
   "dependencies": {
     "@tailwindcss/postcss": "^4.1.17",

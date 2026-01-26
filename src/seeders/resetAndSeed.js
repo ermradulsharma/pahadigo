@@ -5,6 +5,7 @@ import path from 'path';
 import { seedCategories } from './categorySeeder.js';
 import { seedServiceDocuments } from './ServiceDocumentSeeder.js';
 import { seedUsers } from './userSeeder.js';
+import { seedSettings } from './SettingSeeder.js';
 
 // Simple .env parser since we can't assume dotenv is installed/loadable in standalone script context easily without args
 const loadEnv = () => {
@@ -57,6 +58,9 @@ const resetAndSeed = async () => {
 
     const userResults = await seedUsers();
     console.log('User Seed Result:', JSON.stringify(userResults, null, 2));
+
+    const settingResults = await seedSettings();
+    console.log('Setting Seed Result:', JSON.stringify(settingResults, null, 2));
 
     console.log('Process complete.');
     process.exit(0);

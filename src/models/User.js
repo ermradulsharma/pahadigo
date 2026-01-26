@@ -1,13 +1,14 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
+import { USER_ROLES, AUTH_PROVIDERS, USER_STATUS, DEFAULTS } from '../constants/index.js';
 
 const UserSchema = new mongoose.Schema({
     name: { type: String },
     email: { type: String, lowercase: true, trim: true },
     phone: { type: String, trim: true },
-    role: { type: String, enum: ['admin', 'vendor', 'traveller'], default: 'traveller' },
+    role: { type: String, enum: Object.values(USER_ROLES), default: DEFAULTS.USER_ROLE },
     password: { type: String, select: false },
-    authProvider: { type: String, enum: ['local', 'google', 'phone', 'facebook', 'apple'], default: 'phone' },
+    authProvider: { type: String, enum: Object.values(AUTH_PROVIDERS), default: DEFAULTS.AUTH_PROVIDER },
     googleId: { type: String, sparse: true, unique: true },
     facebookId: { type: String, sparse: true, unique: true },
     appleId: { type: String, sparse: true, unique: true },
@@ -18,15 +19,15 @@ const UserSchema = new mongoose.Schema({
         line1: String,
         city: String,
         state: String,
-        country: { type: String, default: 'India' },
+        country: { type: String, default: DEFAULTS.COUNTRY },
         pincode: String
     },
     preferences: {
-        language: { type: String, default: 'en' },
+        language: { type: String, default: DEFAULTS.LANGUAGE },
         notifications: {
-            email: { type: Boolean, default: true },
-            sms: { type: Boolean, default: true },
-            push: { type: Boolean, default: true }
+            email: { type: Boolean, default: DEFAULTS.NOTIFICATIONS.EMAIL },
+            sms: { type: Boolean, default: DEFAULTS.NOTIFICATIONS.SMS },
+            push: { type: Boolean, default: DEFAULTS.NOTIFICATIONS.PUSH }
         }
     },
 
@@ -40,8 +41,8 @@ const UserSchema = new mongoose.Schema({
     isVerified: { type: Boolean, default: false },
     status: {
         type: String,
-        enum: ['pending', 'active', 'blocked'],
-        default: 'pending'
+        enum: Object.values(USER_STATUS),
+        default: DEFAULTS.USER_STATUS
     },
     lastLoginAt: Date,
     termsAcceptedAt: Date,
