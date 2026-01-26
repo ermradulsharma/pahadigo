@@ -66,6 +66,7 @@ const routes = [
     { method: 'GET', path: '/admin/stats', handler: wrap(AdminController.getStats.bind(AdminController)), middleware: ['auth'] },
     { method: 'GET', path: '/admin/bookings', handler: wrap(AdminController.getBookings.bind(AdminController)), middleware: ['auth'] },
     { method: 'GET', path: '/admin/vendors', handler: wrap(AdminController.getVendors.bind(AdminController)), middleware: ['auth'] },
+    { method: 'GET', path: '/admin/travellers', handler: wrap(AdminController.getTravellers.bind(AdminController)), middleware: ['auth'] },
     { method: 'POST', path: '/admin/approve-vendor', handler: wrap(AdminController.approveVendor.bind(AdminController)), middleware: ['auth'] },
     { method: 'POST', path: '/admin/add-package', handler: wrap(AdminController.addPackageOnBehalf.bind(AdminController)), middleware: ['auth'] },
     { method: 'POST', path: '/admin/payout', handler: wrap(AdminController.markPayout.bind(AdminController)), middleware: ['auth'] },

@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
+import { getToken } from '../../../helpers/authUtils';
 
 export default function VendorsPage() {
     const [vendors, setVendors] = useState([]);
@@ -8,13 +9,13 @@ export default function VendorsPage() {
 
     const getVendors = useCallback(async () => {
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             const res = await fetch('/api/admin/vendors', {
                 headers: { 'Authorization': 'Bearer ' + token }
             });
             if (res.ok) {
                 const data = await res.json();
-                return data.vendors || [];
+                return data.data?.vendors || [];
             }
         } catch (e) { console.error(e); }
         return [];
@@ -32,21 +33,6 @@ export default function VendorsPage() {
         load();
         return () => { mounted = false; };
     }, [getVendors]);
-
-    const approveVendor = async (id) => {
-        try {
-            const token = localStorage.getItem('token');
-            const res = await fetch('/api/admin/approve-vendor', {
-                method: 'POST',
-                headers: { 'Authorization': 'Bearer ' + token },
-                body: JSON.stringify({ vendorId: id, status: 'verified' }) // Using generic status
-            });
-            if (res.ok) {
-                const data = await getVendors();
-                setVendors(data);
-            }
-        } catch (e) { console.error(e); }
-    };
 
     if (loading) return <div className="p-8 text-center text-gray-500">Loading Vendors...</div>;
 
@@ -80,6 +66,9 @@ export default function VendorsPage() {
                                     <td className="p-4">
                                         <div className="font-bold text-gray-900">{v.businessName || 'Unnamed Business'}</div>
                                         <div className="text-xs text-gray-500">ID: {v._id}</div>
+                                        {!v.hasProfile && (
+                                            <span className="text-[10px] bg-yellow-100 text-yellow-800 px-1 rounded">Profile Pending</span>
+                                        )}
                                     </td>
                                     <td className="p-4 text-sm">
                                         <div className="flex items-center gap-2 text-gray-700">
@@ -113,21 +102,17 @@ export default function VendorsPage() {
                                         )}
                                     </td>
                                     <td className="p-4 text-right">
-                                        <div className="flex justify-end gap-2">
+                                        <div className="flex justify-end">
                                             <Link
                                                 href={`/admin/vendors/${v._id}`}
-                                                className="px-3 py-1.5 bg-white border border-gray-300 text-gray-700 rounded-md text-sm font-medium hover:bg-gray-50 shadow-sm transition"
+                                                className={`group flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-bold transition-all duration-200 ${v.hasProfile
+                                                    ? 'bg-indigo-600 text-white hover:bg-indigo-700 shadow-md hover:shadow-lg'
+                                                    : 'bg-amber-50 text-amber-700 border border-amber-100 hover:bg-amber-100'
+                                                    }`}
                                             >
-                                                Details
+                                                <span>{v.hasProfile ? 'Review & Approve' : 'View User Info'}</span>
+                                                <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" /></svg>
                                             </Link>
-                                            {!v.isApproved && (
-                                                <button
-                                                    onClick={() => approveVendor(v._id)}
-                                                    className="px-3 py-1.5 bg-indigo-600 text-white rounded-md text-sm font-medium hover:bg-indigo-700 shadow-sm transition"
-                                                >
-                                                    Fast Approve
-                                                </button>
-                                            )}
                                         </div>
                                     </td>
                                 </tr>

@@ -1,24 +1,41 @@
 import User from '../models/User.js';
 import Vendor from '../models/Vendor.js';
 import Booking from '../models/Booking.js';
+import Package from '../models/Package.js';
+import Category from '../models/Category.js';
 
 class AdminService {
     async getDashboardStats() {
-        const [userCount, vendorCount, bookingCount, revenue] = await Promise.all([
-            User.countDocuments({ role: 'user' }),
-            Vendor.countDocuments(),
+        const [userCount, vendorCount, verifiedVendorCount, pendingVendorCount, bookingCount, packageCount, categoryCount, revenue, recentBookings, recentVendors] = await Promise.all([
+            User.countDocuments({ role: 'traveller' }),
+            User.countDocuments({ role: 'vendor' }),
+            Vendor.countDocuments({ isApproved: true }),
+            Vendor.countDocuments({ isApproved: false }),
             Booking.countDocuments(),
+            Package.countDocuments(),
+            Category.countDocuments(),
             Booking.aggregate([
                 { $match: { paymentStatus: 'paid', refundStatus: 'none' } },
                 { $group: { _id: null, total: { $sum: '$totalPrice' } } }
-            ])
+            ]),
+            Booking.find().sort({ bookingDate: -1 }).limit(5)
+                .populate('user', 'name')
+                .populate({ path: 'package', select: 'title' }),
+            Vendor.find().sort({ createdAt: -1 }).limit(5)
+                .populate('user', 'email')
         ]);
 
         return {
             users: userCount,
-            vendors: vendorCount,
+            totalVendors: vendorCount,
+            vendors: verifiedVendorCount,
+            pendingVendors: pendingVendorCount,
             bookings: bookingCount,
-            revenue: revenue[0] ? revenue[0].total : 0
+            packages: packageCount,
+            categories: categoryCount,
+            revenue: revenue[0] ? revenue[0].total : 0,
+            recentBookings,
+            recentVendors
         };
     }
 
@@ -33,7 +50,28 @@ class AdminService {
     }
 
     async getAllVendors() {
-        return await Vendor.find().populate('user', 'email phone');
+        const users = await User.find({ role: 'vendor' }).select('name email phone createdAt');
+        const profiles = await Vendor.find().lean();
+
+        return users.map(u => {
+            const profile = profiles.find(p => p.user?.toString() === u._id.toString());
+            if (profile) {
+                return { ...profile, user: u, hasProfile: true };
+            }
+            return {
+                _id: u._id,
+                user: u,
+                businessName: 'Profile Pending',
+                isApproved: false,
+                category: [],
+                hasProfile: false,
+                createdAt: u.createdAt
+            };
+        });
+    }
+
+    async getAllTravellers() {
+        return await User.find({ role: 'traveller' }).select('name email phone createdAt isVerified status');
     }
 
     async approveVendor(vendorId) {

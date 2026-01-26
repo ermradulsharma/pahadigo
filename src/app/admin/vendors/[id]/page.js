@@ -1,6 +1,7 @@
 'use client';
 import { useEffect, useState, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
+import { getToken } from '../../../../helpers/authUtils';
 
 export default function VendorDetailsPage({ params }) {
     // Unwrapping params using React.use() as per recent Next.js patterns or just use(params)
@@ -19,13 +20,14 @@ export default function VendorDetailsPage({ params }) {
     useEffect(() => {
         const fetchVendor = async () => {
             try {
-                const token = localStorage.getItem('token');
+                const token = getToken(); // Use utility
                 const res = await fetch('/api/admin/vendors', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
                 if (res.ok) {
                     const data = await res.json();
-                    const found = data.vendors.find(v => v._id === id);
+                    const vendors = data.data?.vendors || [];
+                    const found = vendors.find(v => v._id === id);
                     if (found) setVendor(found);
                 }
             } catch (e) { console.error(e); }
@@ -36,7 +38,7 @@ export default function VendorDetailsPage({ params }) {
 
     const verifyDocument = async (field, status, reason = '', index = null) => {
         try {
-            const token = localStorage.getItem('token');
+            const token = getToken();
             const body = { vendorId: id, documentField: field, status, reason, index };
 
             const res = await fetch('/api/admin/verify-document', {
@@ -55,22 +57,89 @@ export default function VendorDetailsPage({ params }) {
         } catch (e) { console.error(e); }
     };
 
+    const toggleGlobalApproval = async (status) => {
+        const confirmMsg = status === 'verified' ? 'Approve this vendor profile?' : 'Reject this vendor profile?';
+        let rejectReason = '';
+        if (status === 'rejected') {
+            rejectReason = prompt('Enter rejection reason:');
+            if (!rejectReason) return;
+        } else if (!confirm(confirmMsg)) {
+            return;
+        }
+
+        try {
+            const token = getToken();
+            const res = await fetch('/api/admin/approve-vendor', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    vendorId: id,
+                    status,
+                    rejectionReason: rejectReason
+                })
+            });
+
+            if (res.ok) {
+                setRefreshKey(old => old + 1);
+            } else {
+                alert('Failed to update profile status');
+            }
+        } catch (e) {
+            console.error(e);
+        }
+    };
+
     if (loading) return <div className="p-10 text-center">Loading Vendor Details...</div>;
     if (!vendor) return <div className="p-10 text-center text-red-500">Vendor not found</div>;
 
     return (
         <>
-            <header className="bg-white shadow p-6 mb-6 flex justify-between">
+            <header className="bg-white shadow p-6 mb-6 flex justify-between items-center">
                 <div>
-                    <button onClick={() => router.back()} className="text-sm text-gray-500 hover:text-gray-800 mb-2">← Back to Vendors</button>
-                    <h1 className="text-2xl font-bold text-gray-800">{vendor.businessName}</h1>
+                    <button onClick={() => router.back()} className="text-sm text-indigo-600 font-medium hover:text-indigo-800 mb-2 flex items-center gap-1">
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
+                        Back to List
+                    </button>
+                    <h1 className="text-2xl font-bold text-gray-800 flex items-center gap-3">
+                        {vendor.businessName}
+                        {!vendor.isApproved && <span className="text-[11px] bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full uppercase tracking-wider font-bold">Needs Review</span>}
+                    </h1>
                     <p className="text-gray-500">{vendor.user?.email}</p>
                 </div>
-                <div className="text-right">
-                    <div className="text-sm text-gray-500">Global Status</div>
-                    <div className={`font-bold text-lg ${vendor.isApproved ? 'text-green-600' : 'text-yellow-600'}`}>
-                        {vendor.isApproved ? 'Approved' : 'Pending Review'}
-                    </div>
+
+                <div className="flex gap-3">
+                    {!vendor.isApproved ? (
+                        <div className="flex gap-2">
+                            <button
+                                onClick={() => toggleGlobalApproval('rejected')}
+                                className="px-5 py-2.5 bg-red-50 text-red-700 border border-red-100 rounded-lg text-sm font-bold hover:bg-red-100 transition shadow-sm"
+                            >
+                                Reject Profile
+                            </button>
+                            <button
+                                onClick={() => toggleGlobalApproval('verified')}
+                                className="px-5 py-2.5 bg-indigo-600 text-white rounded-lg text-sm font-bold hover:bg-indigo-700 transition shadow-md"
+                            >
+                                Approve Business
+                            </button>
+                        </div>
+                    ) : (
+                        <div className="text-right">
+                            <span className="inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-bold bg-green-100 text-green-800 border border-green-200">
+                                <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" /></svg>
+                                Profile Verified
+                            </span>
+                            <button
+                                onClick={() => toggleGlobalApproval('rejected')}
+                                className="block mt-2 text-xs text-red-500 hover:underline mx-auto"
+                            >
+                                Revoke Approval
+                            </button>
+                        </div>
+                    )}
                 </div>
             </header>
 

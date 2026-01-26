@@ -54,6 +54,19 @@ class AdminController {
         }
     }
 
+    // GET /admin/travellers
+    async getTravellers(req) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
+
+            const travellers = await AdminService.getAllTravellers();
+            return successResponse(200, 'Travellers retrieved successfully', { travellers });
+        } catch (error) {
+            console.error('Admin Travellers Error:', error);
+            return errorResponse(500, 'Internal Server Error', {});
+        }
+    }
+
     // POST /admin/approve-vendor
     async approveVendor(req) {
         try {

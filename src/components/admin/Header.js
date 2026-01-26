@@ -41,7 +41,6 @@ export default function Header({ title }) {
                 {/* Mobile Menu Trigger could go here */}
                 <h2 className="text-xl font-semibold text-gray-800 tracking-tight">{title || 'Dashboard'}</h2>
             </div>
-
             <div className="relative" ref={dropdownRef}>
                 <button onClick={() => setIsDropdownOpen(!isDropdownOpen)} className="flex items-center gap-3 hover:bg-gray-50 p-2 rounded-lg transition-colors focus:outline-none group">
                     <div className="h-10 w-10 bg-indigo-100 rounded-full flex items-center justify-center text-indigo-600 font-bold border border-indigo-200 group-hover:bg-indigo-200 transition-colors">
