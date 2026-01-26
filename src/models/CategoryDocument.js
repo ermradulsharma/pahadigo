@@ -19,7 +19,7 @@ const CategoryDocumentSchema = new mongoose.Schema({
     },
     isMandatory: {
         type: Boolean,
-        default: true
+        default: false
     }
 }, { timestamps: true });
 
