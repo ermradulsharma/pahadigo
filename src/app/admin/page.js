@@ -43,6 +43,7 @@ export default function AdminDashboard() {
                     <h2 className="text-lg font-bold mb-4 text-gray-700">Quick Actions</h2>
                     <div className="flex gap-4">
                         <Link href="/admin/vendors" className="px-4 py-2 bg-indigo-50 text-indigo-600 rounded-md hover:bg-indigo-100 transition">Manage Vendors</Link>
+                        <Link href="/admin/categories" className="px-4 py-2 bg-pink-50 text-pink-600 rounded-md hover:bg-pink-100 transition">Manage Categories</Link>
                         <Link href="/admin/bookings" className="px-4 py-2 bg-purple-50 text-purple-600 rounded-md hover:bg-purple-100 transition">View Bookings</Link>
                     </div>
                 </div>
