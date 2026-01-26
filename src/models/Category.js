@@ -23,8 +23,8 @@ const CategorySchema = new mongoose.Schema({
 }, { timestamps: true });
 
 // Pre-save middleware to generate slug if not provided
-CategorySchema.pre('save', function (next) {
-    if (!this.isModified('name') && !this.isNew) return next();
+CategorySchema.pre('save', async function () {
+    if (!this.isModified('name') && !this.isNew) return;
 
     if (!this.slug) {
         this.slug = this.name
@@ -32,7 +32,6 @@ CategorySchema.pre('save', function (next) {
             .replace(/[^a-z0-9]+/g, '-')
             .replace(/(^-|-$)+/g, '');
     }
-    next();
 });
 
 export default mongoose.models.Category || mongoose.model('Category', CategorySchema);
