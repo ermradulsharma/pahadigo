@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { getToken } from '../../../helpers/authUtils';
 
 export default function ServicesPage() {
@@ -15,29 +15,45 @@ export default function ServicesPage() {
         isMandatory: true
     });
 
-    useEffect(() => {
-        fetchServices();
-        fetchCategories();
-    }, []);
+    // Pagination State
+    const [page, setPage] = useState(1);
+    const [totalPages, setTotalPages] = useState(1);
+    const [limit] = useState(10);
 
-    const fetchServices = async () => {
+    const fetchServices = useCallback(async () => {
         try {
             const token = getToken();
-            const res = await fetch('/api/admin/category-documents', {
+            const res = await fetch(`/api/admin/category-documents?page=${page}&limit=${limit}`, {
                 headers: { 'Authorization': 'Bearer ' + token }
             });
             const data = await res.json();
-            if (data.success) {
-                setServices(data.data || []);
+            console.log('API Response:', data); // Debug log
+
+            if (data && data.success) {
+                if (data.data) {
+                    if (data.data.docs && Array.isArray(data.data.docs)) {
+                        setServices(data.data.docs);
+                        setTotalPages(data.data.totalPages || 1);
+                    } else if (Array.isArray(data.data)) {
+                        setServices(data.data);
+                    } else {
+                        console.warn('Unexpected data structure:', data.data);
+                        setServices([]);
+                    }
+                } else {
+                    setServices([]);
+                }
+            } else {
+                console.error('API Error:', data?.error || 'Unknown error');
             }
         } catch (error) {
             console.error('Error fetching services:', error);
         } finally {
             setLoading(false);
         }
-    };
+    }, [page, limit]);
 
-    const fetchCategories = async () => {
+    const fetchCategories = useCallback(async () => {
         try {
             // Using public endpoint for categories
             const res = await fetch('/api/categories');
@@ -48,7 +64,12 @@ export default function ServicesPage() {
         } catch (error) {
             console.error('Error fetching categories:', error);
         }
-    };
+    }, []);
+
+    useEffect(() => {
+        fetchServices();
+        fetchCategories();
+    }, [fetchServices, fetchCategories]);
 
     const handleNameChange = (e) => {
         const name = e.target.value;
@@ -61,9 +82,7 @@ export default function ServicesPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const url = editingService
-                ? `/api/admin/services/${editingService._id}`
-                : '/api/admin/services';
+            const url = editingService ? `/api/admin/services/${editingService._id}` : '/api/admin/services';
             const method = editingService ? 'PUT' : 'POST';
 
             const token = getToken();
@@ -133,15 +152,9 @@ export default function ServicesPage() {
     return (
         <div className="p-8">
             <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">Category Services (Documents)</h1>
-                <button
-                    onClick={() => openModal()}
-                    className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition"
-                >
-                    Add New Service
-                </button>
+                <h1 className="text-2xl font-bold text-gray-800">Category Documents</h1>
+                <button onClick={() => openModal()} className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">Add New Document</button>
             </div>
-
             <div className="bg-white rounded-lg shadow overflow-hidden">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
@@ -157,39 +170,32 @@ export default function ServicesPage() {
                         {loading ? (
                             <tr><td colSpan="5" className="text-center py-4">Loading...</td></tr>
                         ) : services.length === 0 ? (
-                            <tr><td colSpan="5" className="text-center py-4">No services found</td></tr>
+                            <tr><td colSpan="5" className="text-center py-4">No documents found</td></tr>
                         ) : (
                             services.map((service) => (
                                 <tr key={service._id}>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{service.name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{service.slug}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                                        <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">
-                                            {service.category_slug}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">
-                                        {service.isMandatory ? 'Yes' : 'No'}
-                                    </td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">{service.category_slug}</span></td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">{service.isMandatory ? 'Yes' : 'No'}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <button
-                                            onClick={() => openModal(service)}
-                                            className="text-indigo-600 hover:text-indigo-900 mr-4"
-                                        >
-                                            Edit
-                                        </button>
-                                        <button
-                                            onClick={() => handleDelete(service._id)}
-                                            className="text-red-600 hover:text-red-900"
-                                        >
-                                            Delete
-                                        </button>
+                                        <button onClick={() => openModal(service)} className="text-indigo-600 hover:text-indigo-900 mr-4">Edit</button>
+                                        <button onClick={() => handleDelete(service._id)} className="text-red-600 hover:text-red-900">Delete</button>
                                     </td>
                                 </tr>
                             ))
                         )}
                     </tbody>
                 </table>
+            </div>
+
+            {/* Pagination Controls */}
+            <div className="flex justify-between items-center mt-4">
+                <div className="text-gray-600 text-sm">Page {page} of {totalPages}</div>
+                <div className="flex gap-2">
+                    <button onClick={() => setPage(prev => Math.max(prev - 1, 1))} disabled={page === 1} className={`px-3 py-1 rounded-md text-sm font-medium ${page === 1 ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'}`}>Previous</button>
+                    <button onClick={() => setPage(prev => Math.min(prev + 1, totalPages))} disabled={page === totalPages} className={`px-3 py-1 rounded-md text-sm font-medium ${page === totalPages ? 'bg-gray-100 text-gray-400' : 'bg-white text-gray-700 hover:bg-gray-50 border border-gray-300'}`}>Next</button>
+                </div>
             </div>
 
             {isModalOpen && (
@@ -199,12 +205,7 @@ export default function ServicesPage() {
                         <form onSubmit={handleSubmit}>
                             <div className="mb-4">
                                 <label className="block text-gray-700 text-sm font-bold mb-2">Category</label>
-                                <select
-                                    value={formData.category_slug}
-                                    onChange={(e) => setFormData({ ...formData, category_slug: e.target.value })}
-                                    className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                    required
-                                >
+                                <select value={formData.category_slug} onChange={(e) => setFormData({ ...formData, category_slug: e.target.value })} className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required>
                                     <option value="">Select Category</option>
                                     {categories.map(cat => (
                                         <option key={cat._id} value={cat.slug}>{cat.name}</option>
@@ -213,49 +214,21 @@ export default function ServicesPage() {
                             </div>
                             <div className="mb-4">
                                 <label className="block text-gray-700 text-sm font-bold mb-2">Name</label>
-                                <input
-                                    type="text"
-                                    value={formData.name}
-                                    onChange={handleNameChange}
-                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                    required
-                                />
+                                <input type="text" value={formData.name} onChange={handleNameChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required />
                             </div>
                             <div className="mb-4">
                                 <label className="block text-gray-700 text-sm font-bold mb-2">Slug</label>
-                                <input
-                                    type="text"
-                                    value={formData.slug}
-                                    onChange={(e) => setFormData({ ...formData, slug: e.target.value })}
-                                    className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"
-                                    required
-                                />
+                                <input type="text" value={formData.slug} onChange={(e) => setFormData({ ...formData, slug: e.target.value })} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" required />
                             </div>
                             <div className="mb-4">
                                 <label className="flex items-center">
-                                    <input
-                                        type="checkbox"
-                                        checked={formData.isMandatory}
-                                        onChange={(e) => setFormData({ ...formData, isMandatory: e.target.checked })}
-                                        className="form-checkbox h-5 w-5 text-indigo-600"
-                                    />
+                                    <input type="checkbox" checked={formData.isMandatory} onChange={(e) => setFormData({ ...formData, isMandatory: e.target.checked })} className="form-checkbox h-5 w-5 text-indigo-600" />
                                     <span className="ml-2 text-gray-700">Is Mandatory?</span>
                                 </label>
                             </div>
                             <div className="flex justify-end gap-2">
-                                <button
-                                    type="button"
-                                    onClick={closeModal}
-                                    className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                                >
-                                    Cancel
-                                </button>
-                                <button
-                                    type="submit"
-                                    className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
-                                >
-                                    Save
-                                </button>
+                                <button type="button" onClick={closeModal} className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Cancel</button>
+                                <button type="submit" className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Save</button>
                             </div>
                         </form>
                     </div>

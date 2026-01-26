@@ -7,11 +7,13 @@ export async function GET(request) {
         await connectDB();
         const { searchParams } = new URL(request.url);
         const category_slug = searchParams.get('category_slug');
+        const page = parseInt(searchParams.get('page')) || 1;
+        const limit = parseInt(searchParams.get('limit')) || 10;
 
         const filter = {};
         if (category_slug) filter.category_slug = category_slug;
 
-        const documents = await categoryDocumentService.getAll(filter);
+        const documents = await categoryDocumentService.getAll(filter, page, limit);
         return NextResponse.json({ success: true, data: documents });
     } catch (error) {
         return NextResponse.json({ success: false, error: error.message }, { status: 500 });

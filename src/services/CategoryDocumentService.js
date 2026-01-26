@@ -11,9 +11,23 @@ class CategoryDocumentService {
         }
     }
 
-    async getAll(filter = {}) {
+    async getAll(filter = {}, page = 1, limit = 10) {
         try {
-            return await CategoryDocument.find(filter).sort({ category_slug: 1, name: 1 });
+            const skip = (page - 1) * limit;
+            const docs = await CategoryDocument.find(filter)
+                .sort({ category_slug: 1, name: 1 })
+                .skip(skip)
+                .limit(limit);
+
+            const totalDocs = await CategoryDocument.countDocuments(filter);
+
+            return {
+                docs,
+                totalDocs,
+                limit,
+                page,
+                totalPages: Math.ceil(totalDocs / limit)
+            };
         } catch (error) {
             throw error;
         }
