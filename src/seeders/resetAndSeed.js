@@ -1,9 +1,8 @@
-
 import mongoose from 'mongoose';
 import fs from 'fs';
 import path from 'path';
 import { seedCategories } from './categorySeeder.js';
-import { seedServiceDocuments } from './ServiceDocumentSeeder.js';
+import { seedCategoryDocuments } from './CategoryDocumentSeeder.js';
 import { seedUsers } from './userSeeder.js';
 import { seedSettings } from './SettingSeeder.js';
 
@@ -53,8 +52,8 @@ const resetAndSeed = async () => {
     const results = await seedCategories();
     console.log('Category Seed Result:', JSON.stringify(results, null, 2));
 
-    const docResults = await seedServiceDocuments();
-    console.log('Service Document Seed Result:', JSON.stringify(docResults, null, 2));
+    const docResults = await seedCategoryDocuments();
+    console.log('Category Document Seed Result:', JSON.stringify(docResults, null, 2));
 
     const userResults = await seedUsers();
     console.log('User Seed Result:', JSON.stringify(userResults, null, 2));

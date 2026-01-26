@@ -1,5 +1,5 @@
 import mongoose from "mongoose";
-import ServiceDocument from "../models/ServiceDocument.js";
+import CategoryDocument from "../models/CategoryDocument.js";
 
 const slugify = (text) => {
     return text.toString().toLowerCase()
@@ -130,24 +130,41 @@ const DATA = [
     }
 ];
 
-export const seedServiceDocuments = async () => {
+export const seedCategoryDocuments = async () => {
     for (const service of DATA) {
         for (const docName of service.documents) {
-            await ServiceDocument.updateOne(
-                {
-                    category_slug: service.category_slug,
-                    name: docName
-                },
-                {
+            // Check if document already exists for this category
+            let document = await CategoryDocument.findOne({
+                category_slug: service.category_slug,
+                name: docName
+            });
+
+            if (document) {
+                // Update existing
+                document.isMandatory = false;
+                await document.save();
+            } else {
+                // Create new with unique slug logic
+                let baseSlug = slugify(docName);
+                let uniqueSlug = baseSlug;
+                let counter = 2;
+
+                while (true) {
+                    const existingSlugDoc = await CategoryDocument.findOne({ slug: uniqueSlug });
+                    if (!existingSlugDoc) break; // Slug is free
+                    uniqueSlug = `${baseSlug}-${counter}`;
+                    counter++;
+                }
+
+                await CategoryDocument.create({
                     category_slug: service.category_slug,
                     name: docName,
-                    slug: slugify(docName),
-                    isMandatory: true
-                },
-                { upsert: true }
-            );
+                    slug: uniqueSlug,
+                    isMandatory: false
+                });
+            }
         }
     }
 
-    console.log("✅ Service documents seeded successfully");
+    console.log("✅ Category documents seeded successfully");
 };
