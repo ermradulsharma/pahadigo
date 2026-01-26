@@ -8,7 +8,7 @@ class PaymentController {
       const user = req.user;
       if (!user) return { status: 401, data: { error: 'Unauthorized' } };
 
-      const body = await req.json();
+      const body = req.jsonBody || await req.json();
       const { bookingId } = body;
 
       try {
@@ -32,7 +32,7 @@ class PaymentController {
    // POST /payment/verify
    async verifyPayment(req) {
       try {
-         const body = await req.json();
+         const body = req.jsonBody || await req.json();
          const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
 
          const isValid = RazorpayService.verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);

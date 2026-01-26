@@ -184,7 +184,7 @@ class VendorController {
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(400, 'Vendor profile not completed', {});
 
-            const body = await req.json();
+            const body = req.jsonBody || await req.json();
             const { title, price } = body;
 
             if (!title || !price) {
@@ -388,7 +388,7 @@ class VendorController {
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(400, 'Vendor profile not found', {});
 
-            const body = await req.json();
+            const body = req.jsonBody || await req.json();
             // Expect: { category: 'homestay', item: { ... } }
             const { category, item } = body;
             if (!category || !item) return errorResponse(400, 'Category and Item data required', {});
@@ -409,7 +409,7 @@ class VendorController {
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(400, 'Vendor profile not found', {});
 
-            const body = await req.json();
+            const body = req.jsonBody || await req.json();
             const { category, itemId, updates } = body;
             if (!category || !itemId || !updates) return errorResponse(400, 'Category, Item ID and Updates required', {});
 
@@ -429,7 +429,7 @@ class VendorController {
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(400, 'Vendor profile not found', {});
 
-            const body = await req.json();
+            const body = req.jsonBody || await req.json();
             const { category, itemId } = body;
             if (!category || !itemId) return errorResponse(400, 'Category and Item ID required', {});
 
@@ -449,7 +449,7 @@ class VendorController {
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(400, 'Vendor profile not found', {});
 
-            const body = await req.json();
+            const body = req.jsonBody || await req.json();
             const { category, isActive } = body;
             if (!category || typeof isActive !== 'boolean') return errorResponse(400, 'Category and Status required', {});
 
@@ -468,7 +468,7 @@ class VendorController {
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(400, 'Vendor profile not found', {});
 
-            const body = await req.json();
+            const body = req.jsonBody || await req.json();
             const { category, itemId, isActive } = body;
             if (!category || !itemId || typeof isActive !== 'boolean') return errorResponse(400, 'Category, Item ID and Status required', {});
 

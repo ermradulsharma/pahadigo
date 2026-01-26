@@ -12,7 +12,7 @@ class CategoryController {
         try {
             if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
 
-            const body = await req.json();
+            const body = req.jsonBody || await req.json();
             const { name } = body;
 
             if (!name) return errorResponse(400, 'Name is required', {});
@@ -94,7 +94,7 @@ class CategoryController {
             const id = params?.id;
             if (!id) return errorResponse(400, 'ID required', {});
 
-            const body = await req.json();
+            const body = req.jsonBody || await req.json();
             const category = await CategoryService.updateCategory(id, body);
 
             return successResponse(200, 'Category updated successfully', { category });

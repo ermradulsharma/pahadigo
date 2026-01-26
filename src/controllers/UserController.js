@@ -15,7 +15,7 @@ class UserController {
         return { status: 401, data: { error: 'Unauthorized' } };
       }
 
-      const body = await req.json();
+      const body = req.jsonBody || await req.json();
       const { packageId, travelDate } = body;
 
       if (!packageId || !travelDate) {

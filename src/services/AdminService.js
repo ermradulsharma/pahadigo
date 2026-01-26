@@ -3,6 +3,7 @@ import Vendor from '../models/Vendor.js';
 import Booking from '../models/Booking.js';
 import Package from '../models/Package.js';
 import Category from '../models/Category.js';
+import Policy from '../models/Policy.js';
 
 class AdminService {
     async getDashboardStats() {
@@ -122,6 +123,24 @@ class AdminService {
             }
             return events;
         }).flat();
+    }
+
+    async getPolicies() {
+        return await Policy.find();
+    }
+
+    async updatePolicy(target, type, content, adminId) {
+        return await Policy.findOneAndUpdate(
+            { target, type },
+            {
+                content,
+                lastUpdatedBy: adminId
+            },
+            {
+                new: true,
+                upsert: true
+            }
+        );
     }
 }
 

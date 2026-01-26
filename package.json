@@ -22,7 +22,9 @@
     "nodemailer": "^7.0.12",
     "razorpay": "^2.9.6",
     "react": "19.2.0",
-    "react-dom": "19.2.0"
+    "react-dom": "19.2.0",
+    "react-quill": "^2.0.0",
+    "react-quill-new": "^3.7.0"
   },
   "devDependencies": {
     "autoprefixer": "^10.4.22",

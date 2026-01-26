@@ -1,6 +1,7 @@
 import VendorController from '../controllers/VendorController.js';
 import UserController from '../controllers/UserController.js';
 import AdminController from '../controllers/AdminController.js';
+import PolicyController from '../controllers/PolicyController.js';
 import PaymentController from '../controllers/PaymentController.js';
 import AuthController from '../controllers/AuthController.js';
 import CategoryController from '../controllers/CategoryController.js';
@@ -81,6 +82,10 @@ const routes = [
     { method: 'PUT', path: '/categories/:id', handler: wrap(CategoryController.update.bind(CategoryController)), middleware: ['auth'] }, // Using PUT for update
     { method: 'DELETE', path: '/categories/:id', handler: wrap(CategoryController.delete.bind(CategoryController)), middleware: ['auth'] },
     { method: 'POST', path: '/categories/seed', handler: wrap(CategoryController.seed.bind(CategoryController)), middleware: ['auth'] },
+
+    // Policies
+    { method: 'GET', path: '/admin/policies', handler: wrap(PolicyController.getPolicies.bind(PolicyController)), middleware: ['auth'] },
+    { method: 'POST', path: '/admin/policies', handler: wrap(PolicyController.updatePolicy.bind(PolicyController)), middleware: ['auth'] },
 ];
 
 export default routes;

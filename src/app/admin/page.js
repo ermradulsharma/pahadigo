@@ -4,9 +4,12 @@ import { getToken } from '../../helpers/authUtils';
 import Link from 'next/link';
 
 export default function AdminDashboard() {
-    const [stats, setStats] = useState({ users: 0, vendors: 0, bookings: 0, revenue: 0 });
+    const [stats, setStats] = useState({ users: 0, totalVendors: 0, pendingVendors: 0, packages: 0, categories: 0, revenue: 0, recentBookings: [], recentVendors: [] });
+    const [loading, setLoading] = useState(true);
+    const [isMounted, setIsMounted] = useState(false);
 
     useEffect(() => {
+        setIsMounted(true);
         const fetchStats = async () => {
             try {
                 const token = getToken();
@@ -15,13 +18,21 @@ export default function AdminDashboard() {
                 });
                 if (res.ok) {
                     const resData = await res.json();
-                    setStats(resData.data?.stats || { users: 0, vendors: 0, bookings: 0, revenue: 0 });
+                    if (resData.success && resData.data?.stats) {
+                        setStats(resData.data.stats);
+                    }
                 }
-            } catch (e) { console.error(e); }
+            } catch (e) {
+                console.error("Dashboard Stats Fetch Error:", e);
+            } finally {
+                setLoading(false);
+            }
         };
 
         fetchStats();
     }, []);
+
+    if (!isMounted) return null;
 
     return (
         <>
@@ -31,14 +42,22 @@ export default function AdminDashboard() {
             </header>
 
             <div className="px-8 pb-8">
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <StatCard title="Travellers" value={stats.users} color="bg-gradient-to-br from-blue-600 to-indigo-700" icon="users" />
-                    <StatCard title="Total Vendors" value={stats.totalVendors} color="bg-gradient-to-br from-emerald-500 to-teal-700" icon="briefcase" />
-                    <StatCard title="Pending Appr." value={stats.pendingVendors} color="bg-gradient-to-br from-amber-500 to-orange-600" icon="alert" />
-                    <StatCard title="Packages" value={stats.packages} color="bg-gradient-to-br from-pink-500 to-rose-700" icon="package" />
-                    <StatCard title="Categories" value={stats.categories} color="bg-gradient-to-br from-slate-600 to-slate-800" icon="folder" />
-                    <StatCard title="Total Revenue" value={`₹${stats.revenue?.toLocaleString('en-IN')}`} color="bg-gradient-to-br from-green-600 to-green-800" icon="cash" />
-                </div>
+                {loading ? (
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 animate-pulse">
+                        {[1, 2, 3, 4, 5, 6].map(i => (
+                            <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
+                        ))}
+                    </div>
+                ) : (
+                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                        <StatCard title="Travellers" value={stats.users || 0} color="bg-gradient-to-br from-blue-600 to-indigo-700" icon="users" />
+                        <StatCard title="Total Vendors" value={stats.totalVendors || 0} color="bg-gradient-to-br from-emerald-500 to-teal-700" icon="briefcase" />
+                        <StatCard title="Pending Appr." value={stats.pendingVendors || 0} color="bg-gradient-to-br from-amber-500 to-orange-600" icon="alert" />
+                        <StatCard title="Packages" value={stats.packages || 0} color="bg-gradient-to-br from-pink-500 to-rose-700" icon="package" />
+                        <StatCard title="Categories" value={stats.categories || 0} color="bg-gradient-to-br from-slate-600 to-slate-800" icon="folder" />
+                        <StatCard title="Total Revenue" value={`₹${(Number(stats.revenue) || 0).toLocaleString('en-IN')}`} color="bg-gradient-to-br from-green-600 to-green-800" icon="cash" />
+                    </div>
+                )}
 
                 <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
                     {/* Recent Bookings */}
@@ -61,15 +80,15 @@ export default function AdminDashboard() {
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
                                     {(stats.recentBookings || []).map((b, i) => (
-                                        <tr key={b._id || i} className="hover:bg-gray-50 transition-colors">
-                                            <td className="py-3 px-2 font-medium text-gray-700">{b.user?.name || 'Anonymous'}</td>
+                                        <tr key={b?._id || i} className="hover:bg-gray-50 transition-colors">
+                                            <td className="py-3 px-2 font-medium text-gray-700">{b?.user?.name || 'Anonymous'}</td>
                                             <td className="py-3 px-2 text-gray-600 truncate max-w-[150px]">
-                                                <Link href="/admin/bookings" className="hover:text-indigo-600">{b.package?.title || 'Package'}</Link>
+                                                <Link href="/admin/bookings" className="hover:text-indigo-600">{b?.package?.title || 'Package'}</Link>
                                             </td>
                                             <td className="py-3 px-2 text-right">
-                                                <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${b.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                                                <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${b?.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
                                                     }`}>
-                                                    {b.status}
+                                                    {b?.status || 'pending'}
                                                 </span>
                                             </td>
                                         </tr>
@@ -102,21 +121,21 @@ export default function AdminDashboard() {
                                 </thead>
                                 <tbody className="divide-y divide-gray-50">
                                     {(stats.recentVendors || []).map((v, i) => (
-                                        <tr key={v._id || i} className="hover:bg-gray-50 transition-colors">
+                                        <tr key={v?._id || i} className="hover:bg-gray-50 transition-colors">
                                             <td className="py-3 px-2 font-medium text-gray-700">
-                                                <div>{v.businessName || 'New Business'}</div>
-                                                <div className="text-[10px] text-gray-400 -mt-1">{v.user?.email || 'N/A'}</div>
+                                                <div>{v?.businessName || 'New Business'}</div>
+                                                <div className="text-[10px] text-gray-400 -mt-1">{v?.user?.email || 'N/A'}</div>
                                             </td>
                                             <td className="py-3 px-2">
                                                 <Link
-                                                    href={`/admin/vendors/${v._id}`}
+                                                    href={`/admin/vendors/${v?._id || '#'}`}
                                                     className="text-indigo-600 hover:text-indigo-800 font-bold"
                                                 >
                                                     Review
                                                 </Link>
                                             </td>
                                             <td className="py-3 px-2 text-right text-gray-400 italic">
-                                                {v.createdAt ? new Date(v.createdAt).toLocaleDateString() : 'N/A'}
+                                                {v?.createdAt ? new Date(v.createdAt).toLocaleDateString() : 'N/A'}
                                             </td>
                                         </tr>
                                     ))}

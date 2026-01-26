@@ -71,7 +71,7 @@ class AdminController {
     async approveVendor(req) {
         try {
             if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
-            const body = await req.json();
+            const body = req.jsonBody || await req.json();
             const { vendorId, status, rejectionReason } = body;
 
             if (!vendorId) return errorResponse(400, 'Vendor ID required', {});
@@ -102,7 +102,7 @@ class AdminController {
     async verifyDocument(req) {
         try {
             if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
-            const body = await req.json();
+            const body = req.jsonBody || await req.json();
             const { vendorId, documentField, status, reason, index } = body;
 
             if (!vendorId || !documentField || !status) {
@@ -144,7 +144,7 @@ class AdminController {
     async addPackageOnBehalf(req) {
         try {
             if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
-            const body = await req.json();
+            const body = req.jsonBody || await req.json();
             const { vendorId, ...pkgData } = body;
 
             if (!vendorId) return errorResponse(400, 'Vendor ID required', {});
@@ -161,7 +161,7 @@ class AdminController {
     async markPayout(req) {
         try {
             if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
-            const body = await req.json();
+            const body = req.jsonBody || await req.json();
             const { bookingId } = body;
 
             if (!bookingId) return errorResponse(400, 'Booking ID required', {});
@@ -180,7 +180,7 @@ class AdminController {
     async refundBooking(req) {
         try {
             if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
-            const body = await req.json();
+            const body = req.jsonBody || await req.json();
             const { bookingId } = body;
 
             if (!bookingId) return errorResponse(400, 'Booking ID required', {});
