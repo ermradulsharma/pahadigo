@@ -23,7 +23,7 @@ export default function ServicesPage() {
     const fetchServices = async () => {
         try {
             const token = getToken();
-            const res = await fetch('/api/admin/services', {
+            const res = await fetch('/api/admin/category-documents', {
                 headers: { 'Authorization': 'Bearer ' + token }
             });
             const data = await res.json();
@@ -92,7 +92,7 @@ export default function ServicesPage() {
 
         try {
             const token = getToken();
-            const res = await fetch(`/api/admin/services/${id}`, {
+            const res = await fetch(`/api/admin/category-documents/${id}`, {
                 method: 'DELETE',
                 headers: { 'Authorization': 'Bearer ' + token }
             });
@@ -195,7 +195,7 @@ export default function ServicesPage() {
             {isModalOpen && (
                 <div className="absolute inset-0 bg-opacity-50 overflow-y-auto h-full w-full flex items-center justify-center z-50">
                     <div className="bg-white p-8 rounded-md shadow-xl w-96">
-                        <h2 className="text-xl font-bold mb-4">{editingService ? 'Edit Service' : 'Add New Service'}</h2>
+                        <h2 className="text-xl font-bold mb-4">{editingService ? 'Edit Document' : 'Add New Document'}</h2>
                         <form onSubmit={handleSubmit}>
                             <div className="mb-4">
                                 <label className="block text-gray-700 text-sm font-bold mb-2">Category</label>

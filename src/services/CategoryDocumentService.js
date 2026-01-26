@@ -1,10 +1,10 @@
-import ServiceDocument from '../models/ServiceDocument.js';
+import CategoryDocument from '../models/CategoryDocument.js';
 
-class ServiceDocumentService {
+class CategoryDocumentService {
 
     async create(data) {
         try {
-            const document = new ServiceDocument(data);
+            const document = new CategoryDocument(data);
             return await document.save();
         } catch (error) {
             throw error;
@@ -13,7 +13,7 @@ class ServiceDocumentService {
 
     async getAll(filter = {}) {
         try {
-            return await ServiceDocument.find(filter).sort({ category_slug: 1, name: 1 });
+            return await CategoryDocument.find(filter).sort({ category_slug: 1, name: 1 });
         } catch (error) {
             throw error;
         }
@@ -21,8 +21,8 @@ class ServiceDocumentService {
 
     async getById(id) {
         try {
-            const document = await ServiceDocument.findById(id);
-            if (!document) throw new Error('Service Document not found');
+            const document = await CategoryDocument.findById(id);
+            if (!document) throw new Error('Category Document not found');
             return document;
         } catch (error) {
             throw error;
@@ -31,12 +31,12 @@ class ServiceDocumentService {
 
     async update(id, data) {
         try {
-            const document = await ServiceDocument.findByIdAndUpdate(
+            const document = await CategoryDocument.findByIdAndUpdate(
                 id,
                 data,
                 { new: true, runValidators: true }
             );
-            if (!document) throw new Error('Service Document not found');
+            if (!document) throw new Error('Category Document not found');
             return document;
         } catch (error) {
             throw error;
@@ -45,12 +45,12 @@ class ServiceDocumentService {
 
     async delete(id) {
         try {
-            return await ServiceDocument.findByIdAndDelete(id);
+            return await CategoryDocument.findByIdAndDelete(id);
         } catch (error) {
             throw error;
         }
     }
 }
 
-const serviceDocumentService = new ServiceDocumentService();
-export default serviceDocumentService;
+const categoryDocumentService = new CategoryDocumentService();
+export default categoryDocumentService;
