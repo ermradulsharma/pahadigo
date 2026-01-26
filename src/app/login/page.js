@@ -8,14 +8,14 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
   const [password, setPassword] = useState('');
-  const [isPasswordLogin, setIsPasswordLogin] = useState(false);  
-  const [generatedOtp, setGeneratedOtp] = useState(null); 
+  const [isPasswordLogin, setIsPasswordLogin] = useState(false);
+  const [generatedOtp, setGeneratedOtp] = useState(null);
   const [error, setError] = useState('');
 
   const handleLogin = async (e) => {
     e.preventDefault();
     setError('');
-    
+
     try {
       const payload = { email };
       if (isPasswordLogin) payload.password = password;
@@ -25,23 +25,26 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload)
       });
-      
-      const data = await res.json();
-      
+
+      const response = await res.json();
+
       if (res.ok) {
+        // Handle nested data caused by helper/successResponse wrapper
+        const data = response.data || response;
+
         if (isPasswordLogin) {
-            // Direct login success
-            localStorage.setItem('token', data.token);
-            localStorage.setItem('role', data.role);
-            if (data.role === 'admin') router.push('/admin');
-            else setError('Password login is only for admins');
+          // Direct login success
+          localStorage.setItem('token', data.token);
+          localStorage.setItem('role', data.role);
+          if (data.role === 'admin') router.push('/admin');
+          else setError('Password login is only for admins');
         } else {
-            // OTP sent
-            setStep(2);
-            if (data.dev_otp) setGeneratedOtp(data.dev_otp);
+          // OTP sent
+          setStep(2);
+          if (data.dev_otp) setGeneratedOtp(data.dev_otp);
         }
       } else {
-        setError(data.error || 'Login failed');
+        setError(response.message || response.error || 'Login failed');
       }
     } catch (err) {
       setError('Network error');
@@ -58,21 +61,22 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, otp })
       });
-      
-      const data = await res.json();
+
+      const response = await res.json();
       if (res.ok) {
+        const data = response.data || response;
         localStorage.setItem('token', data.token);
         localStorage.setItem('role', data.role);
-        
+
         if (data.role === 'admin') router.push('/admin');
         else if (data.role === 'vendor') router.push('/vendor');
         else router.push('/user');
-        
+
       } else {
-        setError(data.error || 'Verification failed');
+        setError(response.message || response.error || 'Verification failed');
       }
     } catch (err) {
-       setError('Network error');
+      setError('Network error');
     }
   };
 
@@ -93,16 +97,16 @@ export default function LoginPage() {
           )}
 
           {step === 1 ? (
-             <form className="space-y-6" onSubmit={handleLogin}>
-               <div>
-                 <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email address</label>
-                 <div className="mt-1">
-                   <input required value={email} onChange={e => setEmail(e.target.value)} type="email"
-                     className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-                 </div>
-               </div>
+            <form className="space-y-6" onSubmit={handleLogin}>
+              <div>
+                <label htmlFor="email" className="block text-sm font-medium text-gray-700">Email address</label>
+                <div className="mt-1">
+                  <input required value={email} onChange={e => setEmail(e.target.value)} type="email"
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                </div>
+              </div>
 
-               {isPasswordLogin && (
+              {isPasswordLogin && (
                 <div>
                   <label htmlFor="password" className="block text-sm font-medium text-gray-700">Password</label>
                   <div className="mt-1">
@@ -110,40 +114,40 @@ export default function LoginPage() {
                       className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
                   </div>
                 </div>
-               )}
+              )}
 
-               <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                 {isPasswordLogin ? 'Login' : 'Send OTP'}
-               </button>
+              <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                {isPasswordLogin ? 'Login' : 'Send OTP'}
+              </button>
 
-               <div className="text-center">
-                  <button type="button" onClick={() => setIsPasswordLogin(!isPasswordLogin)} className="text-sm text-indigo-600 hover:text-indigo-500">
-                      {isPasswordLogin ? 'Login with OTP' : 'Login with Password (Admin Only)'}
-                  </button>
-               </div>
-             </form>
+              <div className="text-center">
+                <button type="button" onClick={() => setIsPasswordLogin(!isPasswordLogin)} className="text-sm text-indigo-600 hover:text-indigo-500">
+                  {isPasswordLogin ? 'Login with OTP' : 'Login with Password (Admin Only)'}
+                </button>
+              </div>
+            </form>
           ) : (
-             <form className="space-y-6" onSubmit={handleVerify}>
-               <div className="text-sm text-gray-600 mb-4">
-                  OTP sent to {email}. <br/>
-                  <span className="text-xs text-gray-400">Dev Note: Check console or use: {generatedOtp}</span>
-               </div>
-               <div>
-                 <label htmlFor="otp" className="block text-sm font-medium text-gray-700">Enter OTP</label>
-                 <div className="mt-1">
-                   <input required value={otp} onChange={e => setOtp(e.target.value)}
-                     className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
-                 </div>
-               </div>
-               <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
-                 Verify & Login
-               </button>
-               <div className="text-center">
-                  <button type="button" onClick={() => setStep(1)} className="text-sm text-gray-500 hover:text-gray-700">
-                      Back
-                  </button>
-               </div>
-             </form>
+            <form className="space-y-6" onSubmit={handleVerify}>
+              <div className="text-sm text-gray-600 mb-4">
+                OTP sent to {email}. <br />
+                <span className="text-xs text-gray-400">Dev Note: Check console or use: {generatedOtp}</span>
+              </div>
+              <div>
+                <label htmlFor="otp" className="block text-sm font-medium text-gray-700">Enter OTP</label>
+                <div className="mt-1">
+                  <input required value={otp} onChange={e => setOtp(e.target.value)}
+                    className="appearance-none block w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" />
+                </div>
+              </div>
+              <button type="submit" className="w-full flex justify-center py-2 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-indigo-600 hover:bg-indigo-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">
+                Verify & Login
+              </button>
+              <div className="text-center">
+                <button type="button" onClick={() => setStep(1)} className="text-sm text-gray-500 hover:text-gray-700">
+                  Back
+                </button>
+              </div>
+            </form>
           )}
         </div>
       </div>

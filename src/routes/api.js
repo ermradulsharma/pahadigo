@@ -13,6 +13,7 @@ const wrap = (method) => apiHandler(method);
 const routes = [
     // Consolidated Auth (Email/Phone OTP & Google)
     { method: 'POST', path: '/auth/otp', handler: wrap(AuthController.sendOtp.bind(AuthController)) },
+    { method: 'POST', path: '/auth/login', handler: wrap(AuthController.login.bind(AuthController)) },
     { method: 'POST', path: '/auth/verify', handler: wrap(AuthController.verifyOtp.bind(AuthController)) },
     { method: 'POST', path: '/auth/google', handler: wrap(AuthController.googleLogin.bind(AuthController)) },
     { method: 'POST', path: '/auth/facebook', handler: wrap(AuthController.facebookLogin.bind(AuthController)) },

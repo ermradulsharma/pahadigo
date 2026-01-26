@@ -38,6 +38,20 @@ class AuthController {
         }
     }
 
+    // POST /auth/login (Password Login for Admin/Dev)
+    async login(req) {
+        try {
+            const body = await parseBody(req);
+            const { email, password } = body;
+            if (!email || !password) return errorResponse(400, 'Email and Password required', {});
+
+            const result = await AuthService.loginWithPassword({ email, password });
+            return successResponse(200, 'Login successful', result);
+        } catch (error) {
+            return errorResponse(401, error.message, {});
+        }
+    }
+
     // POST /auth/verify (Verify OTP and Login/Signup)
     async verifyOtp(req) {
         try {

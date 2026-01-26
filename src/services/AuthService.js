@@ -23,6 +23,30 @@ class AuthService {
         return { vendorStatus: status, vendorProfile: profile };
     }
 
+    async loginWithPassword({ email, password }) {
+        const user = await User.findOne({ email }).select('+password');
+        if (!user) throw new Error('Invalid credentials');
+
+        // Check if user has password set (might be social/OTP user trying password login)
+        if (!user.password) throw new Error('Account uses different login method');
+
+        const isMatch = await user.comparePassword(password);
+        if (!isMatch) throw new Error('Invalid credentials');
+
+        let vendorData = {};
+        if (user.role === 'vendor') {
+            vendorData = await this._getVendorStatus(user);
+        }
+
+        const token = generateToken({ id: user._id, role: user.role, email: user.email });
+        return {
+            token,
+            user: { ...user.toObject(), password: undefined },
+            role: user.role,
+            ...vendorData
+        };
+    }
+
     async verifyAndLogin({ identifier, otp, email, phone, targetRole }) {
         const otpRecord = OTPService.verifyOTP(identifier, otp);
         if (!otpRecord) {
