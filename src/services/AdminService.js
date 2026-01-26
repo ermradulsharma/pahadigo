@@ -125,8 +125,13 @@ class AdminService {
         }).flat();
     }
 
-    async getPolicies() {
-        return await Policy.find();
+    async getPolicies(target = null) {
+        const filter = target ? { target } : {};
+        return await Policy.find(filter);
+    }
+
+    async getPolicy(target, type) {
+        return await Policy.findOne({ target, type });
     }
 
     async updatePolicy(target, type, content, adminId) {

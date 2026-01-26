@@ -83,9 +83,19 @@ const routes = [
     { method: 'DELETE', path: '/categories/:id', handler: wrap(CategoryController.delete.bind(CategoryController)), middleware: ['auth'] },
     { method: 'POST', path: '/categories/seed', handler: wrap(CategoryController.seed.bind(CategoryController)), middleware: ['auth'] },
 
-    // Policies
+    // Policies (Explicit Aliases)
+    { method: 'GET', path: '/vendor/privacy-policy', handler: wrap(PolicyController.getPolicyByType.bind(PolicyController)), params: { target: 'vendor', type: 'privacy_policy' } },
+    { method: 'GET', path: '/vendor/terms-conditions', handler: wrap(PolicyController.getPolicyByType.bind(PolicyController)), params: { target: 'vendor', type: 'terms_conditions' } },
+    { method: 'GET', path: '/traveller/privacy-policy', handler: wrap(PolicyController.getPolicyByType.bind(PolicyController)), params: { target: 'traveller', type: 'privacy_policy' } },
+    { method: 'GET', path: '/traveller/terms-conditions', handler: wrap(PolicyController.getPolicyByType.bind(PolicyController)), params: { target: 'traveller', type: 'terms_conditions' } },
+    { method: 'GET', path: '/traveller/refund-policy', handler: wrap(PolicyController.getPolicyByType.bind(PolicyController)), params: { target: 'traveller', type: 'refund_policy' } },
+    { method: 'GET', path: '/traveller/cancellation-policy', handler: wrap(PolicyController.getPolicyByType.bind(PolicyController)), params: { target: 'traveller', type: 'cancellation_policy' } },
+
+    { method: 'GET', path: '/policies/:target/:type', handler: wrap(PolicyController.getPolicyByType.bind(PolicyController)) },
+    { method: 'GET', path: '/policies/:target', handler: wrap(PolicyController.getPoliciesByTarget.bind(PolicyController)) },
     { method: 'GET', path: '/admin/policies', handler: wrap(PolicyController.getPolicies.bind(PolicyController)), middleware: ['auth'] },
     { method: 'POST', path: '/admin/policies', handler: wrap(PolicyController.updatePolicy.bind(PolicyController)), middleware: ['auth'] },
+    { method: 'POST', path: '/admin/policies/seed', handler: wrap(PolicyController.seed.bind(PolicyController)), middleware: ['auth'] },
 ];
 
 export default routes;

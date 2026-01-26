@@ -18,7 +18,7 @@ function findRoute(method, slug) {
         const regex = new RegExp(`^${regexPath}$`);
         const match = path.match(regex);
         if (match) {
-            const params = {};
+            const params = { ...(route.params || {}) };
             paramNames.forEach((name, index) => {
                 params[name] = match[index + 1];
             });
