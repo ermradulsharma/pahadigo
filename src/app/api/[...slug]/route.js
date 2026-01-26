@@ -7,23 +7,40 @@ const routes = Array.isArray(routesImport) ? routesImport : (routesImport.defaul
 
 function findRoute(method, slug) {
     const path = '/' + slug.join('/').replace(/\/$/, '');
-    return routes.find(r =>
-        r.method.toUpperCase() === method.toUpperCase() &&
-        r.path.replace(/\/$/, '') === path
-    );
+    for (const route of routes) {
+        if (route.method.toUpperCase() !== method.toUpperCase()) continue;
+        const routePath = route.path.replace(/\/$/, '');
+        const paramNames = [];
+        const regexPath = routePath.replace(/:([^/]+)/g, (_, paramName) => {
+            paramNames.push(paramName);
+            return '([^/]+)';
+        });
+        const regex = new RegExp(`^${regexPath}$`);
+        const match = path.match(regex);
+        if (match) {
+            const params = {};
+            paramNames.forEach((name, index) => {
+                params[name] = match[index + 1];
+            });
+            return { routeDef: route, params };
+        }
+    }
+    return null;
 }
 
 async function handler(req, { params }) {
     await dbConnect();
     const { slug } = await params;
     const method = req.method;
-    const routeDef = findRoute(method, slug);
-    if (!routeDef) {
+    const match = findRoute(method, slug);
+
+    if (!match) {
         return NextResponse.json({
             error: 'Route not found',
             debug: { method, path: '/' + slug.join('/') }
         }, { status: 404 });
     }
+    const { routeDef, params: routeParams } = match;
     let userContext = null;
     if (routeDef.middleware && routeDef.middleware.includes('auth')) {
         const authResult = await authMiddleware(req);
@@ -31,7 +48,6 @@ async function handler(req, { params }) {
             return NextResponse.json({ error: authResult.message }, { status: 401 });
         }
         userContext = authResult.user;
-        console.log(`[API] Middleware Authenticated User ID: ${userContext.id} (Role: ${userContext.role})`);
     }
 
     try {
@@ -44,16 +60,14 @@ async function handler(req, { params }) {
             if (contentType.includes('multipart/form-data')) {
                 req.formDataBody = await req.formData();
             } else if (contentType.includes('application/json')) {
-                // Only read if not already read (NextRequest body can be read once)
-                // However, checking 'bodyUsed' might be needed, or we rely on catch
                 req.jsonBody = await req.json();
             }
         } catch (parseError) {
-            // If body already read or other error, meaningful to log but continue
             console.warn("API: Body parsing attempt failed (might be already consumed or empty):", parseError.message);
         }
 
-        const result = await routeDef.handler(req);
+        // Pass extracted route params as second argument
+        const result = await routeDef.handler(req, { params: routeParams });
 
         // Support standard Response objects (New Standard)
         if (result instanceof Response) {

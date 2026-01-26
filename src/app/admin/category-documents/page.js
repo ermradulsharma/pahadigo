@@ -82,7 +82,7 @@ export default function ServicesPage() {
     const handleSubmit = async (e) => {
         e.preventDefault();
         try {
-            const url = editingService ? `/api/admin/services/${editingService._id}` : '/api/admin/services';
+            const url = editingService ? `/api/admin/category-documents/${editingService._id}` : '/api/admin/category-documents';
             const method = editingService ? 'PUT' : 'POST';
 
             const token = getToken();
@@ -123,6 +123,48 @@ export default function ServicesPage() {
         }
     };
 
+    const handleToggleStatus = async (service) => {
+        try {
+            const token = getToken();
+            const res = await fetch(`/api/admin/category-documents/${service._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ isActive: !service.isActive })
+            });
+            if (res.ok) {
+                fetchServices();
+            } else {
+                alert('Failed to update status');
+            }
+        } catch (error) {
+            console.error('Error updating status:', error);
+        }
+    };
+
+    const handleToggleMandatory = async (service) => {
+        try {
+            const token = getToken();
+            const res = await fetch(`/api/admin/category-documents/${service._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ isMandatory: !service.isMandatory })
+            });
+            if (res.ok) {
+                fetchServices();
+            } else {
+                alert('Failed to update mandatory status');
+            }
+        } catch (error) {
+            console.error('Error updating mandatory status:', error);
+        }
+    };
+
     const openModal = (service = null) => {
         setEditingService(service);
         if (service) {
@@ -155,10 +197,11 @@ export default function ServicesPage() {
                 <h1 className="text-2xl font-bold text-gray-800">Category Documents</h1>
                 <button onClick={() => openModal()} className="bg-indigo-600 text-white px-4 py-2 rounded-md hover:bg-indigo-700 transition">Add New Document</button>
             </div>
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white rounded-lg shadow overflow-hidden text-slate-800">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slug</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
@@ -168,16 +211,35 @@ export default function ServicesPage() {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {loading ? (
-                            <tr><td colSpan="5" className="text-center py-4">Loading...</td></tr>
+                            <tr><td colSpan="6" className="text-center py-4">Loading...</td></tr>
                         ) : services.length === 0 ? (
-                            <tr><td colSpan="5" className="text-center py-4">No documents found</td></tr>
+                            <tr><td colSpan="6" className="text-center py-4">No documents found</td></tr>
                         ) : (
                             services.map((service) => (
                                 <tr key={service._id}>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <button
+                                            onClick={() => handleToggleStatus(service)}
+                                            className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${service.isActive
+                                                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                                                : 'bg-rose-100 text-rose-700 hover:bg-rose-200'}`}
+                                        >
+                                            {service.isActive !== false ? 'Active' : 'Inactive'}
+                                        </button>
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{service.name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{service.slug}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500"><span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-blue-100 text-blue-800">{service.category_slug}</span></td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-center text-sm text-gray-500">{service.isMandatory ? 'Yes' : 'No'}</td>
+                                    <td className="px-6 py-4 whitespace-nowrap text-center">
+                                        <button
+                                            onClick={() => handleToggleMandatory(service)}
+                                            className={`px-3 py-1 rounded-md text-[10px] font-bold uppercase tracking-wider transition-all shadow-sm ${service.isMandatory
+                                                ? 'bg-amber-100 text-amber-700 border border-amber-200 hover:bg-amber-200'
+                                                : 'bg-slate-100 text-slate-600 border border-slate-200 hover:bg-slate-200'}`}
+                                        >
+                                            {service.isMandatory ? 'Required' : 'Optional'}
+                                        </button>
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                         <button onClick={() => openModal(service)} className="text-indigo-600 hover:text-indigo-900 mr-4">Edit</button>
                                         <button onClick={() => handleDelete(service._id)} className="text-red-600 hover:text-red-900">Delete</button>

@@ -13,7 +13,7 @@ class CategoryService {
 
     async getAllCategories() {
         try {
-            return await Category.find({ isActive: true }).sort({ name: 1 });
+            return await Category.find({}).sort({ name: 1 });
         } catch (error) {
             throw error;
         }

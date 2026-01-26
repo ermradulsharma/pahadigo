@@ -74,6 +74,27 @@ export default function CategoriesPage() {
         }
     };
 
+    const handleToggleStatus = async (category) => {
+        try {
+            const token = getToken();
+            const res = await fetch(`/api/categories/${category._id}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
+                },
+                body: JSON.stringify({ isActive: !category.isActive })
+            });
+            if (res.ok) {
+                fetchCategories();
+            } else {
+                alert('Failed to update status');
+            }
+        } catch (error) {
+            console.error('Error updating status:', error);
+        }
+    };
+
     const openModal = (category = null) => {
         setEditingCategory(category);
         setFormData({
@@ -101,10 +122,11 @@ export default function CategoriesPage() {
                 </button>
             </div>
 
-            <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="bg-white rounded-lg shadow overflow-hidden text-slate-800">
                 <table className="min-w-full divide-y divide-gray-200">
                     <thead className="bg-gray-50">
                         <tr>
+                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Slug</th>
                             <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
@@ -113,12 +135,22 @@ export default function CategoriesPage() {
                     </thead>
                     <tbody className="bg-white divide-y divide-gray-200">
                         {loading ? (
-                            <tr><td colSpan="4" className="text-center py-4">Loading...</td></tr>
+                            <tr><td colSpan="5" className="text-center py-4">Loading...</td></tr>
                         ) : categories.length === 0 ? (
-                            <tr><td colSpan="4" className="text-center py-4">No categories found</td></tr>
+                            <tr><td colSpan="5" className="text-center py-4">No categories found</td></tr>
                         ) : (
                             categories.map((cat) => (
                                 <tr key={cat._id}>
+                                    <td className="px-6 py-4 whitespace-nowrap">
+                                        <button
+                                            onClick={() => handleToggleStatus(cat)}
+                                            className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider transition-all ${cat.isActive
+                                                ? 'bg-emerald-100 text-emerald-700 hover:bg-emerald-200'
+                                                : 'bg-rose-100 text-rose-700 hover:bg-rose-200'}`}
+                                        >
+                                            {cat.isActive ? 'Active' : 'Inactive'}
+                                        </button>
+                                    </td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{cat.name}</td>
                                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{cat.slug}</td>
                                     <td className="px-6 py-4 text-sm text-gray-500">{cat.description || '-'}</td>
