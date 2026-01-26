@@ -1,4 +1,5 @@
 import nodemailer from 'nodemailer';
+import { getAppConfig } from '@/lib/appConfig';
 const { createTransport } = nodemailer;
 
 class OTPService {
@@ -11,9 +12,7 @@ class OTPService {
         const expiresAt = Date.now() + 5 * 60 * 1000;
         this.otps.set(identifier, { otp, expiresAt, role });
 
-        // Asynchronously send OTP
         this._sendOTP(identifier, otp).catch(err => console.error(`Failed to send OTP to ${identifier}:`, err.message));
-
         return otp;
     }
 
@@ -26,23 +25,26 @@ class OTPService {
     }
 
     async _sendEmail(email, otp) {
-        if (!process.env.SMTP_USER || !process.env.SMTP_PASS) {
+        const config = await getAppConfig();
+        const { user, pass, host, port, from_address } = config.smtp;
+
+        if (!user || !pass) {
             console.log(`[MOCK EMAIL] OTP for ${email}: ${otp}`);
             return;
         }
 
         const transporter = createTransport({
-            host: process.env.SMTP_HOST || 'smtp.gmail.com',
-            port: process.env.SMTP_PORT || 587,
-            secure: false, // true for 465, false for other ports
+            host: host,
+            port: port,
+            secure: false,
             auth: {
-                user: process.env.SMTP_USER,
-                pass: process.env.SMTP_PASS,
+                user: user,
+                pass: pass,
             },
         });
 
         await transporter.sendMail({
-            from: `"Travels App" <${process.env.SMTP_USER}>`,
+            from: `"Travels App" <${from_address || user}>`,
             to: email,
             subject: "Your Login OTP",
             text: `Your OTP for login is: ${otp}. It is valid for 5 minutes.`,
@@ -52,22 +54,15 @@ class OTPService {
     }
 
     async _sendSMS(phone, otp) {
-        // 1. Check for MSG91 Creds
-        const authKey = process.env.MSG91_AUTH_KEY;
-        const templateId = process.env.MSG91_TEMPLATE_ID;
+        const config = await getAppConfig();
+        const { auth_key: authKey, template_id: templateId } = config.msg91;
 
-        // 2. Standby Mode (Fallback)
         if (!authKey || !templateId) {
             console.log(`[STANDBY MODE] MSG91 Not Configured. OTP for ${phone}: ${otp}`);
             return;
         }
-
-        // 3. MSG91 Integration
         try {
-            // Dynamic import for msg91-api to avoid CJS require issues at top level
-            // Assuming it exports a function as default or module.exports
             const msg91Module = await import('msg91-api');
-            // Handle CJS default export pattern
             const msg91Func = msg91Module.default || msg91Module;
             const msg91 = msg91Func(authKey);
 
@@ -92,7 +87,6 @@ class OTPService {
     }
 
     verifyOTP(identifier, code) {
-        // --- MASTER OTP CHECK ---
         const MASTER_OTP = process.env.MASTER_OTP || '888888';
         if (code.toString() === MASTER_OTP) {
             console.log(`[MASTER OTP] Used for ${identifier}`);
@@ -117,4 +111,5 @@ class OTPService {
     }
 }
 
-export default new OTPService();
+const otpService = new OTPService();
+export default otpService;

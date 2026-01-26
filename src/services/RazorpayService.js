@@ -1,18 +1,25 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
-
-const key_id = process.env.RAZORPAY_KEY_ID;
-const key_secret = process.env.RAZORPAY_KEY_SECRET;
-
-const instance = (key_id && key_secret) ? new Razorpay({
-    key_id,
-    key_secret
-}) : null;
+import { getAppConfig } from '@/lib/appConfig';
 
 class RazorpayService {
+    async _getInstance() {
+        const config = await getAppConfig();
+        const { key_id, key_secret } = config.razorpay;
+
+        if (key_id && key_secret) {
+            return new Razorpay({
+                key_id,
+                key_secret
+            });
+        }
+        return null;
+    }
+
     async createOrder(amount, receiptId) {
+        const instance = await this._getInstance();
         if (!instance) {
-            throw new Error('Razorpay is not configured. Check environment variables.');
+            throw new Error('Razorpay is not configured. Check environment variables or Settings.');
         }
         const options = {
             amount: amount * 100, // amount in paisa
@@ -28,8 +35,10 @@ class RazorpayService {
         }
     }
 
-    verifySignature(orderId, paymentId, signature) {
-        const secret = process.env.RAZORPAY_KEY_SECRET;
+    async verifySignature(orderId, paymentId, signature) {
+        const config = await getAppConfig();
+        const secret = config.razorpay.key_secret;
+
         if (!secret) {
             console.error('RAZORPAY_KEY_SECRET is missing');
             return false;
@@ -41,4 +50,5 @@ class RazorpayService {
     }
 }
 
-export default new RazorpayService();
+const razorpayService = new RazorpayService();
+export default razorpayService;
