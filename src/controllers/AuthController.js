@@ -150,10 +150,19 @@ class AuthController {
 
     async me(req) {
         try {
-            const token = req.headers.get('authorization')?.split(' ')[1];
-            if (!token) return errorResponse(401, 'No token provided', {});
-            const user = await AuthService.me(token);
-            return successResponse(200, 'User profile', { user });
+            // Using middleware auth context
+            const userContext = req.user;
+
+            if (!userContext || !userContext.id) {
+                // Fallback for direct calls without middleware (though route has middleware now)
+                const token = req.headers.get('authorization')?.split(' ')[1];
+                if (!token) return errorResponse(401, 'No token provided', {});
+                const user = await AuthService.me(token);
+                return successResponse(200, 'User profile', { user });
+            }
+
+            const userProfile = await AuthService.getProfileById(userContext.id);
+            return successResponse(200, 'User profile', { user: userProfile });
         } catch (error) {
             return errorResponse(401, error.message, {});
         }
@@ -189,16 +198,18 @@ class AuthController {
 
     async updateProfile(req) {
         try {
-            // Use authenticated user context if middleware adds it, else parse token or body
-            // Assuming middleware adds req.user or we parse token?
-            // AuthController usually protected routes
+            const user = req.user;
+            if (!user || !user.email) {
+                return errorResponse(401, 'Unauthorized', {});
+            }
+
             const body = await parseBody(req);
-            const { email, ...updates } = body;
-            // Better: use req.user.email from token middleware
-            // But for simple implementation assuming body has email or handled by service
-            if (!email) return errorResponse(400, 'Email required', {});
-            const user = await AuthService.updateProfile(email, updates);
-            return successResponse(200, 'Profile updated', { user });
+            // Prevent users from updating sensitive fields like email, password, role directly through this endpoint
+            // (Password/Role should have dedicated endpoints if needed)
+            const { email, password, role, _id, ...updates } = body;
+
+            const updatedUser = await AuthService.updateProfile(user.email, updates);
+            return successResponse(200, 'Profile updated', { user: updatedUser });
         } catch (error) {
             return errorResponse(500, error.message, {});
         }

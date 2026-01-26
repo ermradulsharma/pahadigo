@@ -15,6 +15,21 @@ const UserSchema = new mongoose.Schema({
     profileImage: { type: String },
     gender: { type: String },
     dateOfBirth: { type: Date },
+    designation: { type: String },
+    bio: { type: String, maxlength: 500 },
+    website: { type: String },
+    socialLinks: {
+        linkedin: String,
+        twitter: String,
+        instagram: String,
+        github: String
+    },
+    expertise: [{ type: String }],
+    emergencyContact: {
+        name: String,
+        phone: String,
+        relationship: String
+    },
     address: {
         line1: String,
         city: String,

@@ -21,11 +21,11 @@ const routes = [
     { method: 'POST', path: '/auth/logout', handler: wrap(AuthController.logout.bind(AuthController)) },
     { method: 'GET', path: '/auth/verify', handler: wrap(AuthController.verify.bind(AuthController)) },
     { method: 'GET', path: '/auth/refresh', handler: wrap(AuthController.refresh.bind(AuthController)) },
-    { method: 'GET', path: '/auth/me', handler: wrap(AuthController.me.bind(AuthController)) },
+    { method: 'GET', path: '/auth/me', handler: wrap(AuthController.me.bind(AuthController)), middleware: ['auth'] },
     { method: 'POST', path: '/auth/forget-password', handler: wrap(AuthController.forgetPassword.bind(AuthController)) },
     { method: 'POST', path: '/auth/reset-password', handler: wrap(AuthController.resetPassword.bind(AuthController)) },
     { method: 'POST', path: '/auth/change-password', handler: wrap(AuthController.changePassword.bind(AuthController)) },
-    { method: 'POST', path: '/auth/update-profile', handler: wrap(AuthController.updateProfile.bind(AuthController)) },
+    { method: 'POST', path: '/auth/update-profile', handler: wrap(AuthController.updateProfile.bind(AuthController)), middleware: ['auth'] },
     { method: 'POST', path: '/auth/delete-profile', handler: wrap(AuthController.deleteProfile.bind(AuthController)) },
     { method: 'POST', path: '/auth/logout-all', handler: wrap(AuthController.logoutAll.bind(AuthController)) },
 

@@ -274,9 +274,24 @@ class AuthService {
 
     async me(token) {
         const decoded = verifyToken(token);
+        if (!decoded) throw new Error('Invalid Token');
         const user = await User.findById(decoded.id).select('-password');
         if (!user) throw new Error('User not found');
         return user;
+    }
+
+    async getProfileById(userId) {
+        const user = await User.findById(userId).select('-password');
+
+        if (!user) {
+            throw new Error('User not found');
+        }
+
+        let vendorData = {};
+        if (user.role === 'vendor') {
+            vendorData = await this._getVendorStatus(user);
+        }
+        return { ...user.toObject(), ...vendorData };
     }
 
     async forgetPassword(email) {
