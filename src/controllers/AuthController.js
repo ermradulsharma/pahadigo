@@ -67,7 +67,7 @@ class AuthController {
             }
             const result = await AuthService.verifyAndLogin({ identifier, otp, email, phone, targetRole: role });
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, {
-                user: result.user,
+                ...(result.user.toObject ? result.user.toObject() : result.user),
                 token: result.token,
                 isNewUser: result.isNewUser,
                 vendorStatus: result.vendorStatus,

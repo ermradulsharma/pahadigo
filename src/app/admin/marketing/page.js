@@ -44,7 +44,7 @@ function BannersManager() {
     const fetchBanners = async () => {
         try {
             const res = await fetch('/api/admin/marketing/banners');
-            constdata = await res.json();
+            const data = await res.json();
             if (data.success) setBanners(data.data.banners || []);
         } catch (e) {
             console.error(e);
@@ -105,7 +105,7 @@ function BannersManager() {
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-gray-500 mb-1">Position Order</label>
-                            <input className="w-full px-3 py-2 border rounded-lg text-sm" type="number" value={newBanner.position} onChange={e => setNewBanner({ ...newBanner, position: parseInt(e.target.value) })} />
+                            <input className="w-full px-3 py-2 border rounded-lg text-sm" type="number" value={newBanner.position} onChange={e => setNewBanner({ ...newBanner, position: e.target.value ? parseInt(e.target.value) : 0 })} />
                         </div>
                         <button className="w-full py-2 bg-indigo-600 text-white rounded-lg font-bold text-sm hover:bg-indigo-700">Add Banner</button>
                     </form>
@@ -210,12 +210,12 @@ function CouponsManager() {
                             </div>
                             <div>
                                 <label className="block text-xs font-bold text-gray-500 mb-1">Value</label>
-                                <input className="w-full px-3 py-2 border rounded-lg text-sm" type="number" required value={newCoupon.value} onChange={e => setNewCoupon({ ...newCoupon, value: parseFloat(e.target.value) })} />
+                                <input className="w-full px-3 py-2 border rounded-lg text-sm" type="number" required value={newCoupon.value} onChange={e => setNewCoupon({ ...newCoupon, value: e.target.value ? parseFloat(e.target.value) : 0 })} />
                             </div>
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-gray-500 mb-1">Min Order Amount</label>
-                            <input className="w-full px-3 py-2 border rounded-lg text-sm" type="number" value={newCoupon.minOrderAmount} onChange={e => setNewCoupon({ ...newCoupon, minOrderAmount: parseFloat(e.target.value) })} />
+                            <input className="w-full px-3 py-2 border rounded-lg text-sm" type="number" value={newCoupon.minOrderAmount} onChange={e => setNewCoupon({ ...newCoupon, minOrderAmount: e.target.value ? parseFloat(e.target.value) : 0 })} />
                         </div>
                         <div>
                             <label className="block text-xs font-bold text-gray-500 mb-1">Expiry Date <span className="text-red-500">*</span></label>

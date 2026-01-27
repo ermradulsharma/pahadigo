@@ -9,8 +9,105 @@ import Banner from '../models/Banner.js';
 import Coupon from '../models/Coupon.js';
 import Inquiry from '../models/Inquiry.js';
 import AuditLog from '../models/AuditLog.js';
+import SearchLog from '../models/SearchLog.js';
 
 class AdminService {
+    // ... existing stats ...
+
+    async getMapAnalyticsData() {
+        // Aggregate users by address.country
+        const userDistribution = await User.aggregate([
+            { $match: { role: 'traveller' } },
+            { $group: { _id: "$address.country", count: { $sum: 1 } } },
+            { $match: { _id: { $ne: null } } }
+        ]);
+
+        // Aggregate bookings by package location (assuming package has location or similar)
+        // Let's check package model later, for now assuming we can link via package -> vendor -> address or package.destination
+        // If package has destination field.
+
+        return {
+            userDistribution: userDistribution.map(u => ({ id: u._id, value: u.count })),
+            // topDestinations: ...
+        };
+    }
+
+    async getCalendarEvents(start, end) {
+        const query = {};
+        if (start && end) {
+            query.travelDate = { $gte: new Date(start), $lte: new Date(end) };
+        }
+
+        const bookingEvents = await Booking.find(query)
+            .select('travelDate status user package')
+            .populate('user', 'name')
+            .populate('package', 'title');
+
+        return bookingEvents.map(b => ({
+            id: b._id,
+            title: `${b.user?.name || 'User'} - ${b.package?.title || 'Trip'}`,
+            start: b.travelDate,
+            end: b.travelDate, // Assuming 1 day or need duration
+            status: b.status,
+            type: 'booking'
+        }));
+    }
+
+    async getSearchAnalytics() {
+        const topSearches = await SearchLog.aggregate([
+            { $group: { _id: "$query", count: { $sum: "$count" }, results: { $avg: "$resultsCount" } } },
+            { $sort: { count: -1 } },
+            { $limit: 10 }
+        ]);
+
+        const zeroResultSearches = await SearchLog.aggregate([
+            { $match: { resultsCount: 0 } },
+            { $group: { _id: "$query", count: { $sum: "$count" } } },
+            { $sort: { count: -1 } },
+            { $limit: 10 }
+        ]);
+
+        return { topSearches, zeroResultSearches };
+    }
+
+    async getFinancialStats() {
+        // Total Revenue (Paid bookings)
+        const revenue = await Booking.aggregate([
+            { $match: { paymentStatus: 'paid' } },
+            { $group: { _id: null, total: { $sum: "$totalPrice" } } }
+        ]);
+
+        // Pending Payouts (Paid by user, but not paid to vendor)
+        const pendingPayouts = await Booking.aggregate([
+            { $match: { paymentStatus: 'paid', payoutStatus: 'pending' } },
+            { $group: { _id: null, total: { $sum: "$totalPrice" } } } // Assuming 100% payout for simplified logic, or add commission logic
+        ]);
+
+        // Refunds
+        const refunds = await Booking.aggregate([
+            { $match: { refundStatus: 'refunded' } },
+            { $group: { _id: null, total: { $sum: "$refundAmount" } } }
+        ]);
+
+        return {
+            totalRevenue: revenue[0]?.total || 0,
+            pendingPayouts: pendingPayouts[0]?.total || 0,
+            refundsProcessed: refunds[0]?.total || 0,
+            // netProfit: ... (Revenue - Payouts)
+        };
+    }
+
+    async getSystemHealth() {
+        // Mock health metrics based on logs
+        const errorCount = await AuditLog.countDocuments({ action: 'ERROR', createdAt: { $gte: new Date(Date.now() - 24 * 60 * 60 * 1000) } }); // Last 24h
+        const activeUsers = await User.countDocuments({ updatedAt: { $gte: new Date(Date.now() - 15 * 60 * 1000) } }); // "Active" in last 15 mins (approx)
+
+        return {
+            errorRate24h: errorCount,
+            activeUsers
+        };
+    }
+
     async getDashboardStats() {
         const [userCount, vendorCount, verifiedVendorCount, pendingVendorCount, bookingCount, packageCount, categoryCount, revenue, recentBookings, recentVendors] = await Promise.all([
             User.countDocuments({ role: 'traveller' }),
@@ -44,6 +141,7 @@ class AdminService {
             recentVendors
         };
     }
+
 
     async getAllBookings() {
         return await Booking.find()

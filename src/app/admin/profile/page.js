@@ -44,9 +44,69 @@ export default function AdminProfilePage() {
         }
     });
 
+    const [countries, setCountries] = useState([]);
+    const [states, setStates] = useState([]);
+
     useEffect(() => {
         fetchProfile();
+        fetchCountries();
     }, []);
+
+    // Effect to load states when profile is loaded and country is set
+    useEffect(() => {
+        if (formData.address.country && countries.length > 0) {
+            const country = countries.find(c => c.name === formData.address.country);
+            if (country) {
+                fetchStates(country._id);
+            }
+        }
+    }, [formData.address.country, countries]); // Be careful with dependency loop if formData updates causes re-fetch. 
+    // Actually, formData updates on type. If we select country, it updates. Then this runs. 
+    // Ideally we want to run this ONLY on initial load or explicit change logic is better handled in handler.
+    // But initial load needs to hydrate states.
+    // Let's use a separate effect for hydration or just call it in fetchProfile?
+    // Profile fetch completes -> sets formData. countries fetch completes -> sets countries.
+    // We can do it in a `useEffect` on `[formData.address.country]` but guard it?
+    // Better: manual logic.
+
+    const fetchCountries = async () => {
+        try {
+            const res = await fetch('/api/countries?limit=all');
+            const data = await res.json();
+            if (data.success) {
+                setCountries(data.data.countries || []);
+            }
+        } catch (error) {
+            console.error("Error fetching countries", error);
+        }
+    };
+
+    const fetchStates = async (countryId) => {
+        try {
+            const res = await fetch(`/api/countries/${countryId}/states?limit=all`);
+            const data = await res.json();
+            if (data.success) {
+                setStates(data.data.states || []);
+            }
+        } catch (error) {
+            console.error("Error fetching states", error);
+        }
+    };
+
+    const handleCountryChange = (e) => {
+        const countryName = e.target.value;
+        setFormData(prev => ({
+            ...prev,
+            address: { ...prev.address, country: countryName, state: '' }
+        }));
+
+        const country = countries.find(c => c.name === countryName);
+        if (country) {
+            fetchStates(country._id);
+        } else {
+            setStates([]);
+        }
+    };
 
     const fetchProfile = async () => {
         try {
@@ -296,13 +356,23 @@ export default function AdminProfilePage() {
                         </div>
 
                         <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">State</label>
-                            <input type="text" name="address.state" value={formData.address.state} onChange={handleChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
+                            <label className="block text-gray-700 text-sm font-bold mb-2">Country</label>
+                            <select name="address.country" value={formData.address.country} onChange={handleCountryChange} className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                <option value="">Select Country</option>
+                                {countries.map(c => (
+                                    <option key={c._id} value={c.name}>{c.name}</option>
+                                ))}
+                            </select>
                         </div>
 
                         <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Country</label>
-                            <input type="text" name="address.country" value={formData.address.country} onChange={handleChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
+                            <label className="block text-gray-700 text-sm font-bold mb-2">State</label>
+                            <select name="address.state" value={formData.address.state} onChange={handleChange} className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
+                                <option value="">Select State</option>
+                                {states.map(s => (
+                                    <option key={s._id} value={s.name}>{s.name}</option>
+                                ))}
+                            </select>
                         </div>
 
                         <div>

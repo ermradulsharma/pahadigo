@@ -8,6 +8,12 @@ import {
     PieChart, Pie, Cell, Legend
 } from 'recharts';
 
+import GeoMapWidget from './components/GeoMapWidget';
+import CalendarWidget from './components/CalendarWidget';
+import SearchTrendsWidget from './components/SearchTrendsWidget';
+import FinancialWidget from './components/FinancialWidget';
+import HealthWidget from './components/HealthWidget';
+
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 export default function AdminDashboard() {
@@ -180,6 +186,24 @@ export default function AdminDashboard() {
                 )}
             </div>
 
+            {/* Financial Detail */}
+            <div className="mt-8 mb-8">
+                <FinancialWidget />
+            </div>
+
+            {/* Geo & Health */}
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
+                <div className="lg:col-span-2">
+                    <GeoMapWidget />
+                </div>
+                <div>
+                    <HealthWidget />
+                </div>
+            </div>
+
+            {/* Analytics Section */}
+            {/* ... keeping existing charts ... */}
+
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
                 {/* Recent Bookings */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
@@ -190,6 +214,7 @@ export default function AdminDashboard() {
                         </h2>
                         <Link href="/admin/bookings" className="text-xs text-indigo-600 hover:underline font-bold">View All →</Link>
                     </div>
+                    {/* ... table ... */}
                     <div className="overflow-x-auto flex-1">
                         <table className="w-full text-sm text-left">
                             <thead className="text-gray-400 font-medium border-b border-gray-50">
@@ -267,6 +292,16 @@ export default function AdminDashboard() {
                         </table>
                     </div>
                 </div>
+            </div>
+
+            {/* Search Trends */}
+            <div className="mt-8">
+                <SearchTrendsWidget />
+            </div>
+
+            {/* Calendar */}
+            <div className="mt-8">
+                <CalendarWidget />
             </div>
 
             <div className="mt-8 bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">

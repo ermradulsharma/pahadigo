@@ -76,8 +76,33 @@ class PackageService {
         return await Package.findById(id);
     }
 
-    async getAvailablePackages() {
-        return await Package.find({}).populate('vendor');
+    async getAvailablePackages(query = '') {
+        const filter = {};
+        // If query exists, search in package titles or services
+        // Since my schema is complex (services map), search is tricky.
+        // Assuming we want to search in 'vendor.businessName' or inside services array?
+        // For simplicity, let's assume we search in Vendor Business Name (via lookup) or we need a text index.
+        // Or if Package has a title? existing Package Schema doesn't have title, it has 'services'.
+        // Wait, Package model structure: { vendor: Ref, services: { type: [Schema] } }
+        // Each service item has 'name', 'title' etc.
+        // Implementing full text search on nested arrays is complex.
+        // For now, I'll filter in memory or basic regex on specific visible fields if possible.
+        // Actually, let's just return all and let frontend filter? No, standard is API filter.
+
+        // Let's implement basic search on Vendor Business Name for now since we populate it.
+        // Or refactor to proper aggregation later.
+
+        let packages = await Package.find({}).populate('vendor');
+
+        if (query) {
+            const regex = new RegExp(query, 'i');
+            packages = packages.filter(p =>
+                (p.vendor?.businessName && regex.test(p.vendor.businessName)) ||
+                // Search in services
+                Object.values(p.services || {}).flat().some(s => regex.test(s.name) || regex.test(s.title) || regex.test(s.description))
+            );
+        }
+        return packages;
     }
 
     // Toggle Category Status (Bulk)

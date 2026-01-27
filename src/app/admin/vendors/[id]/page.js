@@ -4,17 +4,13 @@ import { useRouter } from 'next/navigation';
 import { getToken } from '../../../../helpers/authUtils';
 
 export default function VendorDetailsPage({ params }) {
-    // Unwrapping params using React.use() as per recent Next.js patterns or just use(params)
-    // For safety with older/newer Next versions, we'll try to treat it as a promise if needed,
-    // but standard in Next 15+ is sync access or `use`.
-    // Wait, in Next 15 params is a promise.
     const resolvedParams = use(params);
     const { id } = resolvedParams;
 
     const router = useRouter();
     const [vendor, setVendor] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [verifying, setVerifying] = useState(null); // { field, index, type }
+    const [verifying, setVerifying] = useState(null);
     const [refreshKey, setRefreshKey] = useState(0);
 
     useEffect(() => {
@@ -99,7 +95,10 @@ export default function VendorDetailsPage({ params }) {
     if (!vendor) return <div className="p-10 text-center text-red-500">Vendor not found</div>;
 
     return (
-        <>
+        <div className="p-8">
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold text-gray-800">Vendor Details</h1>
+            </div>
             <header className="bg-white shadow p-6 mb-6 flex justify-between items-center">
                 <div>
                     <button onClick={() => router.back()} className="text-sm text-indigo-600 font-medium hover:text-indigo-800 mb-2 flex items-center gap-1">
@@ -146,7 +145,7 @@ export default function VendorDetailsPage({ params }) {
                 </div>
             </header>
 
-            <div className="px-8 pb-12 space-y-6">
+            <div className="space-y-6">
                 {/* Business Info */}
                 <section className="bg-white p-6 rounded-lg shadow">
                     <h2 className="text-lg font-bold border-b pb-2 mb-4">Business Information</h2>
@@ -232,7 +231,7 @@ export default function VendorDetailsPage({ params }) {
                     </div>
                 </section>
             </div>
-        </>
+        </div>
     );
 }
 

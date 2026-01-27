@@ -418,8 +418,27 @@ class AdminController {
             // Extract query params from URL
             const url = new URL(req.url);
             const period = url.searchParams.get('period') || 'monthly'; // weekly, monthly, yearly
+            const type = url.searchParams.get('type'); // map, calendar, search, financial, health
 
-            const data = await AdminService.getAnalyticsData(period);
+            let data;
+
+            if (type === 'map') {
+                data = await AdminService.getMapAnalyticsData();
+            } else if (type === 'calendar') {
+                const start = url.searchParams.get('start');
+                const end = url.searchParams.get('end');
+                data = await AdminService.getCalendarEvents(start, end);
+            } else if (type === 'search') {
+                data = await AdminService.getSearchAnalytics();
+            } else if (type === 'financial') {
+                data = await AdminService.getFinancialStats();
+            } else if (type === 'health') {
+                data = await AdminService.getSystemHealth();
+            } else {
+                // Default legacy or overview
+                data = await AdminService.getAnalyticsData(period);
+            }
+
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { analytics: data });
         } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
     }

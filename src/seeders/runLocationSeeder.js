@@ -1,10 +1,6 @@
 import mongoose from 'mongoose';
 import fs from 'fs';
 import path from 'path';
-import { seedCategories } from './categorySeeder.js';
-import { seedCategoryDocuments } from './CategoryDocumentSeeder.js';
-import { seedUsers } from './userSeeder.js';
-import { seedSettings } from './SettingSeeder.js';
 import { seedLocations } from './locationSeeder.js';
 
 // Simple .env parser since we can't assume dotenv is installed/loadable in standalone script context easily without args
@@ -21,39 +17,39 @@ const loadEnv = () => {
             });
         }
     } catch (e) {
+        console.error('Error loading .env', e);
     }
 };
 
 const connectDB = async () => {
     try {
+        loadEnv();
         const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/travels_db';
-        const conn = await mongoose.connect(uri, {
-        });
+        console.log('Connecting to DB...');
+        await mongoose.connect(uri, {});
+        console.log('Connected to DB');
     } catch (error) {
+        console.error('DB Connection Failed', error);
         process.exit(1);
     }
 };
 
-const resetAndSeed = async () => {
-    loadEnv();
+const run = async () => {
     await connectDB();
 
-    if (mongoose.connection.db) {
-        await mongoose.connection.db.dropDatabase();
+    // We do NOT drop the database here as we might want to just append/update locations
+    // But locationSeeder handles upserts nicely.
+
+    console.log('Starting Location Seeder...');
+    const result = await seedLocations();
+
+    if (result) {
+        console.log('Location Seeder Completed Successfully');
     } else {
+        console.log('Location Seeder Failed');
     }
-
-    const results = await seedCategories();
-
-    const docResults = await seedCategoryDocuments();
-
-    const userResults = await seedUsers();
-
-    const settingResults = await seedSettings();
-
-    const locationResults = await seedLocations();
 
     process.exit(0);
 };
 
-resetAndSeed();
+run();

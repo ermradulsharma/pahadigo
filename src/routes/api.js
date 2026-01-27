@@ -5,6 +5,7 @@ import PolicyController from '../controllers/PolicyController.js';
 import PaymentController from '../controllers/PaymentController.js';
 import AuthController from '../controllers/AuthController.js';
 import CategoryController from '../controllers/CategoryController.js';
+import LocationController from '../controllers/LocationController.js';
 import { apiHandler } from '../helpers/apiHandler.js';
 
 // Helper to wrap controller methods
@@ -125,6 +126,15 @@ const routes = [
     { method: 'GET', path: '/admin/policies', handler: wrap(PolicyController.getPolicies.bind(PolicyController)), middleware: ['auth'] },
     { method: 'POST', path: '/admin/policies', handler: wrap(PolicyController.updatePolicy.bind(PolicyController)), middleware: ['auth'] },
     { method: 'POST', path: '/admin/policies/seed', handler: wrap(PolicyController.seed.bind(PolicyController)), middleware: ['auth'] },
+    { method: 'POST', path: '/admin/policies/seed', handler: wrap(PolicyController.seed.bind(PolicyController)), middleware: ['auth'] },
+
+    // Location
+    { method: 'GET', path: '/countries', handler: wrap(LocationController.getCountries.bind(LocationController)) },
+    { method: 'GET', path: '/countries/:id', handler: wrap(LocationController.getCountryById.bind(LocationController)) },
+    { method: 'POST', path: '/admin/countries', handler: wrap(LocationController.createCountry.bind(LocationController)), middleware: ['auth'] }, // Admin only
+    { method: 'GET', path: '/states', handler: wrap(LocationController.getStates.bind(LocationController)) }, // query ?country=ID
+    { method: 'GET', path: '/countries/:id/states', handler: wrap(LocationController.getStatesByCountry.bind(LocationController)) },
+    { method: 'POST', path: '/admin/states', handler: wrap(LocationController.createState.bind(LocationController)), middleware: ['auth'] },
 ];
 
 export default routes;
