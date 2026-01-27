@@ -1,6 +1,7 @@
 import User from '../models/User.js';
 import OTPService from './OTPService.js';
 import { generateToken, verifyToken } from '../helpers/jwt.js';
+import { USER_ROLES, AUTH_PROVIDERS } from '../constants/index.js';
 import googleAuthLib from 'google-auth-library';
 const { OAuth2Client } = googleAuthLib;
 import Vendor from '../models/Vendor.js';
@@ -34,7 +35,7 @@ class AuthService {
         if (!isMatch) throw new Error('Invalid credentials');
 
         let vendorData = {};
-        if (user.role === 'vendor') {
+        if (user.role === USER_ROLES.VENDOR) {
             vendorData = await this._getVendorStatus(user);
         }
 
@@ -56,26 +57,26 @@ class AuthService {
 
         let role = otpRecord.role;
         if (role === 'master') {
-            const validRoles = ['user', 'vendor'];
-            role = (targetRole && validRoles.includes(targetRole)) ? targetRole : 'user';
+            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
+            role = (targetRole && validRoles.includes(targetRole)) ? targetRole : USER_ROLES.TRAVELLER;
         }
 
         let user = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
         let isNewUser = false;
         if (!user) {
-            const validRoles = ['user', 'vendor'];
-            const userRole = (role && validRoles.includes(role)) ? role : 'user';
+            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
+            const userRole = (role && validRoles.includes(role)) ? role : USER_ROLES.TRAVELLER;
             const payload = {
                 role: userRole,
                 isVerified: true,
-                authProvider: email ? 'local' : 'phone'
+                authProvider: email ? AUTH_PROVIDERS.LOCAL : AUTH_PROVIDERS.PHONE
             };
             if (email) payload.email = email;
             if (phone) payload.phone = phone;
             user = await User.create(payload);
             isNewUser = true;
         } else {
-            if (role === 'vendor' && user.role === 'user') {
+            if (role === USER_ROLES.VENDOR && user.role === USER_ROLES.TRAVELLER) {
                 user.role = 'vendor';
                 await user.save();
             }

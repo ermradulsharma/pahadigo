@@ -1,6 +1,6 @@
-const BookingService = require('../../src/services/BookingService');
-const Booking = require('../../src/models/Booking');
-const mongoose = require('mongoose');
+import BookingService from '../../src/services/BookingService.js';
+import Booking from '../../src/models/Booking.js';
+import mongoose from 'mongoose';
 
 describe('BookingService', () => {
     const userId = new mongoose.Types.ObjectId();

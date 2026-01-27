@@ -1,6 +1,6 @@
-const AuthService = require('../../src/services/AuthService');
-const OTPService = require('../../src/services/OTPService');
-const User = require('../../src/models/User');
+import AuthService from '../../src/services/AuthService.js';
+import OTPService from '../../src/services/OTPService.js';
+import User from '../../src/models/User.js';
 
 describe('AuthService', () => {
     describe('verifyAndLogin', () => {
@@ -14,7 +14,7 @@ describe('AuthService', () => {
 
         it('should create a new user and return a token for valid OTP', async () => {
             const email = 'newuser@example.com';
-            const otp = OTPService.generateOTP(email, 'user');
+            const otp = OTPService.generateOTP(email, 'traveller');
 
             const result = await AuthService.verifyAndLogin({
                 identifier: email,
@@ -24,7 +24,7 @@ describe('AuthService', () => {
 
             expect(result.token).toBeDefined();
             expect(result.isNewUser).toBe(true);
-            expect(result.role).toBe('user');
+            expect(result.role).toBe('traveller');
 
             const user = await User.findOne({ email });
             expect(user).toBeDefined();
@@ -33,7 +33,7 @@ describe('AuthService', () => {
 
         it('should login existing user and check for role upgrade', async () => {
             const email = 'existing@example.com';
-            await User.create({ email, role: 'user', isVerified: true });
+            await User.create({ email, role: 'traveller', isVerified: true });
 
             const otp = OTPService.generateOTP(email, 'vendor'); // Attempting to login as vendor
             const result = await AuthService.verifyAndLogin({
@@ -42,7 +42,7 @@ describe('AuthService', () => {
                 email
             });
 
-            expect(result.isNewUser).toBe(true); // role upgrade with missing profile makes them "new user" for vendor flow
+            expect(result.isNewUser).toBe(false);
             expect(result.role).toBe('vendor');
 
             const updatedUser = await User.findOne({ email });

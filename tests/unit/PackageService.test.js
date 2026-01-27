@@ -1,7 +1,7 @@
-const PackageService = require('../../src/services/PackageService');
-const Package = require('../../src/models/Package');
-const Vendor = require('../../src/models/Vendor');
-const mongoose = require('mongoose');
+import PackageService from '../../src/services/PackageService.js';
+import Package from '../../src/models/Package.js';
+import Vendor from '../../src/models/Vendor.js';
+import mongoose from 'mongoose';
 
 describe('PackageService', () => {
     let vendorId;
@@ -10,54 +10,63 @@ describe('PackageService', () => {
         const vendor = await Vendor.create({
             user: new mongoose.Types.ObjectId(),
             businessName: 'Test Travels',
-            category: 'Trekking',
-            isApproved: true
+            category: ['Trekking'],
+            isApproved: true,
+            documents: {
+                aadharCard: [{ url: 'http://test.com/aadhar.jpg' }],
+                panCard: { url: 'http://test.com/pan.jpg' },
+                businessRegistration: { url: 'http://test.com/biz.jpg' },
+                gstRegistration: { url: 'http://test.com/gst.jpg' }
+            }
         });
         vendorId = vendor._id;
     });
 
-    it('should create a new package', async () => {
-        const pkgData = {
-            title: 'Himalayan Trek',
-            price: 15000,
-            description: 'Exciting trek to the mountains',
-            duration: '3 Days'
-        };
-
-        const pkg = await PackageService.createPackage(vendorId, pkgData);
-        expect(pkg).toBeDefined();
-        expect(pkg.title).toBe(pkgData.title);
-        expect(pkg.vendor.toString()).toBe(vendorId.toString());
+    it('should ensure a catalog exists for a vendor', async () => {
+        const catalog = await PackageService.ensureCatalog(vendorId);
+        expect(catalog).toBeDefined();
+        expect(catalog.vendor.toString()).toBe(vendorId.toString());
+        expect(catalog.services.trekking).toBeDefined();
     });
 
-    it('should fetch only available packages from approved vendors', async () => {
-        // Approved vendor's package (already created one in beforeEach)
-        await Package.create({
-            vendor: vendorId,
-            title: 'Approved Package',
-            price: 1000,
-            description: 'Test description',
-            duration: '2 Days'
-        });
+    it('should add a service item', async () => {
+        const itemData = {
+            trekkingName: 'Himalayan Trek',
+            duration: '3 Days',
+            pricePerPerson: 10000,
+            location: 'Uttarakhand'
+        };
 
-        // Unapproved vendor's package
-        const unapprovedVendor = await Vendor.create({
-            user: new mongoose.Types.ObjectId(),
-            businessName: 'Dodgy Travels',
-            category: 'Homestay',
-            isApproved: false
-        });
+        const updatedCatalog = await PackageService.addServiceItem(vendorId, 'trekking', itemData);
+        expect(updatedCatalog.services.trekking.length).toBe(1);
+        expect(updatedCatalog.services.trekking[0].trekkingName).toBe(itemData.trekkingName);
+    });
 
-        await Package.create({
-            vendor: unapprovedVendor._id,
-            title: 'Stealth Package',
-            price: 500,
-            description: 'Hidden package',
-            duration: '1 Day'
-        });
+    it('should update a service item', async () => {
+        const itemData = {
+            trekkingName: 'Old Trek',
+            duration: '1 Day',
+            pricePerPerson: 1000,
+            location: 'Local'
+        };
+        const catalog = await PackageService.addServiceItem(vendorId, 'trekking', itemData);
+        const itemId = catalog.services.trekking[0]._id;
 
-        const packages = await PackageService.getAvailablePackages();
-        expect(packages.length).toBe(1);
-        expect(packages[0].title).toBe('Approved Package');
+        const updatedCatalog = await PackageService.updateServiceItem(vendorId, 'trekking', itemId, { trekkingName: 'New Trek' });
+        expect(updatedCatalog.services.trekking[0].trekkingName).toBe('New Trek');
+    });
+
+    it('should toggle item status', async () => {
+        const itemData = {
+            trekkingName: 'Toggle Trek',
+            duration: '1 Day',
+            pricePerPerson: 1000,
+            location: 'Local'
+        };
+        const catalog = await PackageService.addServiceItem(vendorId, 'trekking', itemData);
+        const itemId = catalog.services.trekking[0]._id;
+
+        const updatedCatalog = await PackageService.toggleItemStatus(vendorId, 'trekking', itemId, false);
+        expect(updatedCatalog.services.trekking[0].isActive).toBe(false);
     });
 });

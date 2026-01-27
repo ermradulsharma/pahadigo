@@ -93,6 +93,7 @@ const VendorPackageSchema = new mongoose.Schema({
         vehicleRental: [VehicleRentalSchema],
         chardhamTour: [ChardhamTourSchema]
     },
+    price: { type: Number, default: 0 },
 
     createdAt: { type: Date, default: Date.now }
 });

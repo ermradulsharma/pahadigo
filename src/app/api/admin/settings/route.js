@@ -1,7 +1,7 @@
 import connectDB from '@/config/db';
 import Setting from '@/models/Setting';
 import { NextResponse } from 'next/server';
-import { HTTP_STATUS } from '@/constants/index';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index';
 
 export async function GET() {
     await connectDB();

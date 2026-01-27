@@ -2,7 +2,7 @@ import AuthService from '../services/AuthService.js';
 import OTPService from '../services/OTPService.js';
 import { successResponse, errorResponse } from '../helpers/response.js';
 import { parseBody } from '../helpers/parseBody.js';
-import { HTTP_STATUS } from '../constants/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '../constants/index.js';
 
 class AuthController {
 

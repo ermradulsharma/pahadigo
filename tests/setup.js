@@ -1,12 +1,11 @@
-const mongoose = require('mongoose');
+import mongoose from 'mongoose';
+import { MongoMemoryServer } from 'mongodb-memory-server';
 
 // Set env vars BEFORE any modules are required by tests
 process.env.JWT_SECRET = 'test_secret';
 process.env.NODE_ENV = 'test';
 
 let mongoServer;
-
-const { MongoMemoryServer } = require('mongodb-memory-server');
 
 beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create();

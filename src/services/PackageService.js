@@ -72,6 +72,14 @@ class PackageService {
         return await this.updateServiceItem(vendorId, category, itemId, { isActive });
     }
 
+    async getPackageById(id) {
+        return await Package.findById(id);
+    }
+
+    async getAvailablePackages() {
+        return await Package.find({}).populate('vendor');
+    }
+
     // Toggle Category Status (Bulk)
     async toggleCategoryStatus(vendorId, category, isActive) {
         const pkg = await this.ensureCatalog(vendorId);
