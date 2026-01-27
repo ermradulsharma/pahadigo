@@ -1,87 +1,89 @@
-# PahadiGo API Reference
+# PahadiGo API Documentation
 
-All API requests should be sent to `/api/...`. Headers should include `Authorization: Bearer <token>` for protected routes.
+This document provides a reference for the REST API endpoints available in the PahadiGo platform.
+
+## Base URL
+
+All API requests should be made to: `/api` (e.g., `http://localhost:3000/api`)
 
 ## Authentication
 
-### Send OTP
+Most endpoints require a Bearer Token.
+`Authorization: Bearer <your_jwt_token>`
 
-- **URL:** `POST /api/auth/otp`
-- **Body:** `{ "email": "string", "phone": "string", "role": "user|vendor" }`
-- **Description:** Generates and logs an OTP for development.
-
-### Verify OTP & Login
-
-- **URL:** `POST /api/auth/verify`
-- **Body:** `{ "identifier": "string", "otp": "string" }`
-- **Success Response:** `200 OK` with `{ "token": "...", "role": "...", "isNewUser": "boolean" }`
-
-### Google Login
-
-- **URL:** `POST /api/auth/google`
-- **Body:** `{ "idToken": "string", "role": "user|vendor" }`
+| Method | Endpoint       | Description                | Auth Required |
+| :----- | :------------- | :------------------------- | :------------ |
+| `POST` | `/auth/otp`    | Send OTP to Email/Phone    | No            |
+| `POST` | `/auth/verify` | Verify OTP & Login/Signup  | No            |
+| `POST` | `/auth/login`  | Password Login (Admin/Dev) | No            |
+| `POST` | `/auth/google` | Google OAuth Login         | No            |
+| `GET`  | `/auth/me`     | Get Current User Profile   | **Yes**       |
 
 ---
 
-## User Endpoints
+## 👑 Admin Endpoints
 
-### Browse Packages
+Management routes for the dashboard.
 
-- **URL:** `GET /api/user/packages`
-- **Description:** Returns all packages from approved vendors.
-
-### Book a Package
-
-- **URL:** `POST /api/user/book` (Protected)
-- **Body:** `{ "packageId": "string", "travelDate": "YYYY-MM-DD" }`
-
----
-
-## Vendor Endpoints
-
-### Get Categories
-
-- **URL:** `GET /api/vendor/categories`
-- **Description:** Returns a list of supported vendor categories (Homestay, Trekking, etc.).
-
-### Update Profile
-
-- **URL:** `POST /api/vendor/profile` (Protected)
-- **Body:** `{ "businessName": "string", "category": "string", ... }`
-
-### Create Package
-
-- **URL:** `POST /api/vendor/create-package` (Protected)
-- **Body:** `{ "title": "string", "price": "number", "description": "string", "duration": "string" }`
+| Method  | Endpoint                   | Description                         |
+| :------ | :------------------------- | :---------------------------------- |
+| `GET`   | `/admin/stats`             | Dashboard overview statistics       |
+| `GET`   | `/admin/analytics`         | Advanced charts (revenue, growth)   |
+| `GET`   | `/admin/audit-logs`        | View administrative action history  |
+| `GET`   | `/admin/users`             | List all users (Travellers/Vendors) |
+| `POST`  | `/admin/approve-vendor`    | Approve/Reject vendor verification  |
+| `GET`   | `/admin/packages`          | Inventory management                |
+| `PATCH` | `/admin/packages`          | Toggle package status               |
+| `GET`   | `/admin/reviews`           | Moderation queue for reviews        |
+| `POST`  | `/admin/marketing/banners` | Create promotional banner           |
+| `POST`  | `/admin/marketing/coupons` | Create discount coupon              |
 
 ---
 
-## Payment Endpoints
+## 💼 Vendor Endpoints
 
-### Create Razorpay Order
+Routes for vendor business operations.
 
-- **URL:** `POST /api/payment/create-order` (Protected)
-- **Body:** `{ "bookingId": "string" }`
-
-### Verify Payment
-
-- **URL:** `POST /api/payment/verify` (Protected)
-- **Body:** `{ "razorpay_order_id": "... ", "razorpay_payment_id": "...", "razorpay_signature": "..." }`
+| Method | Endpoint                  | Description                 |
+| :----- | :------------------------ | :-------------------------- |
+| `GET`  | `/vendor/profile`         | Get business profile        |
+| `POST` | `/vendor/profile/update`  | Update business details     |
+| `POST` | `/vendor/create-package`  | Create a new travel package |
+| `GET`  | `/vendor/packages`        | List own packages           |
+| `POST` | `/vendor/document/upload` | Upload KYC documents        |
 
 ---
 
-## Admin Endpoints
+## 🏕️ User / Public Endpoints
 
-### Dashboard Stats
+Routes for travellers and public browsing.
 
-- **URL:** `GET /api/admin/stats` (Admin Only)
+| Method | Endpoint         | Description              |
+| :----- | :--------------- | :----------------------- |
+| `GET`  | `/user/packages` | Browse/Search packages   |
+| `POST` | `/user/book`     | Book a package           |
+| `POST` | `/inquiries`     | Submit a support viewing |
 
-### Vendor Approval
+---
 
-- **URL:** `POST /api/admin/approve-vendor` (Admin Only)
-- **Body:** `{ "vendorId": "string" }`
+## Response Format
 
-### Manage Payouts & Refunds
+Standard response structure:
 
-- **URL:** `POST /api/admin/payout` | `POST /api/admin/refund` (Admin Only)
-- **Body:** `{ "bookingId": "string" }`
+```json
+{
+  "success": true,
+  "message": "Operation successful",
+  "data": { ... }
+}
+```
+
+Error response:
+
+```json
+{
+  "success": false,
+  "message": "Error description",
+  "error": { ... }
+}
+```
