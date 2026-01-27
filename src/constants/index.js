@@ -26,6 +26,29 @@ export const GENDER = {
     OTHER: 'other'
 };
 
+export const BOOKING_STATUS = {
+    PENDING: 'pending',
+    CONFIRMED: 'confirmed',
+    CANCELLED: 'cancelled',
+    COMPLETED: 'completed'
+};
+
+export const PAYMENT_STATUS = {
+    PENDING: 'pending',
+    PAID: 'paid',
+    FAILED: 'failed'
+};
+
+export const PAYOUT_STATUS = {
+    PENDING: 'pending',
+    PAID: 'paid'
+};
+
+export const REFUND_STATUS = {
+    NONE: 'none',
+    REFUNDED: 'refunded'
+};
+
 export const PAGINATION = {
     DEFAULT_PAGE: 1,
     DEFAULT_LIMIT: 10,
