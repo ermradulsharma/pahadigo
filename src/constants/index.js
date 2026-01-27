@@ -101,13 +101,13 @@ export const APP_DETAILS = {
     APP_URL: 'http://www.pahadigo.com',
     MAIL_FROM_EMAIL: 'no-reply@pahadigo.com',
     CONTACT_MAIL_FROM_EMAIL: 'contact@pahadigo.com',
-    PUSH_NOTIFICATION_SERVER_KEY: 'AAAAOrJ9guI:APA91bHNWHnrMohXSiyw0BV0zknsKaixfKiprwSlsqg0uanBqpiM49sTLJ3wJNp2s0-D1m0QS0RJgssnID3v31kyjmABTJX4jPyMIfRgSLIw39A6JSX3FBAcysO5kwB7aeKo87CiBoBs'
+    PUSH_NOTIFICATION_SERVER_KEY: process.env.FCM_SERVER_KEY
 };
 
 export const APP_SECRETS = {
-    SOCIAL_PASS: 'y5sUdwLH7*STamnnjRu21!11I269Uw8Ijk%^xlLRN',
-    OTHER_ACCOUNT_PASS: 'y5sUdwLH7*STamn1I269Uw8Ijk%^xlLRN',
-    SMTP_ACCOUNT_PASS: 'hmnnjrhhnzklcyae'
+    SOCIAL_PASS: process.env.SOCIAL_PASS,
+    OTHER_ACCOUNT_PASS: process.env.OTHER_ACCOUNT_PASS,
+    SMTP_ACCOUNT_PASS: process.env.SMTP_PASS
 };
 
 export const UPLOAD_PATHS = {
@@ -120,21 +120,27 @@ export const UPLOAD_PATHS = {
 };
 
 export const NOTIFICATION_TYPES = {
-    POST_LIKE: 'POST_LIKE',
-    POST_COMMENT: 'POST_COMMENT',
-    MESSAGE_RECEIVED: 'MESSAGE_RECEIVED',
-    FOLLOW_REQUEST: 'FOLLOW_REQUEST',
-    JOIN_REQUEST: 'JOIN_REQUEST',
-    GROUP_INVITE: 'GROUP_INVITE',
-    ACCEPT_JOIN_REQUEST: 'ACCEPT_JOIN_REQUEST'
+    BOOKING_CONFIRMED: 'BOOKING_CONFIRMED',
+    BOOKING_CANCELLED: 'BOOKING_CANCELLED',
+    NEW_BOOKING: 'NEW_BOOKING',
+    PAYMENT_SUCCESS: 'PAYMENT_SUCCESS',
+    VENDOR_VERIFIED: 'VENDOR_VERIFIED',
+    VENDOR_REJECTED: 'VENDOR_REJECTED',
+    PACKAGE_APPROVED: 'PACKAGE_APPROVED',
+    PACKAGE_REJECTED: 'PACKAGE_REJECTED',
+    MESSAGE_RECEIVED: 'MESSAGE_RECEIVED'
 };
 
 export const NOTIFICATION_MESSAGES = {
-    ACCEPTED: "Your offer has been accepted",
-    REJECTED: "Your offer has been rejected",
-    ON_THE_WAY: "on the way to start ",
-    WORKING_ON: "started working on ",
-    COMPLETED: "Your job has been completed"
+    BOOKING_CONFIRMED: "Your booking has been confirmed successfully!",
+    BOOKING_CANCELLED: "Your booking has been cancelled.",
+    NEW_BOOKING: "You have a new booking request.",
+    PAYMENT_SUCCESS: "Payment received successfully for your booking.",
+    VENDOR_VERIFIED: "Congratulations! Your vendor profile has been verified.",
+    VENDOR_REJECTED: "Your vendor profile verification was unsuccessful.",
+    PACKAGE_APPROVED: "Your travel package has been approved and is now live.",
+    PACKAGE_REJECTED: "Your travel package requires changes before approval.",
+    MESSAGE_RECEIVED: "You have received a new message."
 };
 
 export const APP_CONSTANTS = {

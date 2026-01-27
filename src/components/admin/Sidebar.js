@@ -20,20 +20,13 @@ export default function Sidebar() {
     return (
         <aside className="w-64 bg-slate-900 text-white flex flex-col shadow-lg flex-shrink-0">
             <div className="p-6 text-2xl font-bold tracking-wide border-b border-slate-800 flex items-center gap-2">
-                <span className="text-indigo-500">Admin</span>Panel
+                <span className="text-indigo-500">PahadiGO</span>Panel
             </div>
             <nav className="flex-1 px-4 space-y-2 mt-6 overflow-y-auto">
                 {menuItems.map((item) => {
                     const isActive = pathname === item.href || (item.href !== '/admin' && pathname.startsWith(item.href));
                     return (
-                        <Link
-                            key={item.name}
-                            href={item.href}
-                            className={`flex items-center gap-3 w-full text-left py-3 px-4 rounded-lg transition-all duration-200 ${isActive
-                                ? 'bg-indigo-600 shadow-md text-white'
-                                : 'text-slate-400 hover:bg-slate-800 hover:text-white'
-                                }`}
-                        >
+                        <Link key={item.name} href={item.href} className={`flex items-center gap-3 w-full text-left py-3 px-4 rounded-lg transition-all duration-200 ${isActive ? 'bg-indigo-600 shadow-md text-white' : 'text-slate-400 hover:bg-slate-800 hover:text-white'}`}>
                             <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d={item.icon} />
                             </svg>
@@ -43,7 +36,7 @@ export default function Sidebar() {
                 })}
             </nav>
             <div className="p-4 border-t border-slate-800 text-center text-xs text-slate-500">
-                &copy; 2024 Travels Admin
+                &copy; 2024 PahadiGO Admin
             </div>
         </aside>
     );
