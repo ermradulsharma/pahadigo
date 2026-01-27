@@ -3,6 +3,7 @@ import PackageService from '../services/PackageService.js';
 import BookingService from '../services/BookingService.js';
 import Vendor from '../models/Vendor.js';
 import { errorResponse, successResponse } from '../helpers/response.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '../constants/index.js';
 
 class AdminController {
 
@@ -15,66 +16,62 @@ class AdminController {
     async getStats(req) {
         try {
             if (!this._isAdmin(req)) {
-                return errorResponse(403, 'Admin access required', {});
+                return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.ADMIN_ONLY, {});
             }
 
             const stats = await AdminService.getDashboardStats();
 
-            return successResponse(200, 'Stats retrieved successfully', { stats });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { stats });
         } catch (error) {
-            console.error('Admin Stats Error:', error);
-            return errorResponse(500, 'Internal Server Error', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
 
     // GET /admin/bookings
     async getBookings(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const bookings = await AdminService.getAllBookings();
 
-            return successResponse(200, 'Bookings retrieved successfully', { bookings });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { bookings });
         } catch (error) {
-            console.error('Admin Bookings Error:', error);
-            return errorResponse(500, 'Internal Server Error', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
 
     // GET /admin/vendors
     async getVendors(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const vendors = await AdminService.getAllVendors();
-            return successResponse(200, 'Vendors retrieved successfully', { vendors });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { vendors });
         } catch (error) {
-            console.error('Admin Vendors Error:', error);
-            return errorResponse(500, 'Internal Server Error', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
 
     // GET /admin/travellers
     async getTravellers(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const travellers = await AdminService.getAllTravellers();
-            return successResponse(200, 'Travellers retrieved successfully', { travellers });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { travellers });
         } catch (error) {
-            console.error('Admin Travellers Error:', error);
-            return errorResponse(500, 'Internal Server Error', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
 
     // POST /admin/approve-vendor
     async approveVendor(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const { vendorId, status, rejectionReason } = body;
 
-            if (!vendorId) return errorResponse(400, 'Vendor ID required', {});
+            if (!vendorId) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
 
             // status: 'verified' | 'rejected'
             // If status is not provided, fallback to old behavior (simple approval -> verified)
@@ -91,35 +88,34 @@ class AdminController {
 
             await Vendor.findByIdAndUpdate(vendorId, updateData);
 
-            return successResponse(200, `Vendor ${status || 'approved'}`, {});
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.VENDOR_STATUS_UPDATED, {});
         } catch (error) {
-            console.error('Approve Vendor Error:', error);
-            return errorResponse(500, 'Internal Server Error', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
 
     // POST /admin/verify-document
     async verifyDocument(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const { vendorId, documentField, status, reason, index } = body;
 
             if (!vendorId || !documentField || !status) {
-                return errorResponse(400, 'Vendor ID, document field, and status are required', {});
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             }
 
             const vendor = await Vendor.findById(vendorId);
-            if (!vendor) return errorResponse(404, 'Vendor not found', {});
+            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
 
             if (!vendor.documents || !vendor.documents[documentField]) {
-                return errorResponse(404, 'Document field not found', {});
+                return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.DOCUMENT_NOT_FOUND, {});
             }
 
             // Handle array fields
             if (Array.isArray(vendor.documents[documentField])) {
-                if (typeof index !== 'number') return errorResponse(400, 'Index required for array fields', {});
-                if (!vendor.documents[documentField][index]) return errorResponse(404, 'Document at index not found', {});
+                if (typeof index !== 'number') return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+                if (!vendor.documents[documentField][index]) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.DOCUMENT_NOT_FOUND, {});
 
                 vendor.documents[documentField][index].status = status;
                 vendor.documents[documentField][index].reason = status === 'rejected' ? reason : null;
@@ -133,45 +129,42 @@ class AdminController {
             vendor.markModified('documents');
             await vendor.save();
 
-            return successResponse(200, `Document ${documentField} updated to ${status}`, {});
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DOCUMENT_STATUS_UPDATED, {});
         } catch (error) {
-            console.error('Verify Document Error:', error);
-            return errorResponse(500, 'Internal Server Error', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
 
     // POST /admin/add-package
     async addPackageOnBehalf(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const { vendorId, ...pkgData } = body;
 
-            if (!vendorId) return errorResponse(400, 'Vendor ID required', {});
+            if (!vendorId) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
 
             const pkg = await PackageService.createPackage(vendorId, pkgData);
-            return successResponse(201, 'Package created', { pkg });
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.PACKAGE_CREATED, { pkg });
         } catch (error) {
-            console.error('Admin Add Package Error:', error);
-            return errorResponse(500, 'Internal Server Error', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
 
     // POST /admin/payout
     async markPayout(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const { bookingId } = body;
 
-            if (!bookingId) return errorResponse(400, 'Booking ID required', {});
+            if (!bookingId) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
 
             await BookingService.markPayout(bookingId);
 
-            return successResponse(200, 'Payout marked as paid', {});
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.PAYOUT_MARKED, {});
         } catch (error) {
-            console.error('Mark Payout Error:', error);
-            const status = error.message === 'Booking not found' ? 404 : 500;
+            const status = error.message === 'Booking not found' ? HTTP_STATUS.NOT_FOUND : HTTP_STATUS.INTERNAL_SERVER_ERROR;
             return errorResponse(status, error.message, {});
         }
     }
@@ -179,18 +172,17 @@ class AdminController {
     // POST /admin/refund
     async refundBooking(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const { bookingId } = body;
 
-            if (!bookingId) return errorResponse(400, 'Booking ID required', {});
+            if (!bookingId) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
 
             await BookingService.processRefund(bookingId);
 
-            return successResponse(200, 'Booking refunded successfully', {});
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.BOOKING_REFUNDED, {});
         } catch (error) {
-            console.error('Refund Booking Error:', error);
-            const status = error.message === 'Booking not found' ? 404 : 500;
+            const status = error.message === 'Booking not found' ? HTTP_STATUS.NOT_FOUND : HTTP_STATUS.INTERNAL_SERVER_ERROR;
             return errorResponse(status, error.message, {});
         }
     }
@@ -198,14 +190,13 @@ class AdminController {
     // GET /admin/payment-history
     async getPaymentHistory(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const history = await AdminService.getPaymentHistory();
 
-            return successResponse(200, 'Payment history retrieved successfully', { history });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { history });
         } catch (error) {
-            console.error('Payment History Error:', error);
-            return errorResponse(500, 'Internal Server Error', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
 }

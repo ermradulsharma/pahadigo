@@ -17,8 +17,8 @@ export default function TravellersPage() {
                 const data = await res.json();
                 return data.data?.travellers || []; // Adjusted for response format
             }
-        } catch (e) { console.error(e); }
-        return [];
+            return [];
+        } catch (e) { }
     }, []);
 
     useEffect(() => {

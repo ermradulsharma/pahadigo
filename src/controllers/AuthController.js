@@ -2,6 +2,7 @@ import AuthService from '../services/AuthService.js';
 import OTPService from '../services/OTPService.js';
 import { successResponse, errorResponse } from '../helpers/response.js';
 import { parseBody } from '../helpers/parseBody.js';
+import { HTTP_STATUS } from '../constants/index.js';
 
 class AuthController {
 
@@ -11,30 +12,30 @@ class AuthController {
             const body = await parseBody(req);
             let { email, phone, role } = body;
             if (body.hasOwnProperty('email') && !body.email) {
-                return errorResponse(400, 'Email is required', {});
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.EMAIL_REQUIRED, {});
             }
             if (body.hasOwnProperty('phone') && !body.phone) {
-                return errorResponse(400, 'Phone is required', {});
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.PHONE_REQUIRED, {});
             }
 
             if (email) email = email.toLowerCase().trim();
             if (phone) phone = phone.trim();
             if (role) role = role.toLowerCase().trim();
             if (role && !['traveller', 'vendor'].includes(role)) {
-                return errorResponse(400, 'Invalid role. Allowed: traveller, vendor', {});
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.INVALID_ROLE, {});
             }
 
             if (!email && !phone) {
-                return errorResponse(400, 'Email OR Phone is required', {});
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.EMAIL_OR_PHONE_REQUIRED, {});
             }
             if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                return errorResponse(400, 'Invalid email format', {});
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.INVALID_EMAIL, {});
             }
             const identifier = email || phone;
             const otp = OTPService.generateOTP(identifier, role);
-            return successResponse(200, 'OTP sent successfully', { otp, email, phone });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.OTP_SENT, { otp, email, phone });
         } catch (error) {
-            return errorResponse(500, 'Failed to send OTP', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.AUTH.OTP_SEND_FAILED, {});
         }
     }
 
@@ -43,12 +44,12 @@ class AuthController {
         try {
             const body = await parseBody(req);
             const { email, password, rememberMe } = body;
-            if (!email || !password) return errorResponse(400, 'Email and Password required', {});
+            if (!email || !password) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
             const result = await AuthService.loginWithPassword({ email, password, rememberMe });
-            return successResponse(200, 'Login successful', result);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, result);
         } catch (error) {
-            return errorResponse(401, error.message, {});
+            return errorResponse(HTTP_STATUS.UNAUTHORIZED, error.message, {});
         }
     }
 
@@ -62,10 +63,10 @@ class AuthController {
             if (role) role = role.toLowerCase().trim();
             const identifier = email || phone;
             if (!identifier || !otp) {
-                return errorResponse(400, 'Identifier (Email/Phone) and OTP required', {});
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             }
             const result = await AuthService.verifyAndLogin({ identifier, otp, email, phone, targetRole: role });
-            return successResponse(200, 'Login successful', {
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, {
                 user: result.user,
                 token: result.token,
                 isNewUser: result.isNewUser,
@@ -73,7 +74,7 @@ class AuthController {
                 vendorProfile: result.vendorProfile
             });
         } catch (error) {
-            const status = error.message === 'Invalid or expired OTP' ? 400 : 500;
+            const status = error.message === 'Invalid or expired OTP' ? HTTP_STATUS.BAD_REQUEST : HTTP_STATUS.INTERNAL_SERVER_ERROR;
             return errorResponse(status, error.message, {});
         }
     }
@@ -83,12 +84,11 @@ class AuthController {
         try {
             const body = await parseBody(req);
             const { idToken, role } = body;
-            if (!idToken) return errorResponse(400, 'Google ID Token required', {});
+            if (!idToken) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             const result = await AuthService.googleAuth(idToken, role);
-            return successResponse(200, 'Google Login successful', { token: result.token, isNewUser: result.isNewUser, user: result.user });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, { token: result.token, isNewUser: result.isNewUser, user: result.user });
         } catch (error) {
-            console.error("Google Auth Error:", error);
-            return errorResponse(500, error.message || 'Invalid Google Token', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || 'Invalid Google Token', {});
         }
     }
 
@@ -97,12 +97,11 @@ class AuthController {
         try {
             const body = await parseBody(req);
             const { accessToken, role } = body;
-            if (!accessToken) return errorResponse(400, 'Facebook Access Token required', {});
+            if (!accessToken) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             const result = await AuthService.facebookAuth(accessToken, role);
-            return successResponse(200, 'Facebook Login successful', { token: result.token, isNewUser: result.isNewUser, user: result.user });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, { token: result.token, isNewUser: result.isNewUser, user: result.user });
         } catch (error) {
-            console.error("Facebook Auth Error:", error);
-            return errorResponse(500, error.message || 'Invalid Facebook Token', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || 'Invalid Facebook Token', {});
         }
     }
 
@@ -111,40 +110,39 @@ class AuthController {
         try {
             const body = await parseBody(req);
             const { idToken, user, email, role } = body;
-            if (!idToken) return errorResponse(400, 'Apple ID Token required', {});
+            if (!idToken) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
             // user and email are optional fields sent by Apple client on first login
             const result = await AuthService.appleAuth(idToken, role, user, email);
-            return successResponse(200, 'Apple Login successful', { token: result.token, isNewUser: result.isNewUser, user: result.user });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, { token: result.token, isNewUser: result.isNewUser, user: result.user });
         } catch (error) {
-            console.error("Apple Auth Error:", error);
-            return errorResponse(500, error.message || 'Invalid Apple Token', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || 'Invalid Apple Token', {});
         }
     }
 
     async logout(req) {
-        return successResponse(200, 'Logged out successfully', {});
+        return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGOUT_SUCCESS, {});
     }
 
     async verify(req) {
         try {
             const token = req.headers.get('authorization')?.split(' ')[1];
-            if (!token) return errorResponse(401, 'No token provided', {});
+            if (!token) return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.NO_TOKEN, {});
             const result = await AuthService.verify(token);
-            return successResponse(200, 'Token is valid', { result });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.TOKEN_VALID, { result });
         } catch (error) {
-            return errorResponse(401, error.message, {});
+            return errorResponse(HTTP_STATUS.UNAUTHORIZED, error.message, {});
         }
     }
 
     async refresh(req) {
         try {
             const token = req.headers.get('authorization')?.split(' ')[1];
-            if (!token) return errorResponse(401, 'No token provided', {});
+            if (!token) return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.NO_TOKEN, {});
             const result = await AuthService.refresh(token);
-            return successResponse(200, 'Token refreshed', { result });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.TOKEN_REFRESHED, { result });
         } catch (error) {
-            return errorResponse(401, error.message, {});
+            return errorResponse(HTTP_STATUS.UNAUTHORIZED, error.message, {});
         }
     }
 
@@ -156,15 +154,15 @@ class AuthController {
             if (!userContext || !userContext.id) {
                 // Fallback for direct calls without middleware (though route has middleware now)
                 const token = req.headers.get('authorization')?.split(' ')[1];
-                if (!token) return errorResponse(401, 'No token provided', {});
+                if (!token) return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.NO_TOKEN, {});
                 const user = await AuthService.me(token);
-                return successResponse(200, 'User profile', { user });
+                return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { user });
             }
 
             const userProfile = await AuthService.getProfileById(userContext.id);
-            return successResponse(200, 'User profile', { user: userProfile });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { user: userProfile });
         } catch (error) {
-            return errorResponse(401, error.message, {});
+            return errorResponse(HTTP_STATUS.UNAUTHORIZED, error.message, {});
         }
     }
 
@@ -172,11 +170,11 @@ class AuthController {
         try {
             const body = await parseBody(req);
             const { email } = body;
-            if (!email) return errorResponse(400, 'Email is required', {});
+            if (!email) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.EMAIL_REQUIRED, {});
             await AuthService.forgetPassword(email);
-            return successResponse(200, 'Reset link sent', {});
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.PASSWORD_RESET_LINK_SENT, {});
         } catch (error) {
-            return errorResponse(500, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
         }
     }
 
@@ -184,11 +182,11 @@ class AuthController {
         try {
             const body = await parseBody(req);
             const { email, password } = body;
-            if (!email || !password) return errorResponse(400, 'Email and Password required', {});
+            if (!email || !password) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             await AuthService.resetPassword(email, password);
-            return successResponse(200, 'Password reset successfully', {});
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.PASSWORD_RESET_SUCCESS, {});
         } catch (error) {
-            return errorResponse(500, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
         }
     }
 
@@ -200,7 +198,7 @@ class AuthController {
         try {
             const user = req.user;
             if (!user || !user.email) {
-                return errorResponse(401, 'Unauthorized', {});
+                return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED, {});
             }
 
             const body = await parseBody(req);
@@ -209,9 +207,9 @@ class AuthController {
             const { email, password, role, _id, ...updates } = body;
 
             const updatedUser = await AuthService.updateProfile(user.email, updates);
-            return successResponse(200, 'Profile updated', { user: updatedUser });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.PROFILE_UPDATED, { user: updatedUser });
         } catch (error) {
-            return errorResponse(500, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
         }
     }
 
@@ -219,16 +217,16 @@ class AuthController {
         try {
             const body = await parseBody(req);
             const { email } = body;
-            if (!email) return errorResponse(400, 'Email required', {});
+            if (!email) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.EMAIL_REQUIRED, {});
             await AuthService.deleteProfile(email);
-            return successResponse(200, 'Profile deleted', {});
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, {});
         } catch (error) {
-            return errorResponse(500, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
         }
     }
 
     async logoutAll(req) {
-        return successResponse(200, 'Logged out from all devices', {});
+        return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGOUT_SUCCESS, {});
     }
 
 

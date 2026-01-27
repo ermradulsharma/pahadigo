@@ -30,8 +30,10 @@ export default function VendorDetailsPage({ params }) {
                     const found = vendors.find(v => v._id === id);
                     if (found) setVendor(found);
                 }
-            } catch (e) { console.error(e); }
-            setLoading(false);
+            } catch (e) {
+            } finally {
+                setLoading(false);
+            }
         };
         fetchVendor();
     }, [id, refreshKey]);
@@ -54,7 +56,9 @@ export default function VendorDetailsPage({ params }) {
             } else {
                 alert('Failed to update status');
             }
-        } catch (e) { console.error(e); }
+        } catch (e) {
+            alert('An error occurred during verification');
+        }
     };
 
     const toggleGlobalApproval = async (status) => {
@@ -88,7 +92,6 @@ export default function VendorDetailsPage({ params }) {
                 alert('Failed to update profile status');
             }
         } catch (e) {
-            console.error(e);
         }
     };
 

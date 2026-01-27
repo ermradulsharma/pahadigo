@@ -21,9 +21,8 @@ export default function CategoriesPage() {
             if (data.success) {
                 setCategories(data.data.categories || []);
             }
-        } catch (error) {
-            console.error('Error fetching categories:', error);
-        } finally {
+        } catch (error) { }
+        finally {
             setLoading(false);
         }
     };
@@ -53,7 +52,7 @@ export default function CategoriesPage() {
                 alert('Failed to save category');
             }
         } catch (error) {
-            console.error('Error saving category:', error);
+            alert('Error saving category');
         }
     };
 
@@ -70,7 +69,7 @@ export default function CategoriesPage() {
                 fetchCategories();
             }
         } catch (error) {
-            console.error('Error deleting category:', error);
+            alert('Error deleting category');
         }
     };
 
@@ -91,7 +90,7 @@ export default function CategoriesPage() {
                 alert('Failed to update status');
             }
         } catch (error) {
-            console.error('Error updating status:', error);
+            alert('Error updating status');
         }
     };
 

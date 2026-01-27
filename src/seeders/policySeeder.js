@@ -37,7 +37,6 @@ const defaultPolicies = [
 
 export const seedPolicies = async () => {
     try {
-        console.log('Seeding policies...');
         const operations = defaultPolicies.map(p => ({
             updateOne: {
                 filter: { target: p.target, type: p.type },
@@ -53,7 +52,6 @@ export const seedPolicies = async () => {
             upserted: result.upsertedCount
         };
     } catch (error) {
-        console.error('Policy Seeding Error:', error);
         throw error;
     }
 };

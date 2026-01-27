@@ -102,7 +102,6 @@ export default function SettingsPage() {
                 setFormData(newFormData);
             }
         } catch (error) {
-            console.error("Failed to fetch settings:", error);
         } finally {
             setFetching(false);
         }
@@ -131,7 +130,6 @@ export default function SettingsPage() {
                 alert('Failed to save settings: ' + data.error);
             }
         } catch (error) {
-            console.error("Error saving settings:", error);
             alert('An error occurred while saving settings.');
         } finally {
             setLoading(false);

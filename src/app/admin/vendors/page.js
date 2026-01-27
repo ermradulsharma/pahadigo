@@ -17,8 +17,8 @@ export default function VendorsPage() {
                 const data = await res.json();
                 return data.data?.vendors || [];
             }
-        } catch (e) { console.error(e); }
-        return [];
+            return [];
+        } catch (e) { }
     }, []);
 
     useEffect(() => {

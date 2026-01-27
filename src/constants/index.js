@@ -65,7 +65,8 @@ export const HTTP_STATUS = {
     METHOD_NOT_ALLOWED: 405,
     ALREADY_EXIST: 409,
     UNPROCESSABLE_ENTITY: 422,
-    INTERNAL_SERVER_ERROR: 500
+    INTERNAL_SERVER_ERROR: 500,
+    NOT_IMPLEMENTED: 501
 };
 
 export const FILE_UPLOAD = {
@@ -181,4 +182,68 @@ export const APP_CONSTANTS = {
     },
     MONTH_ARR: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
     MONTH_ARR_NUMBER: ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
+};
+
+export const RESPONSE_MESSAGES = {
+    SUCCESS: {
+        CREATE: 'Created successfully',
+        UPDATE: 'Updated successfully',
+        DELETE: 'Deleted successfully',
+        FETCH: 'Retrieved successfully',
+        SEED: 'Seeded successfully',
+        PROFILE_CREATED: 'Profile created successfully',
+        PROFILE_UPDATED: 'Profile updated successfully',
+        DOCUMENTS_UPLOADED: 'Documents uploaded successfully',
+        PACKAGE_CREATED: 'Package created successfully',
+        ITEM_ADDED: 'Item added successfully',
+        BANK_DETAILS_SAVED: 'Bank details saved successfully',
+        VENDOR_STATUS_UPDATED: 'Vendor status updated successfully',
+        DOCUMENT_STATUS_UPDATED: 'Document status updated successfully',
+        BOOKING_CREATED: 'Booking created successfully',
+        DOCUMENT_DELETED: 'Document deleted successfully',
+        PAYOUT_MARKED: 'Payout marked successfully',
+        BOOKING_REFUNDED: 'Booking refunded successfully'
+    },
+    ERROR: {
+        INTERNAL_SERVER_ERROR: 'Internal Server Error',
+        NOT_IMPLEMENTED: 'Not Implemented',
+        NOT_FOUND: 'Not found',
+        ALREADY_EXISTS: 'Already exists',
+        VENDOR_NOT_FOUND: 'Vendor profile not found',
+        VENDOR_INCOMPLETE: 'Vendor profile not completed',
+        CATEGORY_NOT_FOUND: 'Category not found',
+        POLICY_NOT_FOUND: 'Policy not found',
+        DOCUMENT_NOT_FOUND: 'Document not found',
+        PACKAGE_NOT_FOUND: 'Package not found',
+        ROUTE_NOT_FOUND: 'Route not found'
+    },
+    AUTH: {
+        UNAUTHORIZED: 'Unauthorized access',
+        FORBIDDEN: 'Forbidden access',
+        VENDORS_ONLY: 'Access denied. Vendors only.',
+        ADMIN_ONLY: 'Access denied. Admin only.',
+        OTP_SENT: 'OTP sent successfully',
+        OTP_SEND_FAILED: 'Failed to send OTP',
+        LOGIN_SUCCESS: 'Login successful',
+        LOGOUT_SUCCESS: 'Logged out successfully',
+        TOKEN_VALID: 'Token is valid',
+        TOKEN_REFRESHED: 'Token refreshed',
+        PASSWORD_RESET_LINK_SENT: 'Reset link sent successfully',
+        PASSWORD_RESET_SUCCESS: 'Password reset successfully',
+        NO_TOKEN: 'No token provided'
+    },
+    VALIDATION: {
+        REQUIRED_FIELDS: 'All fields are required',
+        FORM_DATA_REQUIRED: 'Multipart form data required',
+        ID_REQUIRED: 'ID is required',
+        NAME_REQUIRED: 'Name is required',
+        CATEGORY_REQUIRED: 'Category is required',
+        INVALID_DATA: 'Invalid data provided',
+        EMAIL_REQUIRED: 'Email is required',
+        PHONE_REQUIRED: 'Phone is required',
+        INVALID_ROLE: 'Invalid role provided',
+        EMAIL_OR_PHONE_REQUIRED: 'Email OR Phone is required',
+        INVALID_EMAIL: 'Invalid email format',
+        INVALID_DATE: 'Invalid date format'
+    }
 };

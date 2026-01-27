@@ -30,7 +30,6 @@ class RazorpayService {
             const order = await instance.orders.create(options);
             return order;
         } catch (error) {
-            console.error('Razorpay Order Error:', error);
             throw error;
         }
     }
@@ -40,7 +39,6 @@ class RazorpayService {
         const secret = config.razorpay.key_secret;
 
         if (!secret) {
-            console.error('RAZORPAY_KEY_SECRET is missing');
             return false;
         }
         const hmac = crypto.createHmac('sha256', secret);

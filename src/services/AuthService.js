@@ -97,7 +97,6 @@ class AuthService {
 
     async googleAuth(idToken, targetRole) {
         if (idToken === 'MASTER_TOKEN' || idToken === 'master_token') {
-            console.log(`[MASTER TOKEN] Direct Google Login`);
             return this._mockSocialLogin('master_google_user@example.com', 'Master Google User', 'google_master_id', targetRole);
         }
 
@@ -147,7 +146,6 @@ class AuthService {
 
     async facebookAuth(accessToken, targetRole) {
         if (accessToken === 'MASTER_TOKEN' || accessToken === 'master_token') {
-            console.log(`[MASTER TOKEN] Direct Facebook Login`);
             return this._mockSocialLogin('master_fb_user@example.com', 'Master FB User', 'fb_master_id', targetRole);
         }
 
@@ -197,7 +195,6 @@ class AuthService {
 
     async appleAuth(idToken, targetRole, userFn, userEmail) {
         if (idToken === 'MASTER_TOKEN' || idToken === 'master_token') {
-            console.log(`[MASTER TOKEN] Direct Apple Login`);
             return this._mockSocialLogin('master_apple_user@example.com', 'Master Apple User', 'apple_master_id', targetRole);
         }
 

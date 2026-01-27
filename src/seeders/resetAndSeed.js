@@ -20,7 +20,6 @@ const loadEnv = () => {
             });
         }
     } catch (e) {
-        console.error('Error loading .env', e);
     }
 };
 
@@ -29,9 +28,7 @@ const connectDB = async () => {
         const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/travels_db';
         const conn = await mongoose.connect(uri, {
         });
-        console.log(`MongoDB Connected: ${conn.connection.host}`);
     } catch (error) {
-        console.error(`Error: ${error.message}`);
         process.exit(1);
     }
 };
@@ -40,28 +37,19 @@ const resetAndSeed = async () => {
     loadEnv();
     await connectDB();
 
-    console.log('Clearing database...');
     if (mongoose.connection.db) {
         await mongoose.connection.db.dropDatabase();
-        console.log('Database cleared.');
     } else {
-        console.error('Database connection invalid, cannot drop.');
     }
 
-    console.log('Running Seeders...');
     const results = await seedCategories();
-    console.log('Category Seed Result:', JSON.stringify(results, null, 2));
 
     const docResults = await seedCategoryDocuments();
-    console.log('Category Document Seed Result:', JSON.stringify(docResults, null, 2));
 
     const userResults = await seedUsers();
-    console.log('User Seed Result:', JSON.stringify(userResults, null, 2));
 
     const settingResults = await seedSettings();
-    console.log('Setting Seed Result:', JSON.stringify(settingResults, null, 2));
 
-    console.log('Process complete.');
     process.exit(0);
 };
 

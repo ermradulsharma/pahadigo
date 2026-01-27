@@ -1,6 +1,7 @@
 import CategoryService from '../services/CategoryService.js';
 import { seedCategories } from '../seeders/categorySeeder.js';
 import { errorResponse, successResponse } from '../helpers/response.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '../constants/index.js';
 class CategoryController {
 
     // Helper to verify admin
@@ -10,29 +11,27 @@ class CategoryController {
 
     async create(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const body = req.jsonBody || await req.json();
             const { name } = body;
 
-            if (!name) return errorResponse(400, 'Name is required', {});
+            if (!name) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.NAME_REQUIRED, {});
 
             const category = await CategoryService.createCategory(body);
-            return successResponse(201, 'Category created successfully', { category });
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.CREATE, { category });
         } catch (error) {
-            console.error('Create Category Error:', error);
-            if (error.code === 11000) return errorResponse(400, 'Category already exists', {});
-            return errorResponse(500, 'Internal Server Error', {});
+            if (error.code === 11000) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.ALREADY_EXISTS, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
 
     async getAll(req) {
         try {
             const categories = await CategoryService.getAllCategories();
-            return successResponse(200, 'Categories retrieved successfully', { categories });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { categories });
         } catch (error) {
-            console.error('Get Categories Error:', error);
-            return errorResponse(500, 'Internal Server Error', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
 
@@ -65,11 +64,11 @@ class CategoryController {
             // The actual dispatching logic isn't fully visible but `apiHandler` likely injects params.
             // Let's assume `params` is passed as the second argument, standard for Next.js app router dynamic routes.
 
-            return errorResponse(501, 'Not implemented per standard pattern yet, need to verify param handling', {});
+            return errorResponse(HTTP_STATUS.NOT_IMPLEMENTED, RESPONSE_MESSAGES.ERROR.NOT_IMPLEMENTED, {});
             // Actually, I'll implement `getById` to look for `id` in searchParams if not in params, or just params.
 
         } catch (error) {
-            return errorResponse(500, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
         }
     }
 
@@ -78,56 +77,53 @@ class CategoryController {
     async getById(req, { params }) {
         try {
             const id = params?.id;
-            if (!id) return errorResponse(400, 'ID required', {});
+            if (!id) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
 
             const category = await CategoryService.getCategoryById(id);
-            return successResponse(200, 'Category retrieved successfully', { category });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { category });
         } catch (error) {
-            return errorResponse(404, 'Category not found', {});
+            return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.CATEGORY_NOT_FOUND, {});
         }
     }
 
     async update(req, { params }) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const id = params?.id;
-            if (!id) return errorResponse(400, 'ID required', {});
+            if (!id) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
 
             const body = req.jsonBody || await req.json();
             const category = await CategoryService.updateCategory(id, body);
 
-            return successResponse(200, 'Category updated successfully', { category });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, { category });
         } catch (error) {
-            console.error('Update Category Error:', error);
-            return errorResponse(500, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
         }
     }
 
     async delete(req, { params }) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const id = params?.id;
-            if (!id) return errorResponse(400, 'ID required', {});
+            if (!id) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
 
             await CategoryService.deleteCategory(id);
-            return successResponse(200, 'Category deleted successfully', {});
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, {});
         } catch (error) {
-            console.error('Delete Category Error:', error);
-            return errorResponse(500, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
         }
     }
 
     async seed(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(403, 'Forbidden', {});
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const result = await seedCategories();
-            return successResponse(200, 'Categories seeded successfully', { result });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.SEED, { result });
         } catch (error) {
-            console.error('Seed Categories Error:', error);
-            return errorResponse(500, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
         }
     }
 }

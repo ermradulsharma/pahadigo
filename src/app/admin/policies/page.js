@@ -44,7 +44,6 @@ export default function PoliciesPage() {
                 setContent(current ? current.content : '');
             }
         } catch (e) {
-            console.error("Fetch Policies Error:", e);
         } finally {
             setLoading(false);
         }
@@ -79,7 +78,6 @@ export default function PoliciesPage() {
                 alert('Failed to save policy');
             }
         } catch (e) {
-            console.error("Save Policy Error:", e);
             alert('Error saving policy');
         } finally {
             setSaving(false);

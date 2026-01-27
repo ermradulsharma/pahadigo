@@ -45,13 +45,10 @@ class CategoryDocumentService {
 
     async update(id, data) {
         try {
-            console.log(`[Service] Updating Category Document ID: "${id}"`);
             const document = await CategoryDocument.findById(id.trim());
-            console.log(`[Service] Found Document:`, document ? "YES" : "NO");
 
             if (!document) {
                 const dbName = CategoryDocument.db.name;
-                console.error(`[Service] Error: Document with ID ${id} not found in database: ${dbName}`);
                 throw new Error(`Category Document not found in ${dbName}`);
             }
 

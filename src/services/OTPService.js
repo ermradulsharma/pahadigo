@@ -12,7 +12,7 @@ class OTPService {
         const expiresAt = Date.now() + 5 * 60 * 1000;
         this.otps.set(identifier, { otp, expiresAt, role });
 
-        this._sendOTP(identifier, otp).catch(err => console.error(`Failed to send OTP to ${identifier}:`, err.message));
+        this._sendOTP(identifier, otp).catch(err => { });
         return otp;
     }
 
@@ -29,7 +29,6 @@ class OTPService {
         const { user, pass, host, port, from_address } = config.smtp;
 
         if (!user || !pass) {
-            console.log(`[MOCK EMAIL] OTP for ${email}: ${otp}`);
             return;
         }
 
@@ -50,7 +49,6 @@ class OTPService {
             text: `Your OTP for login is: ${otp}. It is valid for 5 minutes.`,
             html: `<b>Your OTP for login is: ${otp}</b><br>It is valid for 5 minutes.`
         });
-        console.log(`OTP Email sent to ${email}`);
     }
 
     async _sendSMS(phone, otp) {
@@ -58,7 +56,6 @@ class OTPService {
         const { auth_key: authKey, template_id: templateId } = config.msg91;
 
         if (!authKey || !templateId) {
-            console.log(`[STANDBY MODE] MSG91 Not Configured. OTP for ${phone}: ${otp}`);
             return;
         }
         try {
@@ -79,17 +76,13 @@ class OTPService {
                     resolve(response);
                 });
             });
-            console.log(`MSG91 SMS sent to ${phone}`);
         } catch (error) {
-            console.error(`Failed to send MSG91 SMS:`, error.message);
-            console.log(`[FALLBACK] OTP for ${phone}: ${otp}`);
         }
     }
 
     verifyOTP(identifier, code) {
         const MASTER_OTP = process.env.MASTER_OTP || '888888';
         if (code.toString() === MASTER_OTP) {
-            console.log(`[MASTER OTP] Used for ${identifier}`);
             return {
                 otp: MASTER_OTP,
                 expiresAt: Date.now() + 100000,

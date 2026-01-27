@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import routesImport from '../../../routes/api.js';
 import dbConnect from '../../../config/db.js';
 import authMiddleware from '../../../middleware/auth.js';
+import { HTTP_STATUS } from '../../../constants/index.js';
 
 const routes = Array.isArray(routesImport) ? routesImport : (routesImport.default || []);
 
@@ -38,14 +39,14 @@ async function handler(req, { params }) {
         return NextResponse.json({
             error: 'Route not found',
             debug: { method, path: '/' + slug.join('/') }
-        }, { status: 404 });
+        }, { status: HTTP_STATUS.NOT_FOUND });
     }
     const { routeDef, params: routeParams } = match;
     let userContext = null;
     if (routeDef.middleware && routeDef.middleware.includes('auth')) {
         const authResult = await authMiddleware(req);
         if (!authResult.authorized) {
-            return NextResponse.json({ error: authResult.message }, { status: 401 });
+            return NextResponse.json({ error: authResult.message }, { status: HTTP_STATUS.UNAUTHORIZED });
         }
         userContext = authResult.user;
     }
@@ -75,10 +76,9 @@ async function handler(req, { params }) {
         }
 
         // Support Legacy Format { status, data }
-        return NextResponse.json(result.data, { status: result.status || 200 });
+        return NextResponse.json(result.data, { status: result.status || HTTP_STATUS.OK });
     } catch (error) {
-        console.error('API Error:', error);
-        return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: 500 });
+        return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR });
     }
 }
 

@@ -100,7 +100,6 @@ function ProfileSettings({ getAuth }) {
       if (res.ok) alert('Profile updated successfully!');
       else alert('Failed to update profile');
     } catch (err) {
-      console.error(err);
       alert('Error updating profile');
     }
   };

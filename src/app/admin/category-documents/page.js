@@ -27,7 +27,6 @@ export default function ServicesPage() {
                 headers: { 'Authorization': 'Bearer ' + token }
             });
             const data = await res.json();
-            console.log('API Response:', data); // Debug log
 
             if (data && data.success) {
                 if (data.data) {
@@ -44,11 +43,9 @@ export default function ServicesPage() {
                     setServices([]);
                 }
             } else {
-                console.error('API Error:', data?.error || 'Unknown error');
             }
-        } catch (error) {
-            console.error('Error fetching services:', error);
-        } finally {
+        } catch (error) { }
+        finally {
             setLoading(false);
         }
     }, [page, limit]);
@@ -61,9 +58,7 @@ export default function ServicesPage() {
             if (data.success) {
                 setCategories(data.data.categories || []);
             }
-        } catch (error) {
-            console.error('Error fetching categories:', error);
-        }
+        } catch (error) { }
     }, []);
 
     useEffect(() => {
@@ -102,7 +97,7 @@ export default function ServicesPage() {
                 alert('Failed to save service');
             }
         } catch (error) {
-            console.error('Error saving service:', error);
+            alert('Error saving service');
         }
     };
 
@@ -119,7 +114,7 @@ export default function ServicesPage() {
                 fetchServices();
             }
         } catch (error) {
-            console.error('Error deleting service:', error);
+            alert('Error deleting service');
         }
     };
 
@@ -140,7 +135,7 @@ export default function ServicesPage() {
                 alert('Failed to update status');
             }
         } catch (error) {
-            console.error('Error updating status:', error);
+            alert('Error updating status');
         }
     };
 
@@ -161,7 +156,7 @@ export default function ServicesPage() {
                 alert('Failed to update mandatory status');
             }
         } catch (error) {
-            console.error('Error updating mandatory status:', error);
+            alert('Error updating mandatory status');
         }
     };
 

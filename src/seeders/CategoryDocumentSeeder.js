@@ -166,5 +166,4 @@ export const seedCategoryDocuments = async () => {
         }
     }
 
-    console.log("✅ Category documents seeded successfully");
 };

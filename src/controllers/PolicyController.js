@@ -1,5 +1,6 @@
 import AdminService from '../services/AdminService.js';
 import { errorResponse, successResponse } from '../helpers/response.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '../constants/index.js';
 
 class PolicyController {
     // Helper to verify admin
@@ -12,17 +13,16 @@ class PolicyController {
     async getPolicies(req) {
         try {
             if (!this._isAdmin(req)) {
-                return errorResponse(403, 'Admin access required', {});
+                return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.ADMIN_ONLY, {});
             }
 
             const { searchParams } = new URL(req.url);
             const target = searchParams.get('target');
 
             const policies = await AdminService.getPolicies(target);
-            return successResponse(200, 'Policies retrieved successfully', { policies });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { policies });
         } catch (error) {
-            console.error('Get Policies Error:', error);
-            return errorResponse(500, 'Internal Server Error', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
 
@@ -31,14 +31,13 @@ class PolicyController {
         try {
             const { target } = await params;
             if (!['vendor', 'traveller'].includes(target)) {
-                return errorResponse(400, 'Invalid target', {});
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.INVALID_DATA, {});
             }
 
             const policies = await AdminService.getPolicies(target);
-            return successResponse(200, `${target} policies retrieved successfully`, { policies });
+            return successResponse(HTTP_STATUS.OK, `${target} policies retrieved successfully`, { policies });
         } catch (error) {
-            console.error('Get Target Policies Error:', error);
-            return errorResponse(500, 'Internal Server Error', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
 
@@ -47,7 +46,7 @@ class PolicyController {
         try {
             const { target, type } = await params;
             if (!target || !type) {
-                return errorResponse(400, 'Missing target or type', {});
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             }
 
             // Map common synonyms to DB enums
@@ -62,13 +61,12 @@ class PolicyController {
 
             const policy = await AdminService.getPolicy(target, normalizedType);
             if (!policy) {
-                return errorResponse(404, 'Policy not found', {});
+                return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.POLICY_NOT_FOUND, {});
             }
 
-            return successResponse(200, `${target} ${type} retrieved successfully`, { policy });
+            return successResponse(HTTP_STATUS.OK, `${target} ${type} retrieved successfully`, { policy });
         } catch (error) {
-            console.error('Get Policy Type Error:', error);
-            return errorResponse(500, 'Internal Server Error', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
 
@@ -76,12 +74,12 @@ class PolicyController {
     async updatePolicy(req) {
         try {
             if (!this._isAdmin(req)) {
-                return errorResponse(403, 'Admin access required', {});
+                return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.ADMIN_ONLY, {});
             }
             const body = req.jsonBody || await req.json();
             const { target, type, content } = body;
             if (!target || !type || content === undefined) {
-                return errorResponse(400, 'All fields are required', {});
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             }
 
             // Target-specific validation
@@ -91,18 +89,17 @@ class PolicyController {
             };
 
             if (!allowedTypes[target]) {
-                return errorResponse(400, 'Invalid target', {});
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.INVALID_DATA, {});
             }
 
             if (!allowedTypes[target].includes(type)) {
-                return errorResponse(400, `Type "${type}" is not allowed for target "${target}"`, {});
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, `Type "${type}" is not allowed for target "${target}"`, {});
             }
 
             const policy = await AdminService.updatePolicy(target, type, content, req.user.id);
-            return successResponse(200, 'Policy updated successfully', { policy });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, { policy });
         } catch (error) {
-            console.error('Update Policy Error:', error);
-            return errorResponse(500, 'Internal Server Error', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
 
@@ -110,14 +107,13 @@ class PolicyController {
     async seed(req) {
         try {
             if (!this._isAdmin(req)) {
-                return errorResponse(403, 'Admin access required', {});
+                return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.ADMIN_ONLY, {});
             }
             const { seedPolicies } = await import('../seeders/policySeeder.js');
             const result = await seedPolicies();
-            return successResponse(200, 'Policies seeded successfully', { result });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.SEED, { result });
         } catch (error) {
-            console.error('Seed Policies Error:', error);
-            return errorResponse(500, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
         }
     }
 }

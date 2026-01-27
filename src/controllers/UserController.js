@@ -4,6 +4,8 @@ import Booking from '../models/Booking.js';
 import Vendor from '../models/Vendor.js';
 import BookingService from '../services/BookingService.js';
 import PackageService from '../services/PackageService.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '../constants/index.js';
+import { successResponse, errorResponse } from '../helpers/response.js';
 
 class UserController {
 
@@ -12,24 +14,24 @@ class UserController {
     try {
       const user = req.user;
       if (!user) {
-        return { status: 401, data: { error: 'Unauthorized' } };
+        return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED, {});
       }
 
       const body = req.jsonBody || await req.json();
       const { packageId, travelDate } = body;
 
       if (!packageId || !travelDate) {
-        return { status: 400, data: { error: 'Package ID and Travel Date are required' } };
+        return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
       }
 
       const pkg = await PackageService.getPackageById(packageId);
       if (!pkg) {
-        return { status: 404, data: { error: 'Package not found' } };
+        return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.PACKAGE_NOT_FOUND, {});
       }
 
       const bookingDate = new Date(travelDate);
       if (isNaN(bookingDate.getTime())) {
-        return { status: 400, data: { error: 'Invalid travel date format' } };
+        return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.INVALID_DATE, {});
       }
 
       const booking = await BookingService.createBooking({
@@ -39,10 +41,9 @@ class UserController {
         price: pkg.price
       });
 
-      return { status: 200, data: { message: 'Booking created', booking } };
+      return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.BOOKING_CREATED, { booking });
     } catch (error) {
-      console.error('Booking Error:', error);
-      return { status: 500, data: { error: 'Internal Server Error' } };
+      return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
     }
   }
 
@@ -50,10 +51,9 @@ class UserController {
   async browsePackages(req) {
     try {
       const packages = await PackageService.getAvailablePackages();
-      return { status: 200, data: { packages } };
+      return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { packages });
     } catch (error) {
-      console.error('Browse Packages Error:', error);
-      return { status: 500, data: { error: 'Internal Server Error' } };
+      return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
     }
   }
 }

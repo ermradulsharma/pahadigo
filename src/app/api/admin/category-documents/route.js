@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import categoryDocumentService from '@/services/CategoryDocumentService';
 import connectDB from '@/config/db';
+import { HTTP_STATUS } from '@/constants/index';
 
 export async function GET(request) {
     try {
@@ -16,7 +17,7 @@ export async function GET(request) {
         const documents = await categoryDocumentService.getAll(filter, page, limit);
         return NextResponse.json({ success: true, data: documents });
     } catch (error) {
-        return NextResponse.json({ success: false, error: error.message }, { status: 500 });
+        return NextResponse.json({ success: false, error: error.message }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR });
     }
 }
 
@@ -25,8 +26,8 @@ export async function POST(request) {
         await connectDB();
         const body = await request.json();
         const document = await categoryDocumentService.create(body);
-        return NextResponse.json({ success: true, data: document }, { status: 201 });
+        return NextResponse.json({ success: true, data: document }, { status: HTTP_STATUS.CREATED });
     } catch (error) {
-        return NextResponse.json({ success: false, error: error.message }, { status: 400 });
+        return NextResponse.json({ success: false, error: error.message }, { status: HTTP_STATUS.BAD_REQUEST });
     }
 }

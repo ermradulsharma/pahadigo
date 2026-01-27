@@ -99,7 +99,6 @@ export default function AdminProfilePage() {
                 setMessage({ type: 'error', text: 'Failed to fetch profile' });
             }
         } catch (error) {
-            console.error('Error fetching profile:', error);
             setMessage({ type: 'error', text: 'An error occurred fetching profile' });
         } finally {
             setLoading(false);
@@ -156,7 +155,6 @@ export default function AdminProfilePage() {
                 setMessage({ type: 'error', text: data.error || 'Failed to update profile' });
             }
         } catch (error) {
-            console.error('Error updating profile:', error);
             setMessage({ type: 'error', text: 'An error occurred while saving' });
         } finally {
             setSaving(false);

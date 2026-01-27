@@ -23,7 +23,6 @@ export default function AdminDashboard() {
                     }
                 }
             } catch (e) {
-                console.error("Dashboard Stats Fetch Error:", e);
             } finally {
                 setLoading(false);
             }
