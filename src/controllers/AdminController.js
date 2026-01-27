@@ -199,6 +199,232 @@ class AdminController {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
+
+    // GET /admin/packages
+    async getPackages(req) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+
+            const packages = await AdminService.getAllServices();
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { packages });
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+        }
+    }
+
+    // PATCH /admin/packages
+    async updateServiceStatus(req) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+            const body = req.jsonBody || await req.json();
+            const { vendorId, serviceType, serviceId, status } = body;
+
+            if (!vendorId || !serviceType || !serviceId || status === undefined) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+            }
+
+            const updated = await AdminService.toggleServiceStatus(vendorId, serviceType, serviceId, status);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.SERVICE_STATUS_UPDATED || "Status updated", { updated });
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+        }
+    }
+
+    // GET /admin/reviews
+    async getReviews(req) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+
+            const reviews = await AdminService.getAllReviews();
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { reviews });
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+        }
+    }
+
+    // PATCH /admin/reviews
+    async updateReviewStatus(req) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+            const body = req.jsonBody || await req.json();
+            const { reviewId, isVisible } = body;
+
+            if (!reviewId || isVisible === undefined) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+            }
+
+            const updated = await AdminService.toggleReviewVisibility(reviewId, isVisible, req);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, { updated });
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+        }
+    }
+
+    // DELETE /admin/reviews
+    async deleteReview(req, { params }) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+            const { id } = params;
+
+            if (!id) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
+
+            await AdminService.deleteReview(id, req);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, {});
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+        }
+    }
+
+    // --- Marketing ---
+
+    // Banners
+    async createBanner(req) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+            const body = req.jsonBody || await req.json();
+            if (!body.imageUrl) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+            const banner = await AdminService.createBanner(body, req);
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.CREATE, { banner });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+    }
+
+    async getBanners(req) {
+        try {
+            const banners = await AdminService.getBanners();
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { banners });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+    }
+
+    async updateBanner(req, { params }) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+            const body = req.jsonBody || await req.json();
+            const banner = await AdminService.updateBanner(params.id, body, req);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, { banner });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+    }
+
+    async deleteBanner(req, { params }) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+            await AdminService.deleteBanner(params.id, req);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, {});
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+    }
+
+    // Coupons
+    async createCoupon(req) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+            const body = req.jsonBody || await req.json();
+            if (!body.code || !body.discountType || !body.value || !body.expiryDate) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+            }
+            const coupon = await AdminService.createCoupon(body, req);
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.CREATE, { coupon });
+        } catch (e) {
+            const status = e.code === 11000 ? HTTP_STATUS.ALREADY_EXIST : HTTP_STATUS.INTERNAL_SERVER_ERROR;
+            return errorResponse(status, e.message, {});
+        }
+    }
+
+    async getCoupons(req) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+            const coupons = await AdminService.getCoupons();
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { coupons });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+    }
+
+    async updateCoupon(req, { params }) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+            const body = req.jsonBody || await req.json();
+            const coupon = await AdminService.updateCoupon(params.id, body, req);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, { coupon });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+    }
+
+    async deleteCoupon(req, { params }) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+            await AdminService.deleteCoupon(params.id, req);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, {});
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+    }
+
+    // --- Support & Inquiries ---
+
+    // Public or Authenticated (User)
+    async submitInquiry(req) {
+        try {
+            const body = req.jsonBody || await req.json();
+            if (!body.name || !body.email || !body.message) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+            }
+            const inquiry = await AdminService.submitInquiry(body);
+            return successResponse(HTTP_STATUS.CREATED, "Inquiry submitted successfully", { inquiry });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+    }
+
+    async getInquiries(req) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+            const inquiries = await AdminService.getInquiries();
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { inquiries });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+    }
+
+    async updateInquiry(req, { params }) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+            const body = req.jsonBody || await req.json();
+            const inquiry = await AdminService.updateInquiry(params.id, body);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, { inquiry });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+    }
+
+    async deleteInquiry(req, { params }) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+            await AdminService.deleteInquiry(params.id);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, {});
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+    }
+
+    // --- Analytics ---
+
+    async getAnalytics(req) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+
+            // Extract query params from URL
+            const url = new URL(req.url);
+            const period = url.searchParams.get('period') || 'monthly'; // weekly, monthly, yearly
+
+            const data = await AdminService.getAnalyticsData(period);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { analytics: data });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+    }
+
+    // --- Audit Logs ---
+
+    async getAuditLogs(req) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+
+            const url = new URL(req.url);
+            const adminId = url.searchParams.get('adminId');
+            const action = url.searchParams.get('action');
+            const target = url.searchParams.get('target');
+            const startDate = url.searchParams.get('startDate');
+            const page = parseInt(url.searchParams.get('page') || '1');
+            const limit = parseInt(url.searchParams.get('limit') || '20');
+
+            const result = await AdminService.getAuditLogs({ adminId, action, target, startDate }, page, limit);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, result);
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+    }
 }
 
 const adminController = new AdminController();

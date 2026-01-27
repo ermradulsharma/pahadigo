@@ -4,6 +4,11 @@ import Booking from '../models/Booking.js';
 import Package from '../models/Package.js';
 import Category from '../models/Category.js';
 import Policy from '../models/Policy.js';
+import Review from '../models/Review.js';
+import Banner from '../models/Banner.js';
+import Coupon from '../models/Coupon.js';
+import Inquiry from '../models/Inquiry.js';
+import AuditLog from '../models/AuditLog.js';
 
 class AdminService {
     async getDashboardStats() {
@@ -146,6 +151,285 @@ class AdminService {
                 upsert: true
             }
         );
+    }
+
+    async getAllServices() {
+        const packages = await Package.find()
+            .populate({
+                path: 'vendor',
+                select: 'businessName'
+            });
+
+        const allServices = [];
+        packages.forEach(pkg => {
+            if (pkg.services) {
+                Object.keys(pkg.services).forEach(type => {
+                    if (Array.isArray(pkg.services[type])) {
+                        pkg.services[type].forEach(service => {
+                            allServices.push({
+                                ...service.toObject(),
+                                serviceType: type,
+                                vendor: pkg.vendor,
+                                vendorId: pkg.vendor?._id
+                            });
+                        });
+                    }
+                });
+            }
+        });
+
+        return allServices;
+    }
+
+    async toggleServiceStatus(vendorId, serviceType, serviceId, status) {
+        const pkg = await Package.findOne({ vendor: vendorId });
+        if (!pkg) throw new Error('Package collection not found for this vendor');
+
+        const services = pkg.services[serviceType];
+        if (!services) throw new Error(`Service type ${serviceType} not found`);
+
+        const serviceIndex = services.findIndex(s => s._id.toString() === serviceId);
+        if (serviceIndex === -1) throw new Error('Service not found');
+
+        pkg.services[serviceType][serviceIndex].isActive = status;
+        pkg.markModified(`services.${serviceType}`);
+        await pkg.save();
+
+        // Audit Log
+        if (req && req.user) this.logAction(req.user._id, 'UPDATE_STATUS', 'INVENTORY', serviceId, { status: status }, req);
+
+        return pkg.services[serviceType][serviceIndex];
+    }
+
+    async getAllReviews() {
+        return await Review.find()
+            .populate('user', 'name profileImage')
+            .populate('vendor', 'businessName')
+            .sort({ createdAt: -1 });
+    }
+
+    async toggleReviewVisibility(reviewId, isVisible, req = null) {
+        const review = await Review.findByIdAndUpdate(
+            reviewId,
+            { isVisible },
+            { new: true }
+        );
+        if (req && req.user) this.logAction(req.user._id, 'UPDATE_VISIBILITY', 'REVIEW', reviewId, { isVisible }, req);
+        return review;
+    }
+
+    async deleteReview(reviewId, req = null) {
+        const result = await Review.findByIdAndDelete(reviewId);
+        if (req && req.user) this.logAction(req.user._id, 'DELETE', 'REVIEW', reviewId, {}, req);
+        return result;
+    }
+
+    // --- Banners ---
+
+    async createBanner(data, req = null) {
+        const banner = await Banner.create(data);
+        if (req && req.user) this.logAction(req.user._id, 'CREATE', 'BANNER', banner._id, { title: banner.title }, req);
+        return banner;
+    }
+
+    async getBanners() {
+        return await Banner.find().sort({ position: 1, createdAt: -1 });
+    }
+
+    async updateBanner(id, data, req = null) {
+        const banner = await Banner.findByIdAndUpdate(id, data, { new: true });
+        if (req && req.user) this.logAction(req.user._id, 'UPDATE', 'BANNER', id, { changes: data }, req);
+        return banner;
+    }
+
+    async deleteBanner(id, req = null) {
+        const result = await Banner.findByIdAndDelete(id);
+        if (req && req.user) this.logAction(req.user._id, 'DELETE', 'BANNER', id, {}, req);
+        return result;
+    }
+
+    // --- Coupons ---
+
+    async createCoupon(data, req = null) {
+        const coupon = await Coupon.create(data);
+        if (req && req.user) this.logAction(req.user._id, 'CREATE', 'COUPON', coupon._id, { code: coupon.code }, req);
+        return coupon;
+    }
+
+    async getCoupons() {
+        return await Coupon.find().sort({ createdAt: -1 });
+    }
+
+    async updateCoupon(id, data, req = null) {
+        const coupon = await Coupon.findByIdAndUpdate(id, data, { new: true });
+        if (req && req.user) this.logAction(req.user._id, 'UPDATE', 'COUPON', id, { changes: data }, req);
+        return coupon;
+    }
+
+    async deleteCoupon(id, req = null) {
+        const result = await Coupon.findByIdAndDelete(id);
+        if (req && req.user) this.logAction(req.user._id, 'DELETE', 'COUPON', id, {}, req);
+        return result;
+    }
+
+    // --- Support & Inquiries ---
+
+    async submitInquiry(data) {
+        return await Inquiry.create(data);
+    }
+
+    async getInquiries() {
+        return await Inquiry.find().sort({ createdAt: -1 });
+    }
+
+    async updateInquiry(id, data) {
+        return await Inquiry.findByIdAndUpdate(id, data, { new: true });
+    }
+
+    async deleteInquiry(id) {
+        return await Inquiry.findByIdAndDelete(id);
+    }
+
+    // --- Analytics ---
+
+    async getAnalyticsData(period = 'monthly') {
+        const now = new Date();
+        let startDate;
+
+        if (period === 'yearly') {
+            startDate = new Date(now.getFullYear(), 0, 1);
+        } else if (period === 'weekly') {
+            startDate = new Date(now);
+            startDate.setDate(now.getDate() - 7);
+        } else {
+            // Default: Monthly (Last 30 days)
+            startDate = new Date(now);
+            startDate.setMonth(now.getMonth() - 1);
+        }
+
+        // 1. Revenue & Bookings Trend
+        const revenueData = await Booking.aggregate([
+            { $match: { createdAt: { $gte: startDate } } },
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                    revenue: { $sum: "$amount" },
+                    bookings: { $sum: 1 }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ]);
+
+        // 2. Booking Status Distribution
+        const bookingStatus = await Booking.aggregate([
+            { $group: { _id: "$status", value: { $sum: 1 } } }
+        ]);
+
+        // 3. User Growth
+        const userGrowth = await User.aggregate([
+            { $match: { createdAt: { $gte: startDate }, role: 'traveller' } },
+            {
+                $group: {
+                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                    users: { $sum: 1 }
+                }
+            },
+            { $sort: { _id: 1 } }
+        ]);
+
+        // 4. Top Vendors by Revenue
+        const topVendors = await Booking.aggregate([
+            { $match: { status: 'completed' } }, // Only confirmed revenue
+            {
+                $group: {
+                    _id: "$vendor",
+                    revenue: { $sum: "$amount" },
+                    bookings: { $sum: 1 }
+                }
+            },
+            { $sort: { revenue: -1 } },
+            { $limit: 5 },
+            {
+                $lookup: {
+                    from: "vendors",
+                    localField: "_id",
+                    foreignField: "_id",
+                    as: "vendorDetails"
+                }
+            },
+            { $unwind: "$vendorDetails" },
+            {
+                $project: {
+                    name: "$vendorDetails.businessName",
+                    revenue: 1,
+                    bookings: 1
+                }
+            }
+        ]);
+
+        return {
+            revenueData,
+            bookingStatus: bookingStatus.map(b => ({ name: b._id, value: b.value })),
+            userGrowth,
+            topVendors
+        };
+    }
+
+    // --- Audit Logs ---
+
+    /**
+     * Log an admin action.
+     * @param {string} adminId - The user ID of the admin.
+     * @param {string} action - 'CREATE', 'UPDATE', 'DELETE', 'APPROVE', etc.
+     * @param {string} target - 'REVIEW', 'BANNER', 'PROVIDER', 'USER'.
+     * @param {string} targetId - The ID of the affected resource.
+     * @param {object} details - Any metadata to store (e.g. changed fields).
+     * @param {object} req - Optional: To extract IP/UA if passed.
+     */
+    async logAction(adminId, action, target, targetId, details, req = null) {
+        try {
+            let ipAddress = null;
+            let userAgent = null;
+
+            if (req) {
+                // Next.js: standard headers or socket
+                ipAddress = req.headers.get('x-forwarded-for') || req.socket?.remoteAddress;
+                userAgent = req.headers.get('user-agent');
+            }
+
+            await AuditLog.create({
+                adminId,
+                action,
+                target,
+                targetId,
+                details,
+                ipAddress,
+                userAgent
+            });
+        } catch (error) {
+            console.error("Failed to write audit log:", error);
+            // Non-blocking: Don't throw, just log the error.
+        }
+    }
+
+    async getAuditLogs(filter = {}, page = 1, limit = 20) {
+        const skip = (page - 1) * limit;
+        const query = {};
+
+        if (filter.adminId) query.adminId = filter.adminId;
+        if (filter.action) query.action = filter.action;
+        if (filter.target) query.target = filter.target;
+        if (filter.startDate) query.createdAt = { $gte: new Date(filter.startDate) };
+
+        const logs = await AuditLog.find(query)
+            .populate('adminId', 'name email')
+            .sort({ createdAt: -1 })
+            .skip(skip)
+            .limit(limit);
+
+        const total = await AuditLog.countDocuments(query);
+
+        return { logs, total, pages: Math.ceil(total / limit) };
     }
 }
 

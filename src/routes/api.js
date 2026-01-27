@@ -74,6 +74,34 @@ const routes = [
     { method: 'POST', path: '/admin/refund', handler: wrap(AdminController.refundBooking.bind(AdminController)), middleware: ['auth'] },
     { method: 'GET', path: '/admin/payment-history', handler: wrap(AdminController.getPaymentHistory.bind(AdminController)), middleware: ['auth'] },
     { method: 'POST', path: '/admin/verify-document', handler: wrap(AdminController.verifyDocument.bind(AdminController)), middleware: ['auth'] },
+    { method: 'GET', path: '/admin/packages', handler: wrap(AdminController.getPackages.bind(AdminController)), middleware: ['auth'] },
+    { method: 'PATCH', path: '/admin/packages', handler: wrap(AdminController.updateServiceStatus.bind(AdminController)), middleware: ['auth'] },
+    { method: 'GET', path: '/admin/reviews', handler: wrap(AdminController.getReviews.bind(AdminController)), middleware: ['auth'] },
+    { method: 'PATCH', path: '/admin/reviews', handler: wrap(AdminController.updateReviewStatus.bind(AdminController)), middleware: ['auth'] },
+    { method: 'DELETE', path: '/admin/reviews/:id', handler: wrap(AdminController.deleteReview.bind(AdminController)), middleware: ['auth'] },
+
+    // Marketing (Banners & Coupons)
+    { method: 'POST', path: '/admin/marketing/banners', handler: wrap(AdminController.createBanner.bind(AdminController)), middleware: ['auth'] },
+    { method: 'GET', path: '/admin/marketing/banners', handler: wrap(AdminController.getBanners.bind(AdminController)) }, // Public read often allowed, but sticking to admin mgmt. For public, user controller might be used. Wait, getBanners in AdminController is for listing.
+    { method: 'PUT', path: '/admin/marketing/banners/:id', handler: wrap(AdminController.updateBanner.bind(AdminController)), middleware: ['auth'] },
+    { method: 'DELETE', path: '/admin/marketing/banners/:id', handler: wrap(AdminController.deleteBanner.bind(AdminController)), middleware: ['auth'] },
+
+    { method: 'POST', path: '/admin/marketing/coupons', handler: wrap(AdminController.createCoupon.bind(AdminController)), middleware: ['auth'] },
+    { method: 'GET', path: '/admin/marketing/coupons', handler: wrap(AdminController.getCoupons.bind(AdminController)), middleware: ['auth'] },
+    { method: 'PUT', path: '/admin/marketing/coupons/:id', handler: wrap(AdminController.updateCoupon.bind(AdminController)), middleware: ['auth'] },
+    { method: 'DELETE', path: '/admin/marketing/coupons/:id', handler: wrap(AdminController.deleteCoupon.bind(AdminController)), middleware: ['auth'] },
+
+    // Support & Inquiries
+    { method: 'POST', path: '/inquiries', handler: wrap(AdminController.submitInquiry.bind(AdminController)) }, // Public
+    { method: 'GET', path: '/admin/inquiries', handler: wrap(AdminController.getInquiries.bind(AdminController)), middleware: ['auth'] },
+    { method: 'PATCH', path: '/admin/inquiries/:id', handler: wrap(AdminController.updateInquiry.bind(AdminController)), middleware: ['auth'] },
+    { method: 'DELETE', path: '/admin/inquiries/:id', handler: wrap(AdminController.deleteInquiry.bind(AdminController)), middleware: ['auth'] },
+
+    // Analytics
+    { method: 'GET', path: '/admin/analytics', handler: wrap(AdminController.getAnalytics.bind(AdminController)), middleware: ['auth'] },
+
+    // Audit Logs
+    { method: 'GET', path: '/admin/audit-logs', handler: wrap(AdminController.getAuditLogs.bind(AdminController)), middleware: ['auth'] },
 
     // Categories (Admin management)
     { method: 'GET', path: '/categories', handler: wrap(CategoryController.getAll.bind(CategoryController)) },
