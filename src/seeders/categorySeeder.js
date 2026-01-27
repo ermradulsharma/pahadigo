@@ -10,7 +10,8 @@ const DEFAULT_CATEGORIES = [
     { name: 'Rafting', description: 'Thrilling river rafting experiences' },
     { name: 'Bungee Jumping', description: 'Adrenaline pumping jumps' },
     { name: 'Bike/Car Rental', description: 'Rent vehicles for your journey' },
-    { name: 'Chardham Tour', description: 'Pilgrimage tour packages' }
+    { name: 'Chardham Tour', description: 'Pilgrimage tour packages' },
+    { name: 'Custom Trip', description: 'Create your own trip' }
 ];
 
 export const seedCategories = async () => {
