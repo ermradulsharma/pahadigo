@@ -352,7 +352,7 @@ class AdminService {
 
         // 3. User Growth
         const userGrowth = await User.aggregate([
-            { $match: { createdAt: { $gte: startDate }, role: 'traveller' } },
+            { $match: { createdAt: { $gte: startDate }, role: { $in: ['traveller', 'vendor'] } } },
             {
                 $group: {
                     _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
