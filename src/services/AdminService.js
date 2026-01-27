@@ -196,7 +196,8 @@ class AdminService {
         await pkg.save();
 
         // Audit Log
-        if (req && req.user) this.logAction(req.user._id, 'UPDATE_STATUS', 'INVENTORY', serviceId, { status: status }, req);
+        const adminId = req?.user?.id || req?.user?._id;
+        if (adminId) this.logAction(adminId, 'UPDATE_STATUS', 'INVENTORY', serviceId, { status: status }, req);
 
         return pkg.services[serviceType][serviceIndex];
     }
@@ -214,13 +215,19 @@ class AdminService {
             { isVisible },
             { new: true }
         );
-        if (req && req.user) this.logAction(req.user._id, 'UPDATE_VISIBILITY', 'REVIEW', reviewId, { isVisible }, req);
+        if (req && req.user) {
+            const adminId = req.user.id || req.user._id;
+            this.logAction(adminId, 'UPDATE_VISIBILITY', 'REVIEW', reviewId, { isVisible }, req);
+        }
         return review;
     }
 
     async deleteReview(reviewId, req = null) {
         const result = await Review.findByIdAndDelete(reviewId);
-        if (req && req.user) this.logAction(req.user._id, 'DELETE', 'REVIEW', reviewId, {}, req);
+        if (req && req.user) {
+            const adminId = req.user.id || req.user._id;
+            this.logAction(adminId, 'DELETE', 'REVIEW', reviewId, {}, req);
+        }
         return result;
     }
 
@@ -228,7 +235,10 @@ class AdminService {
 
     async createBanner(data, req = null) {
         const banner = await Banner.create(data);
-        if (req && req.user) this.logAction(req.user._id, 'CREATE', 'BANNER', banner._id, { title: banner.title }, req);
+        if (req && req.user) {
+            const adminId = req.user.id || req.user._id;
+            this.logAction(adminId, 'CREATE', 'BANNER', banner._id, { title: banner.title }, req);
+        }
         return banner;
     }
 
@@ -238,13 +248,19 @@ class AdminService {
 
     async updateBanner(id, data, req = null) {
         const banner = await Banner.findByIdAndUpdate(id, data, { new: true });
-        if (req && req.user) this.logAction(req.user._id, 'UPDATE', 'BANNER', id, { changes: data }, req);
+        if (req && req.user) {
+            const adminId = req.user.id || req.user._id;
+            this.logAction(adminId, 'UPDATE', 'BANNER', id, { changes: data }, req);
+        }
         return banner;
     }
 
     async deleteBanner(id, req = null) {
         const result = await Banner.findByIdAndDelete(id);
-        if (req && req.user) this.logAction(req.user._id, 'DELETE', 'BANNER', id, {}, req);
+        if (req && req.user) {
+            const adminId = req.user.id || req.user._id;
+            this.logAction(adminId, 'DELETE', 'BANNER', id, {}, req);
+        }
         return result;
     }
 
@@ -252,7 +268,10 @@ class AdminService {
 
     async createCoupon(data, req = null) {
         const coupon = await Coupon.create(data);
-        if (req && req.user) this.logAction(req.user._id, 'CREATE', 'COUPON', coupon._id, { code: coupon.code }, req);
+        if (req && req.user) {
+            const adminId = req.user.id || req.user._id;
+            this.logAction(adminId, 'CREATE', 'COUPON', coupon._id, { code: coupon.code }, req);
+        }
         return coupon;
     }
 
@@ -262,13 +281,19 @@ class AdminService {
 
     async updateCoupon(id, data, req = null) {
         const coupon = await Coupon.findByIdAndUpdate(id, data, { new: true });
-        if (req && req.user) this.logAction(req.user._id, 'UPDATE', 'COUPON', id, { changes: data }, req);
+        if (req && req.user) {
+            const adminId = req.user.id || req.user._id;
+            this.logAction(adminId, 'UPDATE', 'COUPON', id, { changes: data }, req);
+        }
         return coupon;
     }
 
     async deleteCoupon(id, req = null) {
         const result = await Coupon.findByIdAndDelete(id);
-        if (req && req.user) this.logAction(req.user._id, 'DELETE', 'COUPON', id, {}, req);
+        if (req && req.user) {
+            const adminId = req.user.id || req.user._id;
+            this.logAction(adminId, 'DELETE', 'COUPON', id, {}, req);
+        }
         return result;
     }
 
