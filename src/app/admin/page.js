@@ -34,130 +34,123 @@ export default function AdminDashboard() {
     if (!isMounted) return null;
 
     return (
-        <>
-            <header className="bg-white shadow p-6 mb-6">
-                <h1 className="text-2xl font-bold text-gray-800 tracking-tight">System Overview</h1>
-                <p className="text-gray-500 mt-1">Real-time statistics for your platform</p>
-            </header>
+        <div className="p-8">
+            {loading ? (
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 animate-pulse">
+                    {[1, 2, 3, 4, 5, 6].map(i => (
+                        <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
+                    ))}
+                </div>
+            ) : (
+                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
+                    <StatCard title="Travellers" value={stats.users || 0} color="bg-gradient-to-br from-blue-600 to-indigo-700" icon="users" />
+                    <StatCard title="Total Vendors" value={stats.totalVendors || 0} color="bg-gradient-to-br from-emerald-500 to-teal-700" icon="briefcase" />
+                    <StatCard title="Pending Appr." value={stats.pendingVendors || 0} color="bg-gradient-to-br from-amber-500 to-orange-600" icon="alert" />
+                    <StatCard title="Packages" value={stats.packages || 0} color="bg-gradient-to-br from-pink-500 to-rose-700" icon="package" />
+                    <StatCard title="Categories" value={stats.categories || 0} color="bg-gradient-to-br from-slate-600 to-slate-800" icon="folder" />
+                    <StatCard title="Total Revenue" value={`₹${(Number(stats.revenue) || 0).toLocaleString('en-IN')}`} color="bg-gradient-to-br from-green-600 to-green-800" icon="cash" />
+                </div>
+            )}
 
-            <div className="px-8 pb-8">
-                {loading ? (
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 animate-pulse">
-                        {[1, 2, 3, 4, 5, 6].map(i => (
-                            <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
-                        ))}
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
+                {/* Recent Bookings */}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <span className="w-2 h-6 bg-violet-500 rounded-full"></span>
+                            Recent Bookings
+                        </h2>
+                        <Link href="/admin/bookings" className="text-xs text-indigo-600 hover:underline font-bold">View All →</Link>
                     </div>
-                ) : (
-                    <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                        <StatCard title="Travellers" value={stats.users || 0} color="bg-gradient-to-br from-blue-600 to-indigo-700" icon="users" />
-                        <StatCard title="Total Vendors" value={stats.totalVendors || 0} color="bg-gradient-to-br from-emerald-500 to-teal-700" icon="briefcase" />
-                        <StatCard title="Pending Appr." value={stats.pendingVendors || 0} color="bg-gradient-to-br from-amber-500 to-orange-600" icon="alert" />
-                        <StatCard title="Packages" value={stats.packages || 0} color="bg-gradient-to-br from-pink-500 to-rose-700" icon="package" />
-                        <StatCard title="Categories" value={stats.categories || 0} color="bg-gradient-to-br from-slate-600 to-slate-800" icon="folder" />
-                        <StatCard title="Total Revenue" value={`₹${(Number(stats.revenue) || 0).toLocaleString('en-IN')}`} color="bg-gradient-to-br from-green-600 to-green-800" icon="cash" />
-                    </div>
-                )}
-
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-                    {/* Recent Bookings */}
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <span className="w-2 h-6 bg-violet-500 rounded-full"></span>
-                                Recent Bookings
-                            </h2>
-                            <Link href="/admin/bookings" className="text-xs text-indigo-600 hover:underline font-bold">View All →</Link>
-                        </div>
-                        <div className="overflow-x-auto flex-1">
-                            <table className="w-full text-sm text-left">
-                                <thead className="text-gray-400 font-medium border-b border-gray-50">
-                                    <tr>
-                                        <th className="pb-3 px-2">Traveller</th>
-                                        <th className="pb-3 px-2">Package</th>
-                                        <th className="pb-3 px-2 text-right">Status</th>
+                    <div className="overflow-x-auto flex-1">
+                        <table className="w-full text-sm text-left">
+                            <thead className="text-gray-400 font-medium border-b border-gray-50">
+                                <tr>
+                                    <th className="pb-3 px-2">Traveller</th>
+                                    <th className="pb-3 px-2">Package</th>
+                                    <th className="pb-3 px-2 text-right">Status</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {(stats.recentBookings || []).map((b, i) => (
+                                    <tr key={b?._id || i} className="hover:bg-gray-50 transition-colors">
+                                        <td className="py-3 px-2 font-medium text-gray-700">{b?.user?.name || 'Anonymous'}</td>
+                                        <td className="py-3 px-2 text-gray-600 truncate max-w-[150px]">
+                                            <Link href="/admin/bookings" className="hover:text-indigo-600">{b?.package?.title || 'Package'}</Link>
+                                        </td>
+                                        <td className="py-3 px-2 text-right">
+                                            <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${b?.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                                                }`}>
+                                                {b?.status || 'pending'}
+                                            </span>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {(stats.recentBookings || []).map((b, i) => (
-                                        <tr key={b?._id || i} className="hover:bg-gray-50 transition-colors">
-                                            <td className="py-3 px-2 font-medium text-gray-700">{b?.user?.name || 'Anonymous'}</td>
-                                            <td className="py-3 px-2 text-gray-600 truncate max-w-[150px]">
-                                                <Link href="/admin/bookings" className="hover:text-indigo-600">{b?.package?.title || 'Package'}</Link>
-                                            </td>
-                                            <td className="py-3 px-2 text-right">
-                                                <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${b?.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
-                                                    }`}>
-                                                    {b?.status || 'pending'}
-                                                </span>
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {(!stats.recentBookings || stats.recentBookings.length === 0) && (
-                                        <tr><td colSpan="3" className="py-4 text-center text-gray-400">No recent bookings</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
-                    </div>
-
-                    {/* Recent Vendors */}
-                    <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
-                        <div className="flex justify-between items-center mb-4">
-                            <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                                <span className="w-2 h-6 bg-emerald-500 rounded-full"></span>
-                                New Vendors
-                            </h2>
-                            <Link href="/admin/vendors" className="text-xs text-indigo-600 hover:underline font-bold">View All →</Link>
-                        </div>
-                        <div className="overflow-x-auto flex-1">
-                            <table className="w-full text-sm text-left">
-                                <thead className="text-gray-400 font-medium border-b border-gray-50">
-                                    <tr>
-                                        <th className="pb-3 px-2">Business</th>
-                                        <th className="pb-3 px-2">Action</th>
-                                        <th className="pb-3 px-2 text-right">Joined</th>
-                                    </tr>
-                                </thead>
-                                <tbody className="divide-y divide-gray-50">
-                                    {(stats.recentVendors || []).map((v, i) => (
-                                        <tr key={v?._id || i} className="hover:bg-gray-50 transition-colors">
-                                            <td className="py-3 px-2 font-medium text-gray-700">
-                                                <div>{v?.businessName || 'New Business'}</div>
-                                                <div className="text-[10px] text-gray-400 -mt-1">{v?.user?.email || 'N/A'}</div>
-                                            </td>
-                                            <td className="py-3 px-2">
-                                                <Link
-                                                    href={`/admin/vendors/${v?._id || '#'}`}
-                                                    className="text-indigo-600 hover:text-indigo-800 font-bold"
-                                                >
-                                                    Review
-                                                </Link>
-                                            </td>
-                                            <td className="py-3 px-2 text-right text-gray-400 italic">
-                                                {v?.createdAt ? new Date(v.createdAt).toLocaleDateString() : 'N/A'}
-                                            </td>
-                                        </tr>
-                                    ))}
-                                    {(!stats.recentVendors || stats.recentVendors.length === 0) && (
-                                        <tr><td colSpan="3" className="py-4 text-center text-gray-400">No new vendors</td></tr>
-                                    )}
-                                </tbody>
-                            </table>
-                        </div>
+                                ))}
+                                {(!stats.recentBookings || stats.recentBookings.length === 0) && (
+                                    <tr><td colSpan="3" className="py-4 text-center text-gray-400">No recent bookings</td></tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
 
-                <div className="mt-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                    <h2 className="text-lg font-bold mb-4 text-gray-800">Quick Actions</h2>
-                    <div className="flex flex-wrap gap-4">
-                        <Link href="/admin/vendors" className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm font-medium">Review Vendors</Link>
-                        <Link href="/admin/travellers" className="px-6 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition font-medium">Manage Travellers</Link>
-                        <Link href="/admin/categories" className="px-6 py-2.5 bg-pink-50 text-pink-700 rounded-lg hover:bg-pink-100 transition font-medium">Categories</Link>
-                        <Link href="/admin/bookings" className="px-6 py-2.5 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition font-medium">Bookings</Link>
+                {/* Recent Vendors */}
+                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
+                    <div className="flex justify-between items-center mb-4">
+                        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
+                            <span className="w-2 h-6 bg-emerald-500 rounded-full"></span>
+                            New Vendors
+                        </h2>
+                        <Link href="/admin/vendors" className="text-xs text-indigo-600 hover:underline font-bold">View All →</Link>
+                    </div>
+                    <div className="overflow-x-auto flex-1">
+                        <table className="w-full text-sm text-left">
+                            <thead className="text-gray-400 font-medium border-b border-gray-50">
+                                <tr>
+                                    <th className="pb-3 px-2">Business</th>
+                                    <th className="pb-3 px-2">Action</th>
+                                    <th className="pb-3 px-2 text-right">Joined</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-50">
+                                {(stats.recentVendors || []).map((v, i) => (
+                                    <tr key={v?._id || i} className="hover:bg-gray-50 transition-colors">
+                                        <td className="py-3 px-2 font-medium text-gray-700">
+                                            <div>{v?.businessName || 'New Business'}</div>
+                                            <div className="text-[10px] text-gray-400 -mt-1">{v?.user?.email || 'N/A'}</div>
+                                        </td>
+                                        <td className="py-3 px-2">
+                                            <Link
+                                                href={`/admin/vendors/${v?._id || '#'}`}
+                                                className="text-indigo-600 hover:text-indigo-800 font-bold"
+                                            >
+                                                Review
+                                            </Link>
+                                        </td>
+                                        <td className="py-3 px-2 text-right text-gray-400 italic">
+                                            {v?.createdAt ? new Date(v.createdAt).toLocaleDateString() : 'N/A'}
+                                        </td>
+                                    </tr>
+                                ))}
+                                {(!stats.recentVendors || stats.recentVendors.length === 0) && (
+                                    <tr><td colSpan="3" className="py-4 text-center text-gray-400">No new vendors</td></tr>
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>
-        </>
+
+            <div className="mt-8 bg-white p-6 rounded-xl shadow-sm border border-gray-100">
+                <h2 className="text-lg font-bold mb-4 text-gray-800">Quick Actions</h2>
+                <div className="flex flex-wrap gap-4">
+                    <Link href="/admin/vendors" className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm font-medium">Review Vendors</Link>
+                    <Link href="/admin/travellers" className="px-6 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition font-medium">Manage Travellers</Link>
+                    <Link href="/admin/categories" className="px-6 py-2.5 bg-pink-50 text-pink-700 rounded-lg hover:bg-pink-100 transition font-medium">Categories</Link>
+                    <Link href="/admin/bookings" className="px-6 py-2.5 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition font-medium">Bookings</Link>
+                </div>
+            </div>
+        </div>
     );
 }
 

@@ -37,24 +37,14 @@ export default function AnalyticsPage() {
 
     return (
         <div className="p-8">
-            <header className="mb-8 flex justify-between items-center">
-                <div>
-                    <h1 className="text-2xl font-bold text-gray-800">Analytics Dashboard</h1>
-                    <p className="text-gray-500">Overview of platform performance</p>
-                </div>
-                <div className="bg-white border border-gray-200 rounded-lg p-1 flex gap-1">
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold text-gray-800">Analytics</h1>
+                <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1">
                     {['weekly', 'monthly', 'yearly'].map(p => (
-                        <button
-                            key={p}
-                            onClick={() => setPeriod(p)}
-                            className={`px-4 py-1.5 text-xs font-bold rounded-md capitalize transition-colors ${period === p ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-50'}`}
-                        >
-                            {p}
-                        </button>
+                        <button key={p} onClick={() => setPeriod(p)} className={`px-4 py-1.5 text-xs font-bold rounded-md capitalize transition-colors ${period === p ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-50'}`}> {p} </button>
                     ))}
                 </div>
-            </header>
-
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
                 {/* Revenue Trend */}
                 <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">

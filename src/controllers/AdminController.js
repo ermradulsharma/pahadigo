@@ -64,6 +64,23 @@ class AdminController {
         }
     }
 
+    // POST /admin/travellers
+    async createTraveller(req) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+            const body = req.jsonBody || await req.json();
+
+            if (!body.name || !body.email || !body.password) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+            }
+
+            const traveller = await AdminService.createTraveller(body, req);
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.CREATE, { traveller });
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+        }
+    }
+
     // POST /admin/approve-vendor
     async approveVendor(req) {
         try {

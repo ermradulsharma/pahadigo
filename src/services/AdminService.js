@@ -80,6 +80,24 @@ class AdminService {
         return await User.find({ role: 'traveller' }).select('name email phone createdAt isVerified status');
     }
 
+    async createTraveller(data, req = null) {
+        const existing = await User.findOne({ email: data.email });
+        if (existing) throw new Error('User with this email already exists');
+
+        const user = await User.create({
+            ...data,
+            role: 'traveller',
+            isVerified: true, // Auto-verify admin created users
+            status: 'active'
+        });
+
+        if (req && req.user) {
+            const adminId = req.user.id || req.user._id;
+            this.logAction(adminId, 'CREATE', 'USER', user._id, { email: user.email }, req);
+        }
+        return user;
+    }
+
     async approveVendor(vendorId) {
         return await Vendor.findByIdAndUpdate(vendorId, { isApproved: true }, { new: true });
     }

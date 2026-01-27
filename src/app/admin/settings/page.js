@@ -141,8 +141,10 @@ export default function SettingsPage() {
     }
 
     return (
-        <div className="p-6 max-w-[1600px] mx-auto">
-            <h1 className="text-2xl font-bold text-gray-900 mb-6">Account Settings</h1>
+        <div className="p-8">
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold text-gray-800">Settings</h1>
+            </div>
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
 
                 {/* Column 1 */}

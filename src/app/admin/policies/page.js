@@ -97,10 +97,9 @@ export default function PoliciesPage() {
     const currentTypeLabel = POLICY_TYPES[target]?.find(p => p.id === type)?.label || 'Policy';
     return (
         <div className="p-8 max-w-full">
-            <header className="mb-8">
-                <h1 className="text-3xl font-extrabold text-slate-900 tracking-tight">Policy Management</h1>
-                <p className="text-slate-500 mt-2">Create and update legal policies for your platform</p>
-            </header>
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold text-gray-800">Policy Management</h1>
+            </div>
             <div className="bg-white rounded-2xl shadow-xl overflow-hidden border border-slate-100 flex flex-col md:flex-row min-h-[700px]">
                 {/* Sidebar Navigation */}
                 <aside className="w-full md:w-100 bg-slate-50 border-r border-slate-100 p-6 flex flex-col gap-8">

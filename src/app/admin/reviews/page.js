@@ -88,10 +88,9 @@ export default function ReviewModerationPage() {
 
     return (
         <div className="p-8">
-            <header className="mb-8">
+            <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-gray-800">Review Moderation</h1>
-                <p className="text-gray-500">Monitor and manage user feedback and ratings</p>
-            </header>
+            </div>
 
             <div className="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <div className="p-4 border-b border-gray-50 flex justify-between items-center">

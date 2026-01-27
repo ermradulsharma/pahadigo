@@ -8,10 +8,9 @@ export default function MarketingPage() {
 
     return (
         <div className="p-8">
-            <header className="mb-8">
+            <div className="flex justify-between items-center mb-6">
                 <h1 className="text-2xl font-bold text-gray-800">Marketing & Promotions</h1>
-                <p className="text-gray-500">Manage app banners and discount coupons</p>
-            </header>
+            </div>
 
             <div className="flex gap-4 mb-6 border-b border-gray-200">
                 <button

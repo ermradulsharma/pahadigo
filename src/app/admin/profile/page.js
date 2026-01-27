@@ -165,7 +165,9 @@ export default function AdminProfilePage() {
 
     return (
         <div className="p-8">
-            <h1 className="text-2xl font-bold text-gray-800 mb-6">My Profile</h1>
+            <div className="flex justify-between items-center mb-6">
+                <h1 className="text-2xl font-bold text-gray-800">Profile</h1>
+            </div>
 
             {message.text && (
                 <div className={`p-4 mb-6 rounded ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
