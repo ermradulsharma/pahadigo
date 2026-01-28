@@ -3,18 +3,12 @@ import React, { useEffect, useState } from "react";
 import { ComposableMap, Geographies, Geography, Marker, ZoomableGroup } from "react-simple-maps";
 import { Tooltip as ReactTooltip } from "react-tooltip";
 import 'react-tooltip/dist/react-tooltip.css';
+import { getToken } from "../../../helpers/authUtils";
 
 const geoUrl = "https://cdn.jsdelivr.net/npm/world-atlas@2/countries-110m.json";
 
-import { getToken } from "../../../helpers/authUtils";
-
-// ... (imports)
-
-// ... (imports)
 export default function GeoMapWidget() {
     const [data, setData] = useState([]);
-    // Remove tooltipContent state
-
     useEffect(() => {
         const token = getToken();
         fetch('/api/admin/analytics?type=map', {

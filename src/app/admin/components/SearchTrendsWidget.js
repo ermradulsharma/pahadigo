@@ -1,9 +1,6 @@
 "use client";
 import React, { useEffect, useState } from 'react';
-
 import { getToken } from "../../../helpers/authUtils";
-
-// ...
 
 export default function SearchTrendsWidget() {
     const [data, setData] = useState({ topSearches: [], zeroResultSearches: [] });
