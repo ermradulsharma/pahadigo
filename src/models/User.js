@@ -51,8 +51,8 @@ const UserSchema = new mongoose.Schema({
         count: { type: Number, default: 0 }
     },
 
-    otp: { type: String, default: null },
-    otpExpires: { type: Date, default: null },
+    otp: { type: String },
+    otpExpires: { type: Date },
     isVerified: { type: Boolean, default: false },
     status: {
         type: String,
