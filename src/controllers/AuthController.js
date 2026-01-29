@@ -32,7 +32,7 @@ class AuthController {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.INVALID_EMAIL, {});
             }
             const identifier = email || phone;
-            const otp = OTPService.generateOTP(identifier, role);
+            const otp = OTPService.generateOTP(identifier, role, { termsAccepted: body.termsAccepted });
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.OTP_SENT, { otp, email, phone });
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.AUTH.OTP_SEND_FAILED, {});

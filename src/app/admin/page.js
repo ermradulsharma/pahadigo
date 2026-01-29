@@ -8,11 +8,7 @@ import {
     PieChart, Pie, Cell, Legend
 } from 'recharts';
 
-import GeoMapWidget from './components/GeoMapWidget';
-import CalendarWidget from './components/CalendarWidget';
-import SearchTrendsWidget from './components/SearchTrendsWidget';
-import FinancialWidget from './components/FinancialWidget';
-import HealthWidget from './components/HealthWidget';
+
 
 const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
@@ -186,20 +182,9 @@ export default function AdminDashboard() {
                 )}
             </div>
 
-            {/* Financial Detail */}
-            <div className="mt-8 mb-8">
-                <FinancialWidget />
-            </div>
 
-            {/* Geo & Health */}
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 mb-8">
-                <div className="lg:col-span-2">
-                    <GeoMapWidget />
-                </div>
-                <div>
-                    <HealthWidget />
-                </div>
-            </div>
+
+
 
             {/* Analytics Section */}
             {/* ... keeping existing charts ... */}
@@ -294,15 +279,9 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
-            {/* Search Trends */}
-            <div className="mt-8">
-                <SearchTrendsWidget />
-            </div>
 
-            {/* Calendar */}
-            <div className="mt-8">
-                <CalendarWidget />
-            </div>
+
+
 
             <div className="mt-8 bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
                 <h2 className="text-lg font-bold text-gray-800">Quick Actions</h2>

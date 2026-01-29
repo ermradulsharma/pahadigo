@@ -7,10 +7,10 @@ class OTPService {
         this.otps = new Map();
     }
 
-    generateOTP(identifier, role) {
+    generateOTP(identifier, role, extraData = {}) {
         const otp = Math.floor(100000 + Math.random() * 900000).toString();
         const expiresAt = Date.now() + 5 * 60 * 1000;
-        this.otps.set(identifier, { otp, expiresAt, role });
+        this.otps.set(identifier, { otp, expiresAt, role, ...extraData });
 
         this._sendOTP(identifier, otp).catch(err => { });
         return otp;

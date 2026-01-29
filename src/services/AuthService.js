@@ -55,6 +55,7 @@ class AuthService {
             throw new Error('Invalid or expired OTP');
         }
 
+        const { termsAccepted } = otpRecord;
         let role = otpRecord.role;
         if (role === 'master') {
             const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
@@ -69,7 +70,9 @@ class AuthService {
             const payload = {
                 role: userRole,
                 isVerified: true,
-                authProvider: email ? AUTH_PROVIDERS.LOCAL : AUTH_PROVIDERS.PHONE
+                authProvider: email ? AUTH_PROVIDERS.LOCAL : AUTH_PROVIDERS.PHONE,
+                termsAccepted: !!termsAccepted,
+                termsAcceptedAt: termsAccepted ? new Date() : null
             };
             if (email) payload.email = email;
             if (phone) payload.phone = phone;
@@ -78,6 +81,12 @@ class AuthService {
         } else {
             if (role === USER_ROLES.VENDOR && user.role === USER_ROLES.TRAVELLER) {
                 user.role = 'vendor';
+            }
+            if (termsAccepted && !user.termsAccepted) {
+                user.termsAccepted = true;
+                user.termsAcceptedAt = new Date();
+            }
+            if (user.isModified()) {
                 await user.save();
             }
         }
