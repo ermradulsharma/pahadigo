@@ -20,7 +20,8 @@ const getCategoryImage = (slug) => {
 
 async function getCategories() {
     try {
-        await connectDB();
+        const conn = await connectDB();
+        if (!conn) return [];
         // Plain object for serialization
         const categories = await Category.find({ isActive: true }).select('name slug description').lean();
         return categories.map(cat => ({

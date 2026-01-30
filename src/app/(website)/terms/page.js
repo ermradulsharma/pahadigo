@@ -3,8 +3,13 @@ import connectDB from '@/config/db.js';
 import Policy from '@/models/Policy.js';
 
 export default async function TermsOfService() {
-    await connectDB();
-    const policy = await Policy.findOne({ target: 'admin', type: 'terms_conditions' });
+    let policy = null;
+    try {
+        await connectDB();
+        policy = await Policy.findOne({ target: 'admin', type: 'terms_conditions' });
+    } catch (error) {
+        console.error("Failed to fetch terms of service:", error);
+    }
 
     return (
         <div className="bg-gray-50 min-h-screen">

@@ -3,8 +3,13 @@ import connectDB from '@/config/db.js';
 import Policy from '@/models/Policy.js';
 
 export default async function PrivacyPolicy() {
-    await connectDB();
-    const policy = await Policy.findOne({ target: 'admin', type: 'privacy_policy' });
+    let policy = null;
+    try {
+        await connectDB();
+        policy = await Policy.findOne({ target: 'admin', type: 'privacy_policy' });
+    } catch (error) {
+        console.error("Failed to fetch privacy policy:", error);
+    }
 
     return (
         <div className="bg-gray-50 min-h-screen">

@@ -13,6 +13,14 @@ async function connectDB() {
         return cached.conn;
     }
     if (!cached.promise) {
+        if (!MONGODB_URI) {
+            // Check if we are in the Next.js build phase
+            if (process.env.NEXT_PHASE === 'phase-production-build' || process.env.NODE_ENV === 'production') {
+                console.warn("⚠️ MONGODB_URI is missing. Skipping database connection during build/start to prevent crash.");
+                return null;
+            }
+            throw new Error("MONGODB_URI is not defined. Please check your environment variables.");
+        }
         const opts = {
             bufferCommands: false,
         };

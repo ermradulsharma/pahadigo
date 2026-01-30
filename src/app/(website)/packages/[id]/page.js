@@ -5,45 +5,51 @@ import Package from '@/models/Package';
 import '@/models/Vendor'; // Ensure Vendor model is registered
 
 async function getServiceDetails(id) {
-    await connectDB();
+    try {
+        const conn = await connectDB();
+        if (!conn) return null;
 
-    // Find the package that contains a service with this ID
-    const serviceTypes = [
-        'homestay', 'camping', 'trekking', 'rafting',
-        'bungeeJumping', 'vehicleRental', 'chardhamTour'
-    ];
+        // Find the package that contains a service with this ID
+        const serviceTypes = [
+            'homestay', 'camping', 'trekking', 'rafting',
+            'bungeeJumping', 'vehicleRental', 'chardhamTour'
+        ];
 
-    const orConditions = serviceTypes.map(type => ({
-        [`services.${type}._id`]: id
-    }));
+        const orConditions = serviceTypes.map(type => ({
+            [`services.${type}._id`]: id
+        }));
 
-    const pkg = await Package.findOne({ $or: orConditions }).populate('vendor').lean();
+        const pkg = await Package.findOne({ $or: orConditions }).populate('vendor').lean();
 
-    if (!pkg) return null;
+        if (!pkg) return null;
 
-    // Find the specific sub-document
-    let foundService = null;
-    let serviceType = '';
+        // Find the specific sub-document
+        let foundService = null;
+        let serviceType = '';
 
-    for (const type of serviceTypes) {
-        if (pkg.services && pkg.services[type]) {
-            const item = pkg.services[type].find(s => s._id.toString() === id);
-            if (item) {
-                foundService = item;
-                serviceType = type;
-                break;
+        for (const type of serviceTypes) {
+            if (pkg.services && pkg.services[type]) {
+                const item = pkg.services[type].find(s => s._id.toString() === id);
+                if (item) {
+                    foundService = item;
+                    serviceType = type;
+                    break;
+                }
             }
         }
+
+        if (!foundService) return null;
+
+        return {
+            ...foundService,
+            _id: foundService._id.toString(),
+            serviceType,
+            vendor: pkg.vendor
+        };
+    } catch (error) {
+        console.error("Error fetching service details:", error);
+        return null;
     }
-
-    if (!foundService) return null;
-
-    return {
-        ...foundService,
-        _id: foundService._id.toString(),
-        serviceType,
-        vendor: pkg.vendor
-    };
 }
 
 export default async function ServiceDetailPage({ params }) {

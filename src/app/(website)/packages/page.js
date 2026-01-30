@@ -44,7 +44,8 @@ const flattenServices = (vendorPackages, category = null) => {
 
 async function getServices(category) {
     try {
-        await connectDB();
+        const conn = await connectDB();
+        if (!conn) return [];
         // Populate vendor to get name
         const packages = await Package.find().populate('vendor', 'businessName').lean();
         return flattenServices(packages, category);
