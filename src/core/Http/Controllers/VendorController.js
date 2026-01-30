@@ -12,8 +12,25 @@ import { uploadToCloudinary } from '@/helpers/cloudinary.js';
 
 class VendorController {
 
-    // POST /vendor/profile/create (Multipart Form Data)
-    async createProfile(req) {
+    // --- BUSINESS PROFILE ---
+
+    // GET /vendor/business/profile
+    async getBusinessProfile(req) {
+        try {
+            const user = req.user;
+            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
+
+            const vendor = await VendorService.getFullProfile(user.id);
+            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
+
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, vendor);
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+        }
+    }
+
+    // POST /vendor/business/profile/create (Multipart Form Data)
+    async createBusinessProfile(req) {
         try {
             const user = req.user;
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
@@ -90,248 +107,214 @@ class VendorController {
         }
     }
 
-    // POST /vendor/document/upload (Multipart Form Data)
-    async uploadDocuments(req) {
+    // PATCH /vendor/business/profile/update (Multipart Form Data)
+    async updateBusinessProfile(req) {
+        try {
+            const user = req.user;
+            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
+
+            const formDataBody = req.formDataBody;
+            if (!formDataBody) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.FORM_DATA_REQUIRED, {});
+
+            const parsedData = parseNestedFormData(formDataBody);
+            const data = { ...parsedData };
+
+            // Handle profile image separately
+            const profileImageFile = formDataBody.get('profile_image');
+            if (profileImageFile && profileImageFile instanceof File) {
+                const result = await uploadToCloudinary(profileImageFile, `profile/${user.id}`);
+                data.profileImage = result.url;
+            }
+
+            // Resolve categories if provided as slugs
+            if (data.businessCategory) {
+                let categorySlugs = Array.isArray(data.businessCategory) ? data.businessCategory : [data.businessCategory];
+                const categories = await Category.find({ slug: { $in: categorySlugs } }).select('_id name slug');
+                data.category = categories.map(c => ({ _id: c._id, name: c.name, slug: c.slug }));
+                delete data.businessCategory;
+            }
+
+            const vendor = await VendorService.upsertProfile(user.id, data);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.PROFILE_UPDATED, vendor);
+        } catch (error) {
+            console.error("Update Profile Error:", error);
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+        }
+    }
+
+    // DELETE /vendor/business/profile/delete
+    async deleteBusinessProfile(req) {
+        try {
+            const user = req.user;
+            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
+
+            await VendorService.deleteProfile(user.id, user.id);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, {});
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+        }
+    }
+
+
+    // --- BUSINESS DOCUMENTS ---
+
+    // GET /vendor/business/documents
+    async getBusinessDocuments(req) {
+        try {
+            const user = req.user;
+            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
+
+            const vendor = await VendorService.findByUserId(user.id);
+            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
+
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, vendor);
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+        }
+    }
+
+    // POST /vendor/business/documents/upload (Multipart Form Data)
+    async uploadBusinessDocuments(req) {
         const startTime = Date.now();
         const user = req.user;
         try {
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
 
-            console.log(`[DocumentUpload] [${user.id}] Request received at ${new Date().toISOString()}`);
-
             const currentVendor = await Vendor.findOne({ user: user.id });
-            console.log(`[DocumentUpload] [${user.id}] Vendor found in DB`);
+            if (!currentVendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
 
-            const formData = req.formDataBody;
-            if (!formData) {
-                console.log(`[DocumentUpload] [${user.id}] Error: No form data`);
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.FORM_DATA_REQUIRED, {});
-            }
+            const formDataBody = req.formDataBody;
+            if (!formDataBody) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.FORM_DATA_REQUIRED, {});
 
-            const baseUploadsDir = path.join(process.cwd(), 'public', 'uploads', 'documents', user.id);
+            // Use helper to parse nested structures (e.g., aadharCard[0])
+            const parsedData = parseNestedFormData(formDataBody);
             const documents = {};
-            const handledDeletions = new Set();
 
-            const deleteOldFile = async (relativeUrl) => {
-                if (!relativeUrl) return;
-                // Note: Deleting from Cloudinary would require the public_id.
-                // For now, we'll focus on uploading. Deletion can be implemented later if needed.
-                console.log(`[DocumentUpload] [${user.id}] Skipping deletion of old file (Cloudinary migration in progress): ${relativeUrl}`);
-            };
+            const processField = async (fieldKey, value) => {
+                const isArray = Array.isArray(value);
+                const files = isArray ? value : [value];
+                const results = [];
 
-            const processFile = async (key, value) => {
-                // Check if value is a string instead of a File
-                if (typeof value === 'string') {
-                    console.warn(`[DocumentUpload] [${user.id}] WARNING: Field ${key} received as string, not File. Value prefix: ${value.substring(0, 50)}`);
-                    return;
-                }
-
-                if (!(value instanceof File || (value instanceof Blob && value.name))) {
-                    console.warn(`[DocumentUpload] [${user.id}] Skipping non-file field: ${key}`);
-                    return;
-                }
-
-                let targetField = key;
-                const arrayMatch = key.match(/^(.+)\[\d+\]$/);
-                if (arrayMatch) {
-                    targetField = arrayMatch[1];
-                }
-
-                console.log(`[DocumentUpload] [${user.id}] Processing file: ${key} (Field: ${targetField})`);
-
-                // Delete old files for this field (once per field)
-                if (currentVendor?.documents && !handledDeletions.has(targetField)) {
-                    handledDeletions.add(targetField);
-                    const oldDoc = currentVendor.documents[targetField];
-                    if (oldDoc) {
-                        console.log(`[DocumentUpload] [${user.id}] Cleaning up old docs for ${targetField}`);
-                        if (Array.isArray(oldDoc)) {
-                            await Promise.all(oldDoc.map(doc => deleteOldFile(doc.url)));
-                        } else if (oldDoc.url) {
-                            await deleteOldFile(oldDoc.url);
-                        }
+                for (const file of files) {
+                    if (file instanceof File || (file instanceof Blob && file.name)) {
+                        const result = await uploadToCloudinary(file, `documents/${user.id}/${fieldKey}`);
+                        results.push({
+                            url: result.url,
+                            publicId: result.publicId,
+                            status: 'pending',
+                            reason: null
+                        });
                     }
                 }
 
-                console.log(`[DocumentUpload] [${user.id}] Uploading ${key} to Cloudinary...`);
-                const result = await uploadToCloudinary(value, `documents/${user.id}/${targetField}`);
-
-                const docObject = {
-                    url: result.url,
-                    status: 'pending',
-                    reason: null,
-                    publicId: result.publicId
-                };
-
-                if (['panCard', 'businessRegistration', 'gstRegistration'].includes(targetField)) {
-                    documents[targetField] = docObject;
-                } else {
-                    if (!documents[targetField]) documents[targetField] = [];
-                    documents[targetField].push(docObject);
+                if (results.length > 0) {
+                    if (['panCard', 'businessRegistration', 'gstRegistration'].includes(fieldKey)) {
+                        documents[fieldKey] = results[0];
+                    } else {
+                        documents[fieldKey] = results;
+                    }
                 }
-                console.log(`[DocumentUpload] [${user.id}] File ${key} complete`);
             };
-
-            const entries = Array.from(formData.entries());
-            console.log(`[DocumentUpload] [${user.id}] Starting parallel processing of ${entries.length} entries`);
-            await Promise.all(entries.map(([key, value]) => processFile(key, value)));
+            await Promise.all(Object.entries(parsedData).map(([key, val]) => processField(key, val)));
 
             if (Object.keys(documents).length === 0) {
-                console.log(`[DocumentUpload] [${user.id}] Error: No files were successfully processed`);
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, "No valid files provided in request. Check if files are correctly attached.", {});
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, "No valid files provided in request.", {});
             }
 
-            // Check mandatory fields
+            // Mandatory fields verification (Aadhaar, PAN, etc.)
             const mandatoryFields = ['aadharCard', 'panCard', 'businessRegistration', 'gstRegistration'];
             for (const field of mandatoryFields) {
                 const inRequest = documents[field] && (!Array.isArray(documents[field]) || documents[field].length > 0);
-                const inDb = currentVendor?.documents?.[field] && (!Array.isArray(currentVendor.documents[field]) || currentVendor.documents[field].length > 0);
+                const inDb = currentVendor.documents?.[field] && (!Array.isArray(currentVendor.documents[field]) || currentVendor.documents[field].length > 0);
 
                 if (!inRequest && !inDb) {
-                    console.log(`[DocumentUpload] [${user.id}] Error: Mandatory field ${field} missing`);
                     return errorResponse(HTTP_STATUS.BAD_REQUEST, `Mandatory document missing: ${field}`, {});
                 }
             }
-
-            console.log(`[DocumentUpload] [${user.id}] Updating profile in DB...`);
-            await VendorService.upsertProfile(user.id, { documents });
-
+            const updatedVendor = await VendorService.upsertProfile(user.id, { documents });
             const duration = Date.now() - startTime;
-            console.log(`[DocumentUpload] [${user.id}] Completed successfully in ${duration}ms`);
-
-            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.DOCUMENTS_UPLOADED, {});
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.DOCUMENTS_UPLOADED, updatedVendor);
         } catch (error) {
-            const duration = Date.now() - startTime;
-            console.error(`[DocumentUpload] [${user?.id || 'unknown'}] CRITICAL FAILURE after ${duration}ms:`, error);
+            console.error(`[DocumentUpload] [${user?.id || 'unknown'}] Error:`, error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
         }
     }
 
-    // POST /vendor/profile (Create or Update)
-    async updateProfile(req) {
-        try {
-            const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-            const body = req.jsonBody || await req.json();
-            const { businessName, category } = body;
-            if (!businessName || !category) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
-            }
-            const vendor = await VendorService.upsertProfile(user.id, body);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.PROFILE_UPDATED, {});
-        } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
-        }
-    }
-
-    // POST /vendor/create-package
-    async createPackage(req) {
+    // PATCH /vendor/business/documents/update
+    async updateBusinessDocument(req) {
         try {
             const user = req.user;
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
 
-            const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.VENDOR_INCOMPLETE, {});
+            const formDataBody = req.formDataBody;
+            if (!formDataBody) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.FORM_DATA_REQUIRED, {});
 
-            const body = req.jsonBody || await req.json();
-            const { title, price } = body;
+            const { type, id } = parseNestedFormData(formDataBody);
+            const file = formDataBody.get('file');
 
-            if (!title || !price) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
-            }
+            if (!type || !file) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
-            const newPackage = await PackageService.createPackage(vendor._id, body);
+            console.log(`[DocumentUpdate] [${user.id}] Updating ${type}...`);
+            const result = await uploadToCloudinary(file, `documents/${user.id}/${type}`);
 
-            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.PACKAGE_CREATED, {});
-        } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
-        }
-    }
+            const docObject = {
+                url: result.url,
+                publicId: result.publicId,
+                status: 'pending',
+                reason: null
+            };
 
-    // GET /vendor/documents
-    async getDocuments(req) {
-        try {
-            const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
-            const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
-
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { documents: vendor.documents || {} });
-        } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
-        }
-    }
-
-    // GET /vendor/profile
-    async getProfile(req) {
-        try {
-            const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
-            const vendor = await VendorService.getFullProfile(user.id);
-            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
-
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { profile: vendor });
-        } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
-        }
-    }
-
-    // GET /vendor/categories
-    async getCategories(req) {
-        const categories = await CategoryService.getAllCategories();
-        return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { categories });
-    }
-
-    // POST /vendor/document/delete
-    async deleteDocument(req) {
-        return errorResponse(HTTP_STATUS.NOT_IMPLEMENTED, RESPONSE_MESSAGES.ERROR.NOT_IMPLEMENTED, {});
-    }
-
-    // POST /vendor/document/update
-    async updateDocument(req) {
-        return errorResponse(HTTP_STATUS.NOT_IMPLEMENTED, RESPONSE_MESSAGES.ERROR.NOT_IMPLEMENTED, {});
-    }
-
-    // POST /vendor/bank/create (Multipart Form Data)
-    async createBankDetails(req) {
-        try {
-            const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
-            const formData = req.formDataBody;
-            if (!formData) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.FORM_DATA_REQUIRED, {});
-
-            const bankData = {};
-            let cancelledChequePath = '';
-
-            for (const [key, value] of formData.entries()) {
-                if (key === 'cancelChequered' && value instanceof File) {
-                    console.log(`[BankDetails] [${user.id}] Uploading cancelled cheque to Cloudinary...`);
-                    const result = await uploadToCloudinary(value, `bank/${user.id}`);
-                    cancelledChequePath = result.url;
-                } else if (key === 'accountHolderName') {
-                    bankData.accountHolder = value;
-                } else if (key === 'bankAccount') {
-                    bankData.accountNumber = value;
-                } else if (key === 'ifscCode') {
-                    bankData.ifscCode = value;
-                } else if (key === 'bankName') {
-                    bankData.bankName = value;
-                }
+            const update = {};
+            if (type === 'aadharCard' && id) {
+                update['$set'] = { 'documents.aadharCard.$[elem]': docObject };
+                var arrayFilters = [{ 'elem._id': id }];
+            } else {
+                update['$set'] = { [`documents.${type}`]: docObject };
             }
 
-            if (cancelledChequePath) {
-                bankData.cancelledCheque = cancelledChequePath;
-            }
+            const updatedVendor = await Vendor.findOneAndUpdate(
+                { user: user.id },
+                update,
+                { new: true, arrayFilters }
+            );
 
-            const vendor = await VendorService.upsertProfile(user.id, { bankDetails: bankData });
-            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.BANK_DETAILS_SAVED, {});
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, updatedVendor);
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            console.error("Update Document Error:", error);
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
+
+    // DELETE /vendor/business/documents/delete
+    async deleteBusinessDocument(req) {
+        try {
+            const user = req.user;
+            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
+
+            const { type, id } = req.jsonBody || await req.json();
+            if (!type) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+
+            const update = {};
+            if (type === 'aadharCard' && id) {
+                update['$pull'] = { 'documents.aadharCard': { _id: id } };
+            } else {
+                update['$set'] = { [`documents.${type}`]: null };
+            }
+
+            const updatedVendor = await Vendor.findOneAndUpdate(
+                { user: user.id },
+                update,
+                { new: true }
+            );
+
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, updatedVendor);
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+        }
+    }
+
+
+    // --- BANK DETAILS ---
 
     // GET /vendor/bank
     async getBankDetails(req) {
@@ -342,29 +325,78 @@ class VendorController {
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { bankDetails: vendor.bankDetails || {} });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, vendor);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
 
-    // POST /vendor/bank/update
+    // POST /vendor/bank/create (Multipart Form Data)
+    async createBankDetails(req) {
+        try {
+            const user = req.user;
+            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
+
+            const formDataBody = req.formDataBody;
+            if (!formDataBody) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.FORM_DATA_REQUIRED, {});
+            const parsedData = parseNestedFormData(formDataBody);
+
+            // Build bankData dynamically to allow partial updates (skip undefined)
+            const bankData = {};
+            ['accountHolderName', 'accountNumber', 'ifscCode', 'bankName'].forEach(key => {
+                if (parsedData[key] !== undefined) bankData[key] = parsedData[key];
+            });
+
+            const cancelledChequeFile = formDataBody.get('cancelledCheque') || formDataBody.get('cancelChequered');
+            if (cancelledChequeFile && cancelledChequeFile instanceof File) {
+                const result = await uploadToCloudinary(cancelledChequeFile, `bank/${user.id}`);
+                bankData.cancelledCheque = {
+                    url: result.url,
+                    publicId: result.publicId,
+                    status: 'pending'
+                };
+            }
+
+            const vendor = await Vendor.findOne({ user: user.id });
+            const isNewBankEntry = !vendor || !vendor.bankDetails || !vendor.bankDetails.accountNumber;
+
+            if (isNewBankEntry) {
+                const required = ['accountHolderName', 'accountNumber', 'ifscCode', 'bankName'];
+                const missing = required.filter(f => !bankData[f]);
+                const hasCheque = bankData.cancelledCheque || (vendor?.bankDetails?.cancelledCheque?.url);
+
+                if (missing.length > 0 || !hasCheque) {
+                    const errorMsg = `Required fields missing: ${missing.join(', ')}${!hasCheque ? ', cancelledCheque' : ''}`;
+                    return errorResponse(HTTP_STATUS.BAD_REQUEST, errorMsg, {});
+                }
+            }
+            const updatedVendor = await VendorService.upsertProfile(user.id, { bankDetails: bankData });
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.BANK_DETAILS_SAVED, updatedVendor);
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+        }
+    }
+
+    // PATCH /vendor/bank/update
     async updateBankDetails(req) {
         return this.createBankDetails(req);
     }
 
-    // POST /vendor/bank/delete
+    // DELETE /vendor/bank/delete
     async deleteBankDetails(req) {
         try {
             const user = req.user;
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
 
-            await VendorService.upsertProfile(user.id, { bankDetails: {} });
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, {});
+            const updatedVendor = await VendorService.deleteBankDetails(user.id);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, updatedVendor);
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
+
+
+    // --- PACKAGES ---
 
     // GET /vendor/packages -> Returns the Single Catalog
     async getPackages(req) {
@@ -392,7 +424,7 @@ class VendorController {
                 'Chardham Tour': 'chardhamTour'
             };
 
-            const allowedServices = packages.category.map(c => categoryMap[c]).filter(Boolean);
+            const allowedServices = packages.category.map(c => categoryMap[c.name]).filter(Boolean);
 
             // Convert to Object to filter
             const catalogObj = catalog.toObject();
@@ -416,33 +448,28 @@ class VendorController {
         }
     }
 
-    // Helper to process item data (handle files and map to schema)
-    async _processItemData(user, category, item) {
-        if (!item) return null;
+    // POST /vendor/create-package
+    async createPackage(req) {
+        try {
+            const user = req.user;
+            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
 
-        const photoUrls = [];
-        if (item.photos && Array.isArray(item.photos)) {
-            for (const photo of item.photos) {
-                if (photo instanceof File) {
-                    console.log(`[PackageItem] [${user.id}] Uploading photo to Cloudinary...`);
-                    const result = await uploadToCloudinary(photo, `packages/${user.id}/${category || 'general'}`);
-                    photoUrls.push({ url: result.url, type: 'image', publicId: result.publicId });
-                } else if (typeof photo === 'string') {
-                    photoUrls.push({ url: photo, type: 'image' });
-                } else if (photo && photo.url) {
-                    photoUrls.push(photo);
-                }
+            const vendor = await VendorService.findByUserId(user.id);
+            if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.VENDOR_INCOMPLETE, {});
+
+            const body = req.jsonBody || await req.json();
+            const { title, price } = body;
+
+            if (!title || !price) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             }
-            item.photos = photoUrls;
-        }
 
-        if (item.amenities && Array.isArray(item.amenities)) {
-            item.amenities = item.amenities.map(a =>
-                typeof a === 'string' ? { title: a } : a
-            );
-        }
+            const newPackage = await PackageService.createPackage(vendor._id, body);
 
-        return item;
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.PACKAGE_CREATED, {});
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+        }
     }
 
     // POST /vendor/package/add-item -> Add Service Item
@@ -475,7 +502,7 @@ class VendorController {
         }
     }
 
-    // POST /vendor/package/update-item
+    // PATCH /vendor/package/update-item
     async updateItem(req) {
         try {
             const user = req.user;
@@ -506,7 +533,7 @@ class VendorController {
         }
     }
 
-    // POST /vendor/package/delete-item
+    // DELETE /vendor/package/delete-item
     async deleteItem(req) {
         try {
             const user = req.user;
@@ -520,6 +547,25 @@ class VendorController {
 
             const updatedCatalog = await PackageService.removeServiceItem(vendor._id, category, itemId);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, { catalog: updatedCatalog });
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+        }
+    }
+
+    // POST /vendor/package/toggle-item
+    async toggleItemStatus(req) {
+        try {
+            const user = req.user;
+            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
+            const vendor = await VendorService.findByUserId(user.id);
+            if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
+
+            const body = req.jsonBody || await req.json();
+            const { category, itemId, isActive } = body;
+            if (!category || !itemId || typeof isActive !== 'boolean') return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+
+            const updatedCatalog = await PackageService.toggleItemStatus(vendor._id, category, itemId, isActive);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, { catalog: updatedCatalog });
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
@@ -543,23 +589,81 @@ class VendorController {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
     }
-    // POST /vendor/package/toggle-item
-    async toggleItemStatus(req) {
+
+
+    // --- LEGACY / INTERNAL ---
+
+    // GET /vendor/business/categories
+    async getBusinessCategories(req) {
+        const categories = await CategoryService.getAllCategories();
+        return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { categories });
+    }
+
+    async addBusinessCategory(req) {
         try {
             const user = req.user;
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-            const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
 
-            const body = req.jsonBody || await req.json();
-            const { category, itemId, isActive } = body;
-            if (!category || !itemId || typeof isActive !== 'boolean') return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+            const { categorySlug } = req.jsonBody || await req.json();
+            if (!categorySlug) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
-            const updatedCatalog = await PackageService.toggleItemStatus(vendor._id, category, itemId, isActive);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, { catalog: updatedCatalog });
+            const category = await Category.findOne({ slug: categorySlug }).select('_id name slug');
+            if (!category) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.CATEGORY_NOT_FOUND, {});
+
+            const updatedVendor = await VendorService.addCategory(user.id, {
+                _id: category._id,
+                name: category.name,
+                slug: category.slug
+            });
+
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, updatedVendor);
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
         }
+    }
+
+    async removeBusinessCategory(req) {
+        try {
+            const user = req.user;
+            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
+
+            const { categorySlug } = req.jsonBody || await req.json();
+            if (!categorySlug) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+
+            const updatedVendor = await VendorService.removeCategory(user.id, categorySlug);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, updatedVendor);
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+        }
+    }
+
+    // Helper to process item data (handle files and map to schema)
+    async _processItemData(user, category, item) {
+        if (!item) return null;
+
+        const photoUrls = [];
+        if (item.photos && Array.isArray(item.photos)) {
+            for (const photo of item.photos) {
+                if (photo instanceof File) {
+                    console.log(`[PackageItem] [${user.id}] Uploading photo to Cloudinary...`);
+                    const result = await uploadToCloudinary(photo, `packages/${user.id}/${category || 'general'}`);
+                    photoUrls.push({ url: result.url, type: 'image', publicId: result.publicId });
+                } else if (typeof photo === 'string') {
+                    photoUrls.push({ url: photo, type: 'image' });
+                } else if (photo && photo.url) {
+                    photoUrls.push(photo);
+                }
+            }
+            item.photos = photoUrls;
+        }
+
+        if (item.amenities && Array.isArray(item.amenities)) {
+            item.amenities = item.amenities.map(a =>
+                typeof a === 'string' ? { title: a } : a
+            );
+        }
+
+        return item;
     }
 }
 

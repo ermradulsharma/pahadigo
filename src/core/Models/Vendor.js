@@ -31,12 +31,13 @@ const VendorSchema = new mongoose.Schema({
         }
     },
     bankDetails: {
-        accountHolder: { type: String, default: null, required: true },
+        accountHolderName: { type: String, default: null, required: true },
         accountNumber: { type: String, default: null, required: true },
         ifscCode: { type: String, default: null, required: true },
         bankName: { type: String, default: null, required: true },
         cancelledCheque: {
             url: { type: String, default: null, required: true },
+            publicId: { type: String, default: null },
             status: { type: String, enum: Object.values(VERIFICATION_STATUS), default: DEFAULTS.VENDOR_VERIFICATION_STATUS },
             reason: { type: String, default: null }
         },
@@ -44,25 +45,31 @@ const VendorSchema = new mongoose.Schema({
     documents: {
         aadharCard: [{
             url: { type: String, required: true, default: null },
+            publicId: { type: String, default: null },
             status: { type: String, enum: Object.values(VERIFICATION_STATUS), default: DEFAULTS.VENDOR_VERIFICATION_STATUS },
             reason: { type: String, default: null }
         }],
         panCard: {
             url: { type: String, required: true, default: null },
+            publicId: { type: String, default: null },
             status: { type: String, enum: Object.values(VERIFICATION_STATUS), default: DEFAULTS.VENDOR_VERIFICATION_STATUS },
             reason: { type: String, default: null }
         },
         businessRegistration: {
             url: { type: String, required: true, default: null },
+            publicId: { type: String, default: null },
             status: { type: String, enum: Object.values(VERIFICATION_STATUS), default: DEFAULTS.VENDOR_VERIFICATION_STATUS },
             reason: { type: String, default: null }
         },
         gstRegistration: {
             url: { type: String, required: true, default: null },
+            publicId: { type: String, default: null },
             status: { type: String, enum: Object.values(VERIFICATION_STATUS), default: DEFAULTS.VENDOR_VERIFICATION_STATUS },
             reason: { type: String, default: null }
         }
     },
+    deletedAt: { type: Date, default: null },
+    deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
 }, {
     timestamps: true,
     toJSON: { virtuals: true, getters: true, minimize: false },
