@@ -2,7 +2,7 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { getToken } from '../../../helpers/authUtils';
+import { getToken } from '@/helpers/authUtils';
 import 'react-quill-new/dist/quill.snow.css'; // Optimized for React 19
 // Actually, let's use dynamic import for ReactQuill to avoid SSR issues
 const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
@@ -17,11 +17,15 @@ const POLICY_TYPES = {
         { id: 'terms_conditions', label: 'Terms & Conditions' },
         { id: 'refund_policy', label: 'Refund Policy' },
         { id: 'cancellation_policy', label: 'Cancellation Policy' }
+    ],
+    admin: [
+        { id: 'privacy_policy', label: 'Privacy Policy' },
+        { id: 'terms_conditions', label: 'Terms & Conditions' }
     ]
 };
 
 export default function PoliciesPage() {
-    const [target, setTarget] = useState('vendor');
+    const [target, setTarget] = useState('admin');
     const [type, setType] = useState('privacy_policy');
     const [content, setContent] = useState('');
     const [loading, setLoading] = useState(false);
@@ -107,6 +111,7 @@ export default function PoliciesPage() {
                     <div>
                         <label className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4 block">Target Audience</label>
                         <div className="flex p-1 bg-slate-200 rounded-xl">
+                            <button onClick={() => { setTarget('admin'); setType('privacy_policy'); }} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${target === 'admin' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}> Admin </button>
                             <button onClick={() => { setTarget('vendor'); setType('privacy_policy'); }} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${target === 'vendor' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}> Vendors </button>
                             <button onClick={() => { setTarget('traveller'); setType('privacy_policy'); }} className={`flex-1 py-2 text-sm font-bold rounded-lg transition-all ${target === 'traveller' ? 'bg-white text-indigo-600 shadow-sm' : 'text-slate-500 hover:text-slate-700'}`}> Travellers </button>
                         </div>

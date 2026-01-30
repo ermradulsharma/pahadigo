@@ -1,9 +1,9 @@
 'use client';
 
-import Sidebar from '../../components/admin/Sidebar';
-import DashboardHeader from '../../components/admin/Header';
-import DashboardFooter from '../../components/admin/Footer';
-import withAuth from '../../components/withAuth';
+import Sidebar from '@/components/admin/Sidebar';
+import DashboardHeader from '@/components/admin/Header';
+import DashboardFooter from '@/components/admin/Footer';
+import withAuth from '@/components/withAuth';
 
 function AdminLayout({ children }) {
     return (

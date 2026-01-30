@@ -9,11 +9,12 @@
         "start": "next start",
         "lint": "eslint",
         "test": "jest --detectOpenHandles",
-        "seed": "node src/seeders/resetAndSeed.js"
+        "seed": "node src/core/Database/Seeders/resetAndSeed.js"
     },
     "dependencies": {
         "@tailwindcss/postcss": "^4.1.18",
         "bcryptjs": "^3.0.3",
+        "cloudinary": "^2.9.0",
         "country-state-city": "^3.2.1",
         "google-auth-library": "^10.5.0",
         "jsonwebtoken": "^9.0.3",

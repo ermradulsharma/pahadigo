@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { getToken } from '../../../helpers/authUtils';
+import { getToken } from '@/helpers/authUtils';
 
 export default function VendorsPage() {
     const [vendors, setVendors] = useState([]);

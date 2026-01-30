@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState } from 'react';
-import { getToken } from '../../helpers/authUtils';
+import { getToken } from '@/helpers/authUtils';
 import Link from 'next/link';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,

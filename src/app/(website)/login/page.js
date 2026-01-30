@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useState } from 'react';
 import Image from 'next/image';
-import { setToken } from '../../../helpers/authUtils';
+import { setToken } from '@/helpers/authUtils';
 
 export default function LoginPage() {
     const router = useRouter();

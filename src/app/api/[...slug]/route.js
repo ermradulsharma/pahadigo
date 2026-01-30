@@ -1,8 +1,8 @@
 import { NextResponse } from 'next/server';
-import routesImport from '../../../routes/api.js';
-import dbConnect from '../../../config/db.js';
-import authMiddleware from '../../../middleware/auth.js';
-import { HTTP_STATUS } from '../../../constants/index.js';
+import routesImport from '@/routes/api.js';
+import dbConnect from '@/config/db.js';
+import authMiddleware from '@/middleware/auth.js';
+import { HTTP_STATUS } from '@/constants/index.js';
 
 const routes = Array.isArray(routesImport) ? routesImport : (routesImport.default || []);
 
@@ -59,9 +59,13 @@ async function handler(req, { params }) {
         const contentType = req.headers.get('content-type') || '';
         try {
             if (contentType.includes('multipart/form-data')) {
+                console.log(`[API] Parsing multipart/form-data...`);
                 req.formDataBody = await req.formData();
+                console.log(`[API] multipart/form-data parsed successfully`);
             } else if (contentType.includes('application/json')) {
+                console.log(`[API] Parsing application/json...`);
                 req.jsonBody = await req.json();
+                console.log(`[API] application/json parsed successfully`);
             }
         } catch (parseError) {
             console.warn("API: Body parsing attempt failed (might be already consumed or empty):", parseError.message);

@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { getToken } from '../../../../../helpers/authUtils';
+import { getToken } from '@/helpers/authUtils';
 
 export default function StatesPage({ params: paramsPromise }) {
     const params = use(paramsPromise);

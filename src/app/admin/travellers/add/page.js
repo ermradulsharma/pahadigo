@@ -1,7 +1,7 @@
 "use client";
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getToken } from '../../../../helpers/authUtils';
+import { getToken } from '@/helpers/authUtils';
 import Link from 'next/link';
 
 export default function AddTravellerPage() {

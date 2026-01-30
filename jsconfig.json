@@ -1,6 +1,48 @@
 {
     "compilerOptions": {
         "paths": {
+            "@/controllers/*": [
+                "./src/core/Http/Controllers/*"
+            ],
+            "@/models/*": [
+                "./src/core/Models/*"
+            ],
+            "@/services/*": [
+                "./src/core/Services/*"
+            ],
+            "@/middleware/*": [
+                "./src/core/Http/Middleware/*"
+            ],
+            "@/routes/*": [
+                "./src/core/Routes/*"
+            ],
+            "@/config/*": [
+                "./src/core/Config/*"
+            ],
+            "@/helpers/*": [
+                "./src/core/Helpers/*"
+            ],
+            "@/seeders": [
+                "./src/core/Database/Seeders/index.js"
+            ],
+            "@/seeders/*": [
+                "./src/core/Database/Seeders/*"
+            ],
+            "@/lib": [
+                "./src/core/Lib/index.js"
+            ],
+            "@/lib/*": [
+                "./src/core/Lib/*"
+            ],
+            "@/constants": [
+                "./src/core/Constants/index.js"
+            ],
+            "@/constants/*": [
+                "./src/core/Constants/*"
+            ],
+            "@/components/*": [
+                "./src/app/components/*"
+            ],
             "@/*": [
                 "./src/*"
             ]

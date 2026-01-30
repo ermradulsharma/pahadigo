@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, use, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
-import { getToken } from '../../../../helpers/authUtils';
+import { getToken } from '@/helpers/authUtils';
 
 export default function VendorDetailsPage({ params }) {
     const resolvedParams = use(params);

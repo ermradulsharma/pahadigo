@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getToken } from '../../../helpers/authUtils';
+import { getToken } from '@/helpers/authUtils';
 
 export default function AuditLogsPage() {
     const [logs, setLogs] = useState([]);

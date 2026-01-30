@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { getToken } from '../../../helpers/authUtils'; // Check relative path! src/app/admin/categories/page.js -> ../../../helpers
+import { getToken } from '@/helpers/authUtils'; // Check relative path! src/app/admin/categories/page.js -> ../../../helpers
 
 export default function CategoriesPage() {
     const [categories, setCategories] = useState([]);

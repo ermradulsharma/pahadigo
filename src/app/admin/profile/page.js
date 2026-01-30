@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { getToken } from '../../../helpers/authUtils';
+import { getToken } from '@/helpers/authUtils';
 
 export default function AdminProfilePage() {
     const [loading, setLoading] = useState(true);

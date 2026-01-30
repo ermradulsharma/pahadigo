@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect, useCallback } from 'react';
-import { getToken } from '../../../helpers/authUtils';
+import { getToken } from '@/helpers/authUtils';
 
 export default function ServicesPage() {
     const [services, setServices] = useState([]);
