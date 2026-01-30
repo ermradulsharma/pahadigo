@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI || "mongodb://localhost:27017/travels_db";
+const MONGODB_URI = process.env.MONGODB_URI;
 if (!MONGODB_URI) {
-    throw new Error("Please define the MONGODB_URI environment variable inside .env");
+    console.warn("MONGODB_URI is not defined. Database connection will likely fail.");
 }
 let cached = global.mongoose;
 if (!cached) {
