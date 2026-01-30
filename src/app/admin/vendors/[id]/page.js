@@ -156,7 +156,7 @@ export default function VendorDetailsPage({ params }) {
                         </div>
                         <div>
                             <label className="block text-sm text-gray-500">Contact</label>
-                            <div className="font-medium">{vendor.businessPhone || 'N/A'}</div>
+                            <div className="font-medium">{vendor.businessNumber || 'N/A'}</div>
                         </div>
                         <div>
                             <label className="block text-sm text-gray-500">Registration No.</label>
@@ -166,17 +166,21 @@ export default function VendorDetailsPage({ params }) {
                             <label className="block text-sm text-gray-500">Categories</label>
                             <div className="flex gap-2 flex-wrap mt-1">
                                 {vendor.category.map(cat => (
-                                    <span key={cat} className="px-2 py-1 bg-slate-100 rounded text-xs">{cat}</span>
+                                    <span key={cat._id || cat.slug} className="px-2 py-1 bg-slate-100 rounded text-xs">{cat.name}</span>
                                 ))}
                             </div>
                         </div>
                         <div className="col-span-2">
                             <label className="block text-sm text-gray-500">Address</label>
-                            <div className="font-medium">{vendor.address || 'N/A'}</div>
+                            <div className="font-medium">
+                                {vendor.businessAddress?.addressLine1 ? (
+                                    `${vendor.businessAddress.addressLine1}, ${vendor.businessAddress.city || ''}, ${vendor.businessAddress.state || ''} ${vendor.businessAddress.pincode || ''}`
+                                ) : 'N/A'}
+                            </div>
                         </div>
                         <div className="col-span-2">
-                            <label className="block text-sm text-gray-500">Description</label>
-                            <p className="text-gray-700 text-sm mt-1">{vendor.description || 'No description provided.'}</p>
+                            <label className="block text-sm text-gray-500">About</label>
+                            <p className="text-gray-700 text-sm mt-1">{vendor.businessAbout || 'No description provided.'}</p>
                         </div>
                     </div>
                 </section>
@@ -200,7 +204,7 @@ export default function VendorDetailsPage({ params }) {
                             </div>
                             <div>
                                 <label className="block text-sm text-gray-500">Holder Name</label>
-                                <div className="font-medium">{vendor.bankDetails.accountHolder}</div>
+                                <div className="font-medium">{vendor.bankDetails.accountHolderName}</div>
                             </div>
                             <div>
                                 <label className="block text-sm text-gray-500">Status</label>

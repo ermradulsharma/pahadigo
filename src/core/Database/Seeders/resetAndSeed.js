@@ -32,35 +32,55 @@ const loadEnv = () => {
 const connectDB = async () => {
     try {
         const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/travels_db';
-        const conn = await mongoose.connect(uri, {
-        });
+        console.log(`Connecting to: ${uri}`);
+        const conn = await mongoose.connect(uri);
+        console.log(`MongoDB Connected: ${conn.connection.host}`);
     } catch (error) {
+        console.error(`Connection Error: ${error.message}`);
         process.exit(1);
     }
 };
 
 const resetAndSeed = async () => {
-    loadEnv();
-    await connectDB();
+    try {
+        loadEnv();
+        await connectDB();
 
-    if (mongoose.connection.db) {
-        await mongoose.connection.db.dropDatabase();
-    } else {
+        if (mongoose.connection.db) {
+            console.log("Dropping database...");
+            await mongoose.connection.db.dropDatabase();
+        }
+
+        console.log("Seeding categories...");
+        const results = await seedCategories();
+        console.log("Categories seeded:", results);
+
+        console.log("Seeding category documents...");
+        await seedCategoryDocuments();
+        console.log("Category documents seeded.");
+
+        console.log("Seeding users...");
+        const userResults = await seedUsers();
+        console.log("Users seeded:", userResults);
+
+        console.log("Seeding settings...");
+        await seedSettings();
+        console.log("Settings seeded.");
+
+        console.log("Seeding locations...");
+        await seedLocations();
+        console.log("Locations seeded.");
+
+        console.log("Seeding policies...");
+        await seedPolicies();
+        console.log("Policies seeded.");
+
+        console.log("All seeding completed successfully!");
+        process.exit(0);
+    } catch (error) {
+        console.error("Seeding Error:", error);
+        process.exit(1);
     }
-
-    const results = await seedCategories();
-
-    const docResults = await seedCategoryDocuments();
-
-    const userResults = await seedUsers();
-
-    const settingResults = await seedSettings();
-
-    const locationResults = await seedLocations();
-
-    const policyResults = await seedPolicies();
-
-    process.exit(0);
 };
 
 resetAndSeed();

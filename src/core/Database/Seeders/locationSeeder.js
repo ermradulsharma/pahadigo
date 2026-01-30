@@ -39,7 +39,13 @@ export const seedLocations = async () => {
                 if (countryStates && countryStates.length > 0) {
                     const stateOps = countryStates.map(s => ({
                         updateOne: {
-                            filter: { country: countryDoc._id, code: s.isoCode },
+                            filter: {
+                                country: countryDoc._id,
+                                $or: [
+                                    { code: s.isoCode },
+                                    { name: s.name }
+                                ]
+                            },
                             update: {
                                 $set: {
                                     name: s.name,
@@ -55,9 +61,12 @@ export const seedLocations = async () => {
                     // Batch process states
                     if (stateOps.length > 0) {
                         try {
-                            await StateModel.bulkWrite(stateOps);
+                            await StateModel.bulkWrite(stateOps, { ordered: false });
                             statesCreated += stateOps.length;
                         } catch (stateError) {
+                            // Some might still fail if both code and name conflict with DIFFERENT existing records
+                            // but $or should cover most cases where one of them matches.
+                            // We log and continue.
                             console.error(`Error seeding states for ${c.name}:`, stateError.message);
                         }
                     }
