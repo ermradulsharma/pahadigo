@@ -30,28 +30,28 @@ function findRoute(method, slug) {
 }
 
 async function handler(req, { params }) {
-    await dbConnect();
-    const { slug } = await params;
-    const method = req.method;
-    const match = findRoute(method, slug);
-
-    if (!match) {
-        return NextResponse.json({
-            error: 'Route not found',
-            debug: { method, path: '/' + slug.join('/') }
-        }, { status: HTTP_STATUS.NOT_FOUND });
-    }
-    const { routeDef, params: routeParams } = match;
-    let userContext = null;
-    if (routeDef.middleware && routeDef.middleware.includes('auth')) {
-        const authResult = await authMiddleware(req);
-        if (!authResult.authorized) {
-            return NextResponse.json({ error: authResult.message }, { status: HTTP_STATUS.UNAUTHORIZED });
-        }
-        userContext = authResult.user;
-    }
-
     try {
+        await dbConnect();
+        const { slug } = await params;
+        const method = req.method;
+        const match = findRoute(method, slug);
+
+        if (!match) {
+            return NextResponse.json({
+                error: 'Route not found',
+                debug: { method, path: '/' + slug.join('/') }
+            }, { status: HTTP_STATUS.NOT_FOUND });
+        }
+        const { routeDef, params: routeParams } = match;
+        let userContext = null;
+        if (routeDef.middleware && routeDef.middleware.includes('auth')) {
+            const authResult = await authMiddleware(req);
+            if (!authResult.authorized) {
+                return NextResponse.json({ error: authResult.message }, { status: HTTP_STATUS.UNAUTHORIZED });
+            }
+            userContext = authResult.user;
+        }
+
         if (userContext) {
             req.user = userContext;
         }
@@ -82,7 +82,12 @@ async function handler(req, { params }) {
         // Support Legacy Format { status, data }
         return NextResponse.json(result.data, { status: result.status || HTTP_STATUS.OK });
     } catch (error) {
-        return NextResponse.json({ error: 'Internal Server Error', details: error.message }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR });
+        console.error("API Handler Error:", error);
+        return NextResponse.json({
+            success: false,
+            message: 'Internal Server Error',
+            error: error.message
+        }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR });
     }
 }
 

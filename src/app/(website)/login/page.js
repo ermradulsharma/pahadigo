@@ -48,7 +48,8 @@ export default function LoginPage() {
                 setError(response.message || response.error || 'Login failed');
             }
         } catch (err) {
-            setError('Network error');
+            console.error('Login Error:', err);
+            setError('Login failed: ' + (err.message || 'Network or server error'));
         }
     };
 
@@ -70,7 +71,8 @@ export default function LoginPage() {
                 setError(response.message || 'Request failed');
             }
         } catch (err) {
-            setError('Network error');
+            console.error('Forgot Password Error:', err);
+            setError('Request failed: ' + (err.message || 'Network error'));
         }
     };
 

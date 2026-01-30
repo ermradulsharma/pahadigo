@@ -15,8 +15,8 @@ async function connectDB() {
     if (!cached.promise) {
         if (!MONGODB_URI) {
             // Check if we are in the Next.js build phase
-            if (process.env.NEXT_PHASE === 'phase-production-build' || process.env.NODE_ENV === 'production') {
-                console.warn("⚠️ MONGODB_URI is missing. Skipping database connection during build/start to prevent crash.");
+            if (process.env.NEXT_PHASE === 'phase-production-build') {
+                console.warn("⚠️ MONGODB_URI is missing. Skipping database connection ONLY for build phase.");
                 return null;
             }
             throw new Error("MONGODB_URI is not defined. Please check your environment variables.");
