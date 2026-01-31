@@ -2,6 +2,8 @@ import AdminService from '@/services/AdminService.js';
 import PackageService from '@/services/PackageService.js';
 import BookingService from '@/services/BookingService.js';
 import Vendor from '@/models/Vendor.js';
+import OCRService from '@/services/OCRService.js';
+import VerifiedIdentity from '@/models/VerifiedIdentity.js';
 import { errorResponse, successResponse } from '@/helpers/response.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 
@@ -108,6 +110,86 @@ class AdminController {
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.VENDOR_STATUS_UPDATED, {});
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+        }
+    }
+
+    // POST /admin/trigger-ocr
+    async verifyDocumentOCR(req) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+            const body = req.jsonBody || await req.json();
+            const { vendorId, documentField, index } = body;
+
+            if (!vendorId || !documentField) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+            }
+
+            const vendor = await Vendor.findById(vendorId);
+            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
+
+            let doc = null;
+            if (Array.isArray(vendor.documents[documentField])) {
+                if (typeof index !== 'number') return errorResponse(HTTP_STATUS.BAD_REQUEST, "Index is required for array fields", {});
+                doc = vendor.documents[documentField][index];
+            } else {
+                doc = vendor.documents[documentField];
+            }
+
+            if (!doc || !doc.url) return errorResponse(HTTP_STATUS.NOT_FOUND, "Document image not found", {});
+
+            // 1. Fetch Image
+            const imgRes = await fetch(doc.url);
+            const buffer = Buffer.from(await imgRes.arrayBuffer());
+
+            // 2. Run OCR
+            console.log(`[AdminOCR] Processing ${documentField} for vendor ${vendorId}...`);
+            const ocrResult = await OCRService.processDocument(buffer);
+
+            if (ocrResult.error) {
+                return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, "OCR Processing failed: " + ocrResult.error, {});
+            }
+
+            // 3. Save to VerifiedIdentity table
+            const identityData = {
+                vendor: vendorId,
+                docType: ocrResult.idType,
+                idNumber: ocrResult.identifiedId || "UNKNOWN",
+                name: ocrResult.name,
+                dateOfBirth: ocrResult.dob,
+                rawOcrText: ocrResult.text
+            };
+
+            // Use upsert to avoid duplicates if re-run
+            await VerifiedIdentity.findOneAndUpdate(
+                { vendor: vendorId, docType: ocrResult.idType },
+                identityData,
+                { upsert: true, new: true }
+            );
+
+            // 4. Update Document Status & OCR cache in Vendor model
+            if (Array.isArray(vendor.documents[documentField])) {
+                vendor.documents[documentField][index].status = 'verified';
+                vendor.documents[documentField][index].ocrData = {
+                    identifiedId: ocrResult.identifiedId,
+                    text: ocrResult.text
+                };
+            } else {
+                vendor.documents[documentField].status = 'verified';
+                vendor.documents[documentField].ocrData = {
+                    identifiedId: ocrResult.identifiedId,
+                    text: ocrResult.text
+                };
+            }
+
+            vendor.markModified('documents');
+            vendor.isApproved = true; // Auto-approve vendor on successful OCR
+            await vendor.save();
+
+            return successResponse(HTTP_STATUS.OK, "OCR Verification Successful", { identity: identityData });
+
+        } catch (error) {
+            console.error("Admin OCR Error:", error);
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
         }
     }
 

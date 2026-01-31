@@ -1,127 +1,137 @@
-# PahadiGo - Premium Travel & Vendor Management Platform
+# PahadiGo - Premium Himalayan Travel & Vendor Platform
 
-[![Next.js](https://img.shields.io/badge/Next.js-16.0.7-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
-[![React](https://img.shields.io/badge/React-19.2.0-blue?style=for-the-badge&logo=react)](https://react.dev/)
+[![Next.js](https://img.shields.io/badge/Next.js-15.1.6-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![React](https://img.shields.io/badge/React-19.0.0-blue?style=for-the-badge&logo=react)](https://react.dev/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Latest-green?style=for-the-badge&logo=mongodb)](https://www.mongodb.com/)
-[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-3.4-blue?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
-[![License](https://img.shields.io/badge/License-MIT-yellow?style=for-the-badge)](LICENSE)
+[![TailwindCSS](https://img.shields.io/badge/TailwindCSS-4.0-blue?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
 
-**PahadiGo** is a high-performance, full-stack travel marketplace designed for the Himalayan region. It connects travellers with local vendors through a secure, scalable, and premium platform. Built with a Service-Oriented Architecture, it provides robust tools for vendors to manage their business and authorized admins to oversee the entire ecosystem.
+**PahadiGo** is a specialized full-stack travel marketplace dedicated to the Himalayan region. It facilitates a premium, secure, and highly scalable ecosystem connecting adventurous travellers with verified local vendors. The platform is architected to handle complex travel services like trekking, camping, homestays, and Chardham tours with a focus on regional authenticity and modern UX.
 
 ---
 
-## 🚀 Key Features
+## 🏔️ Project Vision
 
-### 👑 Super Admin Dashboard
+PahadiGo isn't just a booking site; it's a regional travel infrastructure. Our goal is to empower local Himalayan communities by providing them with enterprise-grade tools to digitize their offerings, while giving travellers a trustworthy gateway to explore the mountains with safety and premium service standards.
 
-A complete command center for platform administration.
+---
 
-- **📊 Advanced Analytics**: Interactive charts for revenue trends, booking distribution, and user/vendor growth (powered by Recharts).
-- **📦 Inventory Control**: Global view of all packages with status toggling (Active/Inactive) capabilities.
-- **🛡️ Audit Logs**: Comprehensive security tracking of all administrative actions (Who, What, When) for accountability.
-- **📣 Marketing Hub**: Manage promotional banners and discount coupons with usage limits and expiry dates.
-- **⭐ Review Moderation**: Oversee user feedback, hide inappropriate reviews, and maintain platform quality.
-- **📬 Support Inbox**: Centralized system to view and resolve user inquiries.
-- **📜 Policy Engine**: Rich-text editing for Privacy Policy, Terms, and Refund rules.
-- **✅ Vendor Verification**: Workflow for approving vendor documents (KYC) and activating business profiles.
+## 🚀 Key Modules
 
-### 💼 Vendor Suite
+### ⚙️ Core Engine (`src/core`)
 
-Tools for local partners to grow their business.
+The brain of the application, built on a **Service-Oriented Architecture (SOA)**:
 
-- **Profile Management**: Customize business identity, logos, and operational details.
-- **Package Builder**: Create detailed itineraries with pricing, amenities, and photos.
-- **Document Vault**: Secure upload and status tracking for business licenses and ID proofs.
-- **Banking Integration**: Manage payout details securely.
+- **Services**: Decoupled business logic for Auth, Bookings, Packages, and Vendor management.
+- **Models**: 17+ Mongoose schemas including `AuditLog`, `Package`, `VendorDocument`, and `SearchLog`.
+- **Controllers**: Thin API handlers managing request orchestration.
+- **Helpers**: Robust utilities for response formatting, JWT handling, and OTP generation.
 
-### 🏕️ Traveller Experience
+### 👑 Super Admin Command Center
 
-A seamless journey for end-users.
+Complete platform oversight and governance:
 
-- **Smart Discovery**: Browse and filter packages by category, destination, and price.
-- **Secure Booking**: Integrated friction-less payments via Razorpay.
-- **User Dashboard**: Track upcoming trips, booking history, and profile settings.
-- **Authentication**: Easy login via OTP (Email/Phone) or Social Auth (Google, FB, Apple).
+- **KYC & Verification**: Detailed workflow for approving `VendorDocument` submissions.
+- **Inventory Control**: Global management of `Packages` and `Categories`.
+- **Marketing & Promotions**: Management of `Banners` and `Coupons` with granular usage rules.
+- **Audit & Security**: Comprehensive `AuditLog` system tracking every administrative change.
+- **Moderation**: Centralized system for `Review` management and `Inquiry` resolution.
+
+### 💼 Vendor Enterprise Suite
+
+Professional tools for local service providers:
+
+- **Dynamic Package Builder**: Create complex itineraries for Trekking, Rafting, and more.
+- **Business Identity**: Comprehensive `Vendor` profile management including banking and branding.
+- **Operational Insights**: Track bookings and customer inquiries in real-time.
+
+### 🏕️ Premium Traveller Experience
+
+A frictionless journey for modern explorers:
+
+- **Smart Discovery**: Category-based filtering and location-aware search.
+- **Booking Workflow**: Secure checkout integrated with `Razorpay`.
+- **Authentication**: Multi-channel login (OTP via SMS/Email, Google, FB, Apple).
+- **Interactive UI**: Powered by Tailwind CSS 4.0 and Recharts for a data-rich experience.
 
 ---
 
 ## 🛠️ Technology Stack
 
-- **Frontend**: [Next.js 16 (App Router)](https://nextjs.org/), [React 19](https://react.dev/), [Tailwind CSS](https://tailwindcss.com/), [Recharts](https://recharts.org/).
-- **Backend**: Node.js API Routes (Next.js), Service-Oriented Architecture.
-- **Database**: [MongoDB](https://www.mongodb.com/) with [Mongoose](https://mongoosejs.com/) ORM.
-- **Authentication**: JWT (JSON Web Tokens), Custom Middleware, OAuth providers.
-- **Payment Gateway**: [Razorpay](https://razorpay.com/).
-- **Communication**: MSG91 (SMS), Nodemailer (Email).
+| Layer             | Technology                       |
+| :---------------- | :------------------------------- |
+| **Framework**     | Next.js 15.1.6 (App Router)      |
+| **Styling**       | Tailwind CSS 4.0 + PostCSS       |
+| **Database**      | MongoDB + Mongoose 9.1.5         |
+| **Payments**      | Razorpay 2.9.6                   |
+| **Auth**          | JWT + Google Auth Library        |
+| **Messaging**     | MSG91 (SMS) + Nodemailer (Email) |
+| **Visualization** | Recharts 3.7.0                   |
 
 ---
 
-## 📁 Architecture Overview
-
-The project follows a clean, modular structure separating concerns for maintainability.
+## 📁 Project Structure
 
 ```text
 src/
-├── app/                  # Next.js App Router
-│   ├── admin/            # Admin Dashboard Pages (Protected)
-│   ├── api/              # API Routes (REST Endpoints)
-│   ├── user/             # Traveller Pages
-│   └── vendor/           # Vendor Portal Pages
-├── components/           # Reusable UI Components
-│   └── admin/            # Admin-specific components (Sidebar, Charts)
-├── controllers/          # Request handling & input validation
-├── services/             # Core business logic & DB operations
-├── models/               # Mongoose Data Models (Schemas)
-├── middleware/           # Auth guards & Request processing
-├── helpers/              # Utilities (Response, JWT, upload)
-└── constants/            # System-wide constants & config
+├── app/                  # Next.js App Router (UI & API Handlers)
+│   ├── (website)/        # Public-facing traveller pages
+│   ├── admin/            # Admin Dashboard (Protected)
+│   └── api/              # API Route Handlers
+├── core/                 # Business Logic & Infrastructure
+│   ├── Controllers/      # API Controllers
+│   ├── Services/         # SOA Logic (Auth, Booking, etc.)
+│   ├── Models/           # Mongoose Schemas (17+ Models)
+│   ├── Database/         # DB Configuration & Seeders
+│   ├── Helpers/          # Utility functions
+│   └── Config/           # App-wide configurations
+├── components/           # UI Components (Client/Server)
+├── public/               # Static assets
+└── tests/                # Jest & Supertest suites
 ```
 
 ---
 
 ## ⚙️ Setup & Installation
 
-### 1. Prerequisites
+### 1. Requirements
 
-- Node.js 18+
-- MongoDB Instance (Local or Atlas)
+- Node.js 20+
+- MongoDB Atlas or local instance
 
-### 2. Environment Variables
+### 2. Configure Environment
 
-Create a `.env` file in the root directory:
+Clone `.env.example` to `.env` and provide your credentials:
 
 ```env
-MONGODB_URI=mongodb://localhost:27017/pahadigo
-JWT_SECRET=your_secure_random_string
-RAZORPAY_KEY_ID=your_key_id
-RAZORPAY_KEY_SECRET=your_key_secret
-MASTER_OTP=888888  # For dev testing
+MONGODB_URI=
+JWT_SECRET=
+RAZORPAY_KEY_ID=
+CLOUDINARY_URL=
+SMTP_PASS=
 ```
 
-### 3. Installation
+### 3. Initialize & Run
 
 ```bash
 # Install dependencies
 npm install
 
-# Run the development server
+# Seed the database (creates initial categories/settings)
+npm run seed
+
+# Start development
 npm run dev
 ```
-
-Visit `http://localhost:3000` to see the application.
-
-### 4. Admin Access
-
-To access the admin panel, ensure your user role is set to `admin` in the database, then navigate to `/login` and subsequently `/admin`.
 
 ---
 
 ## 📄 Documentation
 
-- **API Reference**: Detailed endpoint documentation in [API.md](API.md).
+- **API Reference**: Detailed in [API.md](API.md)
+- **Deep Architecture**: Explored in [ARCHITECTURE.md](ARCHITECTURE.md)
 
 ---
 
 ## ⚖️ License
 
-This project is licensed under the MIT License.
+Licensed under the [MIT License](LICENSE.md).

@@ -198,12 +198,15 @@ class VendorController {
                 for (const file of files) {
                     if (file instanceof File || (file instanceof Blob && file.name)) {
                         const result = await uploadToCloudinary(file, `documents/${user.id}/${fieldKey}`);
-                        results.push({
+
+                        const docObject = {
                             url: result.url,
                             publicId: result.publicId,
                             status: 'pending',
                             reason: null
-                        });
+                        };
+
+                        results.push(docObject);
                     }
                 }
 

@@ -47,13 +47,21 @@ const VendorSchema = new mongoose.Schema({
             url: { type: String, required: true, default: null },
             publicId: { type: String, default: null },
             status: { type: String, enum: Object.values(VERIFICATION_STATUS), default: DEFAULTS.VENDOR_VERIFICATION_STATUS },
-            reason: { type: String, default: null }
+            reason: { type: String, default: null },
+            ocrData: {
+                identifiedId: { type: String, default: null },
+                text: { type: String, default: null }
+            }
         }],
         panCard: {
             url: { type: String, required: true, default: null },
             publicId: { type: String, default: null },
             status: { type: String, enum: Object.values(VERIFICATION_STATUS), default: DEFAULTS.VENDOR_VERIFICATION_STATUS },
-            reason: { type: String, default: null }
+            reason: { type: String, default: null },
+            ocrData: {
+                identifiedId: { type: String, default: null },
+                text: { type: String, default: null }
+            }
         },
         businessRegistration: {
             url: { type: String, required: true, default: null },

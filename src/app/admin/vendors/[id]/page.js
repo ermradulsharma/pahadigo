@@ -57,6 +57,34 @@ export default function VendorDetailsPage({ params }) {
         }
     };
 
+    const triggerOCR = async (field, index = null) => {
+        try {
+            setVerifying(`${field}-${index !== null ? index : '0'}`);
+            const token = getToken();
+            const res = await fetch('/api/admin/trigger-ocr', {
+                method: 'POST',
+                headers: {
+                    'Authorization': 'Bearer ' + token,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({ vendorId: id, documentField: field, index })
+            });
+
+            if (res.ok) {
+                const data = await res.json();
+                alert(`OCR Success!\nName: ${data.data?.identity?.name || 'N/A'}\nID: ${data.data?.identity?.idNumber || 'N/A'}\nDOB: ${data.data?.identity?.dateOfBirth || 'N/A'}`);
+                setRefreshKey(old => old + 1);
+            } else {
+                const err = await res.json();
+                alert('OCR Failed: ' + (err.error || err.message || 'Unknown error'));
+            }
+        } catch (e) {
+            alert('An error occurred during OCR');
+        } finally {
+            setVerifying(null);
+        }
+    };
+
     const toggleGlobalApproval = async (status) => {
         const confirmMsg = status === 'verified' ? 'Approve this vendor profile?' : 'Reject this vendor profile?';
         let rejectReason = '';
@@ -222,8 +250,8 @@ export default function VendorDetailsPage({ params }) {
 
                     {/* Loop through document keys */}
                     <div className="space-y-6">
-                        <DocumentGroup title="Aadhar Card" docs={vendor.documents?.aadharCard} field="aadharCard" onVerify={verifyDocument} />
-                        <DocumentGroup title="PAN Card" doc={vendor.documents?.panCard} field="panCard" onVerify={verifyDocument} />
+                        <DocumentGroup title="Aadhar Card" docs={vendor.documents?.aadharCard} field="aadharCard" onVerify={verifyDocument} onOCR={triggerOCR} verifying={verifying} />
+                        <DocumentGroup title="PAN Card" doc={vendor.documents?.panCard} field="panCard" onVerify={verifyDocument} onOCR={triggerOCR} verifying={verifying} />
                         <DocumentGroup title="Business Registration" doc={vendor.documents?.businessRegistration} field="businessRegistration" onVerify={verifyDocument} />
                         <DocumentGroup title="GST Registration" doc={vendor.documents?.gstRegistration} field="gstRegistration" onVerify={verifyDocument} />
 
@@ -248,7 +276,7 @@ function StatusBadge({ status }) {
     return <span className={`px-2 py-1 rounded text-xs uppercase font-bold ${colors[status] || 'bg-gray-100 text-gray-800'}`}>{status}</span>;
 }
 
-function DocumentGroup({ title, doc, docs, field, onVerify }) {
+function DocumentGroup({ title, doc, docs, field, onVerify, onOCR, verifying }) {
     // Determine if it's an array or single object
     const items = docs ? docs : (doc ? [doc] : []);
 
@@ -264,6 +292,12 @@ function DocumentGroup({ title, doc, docs, field, onVerify }) {
                             <a href={item.url} target="_blank" rel="noopener noreferrer" className="text-indigo-600 hover:underline truncate block">
                                 View Document {items.length > 1 ? `#${idx + 1}` : ''} ({item.url.split('/').pop()})
                             </a>
+                            {item.ocrData?.identifiedId && (
+                                <div className="mt-2 flex items-center gap-2">
+                                    <span className="text-[10px] font-bold uppercase py-0.5 px-1.5 bg-blue-50 text-blue-600 rounded">OCR Identified ID</span>
+                                    <span className="text-sm font-mono font-bold text-gray-800">{item.ocrData.identifiedId}</span>
+                                </div>
+                            )}
                             {item.reason && <p className="text-xs text-red-500 mt-1">Rejection Reason: {item.reason}</p>}
                         </div>
                         <div className="flex items-center gap-3">
@@ -279,6 +313,15 @@ function DocumentGroup({ title, doc, docs, field, onVerify }) {
                                     if (reason) onVerify(field, 'rejected', reason, docs ? idx : null);
                                 }} className="text-xs bg-red-600 text-white px-3 py-1.5 rounded hover:bg-red-700">
                                     Reject
+                                </button>
+                            )}
+                            {['aadharCard', 'panCard'].includes(field) && item.status !== 'verified' && (
+                                <button
+                                    disabled={verifying === `${field}-${idx}`}
+                                    onClick={() => onOCR(field, docs ? idx : null)}
+                                    className="text-xs bg-indigo-600 text-white px-3 py-1.5 rounded hover:bg-indigo-700 disabled:opacity-50"
+                                >
+                                    {verifying === `${field}-${idx}` ? 'Processing...' : 'OCR Verify'}
                                 </button>
                             )}
                         </div>

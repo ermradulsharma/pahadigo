@@ -104,6 +104,7 @@ const routes = [
         { method: 'POST', path: '/payout', handler: wrap(AdminController.markPayout.bind(AdminController)) },
         { method: 'POST', path: '/refund', handler: wrap(AdminController.refundBooking.bind(AdminController)) },
         { method: 'POST', path: '/verify-document', handler: wrap(AdminController.verifyDocument.bind(AdminController)) },
+        { method: 'POST', path: '/trigger-ocr', handler: wrap(AdminController.verifyDocumentOCR.bind(AdminController)) },
 
         { method: 'PATCH', path: '/packages', handler: wrap(AdminController.updateServiceStatus.bind(AdminController)) },
         { method: 'PATCH', path: '/reviews', handler: wrap(AdminController.updateReviewStatus.bind(AdminController)) },
