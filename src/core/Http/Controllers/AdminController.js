@@ -138,16 +138,40 @@ class AdminController {
             if (!doc || !doc.url) return errorResponse(HTTP_STATUS.NOT_FOUND, "Document image not found", {});
 
             // 1. Fetch Image
-            const imgRes = await fetch(doc.url);
+            // Optimize URL for OCR: Force JPEG and auto-quality to ensure compatibility
+            const optimizedUrl = doc.url.includes('cloudinary')
+                ? doc.url.replace('/upload/', '/upload/f_jpg,q_auto/')
+                : doc.url;
+
+            console.log(`[AdminOCR] Fetching image from: ${optimizedUrl}`);
+            const imgRes = await fetch(optimizedUrl);
+
+            if (!imgRes.ok) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, `Failed to fetch document image (Status: ${imgRes.status})`, {});
+            }
+
             const buffer = Buffer.from(await imgRes.arrayBuffer());
+            console.log(`[AdminOCR] Image fetched, size: ${buffer.length} bytes`);
+
+            if (buffer.length < 100) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, "Fetched image is too small or invalid", {});
+            }
 
             // 2. Run OCR
-            console.log(`[AdminOCR] Processing ${documentField} for vendor ${vendorId}...`);
+            console.log(`[AdminOCR] Starting OCR processing for ${documentField}...`);
             const ocrResult = await OCRService.processDocument(buffer);
+            console.log(`[AdminOCR] OCR Result:`, ocrResult.error ? 'Error' : 'Success');
 
             if (ocrResult.error) {
                 return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, "OCR Processing failed: " + ocrResult.error, {});
             }
+
+            console.log(`[AdminOCR] Extracted Data:`, {
+                name: ocrResult.name,
+                id: ocrResult.identifiedId,
+                dob: ocrResult.dob,
+                type: ocrResult.idType
+            });
 
             // 3. Save to VerifiedIdentity table
             const identityData = {
