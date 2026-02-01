@@ -63,7 +63,7 @@ class AuthController {
             if (role) role = role.toLowerCase().trim();
             const identifier = email || phone;
             if (!identifier || !otp) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+                return errorResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             }
             const result = await AuthService.verifyAndLogin({ identifier, otp, email, phone, targetRole: role });
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, {
