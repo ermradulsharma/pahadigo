@@ -10,15 +10,15 @@ class PackageService {
         if (!pkg) {
             pkg = await Package.create({
                 vendor: vendorId,
-                services: {
-                    homestay: [],
-                    camping: [],
-                    trekking: [],
-                    rafting: [],
-                    bungeeJumping: [],
-                    vehicleRental: [],
-                    chardhamTour: []
-                }
+                homestay: [],
+                camping: [],
+                trekking: [],
+                rafting: [],
+                bungeeJumping: [],
+                vehicleRental: [],
+                chardhamTour: [],
+                skiing: [],
+                paragliding: []
             });
         }
         return pkg;
@@ -28,27 +28,42 @@ class PackageService {
         return await this.ensureCatalog(vendorId);
     }
 
+    // Helper to get allowed categories for a vendor
+    async _getAllowedCategories(vendorId) {
+        const vendor = await Vendor.findById(vendorId);
+        if (!vendor || !vendor.category) return [];
+
+        return vendor.category.map(c => c.slug).filter(Boolean);
+    }
+
     // Add Item to Specific Service Array
     async addServiceItem(vendorId, category, itemData) {
+        const allowedCategories = await this._getAllowedCategories(vendorId);
+        if (!allowedCategories.includes(category)) {
+            throw new Error(`Vendor not authorized to create items in category: ${category}`);
+        }
         const pkg = await this.ensureCatalog(vendorId);
-
-        if (!pkg.services[category]) {
+        if (!pkg[category]) {
             throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
         }
-
-        pkg.services[category].push(itemData);
+        pkg[category].push(itemData);
         return await pkg.save();
     }
 
     // Update Item in Service Array
     async updateServiceItem(vendorId, category, itemId, updates) {
+        const allowedCategories = await this._getAllowedCategories(vendorId);
+        if (!allowedCategories.includes(category)) {
+            throw new Error(`Vendor not authorized to update items in category: ${category}`);
+        }
+
         const pkg = await this.ensureCatalog(vendorId);
 
-        if (!pkg.services[category]) {
+        if (!pkg[category]) {
             throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
         }
 
-        const item = pkg.services[category].id(itemId);
+        const item = pkg[category].id(itemId);
         if (!item) throw new Error(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
 
         Object.assign(item, updates);
@@ -57,13 +72,18 @@ class PackageService {
 
     // Remove Item from Service Array
     async removeServiceItem(vendorId, category, itemId) {
+        const allowedCategories = await this._getAllowedCategories(vendorId);
+        if (!allowedCategories.includes(category)) {
+            throw new Error(`Vendor not authorized to remove items in category: ${category}`);
+        }
+
         const pkg = await this.ensureCatalog(vendorId);
 
-        if (!pkg.services[category]) {
+        if (!pkg[category]) {
             throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
         }
 
-        pkg.services[category].pull({ _id: itemId });
+        pkg[category].pull({ _id: itemId });
         return await pkg.save();
     }
 
@@ -79,29 +99,25 @@ class PackageService {
 
     async getAvailablePackages(query = '') {
         const filter = {};
-        // If query exists, search in package titles or services
-        // Since my schema is complex (services map), search is tricky.
-        // Assuming we want to search in 'vendor.businessName' or inside services array?
-        // For simplicity, let's assume we search in Vendor Business Name (via lookup) or we need a text index.
-        // Or if Package has a title? existing Package Schema doesn't have title, it has 'services'.
-        // Wait, Package model structure: { vendor: Ref, services: { type: [Schema] } }
-        // Each service item has 'name', 'title' etc.
-        // Implementing full text search on nested arrays is complex.
-        // For now, I'll filter in memory or basic regex on specific visible fields if possible.
-        // Actually, let's just return all and let frontend filter? No, standard is API filter.
-
-        // Let's implement basic search on Vendor Business Name for now since we populate it.
-        // Or refactor to proper aggregation later.
-
         let packages = await Package.find({}).populate('vendor');
 
         if (query) {
             const regex = new RegExp(query, 'i');
-            packages = packages.filter(p =>
-                (p.vendor?.businessName && regex.test(p.vendor.businessName)) ||
-                // Search in services
-                Object.values(p.services || {}).flat().some(s => regex.test(s.name) || regex.test(s.title) || regex.test(s.description))
-            );
+            packages = packages.filter(p => {
+                if (p.vendor?.businessName && regex.test(p.vendor.businessName)) return true;
+
+                // Search in all service arrays at root level
+                const serviceKeys = ['homestay', 'camping', 'trekking', 'rafting', 'bungeeJumping', 'vehicleRental', 'chardhamTour', 'skiing', 'paragliding'];
+
+                for (let key of serviceKeys) {
+                    if (p[key] && Array.isArray(p[key])) {
+                        if (p[key].some(s => regex.test(s.name) || regex.test(s.title) || regex.test(s.description))) {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            });
         }
         return packages;
     }
@@ -109,9 +125,9 @@ class PackageService {
     // Toggle Category Status (Bulk)
     async toggleCategoryStatus(vendorId, category, isActive) {
         const pkg = await this.ensureCatalog(vendorId);
-        if (!pkg.services[category]) throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
+        if (!pkg[category]) throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
 
-        pkg.services[category].forEach(item => {
+        pkg[category].forEach(item => {
             item.isActive = isActive;
         });
 

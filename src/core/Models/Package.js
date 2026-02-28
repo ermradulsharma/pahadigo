@@ -14,8 +14,27 @@ const HomestaySchema = new mongoose.Schema({
 
     // --- Type & Classification ---
     homestayType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.HOMESTAY_TYPES), default: PACKAGE.ACCOMMODATION.HOMESTAY_TYPES.COTTAGE, required: true },
-    rentalType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.RENTAL_TYPES), default: PACKAGE.ACCOMMODATION.RENTAL_TYPES.PRIVATE_ROOM },
-    roomType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.ROOM_TYPES), default: PACKAGE.ACCOMMODATION.ROOM_TYPES.STANDARD, required: true },
+
+    // --- Availability ---
+    availability: {
+        totalRooms: { type: Number, default: 0 },
+        availableRooms: { type: Number, default: 0 },
+        occupiedRooms: { type: Number, default: 0 },
+        reservedRooms: { type: Number, default: 0 },
+        cancelledRooms: { type: Number, default: 0 }
+    },
+
+    // --- Room Details ---
+    roomDetails: {
+        rentalType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.RENTAL_TYPES), default: PACKAGE.ACCOMMODATION.RENTAL_TYPES.PRIVATE_ROOM },
+        roomType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.ROOM_TYPES), default: PACKAGE.ACCOMMODATION.ROOM_TYPES.STANDARD, required: true },
+        roomSize: { type: Number },
+        bedType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.BED_TYPES), default: PACKAGE.ACCOMMODATION.BED_TYPES.DOUBLE },
+        bathroomType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.BATHROOM_TYPES), default: PACKAGE.ACCOMMODATION.BATHROOM_TYPES.PRIVATE },
+        baths: { type: Number, default: 1 },
+        balcony: { type: Boolean, default: false },
+        view: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.VIEW_TYPES), default: PACKAGE.ACCOMMODATION.VIEW_TYPES.MOUNTAIN }
+    },
 
     // --- Pricing & Capacity ---
     pricing: {
@@ -28,28 +47,23 @@ const HomestaySchema = new mongoose.Schema({
         extraBedPrice: optionalPriceWithDecimal
     },
 
-    // --- Room Details ---
-    roomDetails: {
-        roomSize: { type: Number },
-        bedType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.BED_TYPES), default: PACKAGE.ACCOMMODATION.BED_TYPES.DOUBLE },
-        bathroomType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.BATHROOM_TYPES), default: PACKAGE.ACCOMMODATION.BATHROOM_TYPES.PRIVATE },
-        baths: { type: Number, default: 1 },
-        balcony: { type: Boolean, default: false },
-        view: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.VIEW_TYPES), default: PACKAGE.ACCOMMODATION.VIEW_TYPES.MOUNTAIN }
-    },
-
-    // --- Policies & Timings ---
+    // --- Timings ---
     timings: {
         checkIn: { type: String, default: '12:00 PM' },
         checkOut: { type: String, default: '11:00 AM' },
     },
+
+    // --- Policies ---
     policies: {
-        houseRules: [{ type: String, default: '' }],
+        houseRules: { type: String, default: '' },
         cancellationPolicy: { type: String, default: '' },
         isCouplesFriendly: { type: Boolean, default: false },
         isPetFriendly: { type: Boolean, default: false },
         isSmokingAllowed: { type: Boolean, default: false },
     },
+
+    amenities: { type: String, default: '' },
+    mealsIncluded: { type: String, default: '' },
 
     // --- Location Details ---
     location: {
@@ -71,8 +85,9 @@ const HomestaySchema = new mongoose.Schema({
     seoMetadata: {
         metaTitle: { type: String, default: '' },
         metaDescription: { type: String, default: '' },
-        keywords: [{ type: String, default: '' }]
+        keywords: { type: String, default: '' }
     }
+
 }, { toJSON: { getters: true }, toObject: { getters: true } });
 
 const CampingSchema = new mongoose.Schema({
@@ -405,18 +420,17 @@ const ParaglidingSchema = new mongoose.Schema({
 const VendorPackageSchema = new mongoose.Schema({
     vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true, unique: true },
 
-    // Services Object containing arrays
-    services: {
-        homestay: [HomestaySchema],
-        camping: [CampingSchema],
-        trekking: [TrekkingSchema],
-        rafting: [RaftingSchema],
-        bungeeJumping: [BungeeSchema],
-        vehicleRental: [VehicleRentalSchema],
-        chardhamTour: [ChardhamTourSchema],
-        skiing: [SkiingSchema],
-        paragliding: [ParaglidingSchema]
-    },
+    homestay: [HomestaySchema],
+    camping: [CampingSchema],
+    trekking: [TrekkingSchema],
+    rafting: [RaftingSchema],
+    bungeeJumping: [BungeeSchema],
+    vehicleRental: [VehicleRentalSchema],
+    chardhamTour: [ChardhamTourSchema],
+    hotel: [HomestaySchema], // fallback
+    skiing: [SkiingSchema],
+    paragliding: [ParaglidingSchema],
+
     price: { type: Number, default: 0, min: 0 },
 
     createdAt: { type: Date, default: Date.now }

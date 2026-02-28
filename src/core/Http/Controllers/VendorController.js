@@ -420,41 +420,21 @@ class VendorController {
             const packages = await VendorService.findByUserId(user.id);
             if (!packages) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
-            // Get Catalog
             const catalog = await PackageService.getVendorCatalog(packages._id);
-
-            // Filter services based on Vendor Profile Categories
-            // Map Profile Category Strings to Schema Keys
-            const categoryMap = {
-                'Homestay': 'homestay',
-                'Hotel': 'homestay', // Fallback
-                'Camping': 'camping',
-                'Trekking': 'trekking',
-                'Rafting': 'rafting',
-                'River Rafting': 'rafting',
-                'Bungee Jumping': 'bungeeJumping',
-                'Bike/Car Rental': 'vehicleRental',
-                'Chardham Tour': 'chardhamTour'
-            };
-
-            const allowedServices = packages.category.map(c => categoryMap[c.name]).filter(Boolean);
-
-            // Convert to Object to filter
+            const allowedServices = await PackageService._getAllowedCategories(user.id);
             const catalogObj = catalog.toObject();
             const filteredServices = {};
-
             allowedServices.forEach(key => {
-                if (catalogObj.services[key]) {
-                    filteredServices[key] = catalogObj.services[key];
+                if (catalogObj[key]) {
+                    filteredServices[key] = catalogObj[key];
                 }
             });
 
-            // Return filtered view
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, {
-                catalog: {
-                    ...catalogObj,
-                    services: filteredServices
-                }
+                _id: catalogObj._id,
+                vendor: catalogObj.vendor,
+                services: filteredServices,
+                createdAt: catalogObj.createdAt
             });
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
@@ -490,6 +470,7 @@ class VendorController {
         try {
             const user = req.user;
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
+
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
@@ -508,9 +489,8 @@ class VendorController {
             if (!category || !item) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
             const updatedCatalog = await PackageService.addServiceItem(vendor._id, category, item);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ITEM.ADDED, { catalog: updatedCatalog });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ITEM.ADDED, updatedCatalog);
         } catch (error) {
-            console.error("Add Item Error:", error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
@@ -674,19 +654,26 @@ class VendorController {
             hotelType: PACKAGE.ACCOMMODATION.HOTEL_TYPES
         };
 
+        const normalizeValue = (val, mapObj) => {
+            if (typeof val !== 'string') return val;
+            const validValues = Object.values(mapObj);
+            if (validValues.includes(val)) return val;
+            const upperKey = val.toUpperCase();
+            return mapObj[upperKey] || val;
+        };
+
         Object.keys(ENUM_MAPS).forEach(key => {
-            if (item[key] && typeof item[key] === 'string') {
-                const constantObj = ENUM_MAPS[key];
-                const validValues = Object.values(constantObj);
-
-                // If it's already a valid value (e.g. "Standard"), leave it.
-                if (validValues.includes(item[key])) return;
-
-                // Try to find by key (e.g. "STANDARD" -> "Standard")
-                const upperKey = item[key].toUpperCase();
-                if (constantObj[upperKey]) {
-                    item[key] = constantObj[upperKey];
-                }
+            if (item[key] !== undefined) {
+                item[key] = normalizeValue(item[key], ENUM_MAPS[key]);
+            }
+            if (item.roomDetails && item.roomDetails[key] !== undefined) {
+                item.roomDetails[key] = normalizeValue(item.roomDetails[key], ENUM_MAPS[key]);
+            }
+            if (item.vehicleDetails && item.vehicleDetails[key] !== undefined) {
+                item.vehicleDetails[key] = normalizeValue(item.vehicleDetails[key], ENUM_MAPS[key]);
+            }
+            if (item.details && item.details[key] !== undefined) {
+                item.details[key] = normalizeValue(item.details[key], ENUM_MAPS[key]);
             }
         });
 
