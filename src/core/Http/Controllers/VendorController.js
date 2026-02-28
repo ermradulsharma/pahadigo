@@ -6,7 +6,7 @@ import fs from 'fs';
 import path from 'path';
 import CategoryService from '@/services/CategoryService.js';
 import Category from '@/models/Category.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES, PACKAGE } from '@/constants/index.js';
 import { parseNestedFormData } from '@/helpers/parseNestedFormData.js';
 import { uploadToCloudinary } from '@/helpers/cloudinary.js';
 
@@ -21,11 +21,11 @@ class VendorController {
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
 
             const vendor = await VendorService.getFullProfile(user.id);
-            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
+            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, vendor);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, vendor);
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -42,43 +42,54 @@ class VendorController {
 
             // Explicitly map fields from parsedData to match Vendor schema
             const data = {
-                businessName: parsedData.businessName,
+                profileType: parsedData.profileType,
                 ownerName: parsedData.ownerName,
-                businessNumber: parsedData.businessNumber,
-                businessRegistration: parsedData.businessRegistration,
-                gstNumber: parsedData.gstNumber,
-                businessAbout: parsedData.businessAbout,
-                businessAddress: {
-                    addressLine1: parsedData.businessAddress?.addressLine1 || null,
-                    addressLine2: parsedData.businessAddress?.addressLine2 || null,
-                    city: parsedData.businessAddress?.city || null,
-                    state: parsedData.businessAddress?.state || null,
-                    country: parsedData.businessAddress?.country || null,
-                    pincode: parsedData.businessAddress?.pincode || null,
-                    latitude: parsedData.businessAddress?.latitude || null,
-                    longitude: parsedData.businessAddress?.longitude || null,
+                ...(parsedData.profileType === 'business' && {
+                    businessName: parsedData.businessName,
+                    businessNumber: parsedData.businessNumber,
+                    businessRegistration: parsedData.businessRegistration,
+                    gstNumber: parsedData.gstNumber,
+                    businessAbout: parsedData.businessAbout,
+                }),
+                ...(parsedData.profileType === 'individual' && {
+                    personalNumber: parsedData.personalNumber,
+                    personalPanCard: parsedData.personalPanCard,
+                    personalAbout: parsedData.personalAbout,
+                }),
+                address: {
+                    addressLine1: parsedData.address?.addressLine1 || null,
+                    addressLine2: parsedData.address?.addressLine2 || null,
+                    city: parsedData.address?.city || null,
+                    state: parsedData.address?.state || null,
+                    country: parsedData.address?.country || null,
+                    pincode: parsedData.address?.pincode || null,
+                    latitude: parsedData.address?.latitude || null,
+                    longitude: parsedData.address?.longitude || null,
                     location: {
                         type: 'Point',
                         coordinates: [
-                            parseFloat(parsedData.businessAddress?.longitude) || 0,
-                            parseFloat(parsedData.businessAddress?.latitude) || 0
+                            parseFloat(parsedData.address?.longitude) || 0,
+                            parseFloat(parsedData.address?.latitude) || 0
                         ]
                     }
                 }
             };
 
             // Basic validation
-            if (!data.businessName) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, "Business name is required", {});
+            if (data.profileType === 'business' && !data.businessName) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+            }
+            if (data.profileType === 'individual' && !data.ownerName) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             }
 
             // Handle profile image separately
             const profileImageFile = formDataBody.get('profile_image');
             if (profileImageFile && profileImageFile instanceof File) {
-                console.log(`[ProfileCreate] [${user.id}] Uploading profile image to Cloudinary...`);
+
                 const result = await uploadToCloudinary(profileImageFile, `profile/${user.id}`);
                 data.profileImage = result.url;
-                console.log(`[ProfileCreate] [${user.id}] Profile image uploaded: ${data.profileImage}`);
+
             }
 
             // Resolve category slugs from businessCategory
@@ -100,10 +111,10 @@ class VendorController {
 
             const vendor = await VendorService.upsertProfile(user.id, data);
 
-            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.PROFILE_CREATED, vendor);
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.PROFILE_UPDATED, vendor);
         } catch (error) {
             console.error("Create Profile Error:", error);
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -135,10 +146,10 @@ class VendorController {
             }
 
             const vendor = await VendorService.upsertProfile(user.id, data);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.PROFILE_UPDATED, vendor);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PROFILE_UPDATED, vendor);
         } catch (error) {
             console.error("Update Profile Error:", error);
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -149,9 +160,9 @@ class VendorController {
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
 
             await VendorService.deleteProfile(user.id, user.id);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, {});
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, {});
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -165,11 +176,11 @@ class VendorController {
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
 
             const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
+            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, vendor);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, vendor);
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -181,7 +192,7 @@ class VendorController {
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
 
             const currentVendor = await Vendor.findOne({ user: user.id });
-            if (!currentVendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
+            if (!currentVendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             const formDataBody = req.formDataBody;
             if (!formDataBody) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.FORM_DATA_REQUIRED, {});
@@ -221,7 +232,7 @@ class VendorController {
             await Promise.all(Object.entries(parsedData).map(([key, val]) => processField(key, val)));
 
             if (Object.keys(documents).length === 0) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, "No valid files provided in request.", {});
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.INVALID_DATA, {});
             }
 
             // Mandatory fields verification (Aadhaar, PAN, etc.)
@@ -231,15 +242,15 @@ class VendorController {
                 const inDb = currentVendor.documents?.[field] && (!Array.isArray(currentVendor.documents[field]) || currentVendor.documents[field].length > 0);
 
                 if (!inRequest && !inDb) {
-                    return errorResponse(HTTP_STATUS.BAD_REQUEST, `Mandatory document missing: ${field}`, {});
+                    return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
                 }
             }
             const updatedVendor = await VendorService.upsertProfile(user.id, { documents });
             const duration = Date.now() - startTime;
-            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.DOCUMENTS_UPLOADED, updatedVendor);
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.DOCUMENTS_UPLOADED, updatedVendor);
         } catch (error) {
             console.error(`[DocumentUpload] [${user?.id || 'unknown'}] Error:`, error);
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -257,7 +268,6 @@ class VendorController {
 
             if (!type || !file) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
-            console.log(`[DocumentUpdate] [${user.id}] Updating ${type}...`);
             const result = await uploadToCloudinary(file, `documents/${user.id}/${type}`);
 
             const docObject = {
@@ -281,10 +291,10 @@ class VendorController {
                 { new: true, arrayFilters }
             );
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, updatedVendor);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, updatedVendor);
         } catch (error) {
             console.error("Update Document Error:", error);
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -310,9 +320,9 @@ class VendorController {
                 { new: true }
             );
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, updatedVendor);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, updatedVendor);
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -326,11 +336,11 @@ class VendorController {
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
 
             const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
+            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, vendor);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, vendor);
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -369,14 +379,14 @@ class VendorController {
                 const hasCheque = bankData.cancelledCheque || (vendor?.bankDetails?.cancelledCheque?.url);
 
                 if (missing.length > 0 || !hasCheque) {
-                    const errorMsg = `Required fields missing: ${missing.join(', ')}${!hasCheque ? ', cancelledCheque' : ''}`;
+                    const errorMsg = RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS;
                     return errorResponse(HTTP_STATUS.BAD_REQUEST, errorMsg, {});
                 }
             }
             const updatedVendor = await VendorService.upsertProfile(user.id, { bankDetails: bankData });
-            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.BANK_DETAILS_SAVED, updatedVendor);
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.BANK_DETAILS_UPDATED, updatedVendor);
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -392,9 +402,9 @@ class VendorController {
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
 
             const updatedVendor = await VendorService.deleteBankDetails(user.id);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, updatedVendor);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, updatedVendor);
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -408,7 +418,7 @@ class VendorController {
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
 
             const packages = await VendorService.findByUserId(user.id);
-            if (!packages) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
+            if (!packages) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             // Get Catalog
             const catalog = await PackageService.getVendorCatalog(packages._id);
@@ -440,14 +450,14 @@ class VendorController {
             });
 
             // Return filtered view
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, {
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, {
                 catalog: {
                     ...catalogObj,
                     services: filteredServices
                 }
             });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -458,7 +468,7 @@ class VendorController {
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
 
             const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.VENDOR_INCOMPLETE, {});
+            if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.INCOMPLETE, {});
 
             const body = req.jsonBody || await req.json();
             const { title, price } = body;
@@ -469,9 +479,9 @@ class VendorController {
 
             const newPackage = await PackageService.createPackage(vendor._id, body);
 
-            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.PACKAGE_CREATED, {});
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.PACKAGE.CREATED, {});
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -481,27 +491,27 @@ class VendorController {
             const user = req.user;
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
             const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
+            if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             let category, item;
             if (req.formDataBody) {
                 const parsed = parseNestedFormData(req.formDataBody);
-                category = parsed.category;
+                category = this._normalizeCategory(parsed.category);
                 const rawItems = Array.isArray(parsed.item) ? parsed.item : [parsed.item];
                 item = await this._processItemData(user, category, rawItems[0]);
             } else {
                 const body = req.jsonBody || await req.json();
-                category = body.category;
+                category = this._normalizeCategory(body.category);
                 item = await this._processItemData(user, category, body.item);
             }
 
             if (!category || !item) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
             const updatedCatalog = await PackageService.addServiceItem(vendor._id, category, item);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.ITEM_ADDED, { catalog: updatedCatalog });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ITEM.ADDED, { catalog: updatedCatalog });
         } catch (error) {
             console.error("Add Item Error:", error);
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -511,17 +521,17 @@ class VendorController {
             const user = req.user;
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
             const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
+            if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             let category, itemId, updates;
             if (req.formDataBody) {
                 const parsed = parseNestedFormData(req.formDataBody);
-                category = parsed.category;
+                category = this._normalizeCategory(parsed.category);
                 itemId = parsed.itemId;
                 updates = await this._processItemData(user, category, parsed.updates);
             } else {
                 const body = req.jsonBody || await req.json();
-                category = body.category;
+                category = this._normalizeCategory(body.category);
                 itemId = body.itemId;
                 updates = await this._processItemData(user, category, body.updates);
             }
@@ -529,10 +539,10 @@ class VendorController {
             if (!category || !itemId || !updates) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
             const updatedCatalog = await PackageService.updateServiceItem(vendor._id, category, itemId, updates);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, { catalog: updatedCatalog });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, { catalog: updatedCatalog });
         } catch (error) {
             console.error("Update Item Error:", error);
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -542,16 +552,17 @@ class VendorController {
             const user = req.user;
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
             const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
+            if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             const body = req.jsonBody || await req.json();
-            const { category, itemId } = body;
+            let { category, itemId } = body;
+            category = this._normalizeCategory(category);
             if (!category || !itemId) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
             const updatedCatalog = await PackageService.removeServiceItem(vendor._id, category, itemId);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, { catalog: updatedCatalog });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, { catalog: updatedCatalog });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -561,16 +572,17 @@ class VendorController {
             const user = req.user;
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
             const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
+            if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             const body = req.jsonBody || await req.json();
-            const { category, itemId, isActive } = body;
+            let { category, itemId, isActive } = body;
+            category = this._normalizeCategory(category);
             if (!category || !itemId || typeof isActive !== 'boolean') return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
             const updatedCatalog = await PackageService.toggleItemStatus(vendor._id, category, itemId, isActive);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, { catalog: updatedCatalog });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, { catalog: updatedCatalog });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -580,16 +592,17 @@ class VendorController {
             const user = req.user;
             if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
             const vendor = await VendorService.findByUserId(user.id);
-            if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
+            if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             const body = req.jsonBody || await req.json();
-            const { category, isActive } = body;
+            let { category, isActive } = body;
+            category = this._normalizeCategory(category);
             if (!category || typeof isActive !== 'boolean') return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
             const updatedCatalog = await PackageService.toggleCategoryStatus(vendor._id, category, isActive);
-            return successResponse(HTTP_STATUS.OK, `Category ${category} status updated`, { catalog: updatedCatalog });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, { catalog: updatedCatalog });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -599,7 +612,7 @@ class VendorController {
     // GET /vendor/business/categories
     async getBusinessCategories(req) {
         const categories = await CategoryService.getAllCategories();
-        return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { categories });
+        return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, { categories });
     }
 
     async addBusinessCategory(req) {
@@ -611,7 +624,7 @@ class VendorController {
             if (!categorySlug) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
             const category = await Category.findOne({ slug: categorySlug }).select('_id name slug');
-            if (!category) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.CATEGORY_NOT_FOUND, {});
+            if (!category) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.CATEGORY.NOT_FOUND, {});
 
             const updatedVendor = await VendorService.addCategory(user.id, {
                 _id: category._id,
@@ -619,9 +632,9 @@ class VendorController {
                 slug: category.slug
             });
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, updatedVendor);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, updatedVendor);
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -634,9 +647,9 @@ class VendorController {
             if (!categorySlug) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
             const updatedVendor = await VendorService.removeCategory(user.id, categorySlug);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, updatedVendor);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, updatedVendor);
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -644,11 +657,44 @@ class VendorController {
     async _processItemData(user, category, item) {
         if (!item) return null;
 
+        // Normalize Enum Values
+        const ENUM_MAPS = {
+            roomType: PACKAGE.ACCOMMODATION.ROOM_TYPES,
+            bedType: PACKAGE.ACCOMMODATION.BED_TYPES,
+            bathroomType: PACKAGE.ACCOMMODATION.BATHROOM_TYPES,
+            view: PACKAGE.ACCOMMODATION.VIEW_TYPES,
+            mealsIncluded: PACKAGE.ACCOMMODATION.MEAL_TYPES,
+            campingType: PACKAGE.ACTIVITY.CAMPING_TYPES,
+            difficultyLevel: PACKAGE.DIFFICULTY,
+            bestSeason: PACKAGE.SEASONS,
+            rapidGrade: PACKAGE.ACTIVITY.RAPID_GRADES,
+            vehicleType: PACKAGE.TRANSPORT.VEHICLE_TYPES,
+            fuelPolicy: PACKAGE.TRANSPORT.FUEL_POLICIES,
+            transmission: PACKAGE.TRANSPORT.TRANSMISSION_TYPES,
+            hotelType: PACKAGE.ACCOMMODATION.HOTEL_TYPES
+        };
+
+        Object.keys(ENUM_MAPS).forEach(key => {
+            if (item[key] && typeof item[key] === 'string') {
+                const constantObj = ENUM_MAPS[key];
+                const validValues = Object.values(constantObj);
+
+                // If it's already a valid value (e.g. "Standard"), leave it.
+                if (validValues.includes(item[key])) return;
+
+                // Try to find by key (e.g. "STANDARD" -> "Standard")
+                const upperKey = item[key].toUpperCase();
+                if (constantObj[upperKey]) {
+                    item[key] = constantObj[upperKey];
+                }
+            }
+        });
+
         const photoUrls = [];
         if (item.photos && Array.isArray(item.photos)) {
             for (const photo of item.photos) {
                 if (photo instanceof File) {
-                    console.log(`[PackageItem] [${user.id}] Uploading photo to Cloudinary...`);
+
                     const result = await uploadToCloudinary(photo, `packages/${user.id}/${category || 'general'}`);
                     photoUrls.push({ url: result.url, type: 'image', publicId: result.publicId });
                 } else if (typeof photo === 'string') {
@@ -667,6 +713,23 @@ class VendorController {
         }
 
         return item;
+    }
+
+    _normalizeCategory(category) {
+        if (!category) return null;
+        const categoryMap = {
+            'homestay': 'homestay',
+            'hotel': 'hotel',
+            'camping': 'camping',
+            'trekking': 'trekking',
+            'rafting': 'rafting',
+            'river rafting': 'rafting',
+            'bungee jumping': 'bungeeJumping',
+            'bike/scooter rental': 'vehicleRental',
+            'vehicle rental': 'vehicleRental',
+            'chardham tour': 'chardhamTour',
+        };
+        return categoryMap[category.toLowerCase()] || category;
     }
 }
 

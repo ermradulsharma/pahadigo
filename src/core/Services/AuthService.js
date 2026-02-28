@@ -1,7 +1,7 @@
 import User from '@/models/User.js';
 import OTPService from '@/services/OTPService.js';
 import { generateToken, verifyToken } from '@/helpers/jwt.js';
-import { USER_ROLES, AUTH_PROVIDERS } from '@/constants/index.js';
+import { USER_ROLES, AUTH_PROVIDERS, USER_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 import googleAuthLib from 'google-auth-library';
 const { OAuth2Client } = googleAuthLib;
 import Vendor from '@/models/Vendor.js';
@@ -9,30 +9,66 @@ import jwt from 'jsonwebtoken';
 
 class AuthService {
     async _getVendorStatus(user) {
-        const vendorProfile = await Vendor.findOne({ user: user._id });
+        const businessProfile = await Vendor.findOne({ user: user._id });
         let status = "setBusinessProfile";
         let profile = null;
-        if (vendorProfile) {
-            profile = vendorProfile;
-            if (vendorProfile.documents &&
-                vendorProfile.documents.aadharCardFront?.url &&
-                vendorProfile.documents.panCard?.url &&
-                vendorProfile.documents.businessRegistration?.url) {
-                if (vendorProfile.businessName) status = "profileCompleted";
+        if (businessProfile) {
+            profile = businessProfile;
+            const docs = businessProfile.documents;
+            if (docs) {
+                const hasAadhar = Array.isArray(docs.aadharCard) && docs.aadharCard.length > 0 && docs.aadharCard[0].url;
+                const hasPan = docs.panCard && docs.panCard.url;
+                if (hasAadhar && hasPan) {
+                    status = "profileCompleted";
+                }
             }
         }
-        return { vendorStatus: status, vendorProfile: profile };
+        return { businessProfileStatus: status, businessProfile: profile };
+    }
+
+    async _handleDeactivation(user) {
+        if (!user.deletedAt && ![USER_STATUS.INACTIVE, USER_STATUS.DELETED, USER_STATUS.SUSPENDED].includes(user.status)) return;
+
+        // Check if self-deleted (deletedBy matches user ID)
+        const isSelfDeleted = user.deletedBy && user.deletedBy.toString() === user._id.toString();
+
+        if (isSelfDeleted) {
+            // Reactivate Account
+            user.deletedAt = null;
+            user.deletedBy = null;
+            user.deletedReason = null;
+            user.status = USER_STATUS.ACTIVE;
+            await user.save();
+            return;
+        }
+
+        throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_SUSPENDED);
+    }
+
+    async deleteProfileById(userId, reason = null) {
+        const updates = {
+            deletedAt: new Date(),
+            deletedBy: userId,
+            deletedReason: reason,
+            status: USER_STATUS.DELETED
+        };
+
+        const user = await User.findByIdAndUpdate(userId, updates, { new: true });
+        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+        return true;
     }
 
     async loginWithPassword({ email, password, rememberMe = false }) {
         const user = await User.findOne({ email }).select('+password');
-        if (!user) throw new Error('Invalid credentials');
+        if (!user) throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
 
         // Check if user has password set (might be social/OTP user trying password login)
-        if (!user.password) throw new Error('Account uses different login method');
+        if (!user.password) throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
 
         const isMatch = await user.comparePassword(password);
-        if (!isMatch) throw new Error('Invalid credentials');
+        if (!isMatch) throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
+
+        await this._handleDeactivation(user);
 
         let vendorData = {};
         if (user.role === USER_ROLES.VENDOR) {
@@ -52,7 +88,7 @@ class AuthService {
     async verifyAndLogin({ identifier, otp, email, phone, targetRole }) {
         const otpRecord = OTPService.verifyOTP(identifier, otp);
         if (!otpRecord) {
-            throw new Error('Invalid or expired OTP');
+            throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_OTP);
         }
 
         const { termsAccepted } = otpRecord;
@@ -91,6 +127,8 @@ class AuthService {
             }
         }
 
+        await this._handleDeactivation(user);
+
         let vendorData = {};
         if (user.role === 'vendor') {
             vendorData = await this._getVendorStatus(user);
@@ -112,7 +150,7 @@ class AuthService {
 
         const googleClientId = process.env.GOOGLE_CLIENT_ID;
         if (!googleClientId) {
-            throw new Error('Google Auth is not configured');
+            throw new Error(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
         }
         const client = new OAuth2Client(googleClientId);
         const ticket = await client.verifyIdToken({
@@ -145,6 +183,8 @@ class AuthService {
             }
         }
 
+        await this._handleDeactivation(user);
+
         let vendorData = {};
         if (user.role === 'vendor') {
             vendorData = await this._getVendorStatus(user);
@@ -159,13 +199,13 @@ class AuthService {
             return this._mockSocialLogin('master_fb_user@example.com', 'Master FB User', 'fb_master_id', targetRole);
         }
 
-        if (!accessToken) throw new Error('Facebook Token required');
+        if (!accessToken) throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED);
 
         const response = await fetch(`https://graph.facebook.com/me?access_token=${accessToken}&fields=id,name,email`);
         const data = await response.json();
 
         if (data.error) {
-            throw new Error(data.error.message || 'Invalid Facebook Token');
+            throw new Error(data.error.message || RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
         }
 
         const { id: facebookId, name, email } = data;
@@ -194,6 +234,8 @@ class AuthService {
             }
         }
 
+        await this._handleDeactivation(user);
+
         let vendorData = {};
         if (user.role === 'vendor') {
             vendorData = await this._getVendorStatus(user);
@@ -208,11 +250,11 @@ class AuthService {
             return this._mockSocialLogin('master_apple_user@example.com', 'Master Apple User', 'apple_master_id', targetRole);
         }
 
-        if (!idToken) throw new Error('Apple ID Token required');
+        if (!idToken) throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED);
 
         const decoded = jwt.decode(idToken);
         if (!decoded || !decoded.sub) {
-            throw new Error('Invalid Apple ID Token');
+            throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
         }
 
         const { sub: appleId, email: tokenEmail } = decoded;
@@ -245,6 +287,8 @@ class AuthService {
             }
         }
 
+        await this._handleDeactivation(user);
+
         let vendorData = {};
         if (user.role === 'vendor') {
             vendorData = await this._getVendorStatus(user);
@@ -260,10 +304,10 @@ class AuthService {
 
     async verify(token) {
         const decoded = verifyToken(token);
-        if (!decoded) throw new Error('Invalid or expired Token');
+        if (!decoded) throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
 
         const user = await User.findById(decoded.id).select('-password');
-        if (!user) throw new Error('User not found');
+        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
 
         let vendorData = {};
         if (user.role === 'vendor') {
@@ -281,9 +325,9 @@ class AuthService {
 
     async me(token) {
         const decoded = verifyToken(token);
-        if (!decoded) throw new Error('Invalid Token');
+        if (!decoded) throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
         const user = await User.findById(decoded.id).select('-password');
-        if (!user) throw new Error('User not found');
+        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         return user;
     }
 
@@ -291,7 +335,7 @@ class AuthService {
         const user = await User.findById(userId).select('-password');
 
         if (!user) {
-            throw new Error('User not found');
+            throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         }
 
         let vendorData = {};
@@ -303,13 +347,13 @@ class AuthService {
 
     async forgetPassword(email) {
         const user = await User.findOne({ email });
-        if (!user) throw new Error('User not found');
-        return { message: 'Reset link sent' };
+        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+        return { message: RESPONSE_MESSAGES.AUTH.PASSWORD_RESET_LINK_SENT };
     }
 
     async resetPassword(email, newPassword) {
         const user = await User.findOne({ email });
-        if (!user) throw new Error('User not found');
+        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         user.password = newPassword;
         await user.save();
         return true;
@@ -321,13 +365,19 @@ class AuthService {
 
     async updateProfile(email, updates) {
         const user = await User.findOneAndUpdate({ email }, updates, { new: true });
-        if (!user) throw new Error('User not found');
+        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+        return user;
+    }
+
+    async updateProfileById(userId, updates) {
+        const user = await User.findByIdAndUpdate(userId, updates, { new: true });
+        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         return user;
     }
 
     async deleteProfile(email) {
         const user = await User.findOneAndDelete({ email });
-        if (!user) throw new Error('User not found');
+        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         return true;
     }
 
@@ -346,10 +396,12 @@ class AuthService {
                 name,
                 role: userRole,
                 isVerified: true,
-                authProvider: 'mock_master'
+                authProvider: 'google'
             });
             isNewUser = true;
         }
+        await this._handleDeactivation(user);
+
         let vendorData = {};
         if (user.role === 'vendor') {
             vendorData = await this._getVendorStatus(user);

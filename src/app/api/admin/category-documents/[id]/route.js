@@ -8,9 +8,17 @@ export async function GET(request, { params }) {
         await connectDB();
         const { id } = await params;
         const document = await categoryDocumentService.getById(id);
-        return NextResponse.json({ success: true, data: document });
+        return NextResponse.json({
+            success: true,
+            message: RESPONSE_MESSAGES.SUCCESS.FETCHED,
+            data: document
+        });
     } catch (error) {
-        return NextResponse.json({ success: false, error: error.message }, { status: HTTP_STATUS.NOT_FOUND });
+        return NextResponse.json({
+            success: false,
+            message: RESPONSE_MESSAGES.ERROR.DOCUMENT_NOT_FOUND,
+            data: { error: error.message }
+        }, { status: HTTP_STATUS.NOT_FOUND });
     }
 }
 
@@ -20,12 +28,19 @@ export async function PUT(request, { params }) {
         const { id } = await params;
         const body = await request.json();
         const document = await categoryDocumentService.update(id, body);
-        return NextResponse.json({ success: true, data: document });
+        return NextResponse.json({
+            success: true,
+            message: RESPONSE_MESSAGES.SUCCESS.UPDATED,
+            data: document
+        });
     } catch (error) {
         return NextResponse.json({
             success: false,
-            error: error.message,
-            details: error.errors ? Object.keys(error.errors).map(k => error.errors[k].message) : null
+            message: RESPONSE_MESSAGES.ERROR.SERVER_ERROR,
+            data: {
+                error: error.message,
+                details: error.errors ? Object.keys(error.errors).map(k => error.errors[k].message) : null
+            }
         }, { status: HTTP_STATUS.BAD_REQUEST });
     }
 }
@@ -35,8 +50,16 @@ export async function DELETE(request, { params }) {
         await connectDB();
         const { id } = await params;
         await categoryDocumentService.delete(id);
-        return NextResponse.json({ success: true, message: RESPONSE_MESSAGES.SUCCESS.DELETE });
+        return NextResponse.json({
+            success: true,
+            message: RESPONSE_MESSAGES.SUCCESS.DELETED,
+            data: {}
+        });
     } catch (error) {
-        return NextResponse.json({ success: false, error: error.message }, { status: HTTP_STATUS.BAD_REQUEST });
+        return NextResponse.json({
+            success: false,
+            message: RESPONSE_MESSAGES.ERROR.SERVER_ERROR,
+            data: { error: error.message }
+        }, { status: HTTP_STATUS.BAD_REQUEST });
     }
 }

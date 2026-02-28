@@ -10,9 +10,17 @@ export async function GET() {
         if (!setting) {
             setting = await Setting.create({});
         }
-        return NextResponse.json({ success: true, data: setting });
+        return NextResponse.json({
+            success: true,
+            message: RESPONSE_MESSAGES.SUCCESS.FETCHED,
+            data: setting
+        });
     } catch (error) {
-        return NextResponse.json({ success: false, error: error.message }, { status: HTTP_STATUS.BAD_REQUEST });
+        return NextResponse.json({
+            success: false,
+            message: RESPONSE_MESSAGES.ERROR.SERVER_ERROR,
+            data: { error: error.message }
+        }, { status: HTTP_STATUS.BAD_REQUEST });
     }
 }
 
@@ -27,8 +35,16 @@ export async function POST(req) {
             Object.assign(setting, body);
         }
         await setting.save();
-        return NextResponse.json({ success: true, data: setting, message: RESPONSE_MESSAGES.SUCCESS.UPDATE });
+        return NextResponse.json({
+            success: true,
+            message: RESPONSE_MESSAGES.SUCCESS.UPDATED,
+            data: setting
+        });
     } catch (error) {
-        return NextResponse.json({ success: false, error: error.message }, { status: HTTP_STATUS.BAD_REQUEST });
+        return NextResponse.json({
+            success: false,
+            message: RESPONSE_MESSAGES.ERROR.SERVER_ERROR,
+            data: { error: error.message }
+        }, { status: HTTP_STATUS.BAD_REQUEST });
     }
 }

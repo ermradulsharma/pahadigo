@@ -9,7 +9,7 @@ const DEFAULT_CATEGORIES = [
     { name: 'Trekking', description: 'Adventure trekking packages' },
     { name: 'Rafting', description: 'Thrilling river rafting experiences' },
     { name: 'Bungee Jumping', description: 'Adrenaline pumping jumps' },
-    { name: 'Bike/Car Rental', description: 'Rent vehicles for your journey' },
+    { name: 'Bike/Scooter Rental', description: 'Rent vehicles for your journey' },
     { name: 'Chardham Tour', description: 'Pilgrimage tour packages' },
     { name: 'Custom Trip', description: 'Create your own trip' }
 ];

@@ -16,9 +16,9 @@ class LocationController {
             let skip = 0;
 
             if (limitParam === 'all') {
-                limit = 0; // Unlimited
+                limit = 500; // Hard cap instead of unlimited (0) to prevent memory exhaustion
             } else if (limitParam) {
-                limit = parseInt(limitParam);
+                limit = Math.min(parseInt(limitParam), 500); // Cap explicitly provided limit
             }
 
             if (limit > 0) {
@@ -34,7 +34,7 @@ class LocationController {
 
             const countries = await query;
 
-            return successResponse(HTTP_STATUS.OK, 'Countries fetched successfully', {
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.LOCATION.FETCHED, {
                 countries,
                 pagination: {
                     total,
@@ -44,7 +44,7 @@ class LocationController {
                 }
             });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -52,10 +52,21 @@ class LocationController {
         try {
             const { id } = params;
             const country = await Country.findById(id);
-            if (!country) return errorResponse(HTTP_STATUS.NOT_FOUND, 'Country not found', {});
-            return successResponse(HTTP_STATUS.OK, 'Country fetched successfully', { country });
+            if (!country) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.NOT_FOUND, {});
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.LOCATION.FETCHED, { country });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+        }
+    }
+
+    // GET /location/countries/:id/states
+    async getStatesByCountry(req, { params }) {
+        try {
+            const { id } = params;
+            const states = await State.find({ country: id }).sort({ name: 1 });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.LOCATION.FETCHED, { states });
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -63,9 +74,9 @@ class LocationController {
         try {
             const body = await parseBody(req);
             const country = await Country.create(body);
-            return successResponse(HTTP_STATUS.CREATED, 'Country created successfully', { country });
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.LOCATION.COUNTRY_CREATED, { country });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.BAD_REQUEST, error.message, {});
+            return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.BAD_REQUEST, {});
         }
     }
 
@@ -86,9 +97,9 @@ class LocationController {
             if (countryId) filter.country = countryId;
 
             const states = await State.find(filter).sort({ name: 1 }).populate('country', 'name isoCode');
-            return successResponse(HTTP_STATUS.OK, 'States fetched successfully', { states });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.LOCATION.FETCHED, { states });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -103,9 +114,9 @@ class LocationController {
             let skip = 0;
 
             if (limitParam === 'all') {
-                limit = 0;
+                limit = 500; // Hard cap
             } else if (limitParam) {
-                limit = parseInt(limitParam);
+                limit = Math.min(parseInt(limitParam), 500);
             }
 
             if (limit > 0) {
@@ -121,7 +132,7 @@ class LocationController {
 
             const states = await query;
 
-            return successResponse(HTTP_STATUS.OK, 'States fetched successfully', {
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.LOCATION.FETCHED, {
                 states,
                 pagination: {
                     total,
@@ -131,7 +142,7 @@ class LocationController {
                 }
             });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -139,16 +150,16 @@ class LocationController {
         try {
             const body = await parseBody(req);
             const state = await State.create(body);
-            return successResponse(HTTP_STATUS.CREATED, 'State created successfully', { state });
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.LOCATION.STATE_CREATED, { state });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.BAD_REQUEST, error.message, {});
+            return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.BAD_REQUEST, {});
         }
     }
 
     async seedLocations(req) {
         // This might be better as a standalone script, but API endpoint for dev convenience is fine
         // Keeping it empty or basic here, relying on CLI seeder instead as requested.
-        return successResponse(HTTP_STATUS.OK, 'Use CLI seeder for locations', {});
+        return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.LOCATION.SEED_INFO, {});
     }
 }
 

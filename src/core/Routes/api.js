@@ -37,6 +37,10 @@ const routes = [
 
     // Vendor
     ...Router.group({ prefix: '/vendor' }, [
+        { method: 'GET', path: '/me', handler: wrap(AuthController.me.bind(AuthController)), middleware: ['auth'] },
+        { method: 'PATCH', path: '/update', handler: wrap(AuthController.updateProfile.bind(AuthController)), middleware: ['auth'] },
+        { method: 'DELETE', path: '/delete', handler: wrap(AuthController.deleteProfile.bind(AuthController)), middleware: ['auth'] },
+
         // Vendor Business
         ...Router.group({ prefix: '/business' }, [
             ...Router.group({ prefix: '/profile' }, [

@@ -14,8 +14,8 @@ const BookingSchema = new mongoose.Schema({
   },
   payoutStatus: { type: String, enum: ['pending', 'paid'], default: 'pending' }, // Admin to Vendor
   refundStatus: { type: String, enum: ['none', 'refunded'], default: 'none' },
-  refundAmount: { type: Number, default: 0 },
-  totalPrice: { type: Number },
+  refundAmount: { type: Number, default: 0, min: 0 },
+  totalPrice: { type: Number, min: 0 },
 });
 
 export default mongoose.models.Booking || mongoose.model('Booking', BookingSchema);

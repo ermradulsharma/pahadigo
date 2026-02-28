@@ -13,7 +13,8 @@ class CategoryDocumentService {
 
     async getAll(filter = {}, page = 1, limit = 10) {
         try {
-            const skip = (page - 1) * limit;
+            const safeLimit = Math.max(1, Math.min(parseInt(limit) || 10, 100)); // Cap to 100
+            const skip = (Math.max(1, parseInt(page) || 1) - 1) * safeLimit;
             const docs = await CategoryDocument.find(filter)
                 .sort({ category_slug: 1, name: 1 })
                 .skip(skip)
@@ -24,9 +25,9 @@ class CategoryDocumentService {
             return {
                 docs,
                 totalDocs,
-                limit,
-                page,
-                totalPages: Math.ceil(totalDocs / limit)
+                limit: safeLimit,
+                page: Math.max(1, parseInt(page) || 1),
+                totalPages: Math.ceil(totalDocs / safeLimit)
             };
         } catch (error) {
             throw error;
@@ -36,7 +37,7 @@ class CategoryDocumentService {
     async getById(id) {
         try {
             const document = await CategoryDocument.findById(id);
-            if (!document) throw new Error('Category Document not found');
+            if (!document) throw new Error(RESPONSE_MESSAGES.ERROR.DOCUMENT_NOT_FOUND);
             return document;
         } catch (error) {
             throw error;

@@ -19,7 +19,7 @@ class BookingService {
 
     async processRefund(bookingId) {
         const booking = await Booking.findById(bookingId);
-        if (!booking) throw new Error('Booking not found');
+        if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
 
         booking.status = 'cancelled';
         booking.refundStatus = 'refunded';
@@ -30,7 +30,7 @@ class BookingService {
 
     async markPayout(bookingId) {
         const booking = await Booking.findById(bookingId);
-        if (!booking) throw new Error('Booking not found');
+        if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
 
         booking.payoutStatus = 'paid';
         await booking.save();
@@ -38,14 +38,21 @@ class BookingService {
     }
 
     async updatePaymentStatus(orderId, paymentId, signature) {
-        const booking = await Booking.findOne({ 'razorpay.orderId': orderId });
-        if (!booking) throw new Error('Booking order mismatch');
+        // Atomic update prevents concurrent webhook race conditions
+        const booking = await Booking.findOneAndUpdate(
+            { 'razorpay.orderId': orderId, paymentStatus: 'pending' },
+            {
+                $set: {
+                    paymentStatus: 'paid',
+                    status: 'confirmed',
+                    'razorpay.paymentId': paymentId,
+                    'razorpay.signature': signature
+                }
+            },
+            { new: true }
+        );
 
-        booking.paymentStatus = 'paid';
-        booking.status = 'confirmed';
-        booking.razorpay.paymentId = paymentId;
-        booking.razorpay.signature = signature;
-        await booking.save();
+        if (!booking) throw new Error('Booking order mismatch');
         return booking;
     }
 }

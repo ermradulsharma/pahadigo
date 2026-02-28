@@ -4,6 +4,11 @@ import PageHero from '@/components/PageHero';
 import connectDB from '@/config/db';
 import Category from '@/models/Category';
 
+export const metadata = {
+    title: 'PahadiGo - Your Adventure Awaits',
+    description: 'Find your perfect escape with curated trekking, camping, and adventure experiences in the heart of the Himalayas.',
+};
+
 // Helper to get consistent images for categories
 const getCategoryImage = (slug) => {
     const images = {

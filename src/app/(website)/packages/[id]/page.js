@@ -52,6 +52,25 @@ async function getServiceDetails(id) {
     }
 }
 
+export async function generateMetadata({ params }) {
+    const { id } = await params;
+    const service = await getServiceDetails(id);
+
+    if (!service) {
+        return {
+            title: 'Package Not Found'
+        };
+    }
+
+    const defaultTitle = service.roomType || service.campingType || service.trekkingName || service.stretchName || service.jumpName || service.model || service.tourName || service.title || 'Package Details';
+
+    return {
+        title: service.seoMetadata?.metaTitle || defaultTitle,
+        description: service.seoMetadata?.metaDescription || service.description || '',
+        keywords: service.seoMetadata?.keywords?.join(', ') || ''
+    };
+}
+
 export default async function ServiceDetailPage({ params }) {
     const { id } = await params; // Next.js 15+ needs await on params
     const service = await getServiceDetails(id);

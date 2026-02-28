@@ -1,80 +1,67 @@
-import AdminService from '../../src/services/AdminService.js';
-import User from '../../src/models/User.js';
-import Vendor from '../../src/models/Vendor.js';
-import Booking from '../../src/models/Booking.js';
+import AdminService from '../../src/core/Services/AdminService.js';
+import User from '../../src/core/Models/User.js';
+import Vendor from '../../src/core/Models/Vendor.js';
+import AuditLog from '../../src/core/Models/AuditLog.js';
 import mongoose from 'mongoose';
 
-describe('AdminService', () => {
-    describe('getDashboardStats', () => {
-        it('should return aggregated stats correctly', async () => {
-            // Create some test data
-            await User.create({ name: 'User 1', role: 'traveller' });
-            await User.create({ name: 'User 2', role: 'traveller' });
+describe('AdminService Test Suite', () => {
 
-            const vendorUser = await User.create({ name: 'Vendor 1', role: 'vendor' });
-            await Vendor.create({
-                user: vendorUser._id,
-                businessName: 'Biz 1',
-                category: ['Trekking'],
-                isApproved: true,
-                documents: {
-                    aadharCard: [{ url: 'http://test.com/aadhar.jpg' }],
-                    panCard: { url: 'http://test.com/pan.jpg' },
-                    businessRegistration: { url: 'http://test.com/biz.jpg' },
-                    gstRegistration: { url: 'http://test.com/gst.jpg' }
-                }
-            });
-
-            const booking = await Booking.create({
-                user: new mongoose.Types.ObjectId(),
-                package: new mongoose.Types.ObjectId(),
-                totalPrice: 1000,
-                travelDate: new Date(),
-                paymentStatus: 'paid',
-                refundStatus: 'none'
-            });
-
-            const stats = await AdminService.getDashboardStats();
-
-            expect(stats.users).toBe(2);
-            expect(stats.vendors).toBe(1);
-            expect(stats.bookings).toBe(1);
-            expect(stats.revenue).toBe(1000);
+    it('should create a traveller user directly', async () => {
+        const u = await AdminService.createTraveller({
+            name: 'Test Traveller',
+            email: 'traveller@test.com',
+            password: 'password123',
+            phone: '1234567890'
         });
+        expect(u.role).toBe('traveller');
+        expect(u.name).toBe('Test Traveller');
     });
 
-    describe('approveVendor', () => {
-        it('should mark a vendor as approved', async () => {
-            const vendor = await Vendor.create({
-                user: new mongoose.Types.ObjectId(),
-                businessName: 'Pending Biz',
-                category: ['Homestay'],
-                isApproved: false,
-                documents: {
-                    aadharCard: [{ url: 'http://test.com/aadhar.jpg' }],
-                    panCard: { url: 'http://test.com/pan.jpg' },
-                    businessRegistration: { url: 'http://test.com/biz.jpg' },
-                    gstRegistration: { url: 'http://test.com/gst.jpg' }
-                }
-            });
+    it('should properly log admin actions to AuditLog', async () => {
+        const adminId = new mongoose.Types.ObjectId();
+        await AdminService.logAction(
+            adminId,
+            'DELETE',
+            'VENDOR',
+            'vendor123',
+            { reason: 'Fraud' }
+        );
 
-            const updated = await AdminService.approveVendor(vendor._id);
-            expect(updated.isApproved).toBe(true);
-
-            const fetched = await Vendor.findById(vendor._id);
-            expect(fetched.isApproved).toBe(true);
-        });
+        const logs = await AdminService.getAuditLogs({ action: 'DELETE' }, 1, 10);
+        expect(logs.logs.length).toBeGreaterThan(0);
+        expect(logs.logs[0].target).toBe('VENDOR');
+        expect(logs.logs[0].targetId).toBe('vendor123');
     });
 
-    describe('getAllTravellers', () => {
-        it('should return only users with traveller role', async () => {
-            await User.create({ name: 'Traveller', role: 'traveller' });
-            await User.create({ name: 'Vendor', role: 'vendor' });
-            await User.create({ name: 'Admin', role: 'admin' });
+    it('should return system health metrics', async () => {
+        const health = await AdminService.getSystemHealth();
+        expect(health).toHaveProperty('activeUsers');
+        expect(health).toHaveProperty('errorRate24h');
+    });
 
-            const travellers = await AdminService.getAllTravellers();
-            expect(travellers.length).toBe(1);
-            expect(travellers[0].name).toBe('Traveller');
+    it('should approve a vendor', async () => {
+        const user = await User.create({ email: 'vend@test.com', role: 'vendor', password: 'Password123' });
+        const vendor = await Vendor.create({
+            user: user._id,
+            businessName: 'Test Vendor Co',
+            category: [{ name: 'Hotel', slug: 'hotel' }],
+            bankDetails: {
+                accountHolderName: 'Hemant',
+                accountNumber: '1234567890',
+                ifscCode: 'SBIN0001234',
+                bankName: 'SBI',
+                cancelledCheque: { url: 'http://test.com/cheque.jpg' }
+            },
+            documents: {
+                aadharCard: [{ url: 'http://test.com/aadhar.jpg' }],
+                panCard: { url: 'http://test.com/pan.jpg' },
+                businessRegistration: { url: 'http://test.com/reg.jpg' },
+                gstRegistration: { url: 'http://test.com/gst.jpg' }
+            },
+            verificationStatus: 'pending'
         });
+
+        const approved = await AdminService.approveVendor(vendor._id);
+        expect(approved.verificationStatus).toBe('approved');
     });
 });

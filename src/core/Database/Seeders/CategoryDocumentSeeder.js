@@ -3,11 +3,11 @@ import CategoryDocument from '../../Models/CategoryDocument.js';
 
 const slugify = (text) => {
     return text.toString().toLowerCase()
-        .replace(/\s+/g, '-')           // Replace spaces with -
-        .replace(/[^\w\-]+/g, '')       // Remove all non-word chars
-        .replace(/\-\-+/g, '-')         // Replace multiple - with single -
-        .replace(/^-+/, '')             // Trim - from start
-        .replace(/-+$/, '');            // Trim - from end
+        .replace(/\s+/g, '-')
+        .replace(/[^\w\-]+/g, '')
+        .replace(/\-\-+/g, '-')
+        .replace(/^-+/, '')
+        .replace(/-+$/, '');
 };
 
 const DATA = [
@@ -133,25 +133,22 @@ const DATA = [
 export const seedCategoryDocuments = async () => {
     for (const service of DATA) {
         for (const docName of service.documents) {
-            // Check if document already exists for this category
             let document = await CategoryDocument.findOne({
                 category_slug: service.category_slug,
                 name: docName
             });
 
             if (document) {
-                // Update existing
                 document.isMandatory = false;
                 await document.save();
             } else {
-                // Create new with unique slug logic
                 let baseSlug = slugify(docName);
                 let uniqueSlug = baseSlug;
                 let counter = 2;
 
                 while (true) {
                     const existingSlugDoc = await CategoryDocument.findOne({ slug: uniqueSlug });
-                    if (!existingSlugDoc) break; // Slug is free
+                    if (!existingSlugDoc) break;
                     uniqueSlug = `${baseSlug}-${counter}`;
                     counter++;
                 }

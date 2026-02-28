@@ -2,6 +2,8 @@ import AuthService from '@/services/AuthService.js';
 import OTPService from '@/services/OTPService.js';
 import { successResponse, errorResponse } from '@/helpers/response.js';
 import { parseBody } from '@/helpers/parseBody.js';
+import { parseNestedFormData } from '@/helpers/parseNestedFormData.js';
+import { uploadToCloudinary } from '@/helpers/cloudinary.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 
 class AuthController {
@@ -49,7 +51,7 @@ class AuthController {
             const result = await AuthService.loginWithPassword({ email, password, rememberMe });
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, result);
         } catch (error) {
-            return errorResponse(HTTP_STATUS.UNAUTHORIZED, error.message, {});
+            return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.INVALID_OTP, {});
         }
     }
 
@@ -70,12 +72,13 @@ class AuthController {
                 ...(result.user.toObject ? result.user.toObject() : result.user),
                 token: result.token,
                 isNewUser: result.isNewUser,
-                vendorStatus: result.vendorStatus,
-                vendorProfile: result.vendorProfile
+                businessProfileStatus: result.businessProfileStatus,
+                businessProfile: result.businessProfile
             });
         } catch (error) {
-            const status = error.message === 'Invalid or expired OTP' ? HTTP_STATUS.BAD_REQUEST : HTTP_STATUS.INTERNAL_SERVER_ERROR;
-            return errorResponse(status, error.message, {});
+            const status = error.message === RESPONSE_MESSAGES.AUTH.INVALID_OTP ? HTTP_STATUS.BAD_REQUEST : HTTP_STATUS.INTERNAL_SERVER_ERROR;
+            const msg = error.message === RESPONSE_MESSAGES.AUTH.INVALID_OTP ? RESPONSE_MESSAGES.AUTH.INVALID_OTP : RESPONSE_MESSAGES.ERROR.SERVER_ERROR;
+            return errorResponse(status, msg, {});
         }
     }
 
@@ -88,7 +91,7 @@ class AuthController {
             const result = await AuthService.googleAuth(idToken, role);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, { token: result.token, isNewUser: result.isNewUser, user: result.user });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || 'Invalid Google Token', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS, {});
         }
     }
 
@@ -101,7 +104,7 @@ class AuthController {
             const result = await AuthService.facebookAuth(accessToken, role);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, { token: result.token, isNewUser: result.isNewUser, user: result.user });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || 'Invalid Facebook Token', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS, {});
         }
     }
 
@@ -116,7 +119,7 @@ class AuthController {
             const result = await AuthService.appleAuth(idToken, role, user, email);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, { token: result.token, isNewUser: result.isNewUser, user: result.user });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || 'Invalid Apple Token', {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS, {});
         }
     }
 
@@ -131,7 +134,7 @@ class AuthController {
             const result = await AuthService.verify(token);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.TOKEN_VALID, { result });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.UNAUTHORIZED, error.message, {});
+            return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.TOKEN_INVALID, {});
         }
     }
 
@@ -142,7 +145,7 @@ class AuthController {
             const result = await AuthService.refresh(token);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.TOKEN_REFRESHED, { result });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.UNAUTHORIZED, error.message, {});
+            return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.TOKEN_INVALID, {});
         }
     }
 
@@ -156,13 +159,13 @@ class AuthController {
                 const token = req.headers.get('authorization')?.split(' ')[1];
                 if (!token) return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.NO_TOKEN, {});
                 const user = await AuthService.me(token);
-                return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { user });
+                return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.TOKEN_VALID, { user });
             }
 
             const userProfile = await AuthService.getProfileById(userContext.id);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { user: userProfile });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.USER.FETCHED, userProfile);
         } catch (error) {
-            return errorResponse(HTTP_STATUS.UNAUTHORIZED, error.message, {});
+            return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.TOKEN_INVALID, {});
         }
     }
 
@@ -174,7 +177,7 @@ class AuthController {
             await AuthService.forgetPassword(email);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.PASSWORD_RESET_LINK_SENT, {});
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -186,7 +189,7 @@ class AuthController {
             await AuthService.resetPassword(email, password);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.PASSWORD_RESET_SUCCESS, {});
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -197,31 +200,56 @@ class AuthController {
     async updateProfile(req) {
         try {
             const user = req.user;
-            if (!user || !user.email) {
+            if (!user || !user.id) {
                 return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED, {});
             }
 
-            const body = await parseBody(req);
+            let body;
+            if (req.formDataBody) {
+                body = parseNestedFormData(req.formDataBody);
+
+                // Handle profile image upload
+                const profileImageFile = req.formDataBody.get('profileImage');
+                if (profileImageFile && profileImageFile instanceof File) {
+                    const result = await uploadToCloudinary(profileImageFile, `profile/${user.id}`);
+                    body.profileImage = result.url;
+                }
+            } else {
+                body = await parseBody(req);
+            }
+
             // Prevent users from updating sensitive fields like email, password, role directly through this endpoint
             // (Password/Role should have dedicated endpoints if needed)
             const { email, password, role, _id, ...updates } = body;
 
-            const updatedUser = await AuthService.updateProfile(user.email, updates);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.PROFILE_UPDATED, { user: updatedUser });
+            // Use ID from authenticated user context, which is more reliable than email in body or token
+            const updatedUser = await AuthService.updateProfileById(user.id, updates);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.PROFILE_UPDATED, updatedUser);
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
     async deleteProfile(req) {
         try {
-            const body = await parseBody(req);
-            const { email } = body;
-            if (!email) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.EMAIL_REQUIRED, {});
-            await AuthService.deleteProfile(email);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, {});
+            const user = req.user;
+            if (!user || !user.id) {
+                return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED, {});
+            }
+
+            let reason = null;
+            try {
+                // Try to parse reason from body if available
+                const body = await parseBody(req);
+                reason = body.reason || body.deletedReason;
+            } catch (e) {
+                // Ignore body parsing errors for delete, reason is optional
+            }
+
+            await AuthService.deleteProfileById(user.id, reason);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, {});
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 

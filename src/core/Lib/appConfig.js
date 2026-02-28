@@ -35,7 +35,7 @@ export const getAppConfig = async () => {
                 key_id: dbSettings.razorpay_key_id || process.env.RAZORPAY_KEY_ID || '',
                 key_secret: dbSettings.razorpay_key_secret || process.env.RAZORPAY_KEY_SECRET || '',
             },
-            jwt_secret: dbSettings.jwt_secret || process.env.JWT_SECRET || 'CHANGE_THIS_SECRET',
+            jwt_secret: dbSettings.jwt_secret || process.env.JWT_SECRET,
             mongodb_uri: dbSettings.mongodb_uri || process.env.MONGODB_URI,
             api_url: dbSettings.api_url || process.env.NEXT_PUBLIC_API_URL || APP_DETAILS.APP_URL,
             google: {
@@ -86,7 +86,7 @@ export const getAppConfig = async () => {
                 key_id: process.env.RAZORPAY_KEY_ID || '',
                 key_secret: process.env.RAZORPAY_KEY_SECRET || '',
             },
-            jwt_secret: process.env.JWT_SECRET || 'CHANGE_THIS_SECRET',
+            jwt_secret: process.env.JWT_SECRET,
             mongodb_uri: process.env.MONGODB_URI,
             api_url: process.env.NEXT_PUBLIC_API_URL || APP_DETAILS.APP_URL,
             google: {

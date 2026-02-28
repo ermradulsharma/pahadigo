@@ -63,4 +63,19 @@ describe('User API Integration', () => {
         const data = await response.json();
         expect(data.message).toBe('Unauthorized access');
     });
+
+    it('should fetch and search packages successfully', async () => {
+        const req = {
+            // Mocking Next.js request URL params
+            url: new URL('http://localhost:3000/api/user/packages?q=Himalayan&type=trekking')
+        };
+
+        const response = await UserController.getPackages(req);
+        expect(response.status).toBe(200);
+        const data = await response.json();
+        expect(data.message).toBe('Success');
+        expect(data.data.packages).toBeDefined();
+        // Should find our seeded 'Himalayan Adventure' trek
+        expect(data.data.packages.data.length).toBeGreaterThan(0);
+    });
 });

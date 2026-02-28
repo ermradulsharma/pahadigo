@@ -1,4 +1,8 @@
 
+// ============================================
+// AUTH & USER CONSTANTS
+// ============================================
+
 export const USER_ROLES = {
     ADMIN: 'admin',
     VENDOR: 'vendor',
@@ -9,7 +13,9 @@ export const USER_STATUS = {
     ACTIVE: 'active',
     INACTIVE: 'inactive',
     BLOCKED: 'blocked',
-    PENDING: 'pending'
+    PENDING: 'pending',
+    DELETED: 'deleted',
+    SUSPENDED: 'suspended'
 };
 
 export const AUTH_PROVIDERS = {
@@ -26,27 +32,50 @@ export const GENDER = {
     OTHER: 'other'
 };
 
-export const BOOKING_STATUS = {
+export const VERIFICATION_STATUS = {
     PENDING: 'pending',
-    CONFIRMED: 'confirmed',
-    CANCELLED: 'cancelled',
-    COMPLETED: 'completed'
+    VERIFIED: 'verified',
+    REJECTED: 'rejected'
 };
 
-export const PAYMENT_STATUS = {
-    PENDING: 'pending',
-    PAID: 'paid',
-    FAILED: 'failed'
+export const VENDOR_PROFILE_TYPES = {
+    BUSINESS: 'business',
+    INDIVIDUAL: 'individual'
 };
 
-export const PAYOUT_STATUS = {
-    PENDING: 'pending',
-    PAID: 'paid'
+// ============================================
+// SYSTEM & APP CONFIGURATION
+// ============================================
+
+export const APP_DETAILS = {
+    APP_NAME: 'PahadiGo',
+    APP_URL: 'http://www.pahadigo.com',
+    MAIL_FROM_EMAIL: 'no-reply@pahadigo.com',
+    CONTACT_MAIL_FROM_EMAIL: 'contact@pahadigo.com',
+    PUSH_NOTIFICATION_SERVER_KEY: process.env.FCM_SERVER_KEY
 };
 
-export const REFUND_STATUS = {
-    NONE: 'none',
-    REFUNDED: 'refunded'
+export const APP_SECRETS = {
+    SOCIAL_PASS: process.env.SOCIAL_PASS,
+    OTHER_ACCOUNT_PASS: process.env.OTHER_ACCOUNT_PASS,
+    SMTP_ACCOUNT_PASS: process.env.SMTP_PASS
+};
+
+export const APP_CONSTANTS = {
+    DEFAULT_ERROR_MESSAGE: "Oops! some error occured, please try again",
+    USER_TYPES: ["admin", "vendor", "traveller"],
+    APP_TIMEZONE: 'Asia/Kolkata',
+    WEEKEND_DAYS: {
+        '0': 'Sunday',
+        '1': 'Monday',
+        '2': 'Tuesday',
+        '3': 'Wednesday',
+        '4': 'Thursday',
+        '5': 'Friday',
+        '6': 'Saturday'
+    },
+    MONTH_ARR: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
+    MONTH_ARR_NUMBER: ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
 };
 
 export const PAGINATION = {
@@ -74,10 +103,13 @@ export const FILE_UPLOAD = {
     ALLOWED_IMAGE_TYPES: ['image/jpeg', 'image/png', 'image/webp', 'image/jpg']
 };
 
-export const VERIFICATION_STATUS = {
-    PENDING: 'pending',
-    VERIFIED: 'verified',
-    REJECTED: 'rejected'
+export const UPLOAD_PATHS = {
+    IMAGE_UPLOAD_PATH_ALL: '/uploads/images/',
+    IMAGE_UPLOAD_PATH: '/uploads/profile/',
+    PROVIEWS_MEDIA_UPLOAD_PATH: '/uploads/videos/',
+    THUMBNAIL_UPLOAD_PATH: '/uploads/thumbnail/',
+    CATEGORY_IMAGE_PATH: '/uploads/category/',
+    SUB_CATEGORY_IMAGE_PATH: '/uploads/sub_category/'
 };
 
 export const DEFAULTS = {
@@ -120,28 +152,208 @@ export const SEED_ACCOUNTS = {
     }
 };
 
-export const APP_DETAILS = {
-    APP_NAME: 'PahadiGo',
-    APP_URL: 'http://www.pahadigo.com',
-    MAIL_FROM_EMAIL: 'no-reply@pahadigo.com',
-    CONTACT_MAIL_FROM_EMAIL: 'contact@pahadigo.com',
-    PUSH_NOTIFICATION_SERVER_KEY: process.env.FCM_SERVER_KEY
+export const RESPONSE_MESSAGES = {
+    SUCCESS: {
+        GENERIC: 'Action completed successfully',
+        CREATED: 'Created successfully',
+        UPDATED: 'Updated successfully',
+        DELETED: 'Deleted successfully',
+        FETCHED: 'Retrieved successfully',
+        // Aliases for backward compatibility
+        CREATE: 'Created successfully',
+        UPDATE: 'Updated successfully',
+        DELETE: 'Deleted successfully',
+        FETCH: 'Retrieved successfully',
+
+        LOGGED_IN: 'Login successful',
+        LOGGED_OUT: 'Logged out successfully',
+        SEED: 'Database seeded successfully',
+    },
+    USER: {
+        FETCHED: 'User profile retrieved successfully',
+        UPDATED: 'User profile updated successfully',
+        NOT_FOUND: 'User not found',
+    },
+    ADMIN: {
+        OCR_SUCCESS: 'OCR verification successful',
+        STATS_FETCHED: 'Dashboard stats retrieved successfully',
+        PAYMENT_HISTORY_FETCHED: 'Payment history retrieved successfully',
+        BANNERS_FETCHED: 'Banners retrieved successfully',
+        COUPONS_FETCHED: 'Coupons retrieved successfully',
+        INQUIRIES_FETCHED: 'Inquiries retrieved successfully',
+        AUDIT_LOGS_FETCHED: 'Audit logs retrieved successfully',
+    },
+    POLICY: {
+        CREATED: 'Policy created successfully',
+        UPDATED: 'Policy updated successfully',
+        DELETED: 'Policy deleted successfully',
+        FETCHED: 'Policies retrieved successfully',
+        NOT_FOUND: 'Policy not found',
+    },
+    LOCATION: {
+        COUNTRY_CREATED: 'Country created successfully',
+        STATE_CREATED: 'State created successfully',
+        CITY_CREATED: 'City created successfully',
+        FETCHED: 'Location data retrieved successfully',
+        SEED_INFO: 'Use CLI seeder for locations',
+    },
+    ERROR: {
+        GENERIC: 'Something went wrong',
+        UNAUTHORIZED: 'Unauthorized access',
+        FORBIDDEN: 'Forbidden access',
+        NOT_FOUND: 'Resource not found',
+        BAD_REQUEST: 'Invalid request',
+        INDEX_REQUIRED: 'Index is required for array fields',
+        SERVER_ERROR: 'Internal Server Error',
+        ALREADY_EXISTS: 'Resource already exists',
+        VALIDATION: 'Validation failed',
+        INVALID_CATEGORY: 'Invalid category provided',
+        INVALID_IMAGE: 'Fetched image is too small or invalid',
+        DOCUMENT_NOT_FOUND: 'Document image not found',
+        NOT_IMPLEMENTED: 'Not Implemented',
+    },
+    AUTH: {
+        OTP_SENT: 'OTP sent successfully',
+        OTP_FAILED: 'Failed to send OTP',
+        INVALID_OTP: 'Invalid or expired OTP',
+        INVALID_CREDENTIALS: 'Invalid credentials',
+        ACCOUNT_LOCKED: 'Account is locked',
+        ACCOUNT_SUSPENDED: 'Account is suspended or deleted',
+        PASSWORD_RESET_LINK_SENT: 'Password reset link sent',
+        PASSWORD_RESET_SUCCESS: 'Password reset successfully',
+        TOKEN_EXPIRED: 'Token has expired',
+        TOKEN_INVALID: 'Token is invalid',
+        TOKEN_REQUIRED: 'Authentication token is required',
+        CONFIG_MISSING: 'Authentication service is not configured',
+        DIFFERENT_METHOD: 'Account uses a different login method',
+        VENDORS_ONLY: 'This action is restricted to vendors only',
+        ADMIN_ONLY: 'This action is restricted to administrators only',
+        LOGIN_SUCCESS: 'Login successful',
+        LOGOUT_SUCCESS: 'Logged out successfully',
+        TOKEN_REFRESHED: 'Token refreshed successfully',
+        TOKEN_VALID: 'Token is valid',
+    },
+    PACKAGE: {
+        CREATED: 'Package created successfully',
+        UPDATED: 'Package updated successfully',
+        DELETED: 'Package deleted successfully',
+        NOT_FOUND: 'Package not found',
+        APPROVED: 'Package approved successfully',
+        REJECTED: 'Package rejected',
+        FETCHED: 'Packages retrieved successfully',
+    },
+    ITEM: {
+        ADDED: 'Item added successfully',
+        UPDATED: 'Item updated successfully',
+        DELETED: 'Item deleted successfully',
+        NOT_FOUND: 'Item not found',
+        STATUS_UPDATED: 'Item status updated successfully',
+        FETCHED: 'Items retrieved successfully',
+    },
+    CATEGORY: {
+        CREATED: 'Category created successfully',
+        UPDATED: 'Category updated successfully',
+        DELETED: 'Category deleted successfully',
+        NOT_FOUND: 'Category not found',
+        FETCHED: 'Categories retrieved successfully',
+    },
+    VENDOR: {
+        PROFILE_CREATED: 'Vendor profile created successfully',
+        PROFILE_UPDATED: 'Vendor profile updated successfully',
+        DOCUMENTS_UPLOADED: 'Documents uploaded successfully',
+        BANK_DETAILS_UPDATED: 'Bank details updated successfully',
+        NOT_FOUND: 'Vendor profile not found',
+        INCOMPLETE: 'Vendor profile not completed',
+        STATUS_UPDATED: 'Vendor status updated successfully',
+        DOCUMENT_STATUS_UPDATED: 'Document status updated successfully',
+        FETCHED: 'Vendor profile retrieved successfully',
+    },
+    BOOKING: {
+        CREATED: 'Booking created successfully',
+        UPDATED: 'Booking updated successfully',
+        CANCELLED: 'Booking cancelled successfully',
+        NOT_FOUND: 'Booking not found',
+        REFUND_INITIATED: 'Refund initiated successfully',
+        REFUNDED: 'Booking refunded successfully',
+    },
+    PAYMENT: {
+        INITIATED: 'Payment initiated successfully',
+        COMPLETED: 'Payment completed successfully',
+        FAILED: 'Payment failed',
+        VERIFIED: 'Payment verified successfully',
+        PAYOUT_MARKED: 'Payout marked successfully',
+    },
+    REVIEW: {
+        SUBMITTED: 'Review submitted successfully',
+        UPDATED: 'Review updated successfully',
+        DELETED: 'Review deleted successfully',
+        NOT_FOUND: 'Review not found',
+    },
+    INQUIRY: {
+        SUBMITTED: 'Inquiry submitted successfully',
+        RESOLVED: 'Inquiry marked as resolved',
+        DELETED: 'Inquiry deleted successfully',
+        NOT_FOUND: 'Inquiry not found',
+    }
 };
 
-export const APP_SECRETS = {
-    SOCIAL_PASS: process.env.SOCIAL_PASS,
-    OTHER_ACCOUNT_PASS: process.env.OTHER_ACCOUNT_PASS,
-    SMTP_ACCOUNT_PASS: process.env.SMTP_PASS
+// ============================================
+// BOOKING & PAYMENTS
+// ============================================
+
+export const BOOKING_STATUS = {
+    PENDING: 'pending',
+    CONFIRMED: 'confirmed',
+    CANCELLED: 'cancelled',
+    COMPLETED: 'completed'
 };
 
-export const UPLOAD_PATHS = {
-    IMAGE_UPLOAD_PATH_ALL: '/uploads/images/',
-    IMAGE_UPLOAD_PATH: '/uploads/profile/',
-    PROVIEWS_MEDIA_UPLOAD_PATH: '/uploads/videos/',
-    THUMBNAIL_UPLOAD_PATH: '/uploads/thumbnail/',
-    CATEGORY_IMAGE_PATH: '/uploads/category/',
-    SUB_CATEGORY_IMAGE_PATH: '/uploads/sub_category/'
+export const PAYMENT_STATUS = {
+    PENDING: 'pending',
+    PAID: 'paid',
+    FAILED: 'failed'
 };
+
+export const PAYOUT_STATUS = {
+    PENDING: 'pending',
+    PAID: 'paid'
+};
+
+export const REFUND_STATUS = {
+    NONE: 'none',
+    REFUNDED: 'refunded'
+};
+
+export const PAYMENT_METHODS = {
+    UPI: 'upi',
+    CARD: 'card',
+    NET_BANKING: 'net_banking',
+    WALLET: 'wallet',
+    CASH: 'cash'
+};
+
+export const BOOKING_SOURCE = {
+    WEB: 'web',
+    ANDROID: 'android',
+    IOS: 'ios',
+    ADMIN: 'admin'
+};
+
+export const DISCOUNT_TYPES = {
+    PERCENTAGE: 'percentage',
+    FLAT: 'flat'
+};
+
+export const CURRENCIES = {
+    EUR: 'EUR',
+    GBP: 'GBP',
+    INR: 'INR',
+    USD: 'USD'
+};
+
+// ============================================
+// NOTIFICATIONS
+// ============================================
 
 export const NOTIFICATION_TYPES = {
     BOOKING_CONFIRMED: 'BOOKING_CONFIRMED',
@@ -167,83 +379,297 @@ export const NOTIFICATION_MESSAGES = {
     MESSAGE_RECEIVED: "You have received a new message."
 };
 
-export const APP_CONSTANTS = {
-    DEFAULT_ERROR_MESSAGE: "Oops! some error occured, please try again",
-    USER_TYPES: ["admin", "vendor", "traveller"],
-    APP_TIMEZONE: 'Asia/Kolkata',
-    WEEKEND_DAYS: {
-        '0': 'Sunday',
-        '1': 'Monday',
-        '2': 'Tuesday',
-        '3': 'Wednesday',
-        '4': 'Thursday',
-        '5': 'Friday',
-        '6': 'Saturday'
-    },
-    MONTH_ARR: ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'],
-    MONTH_ARR_NUMBER: ['01', '02', '03', '04', '05', '06', '07', '08', '09', '10', '11', '12']
+// ============================================
+// GENERAL ATTRIBUTES
+// ============================================
+
+export const LANGUAGES = {
+    BENGALI: 'bn',
+    ENGLISH: 'en',
+    GUJARATI: 'gu',
+    HINDI: 'hi',
+    KANNADA: 'kn',
+    MALAYALAM: 'ml',
+    MARATHI: 'mr',
+    PUNJABI: 'pa',
+    TAMIL: 'ta',
+    TELUGU: 'te'
 };
 
-export const RESPONSE_MESSAGES = {
-    SUCCESS: {
-        CREATE: 'Created successfully',
-        UPDATE: 'Updated successfully',
-        DELETE: 'Deleted successfully',
-        FETCH: 'Retrieved successfully',
-        SEED: 'Seeded successfully',
-        PROFILE_CREATED: 'Profile created successfully',
-        PROFILE_UPDATED: 'Profile updated successfully',
-        DOCUMENTS_UPLOADED: 'Documents uploaded successfully',
-        PACKAGE_CREATED: 'Package created successfully',
-        ITEM_ADDED: 'Item added successfully',
-        BANK_DETAILS_SAVED: 'Bank details saved successfully',
-        VENDOR_STATUS_UPDATED: 'Vendor status updated successfully',
-        DOCUMENT_STATUS_UPDATED: 'Document status updated successfully',
-        BOOKING_CREATED: 'Booking created successfully',
-        DOCUMENT_DELETED: 'Document deleted successfully',
-        PAYOUT_MARKED: 'Payout marked successfully',
-        BOOKING_REFUNDED: 'Booking refunded successfully'
+// ============================================
+// PACKAGE CONFIGURATION
+// ============================================
+
+export const PACKAGE = {
+    THEMES: {
+        ADVENTURE: 'adventure',
+        FAMILY: 'family',
+        HONEYMOON: 'honeymoon',
+        NATURE: 'nature',
+        PILGRIMAGE: 'pilgrimage',
+        RELIGIOUS: 'religious',
+        SOLO: 'solo',
+        SPORTS: 'sports',
+        STAYCATION: 'staycation',
+        WEEKEND_GETAWAY: 'weekend_getaway',
+        WILDLIFE: 'wildlife',
+        WORKATION: 'workation',
+        YOGA_WELLNESS: 'yoga_wellness'
     },
-    ERROR: {
-        INTERNAL_SERVER_ERROR: 'Internal Server Error',
-        NOT_IMPLEMENTED: 'Not Implemented',
-        NOT_FOUND: 'Not found',
-        ALREADY_EXISTS: 'Already exists',
-        VENDOR_NOT_FOUND: 'Vendor profile not found',
-        VENDOR_INCOMPLETE: 'Vendor profile not completed',
-        CATEGORY_NOT_FOUND: 'Category not found',
-        POLICY_NOT_FOUND: 'Policy not found',
-        DOCUMENT_NOT_FOUND: 'Document not found',
-        PACKAGE_NOT_FOUND: 'Package not found',
-        ROUTE_NOT_FOUND: 'Route not found'
+
+    TYPES: {
+        BUNGEE_JUMPING: 'bungeeJumping',
+        CAMPING: 'camping',
+        CHARDHAM_TOUR: 'chardhamTour',
+        HOMESTAY: 'homestay',
+        PARAGLIDING: 'paragliding',
+        RAFTING: 'rafting',
+        SKIING: 'skiing',
+        TREKKING: 'trekking',
+        VEHICLE_RENTAL: 'vehicleRental'
     },
-    AUTH: {
-        UNAUTHORIZED: 'Unauthorized access',
-        FORBIDDEN: 'Forbidden access',
-        VENDORS_ONLY: 'Access denied. Vendors only.',
-        ADMIN_ONLY: 'Access denied. Admin only.',
-        OTP_SENT: 'OTP sent successfully',
-        OTP_SEND_FAILED: 'Failed to send OTP',
-        LOGIN_SUCCESS: 'Login successful',
-        LOGOUT_SUCCESS: 'Logged out successfully',
-        TOKEN_VALID: 'Token is valid',
-        TOKEN_REFRESHED: 'Token refreshed',
-        PASSWORD_RESET_LINK_SENT: 'Reset link sent successfully',
-        PASSWORD_RESET_SUCCESS: 'Password reset successfully',
-        NO_TOKEN: 'No token provided'
+
+    DIFFICULTY: {
+        EASY: 'easy',
+        EXTREME: 'extreme',
+        HARD: 'hard',
+        MODERATE: 'moderate'
     },
-    VALIDATION: {
-        REQUIRED_FIELDS: 'All fields are required',
-        FORM_DATA_REQUIRED: 'Multipart form data required',
-        ID_REQUIRED: 'ID is required',
-        NAME_REQUIRED: 'Name is required',
-        CATEGORY_REQUIRED: 'Category is required',
-        INVALID_DATA: 'Invalid data provided',
-        EMAIL_REQUIRED: 'Email is required',
-        PHONE_REQUIRED: 'Phone is required',
-        INVALID_ROLE: 'Invalid role provided',
-        EMAIL_OR_PHONE_REQUIRED: 'Email OR Phone is required',
-        INVALID_EMAIL: 'Invalid email format',
-        INVALID_DATE: 'Invalid date format'
+
+    SEASONS: {
+        ALL_YEAR: 'All Year',
+        AUTUMN: 'Autumn',
+        MONSOON: 'Monsoon',
+        SPRING: 'Spring',
+        SUMMER: 'Summer',
+        WINTER: 'Winter'
+    },
+
+    ACCOMMODATION: {
+        HOTEL_TYPES: {
+            ASHRAM: 'Ashram',
+            BOUTIQUE: 'Boutique',
+            BUDGET: 'Budget',
+            DELUXE: 'Deluxe',
+            DHARAMSHALA: 'Dharamshala',
+            GUEST_HOUSE: 'Guest House',
+            HAVELI: 'Haveli',
+            HERITAGE: 'Heritage',
+            HOSTEL: 'Hostel',
+            LODGE: 'Lodge',
+            LUXURY: 'Luxury',
+            MOTEL: 'Motel',
+            RESORT: 'Resort',
+            SERVICE_APARTMENT: 'Service Apartment'
+        },
+
+        HOMESTAY_TYPES: {
+            // Structure Based
+            BUNGALOW: 'Bungalow',
+            COTTAGE: 'Cottage',
+            FARMSTAY: 'Farmstay',
+            HERITAGE: 'Heritage',
+            KATH_KUNI: 'Kath Kuni',
+            MUDHOUSE: 'Mudhouse',
+            STONE_HOUSE: 'Stone House',
+            TREEHOUSE: 'Treehouse',
+            VILLA: 'Villa',
+            WOODEN_CHALET: 'Wooden Chalet',
+
+            // Location/Experience Based
+            ALPINE: 'Alpine',
+            APPLE_ORCHARD_STAY: 'Apple Orchard Stay',
+            DESERT: 'Desert',
+            JUNGLE: 'Jungle',
+            LUXURY: 'Luxury',
+            OFFBEAT: 'Offbeat',
+            ORCHARD: 'Orchard',
+            RIVERSIDE: 'Riverside',
+            VILLAGE_STAY: 'Village Stay'
+        },
+
+        ROOM_TYPES: {
+            ATTIC: 'Attic',
+            COTTAGE: 'Cottage',
+            DELUXE: 'Deluxe',
+            DORMITORY: 'Dormitory',
+            DUPLEX: 'Duplex',
+            FAMILY_ROOM: 'Family Room',
+            FEMALE_DORM: 'Female Dormitory',
+            GLASS_HOUSE: 'Glass House',
+            MALE_DORM: 'Male Dormitory',
+            MIXED_DORM: 'Mixed Dormitory',
+            MUD_ROOM: 'Mud Room',
+            PAHADI_HOUSE: 'Pahadi House',
+            PENTHOUSE: 'Penthouse',
+            STANDARD: 'Standard',
+            STUDIO: 'Studio Apartment',
+            SUITE: 'Suite',
+            TENT: 'Tent',
+            TREEHOUSE: 'Treehouse',
+            WOODEN_ATTIC: 'Wooden Attic'
+        },
+
+        BED_TYPES: {
+            BUNK: 'Bunk',
+            DOUBLE: 'Double',
+            KING: 'King',
+            QUEEN: 'Queen',
+            SINGLE: 'Single'
+        },
+
+        BATHROOM_TYPES: {
+            PRIVATE: 'Private',
+            SHARED: 'Shared'
+        },
+
+        RENTAL_TYPES: {
+            ENTIRE_PLACE: 'Entire Place',
+            PRIVATE_ROOM: 'Private Room',
+            SHARED_ROOM: 'Shared Room'
+        },
+
+        FOOD_POLICIES: {
+            ALL: 'All',
+            VEG_ONLY: 'Veg Only',
+            EGGETARIAN: 'Eggetarian',
+            JAIN: 'Jain'
+        },
+
+        KITCHEN_ACCESS_TYPES: {
+            NONE: 'None',
+            PRIVATE: 'Private',
+            SHARED: 'Shared',
+            KITCHENETTE: 'Kitchenette'
+        },
+
+        PARKING_TYPES: {
+            PRIVATE: 'Private',
+            STREET: 'Street',
+            PAID: 'Paid Parking',
+            FREE: 'Free Parking'
+        },
+
+        HEATING_TYPES: {
+            ELECTRIC: 'Electric Heater',
+            FIREPLACE: 'Fireplace',
+            BUKHARI: 'Bukhari',
+            CENTRAL: 'Central Heating',
+            BLOWER: 'Blower'
+        },
+
+        MEAL_TYPES: {
+            ALL_MEALS: 'All Meals',
+            BREAKFAST: 'Breakfast',
+            DINNER: 'Dinner',
+            LUNCH: 'Lunch',
+            NO_MEALS: 'No Meals'
+        },
+
+        VIEW_TYPES: {
+            APPLE_ORCHARD: 'Apple Orchard',
+            CITY: 'City',
+            FOREST: 'Forest',
+            GANGA_VIEW: 'Ganga View',
+            GARDEN: 'Garden',
+            HIMALAYAN_VIEW: 'Himalayan View',
+            LAKE: 'Lake',
+            MEADOW: 'Meadow',
+            MOUNTAIN: 'Mountain',
+            NO_VIEW: 'No View',
+            OCEAN: 'Ocean',
+            ORCHARD: 'Orchard',
+            POOL: 'Pool',
+            RIVER: 'River',
+            SEA: 'Sea',
+            SNOW_PEAK: 'Snow Peak',
+            SUNRISE: 'Sunrise',
+            SUNSET: 'Sunset',
+            VALLEY: 'Valley'
+        }
+    },
+
+    ACTIVITY: {
+        TREK_TYPES: {
+            DAY_TREK: 'Day Trek',
+            EXPEDITION: 'Expedition',
+            JUNGLE_TREK: 'Jungle Trek',
+            MULTI_DAY_TREK: 'Multi-Day Trek',
+            SNOW_TREK: 'Snow Trek',
+            SPIRITUAL_TREK: 'Spiritual Trek',
+            SUMMIT_TREK: 'Summit Trek',
+            WINTER_TREK: 'Winter Trek'
+        },
+
+        CAMPING_TYPES: {
+            ALPINE: 'Alpine',
+            BEACH: 'Beach',
+            CAVE: 'Cave',
+            DESERT: 'Desert',
+            FOREST: 'Forest',
+            GLAMPING: 'Glamping',
+            JUNGLE: 'Jungle',
+            LUXURY: 'Luxury',
+            MEADOW: 'Meadow',
+            RIVERSIDE: 'Riverside',
+            TREKKING: 'Trekking'
+        },
+
+        RAPID_GRADES: {
+            I: 'Grade I',
+            II: 'Grade II',
+            III: 'Grade III',
+            IV: 'Grade IV',
+            V: 'Grade V'
+        },
+
+        SKI_DIFFICULTY: {
+            ADVANCED: 'Advanced',
+            BEGINNER: 'Beginner',
+            INTERMEDIATE: 'Intermediate'
+        },
+
+        PARAGLIDING_TYPES: {
+            CROSS_COUNTRY: 'Cross Country',
+            LONG_FLY: 'Long Fly',
+            MEDIUM_FLY: 'Medium Fly',
+            SHORT_FLY: 'Short Fly'
+        }
+    },
+
+    TRANSPORT: {
+        VEHICLE_TYPES: {
+            BIKE: 'Bike',
+            CAMPER_VAN: 'Camper Van',
+            ELECTRIC_VEHICLE: 'Electric Vehicle',
+            HATCHBACK: 'Hatchback',
+            LUXURY_COACH: 'Luxury Coach',
+            MINI_BUS: 'Mini Bus',
+            OFF_ROAD_4X4: 'Off-Road 4x4',
+            SCOOTER: 'Scooter',
+            SEDAN: 'Sedan',
+            SUV: 'SUV',
+            TEMPO_TRAVELLER: 'Tempo Traveller',
+            VINTAGE_CAR: 'Vintage Car',
+            VOLVO_BUS: 'Volvo Bus'
+        },
+
+        TRANSMISSION_TYPES: {
+            AUTOMATIC: 'Automatic',
+            MANUAL: 'Manual'
+        },
+
+        FUEL_POLICIES: {
+            FULL_TO_EMPTY: 'full_to_empty',
+            FULL_TO_FULL: 'full_to_full',
+            SAME_TO_SAME: 'same_to_same'
+        },
+
+        TOUR_MODE: {
+            BUS: 'Bus',
+            TEMPO_TRAVELLER: 'Tempo Traveller',
+            CAR: 'Car',
+            HELICOPTER: 'Helicopter'
+        }
     }
 };

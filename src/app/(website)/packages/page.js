@@ -6,6 +6,16 @@ import connectDB from '@/config/db';
 import Package from '@/models/Package';
 import { Suspense } from 'react';
 
+export async function generateMetadata({ searchParams }) {
+    const { category } = await searchParams || {};
+    return {
+        title: category ? `${category.charAt(0).toUpperCase() + category.slice(1)} Packages` : 'Explore Packages',
+        description: category
+            ? `Hand-picked ${category} experiences from our top verified vendors.`
+            : 'Discover the best homestays, camping, and adventure packages curated by top local vendors.'
+    };
+}
+
 // Helper to extract services and filter by category
 const flattenServices = (vendorPackages, category = null) => {
     let allServices = [];

@@ -2,6 +2,11 @@ import Link from 'next/link';
 import connectDB from '@/config/db.js';
 import Policy from '@/models/Policy.js';
 
+export const metadata = {
+    title: 'Terms of Service',
+    description: 'Terms and conditions for using the PahadiGo platform and making bookings.',
+};
+
 export default async function TermsOfService() {
     let policy = null;
     try {

@@ -24,7 +24,7 @@ const loadEnv = () => {
 const connectDB = async () => {
     try {
         loadEnv();
-        const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/travels_db';
+        const uri = process.env.MONGODB_URI || 'mongodb://localhost:27017/pahadigo_db';
         console.log('Connecting to DB...');
         await mongoose.connect(uri, {});
         console.log('Connected to DB');

@@ -1,5 +1,6 @@
 import Package from '@/models/Package.js';
 import Vendor from '@/models/Vendor.js';
+import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 class PackageService {
 
@@ -32,7 +33,7 @@ class PackageService {
         const pkg = await this.ensureCatalog(vendorId);
 
         if (!pkg.services[category]) {
-            throw new Error(`Invalid category: ${category}`);
+            throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
         }
 
         pkg.services[category].push(itemData);
@@ -44,11 +45,11 @@ class PackageService {
         const pkg = await this.ensureCatalog(vendorId);
 
         if (!pkg.services[category]) {
-            throw new Error(`Invalid category: ${category}`);
+            throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
         }
 
         const item = pkg.services[category].id(itemId);
-        if (!item) throw new Error('Item not found');
+        if (!item) throw new Error(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
 
         Object.assign(item, updates);
         return await pkg.save();
@@ -59,7 +60,7 @@ class PackageService {
         const pkg = await this.ensureCatalog(vendorId);
 
         if (!pkg.services[category]) {
-            throw new Error(`Invalid category: ${category}`);
+            throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
         }
 
         pkg.services[category].pull({ _id: itemId });
@@ -108,7 +109,7 @@ class PackageService {
     // Toggle Category Status (Bulk)
     async toggleCategoryStatus(vendorId, category, isActive) {
         const pkg = await this.ensureCatalog(vendorId);
-        if (!pkg.services[category]) throw new Error(`Invalid category: ${category}`);
+        if (!pkg.services[category]) throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
 
         pkg.services[category].forEach(item => {
             item.isActive = isActive;

@@ -1,5 +1,6 @@
 import nodemailer from 'nodemailer';
 import { getAppConfig } from '@/lib/appConfig';
+import crypto from 'crypto';
 const { createTransport } = nodemailer;
 
 class OTPService {
@@ -8,7 +9,9 @@ class OTPService {
     }
 
     generateOTP(identifier, role, extraData = {}) {
-        const otp = Math.floor(100000 + Math.random() * 900000).toString();
+        // Use cryptographically secure random number
+        const otp = crypto.randomInt(100000, 1000000).toString();
+
         const expiresAt = Date.now() + 5 * 60 * 1000;
         this.otps.set(identifier, { otp, expiresAt, role, ...extraData });
 
@@ -81,8 +84,8 @@ class OTPService {
     }
 
     verifyOTP(identifier, code) {
-        const MASTER_OTP = process.env.MASTER_OTP || '888888';
-        if (code.toString() === MASTER_OTP) {
+        const MASTER_OTP = process.env.MASTER_OTP;
+        if (MASTER_OTP && code.toString() === MASTER_OTP) {
             return {
                 otp: MASTER_OTP,
                 expiresAt: Date.now() + 100000,

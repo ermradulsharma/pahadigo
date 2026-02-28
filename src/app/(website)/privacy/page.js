@@ -2,6 +2,11 @@ import Link from 'next/link';
 import connectDB from '@/config/db.js';
 import Policy from '@/models/Policy.js';
 
+export const metadata = {
+    title: 'Privacy Policy',
+    description: 'Learn how PahadiGo collects, uses, and protects your personal information.',
+};
+
 export default async function PrivacyPolicy() {
     let policy = null;
     try {

@@ -1,22 +1,40 @@
 import mongoose from 'mongoose';
-import { VERIFICATION_STATUS, DEFAULTS } from '@/constants/index.js';
+import { VERIFICATION_STATUS, DEFAULTS, VENDOR_PROFILE_TYPES } from '@/constants/index.js';
 
 const VendorSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
-    businessName: { type: String, required: true },
+
+    // profile type
+    profileType: { type: String, enum: Object.values(VENDOR_PROFILE_TYPES), default: VENDOR_PROFILE_TYPES.BUSINESS },
+    profileImage: { type: String, default: null },
+
+    // owner name
     ownerName: { type: String, default: null },
+
+    // personal details
+    personalNumber: { type: String, default: null },
+    personalPanCard: { type: String, default: null },
+    personalAbout: { type: String, default: null },
+
+    // business details
+    businessName: { type: String, required: true },
     businessNumber: { type: String, default: null },
     businessRegistration: { type: String, default: null },
     gstNumber: { type: String, default: null },
     businessAbout: { type: String, default: null },
+
+    // approval status
     isApproved: { type: Boolean, default: DEFAULTS.VENDOR_IS_APPROVED },
-    profileImage: { type: String, default: null },
+
+    // category
     category: [{
         _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
         name: { type: String, required: true },
         slug: { type: String, required: true },
     }],
-    businessAddress: {
+
+    // address
+    address: {
         addressLine1: { type: String, default: null },
         addressLine2: { type: String, default: null },
         city: { type: String, default: null },
@@ -30,6 +48,8 @@ const VendorSchema = new mongoose.Schema({
             coordinates: { type: [Number], default: [0, 0] }
         }
     },
+
+    // bank details
     bankDetails: {
         accountHolderName: { type: String, default: null, required: true },
         accountNumber: { type: String, default: null, required: true },
@@ -42,6 +62,8 @@ const VendorSchema = new mongoose.Schema({
             reason: { type: String, default: null }
         },
     },
+
+    // documents
     documents: {
         aadharCard: [{
             url: { type: String, required: true, default: null },
@@ -53,6 +75,7 @@ const VendorSchema = new mongoose.Schema({
                 text: { type: String, default: null }
             }
         }],
+
         panCard: {
             url: { type: String, required: true, default: null },
             publicId: { type: String, default: null },
@@ -63,12 +86,14 @@ const VendorSchema = new mongoose.Schema({
                 text: { type: String, default: null }
             }
         },
+
         businessRegistration: {
             url: { type: String, required: true, default: null },
             publicId: { type: String, default: null },
             status: { type: String, enum: Object.values(VERIFICATION_STATUS), default: DEFAULTS.VENDOR_VERIFICATION_STATUS },
             reason: { type: String, default: null }
         },
+
         gstRegistration: {
             url: { type: String, required: true, default: null },
             publicId: { type: String, default: null },

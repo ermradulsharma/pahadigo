@@ -1,6 +1,11 @@
 import Link from 'next/link';
 import PageHero from '@/components/PageHero';
 
+export const metadata = {
+    title: 'Careers',
+    description: 'Join PahadiGo and help build the future of authentic and sustainable travel in the Himalayas.',
+};
+
 export default function Careers() {
     return (
         <div className="bg-gray-50 min-h-screen">

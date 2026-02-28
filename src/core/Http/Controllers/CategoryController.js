@@ -19,19 +19,19 @@ class CategoryController {
             if (!name) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.NAME_REQUIRED, {});
 
             const category = await CategoryService.createCategory(body);
-            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.CREATE, { category });
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.CATEGORY.CREATED, { category });
         } catch (error) {
             if (error.code === 11000) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.ALREADY_EXISTS, {});
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
     async getAll(req) {
         try {
             const categories = await CategoryService.getAllCategories();
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { categories });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.CATEGORY.FETCHED, { categories });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -42,7 +42,7 @@ class CategoryController {
             if (!id) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
 
             const category = await CategoryService.getCategoryById(id);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { category });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.CATEGORY.FETCHED, { category });
         } catch (error) {
             return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.CATEGORY_NOT_FOUND, {});
         }
@@ -58,9 +58,9 @@ class CategoryController {
             const body = req.jsonBody || await req.json();
             const category = await CategoryService.updateCategory(id, body);
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, { category });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.CATEGORY.UPDATED, { category });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -72,9 +72,9 @@ class CategoryController {
             if (!id) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
 
             await CategoryService.deleteCategory(id);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, {});
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.CATEGORY.DELETED, {});
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -85,7 +85,7 @@ class CategoryController {
             const result = await seedCategories();
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.SEED, { result });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 }

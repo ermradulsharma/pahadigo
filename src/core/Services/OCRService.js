@@ -13,8 +13,6 @@ class OCRService {
      */
     async processDocument(buffer) {
         try {
-            console.log(`[OCR] Processing image buffer of size: ${buffer.length} bytes`);
-
             // Navigate from src/core/Services to project root/node_modules
             // Path: src/core/Services/OCRService.js -> ../../../node_modules/...
             const workerPath = path.resolve(__dirname, '../../../node_modules/tesseract.js/src/worker-script/node/index.js');
@@ -28,7 +26,7 @@ class OCRService {
                     if (m.status === 'recognizing text') {
                         const progress = Math.round(m.progress * 100);
                         if (progress % 20 === 0) {
-                            console.log(`[OCR] Progress: ${progress}%`);
+                            // Can be used for debugging if needed
                         }
                     }
                 }
@@ -145,7 +143,7 @@ class OCRService {
             };
         } catch (error) {
             console.error("OCR Processing Error:", error);
-            return { error: error.message };
+            return { error: RESPONSE_MESSAGES.ERROR.SERVER_ERROR };
         }
     }
 }

@@ -9,7 +9,6 @@ class PolicyController {
     }
 
     // GET /admin/policies
-    // GET /admin/policies
     async getPolicies(req) {
         try {
             if (!this._isAdmin(req)) {
@@ -20,9 +19,9 @@ class PolicyController {
             const target = searchParams.get('target');
 
             const policies = await AdminService.getPolicies(target);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { policies });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.POLICY.FETCHED, { policies });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -35,9 +34,9 @@ class PolicyController {
             }
 
             const policies = await AdminService.getPolicies(target);
-            return successResponse(HTTP_STATUS.OK, `${target} policies retrieved successfully`, { policies });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.POLICY.FETCHED, { policies });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -49,7 +48,6 @@ class PolicyController {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             }
 
-            // Map common synonyms to DB enums
             const typeMap = {
                 'privacy-policy': 'privacy_policy',
                 'terms-conditions': 'terms_conditions',
@@ -64,9 +62,9 @@ class PolicyController {
                 return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.POLICY_NOT_FOUND, {});
             }
 
-            return successResponse(HTTP_STATUS.OK, `${target} ${type} retrieved successfully`, { policy });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.POLICY.FETCHED, { policy });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -82,25 +80,20 @@ class PolicyController {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             }
 
-            // Target-specific validation
             const allowedTypes = {
                 admin: ['privacy_policy', 'terms_conditions'],
                 vendor: ['privacy_policy', 'terms_conditions'],
                 traveller: ['privacy_policy', 'terms_conditions', 'refund_policy', 'cancellation_policy']
             };
 
-            if (!allowedTypes[target]) {
+            if (!allowedTypes[target] || !allowedTypes[target].includes(type)) {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.INVALID_DATA, {});
             }
 
-            if (!allowedTypes[target].includes(type)) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, `Type "${type}" is not allowed for target "${target}"`, {});
-            }
-
             const policy = await AdminService.updatePolicy(target, type, content, req.user.id);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, { policy });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.POLICY.UPDATED, { policy });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -114,7 +107,7 @@ class PolicyController {
             const result = await seedPolicies();
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.SEED, { result });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 }

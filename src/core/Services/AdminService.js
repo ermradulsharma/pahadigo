@@ -180,7 +180,7 @@ class AdminService {
 
     async createTraveller(data, req = null) {
         const existing = await User.findOne({ email: data.email });
-        if (existing) throw new Error('User with this email already exists');
+        if (existing) throw new Error(RESPONSE_MESSAGES.ERROR.ALREADY_EXISTS);
 
         const user = await User.create({
             ...data,
@@ -299,13 +299,13 @@ class AdminService {
 
     async toggleServiceStatus(vendorId, serviceType, serviceId, status) {
         const pkg = await Package.findOne({ vendor: vendorId });
-        if (!pkg) throw new Error('Package collection not found for this vendor');
+        if (!pkg) throw new Error(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
 
         const services = pkg.services[serviceType];
         if (!services) throw new Error(`Service type ${serviceType} not found`);
 
         const serviceIndex = services.findIndex(s => s._id.toString() === serviceId);
-        if (serviceIndex === -1) throw new Error('Service not found');
+        if (serviceIndex === -1) throw new Error(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
 
         pkg.services[serviceType][serviceIndex].isActive = status;
         pkg.markModified(`services.${serviceType}`);
@@ -554,7 +554,8 @@ class AdminService {
     }
 
     async getAuditLogs(filter = {}, page = 1, limit = 20) {
-        const skip = (page - 1) * limit;
+        const safeLimit = Math.max(1, Math.min(parseInt(limit) || 20, 500));
+        const skip = (Math.max(1, parseInt(page) || 1) - 1) * safeLimit;
         const query = {};
 
         if (filter.adminId) query.adminId = filter.adminId;
@@ -566,11 +567,11 @@ class AdminService {
             .populate('adminId', 'name email')
             .sort({ createdAt: -1 })
             .skip(skip)
-            .limit(limit);
+            .limit(safeLimit);
 
         const total = await AuditLog.countDocuments(query);
 
-        return { logs, total, pages: Math.ceil(total / limit) };
+        return { logs, total, pages: Math.ceil(total / safeLimit) };
     }
 }
 

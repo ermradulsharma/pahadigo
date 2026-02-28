@@ -1,31 +1,39 @@
-import CategoryService from '../../src/services/CategoryService.js';
-import Category from '../../src/models/Category.js';
+import CategoryService from '../../src/core/Services/CategoryService.js';
+import Category from '../../src/core/Models/Category.js';
 
-describe('CategoryService', () => {
-    it('should be defined', () => {
-        expect(CategoryService).toBeDefined();
+describe('CategoryService Test Suite', () => {
+    let mockCategoryId;
+
+    it('should create a new category', async () => {
+        const cat = await CategoryService.createCategory({
+            name: 'Beach Holidays',
+            description: 'Sunny places'
+        });
+        mockCategoryId = cat._id;
+        expect(cat.name).toBe('Beach Holidays');
+        expect(cat.slug).toBe('beach-holidays');
     });
 
-    describe('createCategory', () => {
-        it('should create a new category', async () => {
-            const data = {
-                name: 'Test Category',
-                description: 'Test Description'
-            };
-            const category = await CategoryService.createCategory(data);
-            expect(category).toBeDefined();
-            expect(category.name).toBe(data.name);
-            expect(category.slug).toBe('test-category');
-        });
+    it('should get all categories sorted by name', async () => {
+        await CategoryService.createCategory({ name: 'Apple Picking' }); // Should come first
+        const categories = await CategoryService.getAllCategories();
+        expect(categories.length).toBeGreaterThanOrEqual(2);
+        expect(categories[0].name).toBe('Apple Picking');
     });
 
-    describe('getAllCategories', () => {
-        it('should return all categories', async () => {
-            await Category.create({ name: 'Cat 1' });
-            await Category.create({ name: 'Cat 2' });
+    it('should retrieve a category by ID', async () => {
+        const cat = await CategoryService.getCategoryById(mockCategoryId);
+        expect(cat.name).toBe('Beach Holidays');
+    });
 
-            const categories = await CategoryService.getAllCategories();
-            expect(categories.length).toBe(2);
-        });
+    it('should update a category and regenerate the slug', async () => {
+        const updated = await CategoryService.updateCategory(mockCategoryId, { name: 'Mountain Treks' });
+        expect(updated.name).toBe('Mountain Treks');
+        expect(updated.slug).toBe('mountain-treks');
+    });
+
+    it('should delete a category', async () => {
+        await CategoryService.deleteCategory(mockCategoryId);
+        await expect(CategoryService.getCategoryById(mockCategoryId)).rejects.toThrow();
     });
 });

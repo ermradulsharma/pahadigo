@@ -27,7 +27,7 @@ class UserController {
 
             const pkg = await PackageService.getPackageById(packageId);
             if (!pkg) {
-                return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.PACKAGE_NOT_FOUND, {});
+                return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.PACKAGE.NOT_FOUND, {});
             }
 
             const bookingDate = new Date(travelDate);
@@ -42,9 +42,9 @@ class UserController {
                 price: pkg.price
             });
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.BOOKING_CREATED, { booking });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.CREATED, { booking });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -74,11 +74,12 @@ class UserController {
                 } catch (e) { console.error("Search Log Error", e); }
             }
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { packages });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, { packages });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 }
 
-export default new UserController();
+const userController = new UserController();
+export default userController;

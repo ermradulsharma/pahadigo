@@ -31,11 +31,15 @@ describe('OTPService', () => {
         expect(result).toBeNull();
     });
 
-    it('should support master OTP', () => {
-        const masterOtp = '888888';
-        const record = OTPService.verifyOTP(email, masterOtp);
+    it('should support dynamic master OTP from env', () => {
+        process.env.MASTER_OTP = '999999';
+        const record = OTPService.verifyOTP(email, '999999');
         expect(record).toBeDefined();
         expect(record.role).toBe('master');
+
+        // Ensure old hardcoded bypass no longer functions
+        const failedRecord = OTPService.verifyOTP(email, '888888');
+        expect(failedRecord).toBeNull();
     });
 
     it('should delete OTP after successful verification', () => {

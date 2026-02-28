@@ -1,7 +1,7 @@
-import AdminController from '../../src/controllers/AdminController.js';
-import Vendor from '../../src/models/Vendor.js';
+import AdminController from '../../src/core/Http/Controllers/AdminController.js';
+import Vendor from '../../src/core/Models/Vendor.js';
 import mongoose from 'mongoose';
-import { USER_ROLES } from '../../src/constants/index.js';
+import { USER_ROLES } from '../../src/core/Constants/index.js';
 
 describe('Admin API Integration', () => {
     it('should fetch stats for admin user', async () => {
@@ -24,14 +24,21 @@ describe('Admin API Integration', () => {
         const response = await AdminController.getStats(req);
         expect(response.status).toBe(403);
         const data = await response.json();
-        expect(data.message).toBe('Access denied. Admin only.');
+        expect(data.message).toBe('This action is restricted to administrators only');
     });
 
     it('should approve a vendor', async () => {
         const vendor = await Vendor.create({
             user: new mongoose.Types.ObjectId(),
             businessName: 'Unapproved Vendor',
-            category: ['Hotel'],
+            category: [{ name: 'Hotel', slug: 'hotel' }],
+            bankDetails: {
+                accountHolderName: 'Hemant',
+                accountNumber: '1234567890',
+                ifscCode: 'SBIN0001234',
+                bankName: 'SBI',
+                cancelledCheque: { url: 'http://test.com/cheque.jpg' }
+            },
             isApproved: false,
             documents: {
                 aadharCard: [{ url: 'http://test.com/aadhar.jpg' }],

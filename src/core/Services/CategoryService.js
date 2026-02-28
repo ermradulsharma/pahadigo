@@ -22,7 +22,7 @@ class CategoryService {
     async getCategoryById(id) {
         try {
             const category = await Category.findById(id);
-            if (!category) throw new Error('Category not found');
+            if (!category) throw new Error(RESPONSE_MESSAGES.CATEGORY.NOT_FOUND);
             return category;
         } catch (error) {
             throw error;
@@ -32,7 +32,7 @@ class CategoryService {
     async updateCategory(id, data) {
         try {
             const category = await Category.findById(id);
-            if (!category) throw new Error('Category not found');
+            if (!category) throw new Error(RESPONSE_MESSAGES.CATEGORY.NOT_FOUND);
 
             // Copy properties
             Object.assign(category, data);

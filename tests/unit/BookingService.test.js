@@ -1,55 +1,46 @@
-import BookingService from '../../src/services/BookingService.js';
-import Booking from '../../src/models/Booking.js';
+import BookingService from '../../src/core/Services/BookingService.js';
+import Booking from '../../src/core/Models/Booking.js';
 import mongoose from 'mongoose';
 
-describe('BookingService', () => {
-    const userId = new mongoose.Types.ObjectId();
-    const packageId = new mongoose.Types.ObjectId();
+describe('BookingService Test Suite', () => {
+    let mockBookingId;
 
-    it('should create a pending booking', async () => {
-        const travelDate = new Date();
-        const price = 5000;
-
-        const booking = await BookingService.createBooking({
-            userId,
-            packageId,
-            travelDate,
-            price
-        });
-
-        expect(booking).toBeDefined();
-        expect(booking.status).toBe('pending');
-        expect(booking.totalPrice).toBe(price);
-        expect(booking.user.toString()).toBe(userId.toString());
-    });
-
-    it('should process a refund', async () => {
+    beforeEach(async () => {
         const booking = await Booking.create({
-            user: userId,
-            package: packageId,
+            user: new mongoose.Types.ObjectId(),
+            package: new mongoose.Types.ObjectId(),
             travelDate: new Date(),
             totalPrice: 1000,
-            status: 'confirmed',
-            paymentStatus: 'paid'
+            status: 'pending',
+            paymentStatus: 'pending',
+            razorpay: { orderId: 'order_test_123' }
         });
-
-        const updated = await BookingService.processRefund(booking._id);
-        expect(updated.status).toBe('cancelled');
-        expect(updated.refundStatus).toBe('refunded');
-        expect(updated.refundAmount).toBe(1000);
+        mockBookingId = booking._id;
     });
 
-    it('should mark a payout', async () => {
-        const booking = await Booking.create({
-            user: userId,
-            package: packageId,
-            travelDate: new Date(),
-            totalPrice: 1000,
-            status: 'confirmed',
-            paymentStatus: 'paid'
-        });
+    it('should successfully process a refund', async () => {
+        const refunded = await BookingService.processRefund(mockBookingId);
+        expect(refunded.status).toBe('cancelled');
+        expect(refunded.refundStatus).toBe('refunded');
+        expect(refunded.refundAmount).toBe(1000);
+    });
 
-        const updated = await BookingService.markPayout(booking._id);
-        expect(updated.payoutStatus).toBe('paid');
+    it('should mark a booking for payout', async () => {
+        const payout = await BookingService.markPayout(mockBookingId);
+        expect(payout.payoutStatus).toBe('paid');
+    });
+
+    it('should update payment status based on razorpay signatures', async () => {
+        const paid = await BookingService.updatePaymentStatus('order_test_123', 'pay_123', 'sig_123');
+        expect(paid.paymentStatus).toBe('paid');
+        expect(paid.status).toBe('confirmed');
+        expect(paid.razorpay.paymentId).toBe('pay_123');
+        expect(paid.razorpay.signature).toBe('sig_123');
+    });
+
+    it('should throw mismatch error for invalid order IDs', async () => {
+        await expect(
+            BookingService.updatePaymentStatus('order_invalid', 'pay', 'sig')
+        ).rejects.toThrow('Booking order mismatch');
     });
 });

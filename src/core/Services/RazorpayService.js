@@ -19,7 +19,7 @@ class RazorpayService {
     async createOrder(amount, receiptId) {
         const instance = await this._getInstance();
         if (!instance) {
-            throw new Error('Razorpay is not configured. Check environment variables or Settings.');
+            throw new Error(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
         }
         const options = {
             amount: amount * 100, // amount in paisa
@@ -44,7 +44,12 @@ class RazorpayService {
         const hmac = crypto.createHmac('sha256', secret);
         hmac.update(orderId + "|" + paymentId);
         const generated_signature = hmac.digest('hex');
-        return generated_signature === signature;
+
+        // Prevent generic timing attacks
+        return crypto.timingSafeEqual(
+            Buffer.from(generated_signature),
+            Buffer.from(signature)
+        );
     }
 }
 

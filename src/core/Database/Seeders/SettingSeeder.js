@@ -30,7 +30,7 @@ export const seedSettings = async () => {
             razorpay_key_secret: process.env.RAZORPAY_KEY_SECRET || '',
 
             // Database
-            mongodb_uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/travels_db',
+            mongodb_uri: process.env.MONGODB_URI || 'mongodb://localhost:27017/pahadigo_db',
             api_url: process.env.NEXT_PUBLIC_API_URL || APP_DETAILS.APP_URL,
 
             // JWT

@@ -14,6 +14,7 @@ export default function VendorDetailsPage({ params }) {
     const [loading, setLoading] = useState(true);
     const [verifying, setVerifying] = useState(null);
     const [previewImage, setPreviewImage] = useState(null);
+    const [showMapModal, setShowMapModal] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
 
     useEffect(() => {
@@ -202,12 +203,23 @@ export default function VendorDetailsPage({ params }) {
                         <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
                             <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">HQ Location</h3>
                             <div className="space-y-4 text-slate-700 font-medium">
-                                <div className="text-lg font-bold text-slate-900 leading-tight">
-                                    {vendor.businessAddress?.city}, {vendor.businessAddress?.state}
-                                </div>
                                 <p className="text-sm text-slate-600 leading-relaxed">
-                                    {vendor.businessAddress?.addressLine1}
+                                    {[
+                                        vendor.address?.addressLine1,
+                                        vendor.address?.addressLine2,
+                                        vendor.address?.city,
+                                        vendor.address?.state,
+                                        vendor.address?.country,
+                                        vendor.address?.pincode
+                                    ].filter(Boolean).join(', ')}
                                 </p>
+
+                                {(vendor.address?.latitude && vendor.address?.longitude) && (
+                                    <button onClick={() => setShowMapModal(true)} className="px-4 py-2 bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 text-slate-700 text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center gap-2 place-self-end">
+                                        <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
+                                        View on Map
+                                    </button>
+                                )}
                             </div>
                         </div>
 
@@ -242,15 +254,14 @@ export default function VendorDetailsPage({ params }) {
                             </div>
 
                             <div className="grid grid-cols-1 gap-8">
-                                <DocumentSection title="Identity: Aadhar Card" docs={vendor.documents?.aadharCard} field="aadharCard" onVerify={verifyDocument} onOCR={triggerOCR} verifying={verifying} onPreview={setPreviewImage} ocr />
-                                <DocumentSection title="Identity: PAN Card" docs={vendor.documents?.panCard} field="panCard" onVerify={verifyDocument} onOCR={triggerOCR} verifying={verifying} onPreview={setPreviewImage} ocr />
-
+                                <DocumentSection title="Aadhar Card" docs={vendor.documents?.aadharCard} field="aadharCard" onVerify={verifyDocument} onOCR={triggerOCR} verifying={verifying} onPreview={setPreviewImage} ocr />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                                    <DocumentSection title="PAN Card" docs={vendor.documents?.panCard} field="panCard" onVerify={verifyDocument} onOCR={triggerOCR} verifying={verifying} onPreview={setPreviewImage} ocr />
                                     <DocumentSection title="Business Registration" docs={vendor.documents?.businessRegistration} field="businessRegistration" onVerify={verifyDocument} onPreview={setPreviewImage} compact />
                                     <DocumentSection title="GST Certificate" docs={vendor.documents?.gstRegistration} field="gstRegistration" onVerify={verifyDocument} onPreview={setPreviewImage} compact />
+                                    <DocumentSection title="Travel Agent Permit" docs={vendor.documents?.travelAgentPermit} field="travelAgentPermit" onVerify={verifyDocument} onPreview={setPreviewImage} />
                                 </div>
 
-                                <DocumentSection title="Travel Agent Permit" docs={vendor.documents?.travelAgentPermit} field="travelAgentPermit" onVerify={verifyDocument} onPreview={setPreviewImage} />
                             </div>
                         </div>
                     </div>
@@ -273,6 +284,24 @@ export default function VendorDetailsPage({ params }) {
 
                         <div className="absolute bottom-8 left-1/2 -translate-x-1/2 px-6 py-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-full text-white/60 text-[10px] font-bold uppercase tracking-[0.2em]">
                             Full Quality Preview
+                        </div>
+                    </div>
+                </div>
+            )}
+
+            {/* Premium Map Modal */}
+            {showMapModal && (
+                <div className="fixed inset-0 z-[100] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
+                    <div className="relative w-full max-w-4xl h-[70vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col scale-100 animate-in zoom-in-95 duration-200">
+                        <button onClick={() => setShowMapModal(false)} className="absolute top-4 right-4 z-50 p-2 bg-white/90 hover:bg-white text-slate-600 hover:text-rose-600 shadow-lg border border-slate-200 backdrop-blur-md rounded-full transition-all" title="Close map">
+                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
+                        </button>
+                        <div className="flex-1 w-full bg-slate-100 relative">
+                            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 z-0">
+                                <div className="w-8 h-8 border-2 border-slate-300 border-t-indigo-500 rounded-full animate-spin mb-3"></div>
+                                <span className="text-xs font-bold uppercase tracking-widest">Loading Map Data...</span>
+                            </div>
+                            <iframe className="absolute inset-0 w-full h-full z-10" src={`https://maps.google.com/maps?q=${vendor.address?.latitude},${vendor.address?.longitude}&z=15&output=embed`} />
                         </div>
                     </div>
                 </div>
@@ -312,16 +341,17 @@ function StatusBadge({ status }) {
 
 function DocumentSection({ title, docs: rawDocs, field, onVerify, onOCR, verifying, onPreview, compact, ocr }) {
     const docs = Array.isArray(rawDocs) ? rawDocs : (rawDocs ? [rawDocs] : []);
+
     if (docs.length === 0) return null;
 
+    console.log(docs.length);
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between px-2">
                 <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em]">{title}</h4>
                 <div className="h-px flex-1 bg-gradient-to-r from-slate-200 to-transparent ml-4"></div>
             </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+            <div className={`grid grid-cols-1 sm:grid-cols-${docs.length} lg:grid-cols-${docs.length} gap-5`}>
                 {docs.map((doc, idx) => (
                     <div key={idx} className="group relative bg-white/40 hover:bg-white backdrop-blur-xl border border-slate-200/60 rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1">
                         {/* Status Float */}
@@ -331,7 +361,7 @@ function DocumentSection({ title, docs: rawDocs, field, onVerify, onOCR, verifyi
 
                         {/* SaaS Ultra Image Preview */}
                         <div className="relative h-44 w-full bg-slate-950 overflow-hidden cursor-zoom-in group" onClick={() => onPreview(doc.url)}>
-                            <Image src={doc.url} alt={title} fill className="object-contain transition-transform duration-700 group-hover:scale-105" />
+                            <Image src={doc.url} alt={title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
 
                             {/* Glassmorphism Zoom Indicator */}
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
@@ -346,7 +376,7 @@ function DocumentSection({ title, docs: rawDocs, field, onVerify, onOCR, verifyi
                             <div className="flex items-center justify-between">
                                 <div className="flex flex-col">
                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Reference</span>
-                                    <span className="text-[11px] font-mono text-slate-600 mt-1">#{doc.url.split('/').pop().slice(-8)}</span>
+                                    <span className="text-[11px] font-mono text-slate-600 mt-1">#{doc.url?.split('/').pop().slice(-8) || 'N/A'}</span>
                                 </div>
                                 {doc.status !== 'verified' && ocr && (
                                     <button disabled={verifying === `${field}-${idx}`} onClick={() => onOCR(field, idx)} className="h-8 px-3 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase tracking-wider hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-2">

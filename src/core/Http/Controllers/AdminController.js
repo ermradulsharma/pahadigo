@@ -23,9 +23,9 @@ class AdminController {
 
             const stats = await AdminService.getDashboardStats();
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { stats });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ADMIN.STATS_FETCHED, { stats });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -36,9 +36,9 @@ class AdminController {
 
             const bookings = await AdminService.getAllBookings();
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { bookings });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.FETCHED || RESPONSE_MESSAGES.SUCCESS.FETCHED, { bookings });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -48,9 +48,9 @@ class AdminController {
             if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const vendors = await AdminService.getAllVendors();
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { vendors });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, { vendors });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -60,9 +60,9 @@ class AdminController {
             if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const travellers = await AdminService.getAllTravellers();
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { travellers });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, { travellers });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -77,9 +77,9 @@ class AdminController {
             }
 
             const traveller = await AdminService.createTraveller(body, req);
-            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.CREATE, { traveller });
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.CREATED, { traveller });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -107,9 +107,9 @@ class AdminController {
 
             await Vendor.findByIdAndUpdate(vendorId, updateData);
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.VENDOR_STATUS_UPDATED, {});
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.STATUS_UPDATED, {});
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -125,25 +125,29 @@ class AdminController {
             }
 
             const vendor = await Vendor.findById(vendorId);
-            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
+            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             let doc = null;
             if (Array.isArray(vendor.documents[documentField])) {
-                if (typeof index !== 'number') return errorResponse(HTTP_STATUS.BAD_REQUEST, "Index is required for array fields", {});
+                if (typeof index !== 'number') return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.INDEX_REQUIRED, {});
                 doc = vendor.documents[documentField][index];
             } else {
                 doc = vendor.documents[documentField];
             }
 
-            if (!doc || !doc.url) return errorResponse(HTTP_STATUS.NOT_FOUND, "Document image not found", {});
+            if (!doc || !doc.url) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.DOCUMENT_NOT_FOUND, {});
 
             // 1. Fetch Image
             // Optimize URL for OCR: Force JPEG and auto-quality to ensure compatibility
+            const docUrl = new URL(doc.url);
+            if (docUrl.hostname !== 'res.cloudinary.com') {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, "Invalid Document Host. SSRF blocked.", {});
+            }
+
             const optimizedUrl = doc.url.includes('cloudinary')
                 ? doc.url.replace('/upload/', '/upload/f_jpg,q_auto/')
                 : doc.url;
 
-            console.log(`[AdminOCR] Fetching image from: ${optimizedUrl}`);
             const imgRes = await fetch(optimizedUrl);
 
             if (!imgRes.ok) {
@@ -151,27 +155,22 @@ class AdminController {
             }
 
             const buffer = Buffer.from(await imgRes.arrayBuffer());
-            console.log(`[AdminOCR] Image fetched, size: ${buffer.length} bytes`);
+
 
             if (buffer.length < 100) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, "Fetched image is too small or invalid", {});
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.INVALID_IMAGE, {});
             }
 
             // 2. Run OCR
-            console.log(`[AdminOCR] Starting OCR processing for ${documentField}...`);
+
             const ocrResult = await OCRService.processDocument(buffer);
-            console.log(`[AdminOCR] OCR Result:`, ocrResult.error ? 'Error' : 'Success');
+
 
             if (ocrResult.error) {
-                return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, "OCR Processing failed: " + ocrResult.error, {});
+                return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
             }
 
-            console.log(`[AdminOCR] Extracted Data:`, {
-                name: ocrResult.name,
-                id: ocrResult.identifiedId,
-                dob: ocrResult.dob,
-                type: ocrResult.idType
-            });
+
 
             // 3. Save to VerifiedIdentity table
             const identityData = {
@@ -209,11 +208,11 @@ class AdminController {
             vendor.isApproved = true; // Auto-approve vendor on successful OCR
             await vendor.save();
 
-            return successResponse(HTTP_STATUS.OK, "OCR Verification Successful", { identity: identityData });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ADMIN.OCR_SUCCESS, { identity: identityData });
 
         } catch (error) {
             console.error("Admin OCR Error:", error);
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -229,7 +228,7 @@ class AdminController {
             }
 
             const vendor = await Vendor.findById(vendorId);
-            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.VENDOR_NOT_FOUND, {});
+            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             if (!vendor.documents || !vendor.documents[documentField]) {
                 return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.DOCUMENT_NOT_FOUND, {});
@@ -252,9 +251,9 @@ class AdminController {
             vendor.markModified('documents');
             await vendor.save();
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DOCUMENT_STATUS_UPDATED, {});
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.DOCUMENT_STATUS_UPDATED, {});
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -268,9 +267,9 @@ class AdminController {
             if (!vendorId) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
 
             const pkg = await PackageService.createPackage(vendorId, pkgData);
-            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.PACKAGE_CREATED, { pkg });
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.PACKAGE.CREATED, { pkg });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -285,10 +284,11 @@ class AdminController {
 
             await BookingService.markPayout(bookingId);
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.PAYOUT_MARKED, {});
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.PAYMENT.PAYOUT_MARKED, {});
         } catch (error) {
             const status = error.message === 'Booking not found' ? HTTP_STATUS.NOT_FOUND : HTTP_STATUS.INTERNAL_SERVER_ERROR;
-            return errorResponse(status, error.message, {});
+            const msg = error.message === 'Booking not found' ? RESPONSE_MESSAGES.BOOKING.NOT_FOUND : RESPONSE_MESSAGES.ERROR.SERVER_ERROR;
+            return errorResponse(status, msg, {});
         }
     }
 
@@ -303,10 +303,11 @@ class AdminController {
 
             await BookingService.processRefund(bookingId);
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.BOOKING_REFUNDED, {});
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.REFUNDED, {});
         } catch (error) {
             const status = error.message === 'Booking not found' ? HTTP_STATUS.NOT_FOUND : HTTP_STATUS.INTERNAL_SERVER_ERROR;
-            return errorResponse(status, error.message, {});
+            const msg = error.message === 'Booking not found' ? RESPONSE_MESSAGES.BOOKING.NOT_FOUND : RESPONSE_MESSAGES.ERROR.SERVER_ERROR;
+            return errorResponse(status, msg, {});
         }
     }
 
@@ -317,9 +318,9 @@ class AdminController {
 
             const history = await AdminService.getPaymentHistory();
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { history });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ADMIN.PAYMENT_HISTORY_FETCHED, { history });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -329,9 +330,9 @@ class AdminController {
             if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const packages = await AdminService.getAllServices();
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { packages });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, { packages });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -349,7 +350,7 @@ class AdminController {
             const updated = await AdminService.toggleServiceStatus(vendorId, serviceType, serviceId, status);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.SERVICE_STATUS_UPDATED || "Status updated", { updated });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -359,9 +360,9 @@ class AdminController {
             if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const reviews = await AdminService.getAllReviews();
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { reviews });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, { reviews });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -377,9 +378,9 @@ class AdminController {
             }
 
             const updated = await AdminService.toggleReviewVisibility(reviewId, isVisible, req);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, { updated });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, { updated });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -392,9 +393,9 @@ class AdminController {
             if (!id) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
 
             await AdminService.deleteReview(id, req);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, {});
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, {});
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -407,15 +408,15 @@ class AdminController {
             const body = req.jsonBody || await req.json();
             if (!body.imageUrl) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             const banner = await AdminService.createBanner(body, req);
-            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.CREATE, { banner });
-        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.CREATED, { banner });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
     }
 
     async getBanners(req) {
         try {
             const banners = await AdminService.getBanners();
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { banners });
-        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ADMIN.BANNERS_FETCHED, { banners });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
     }
 
     async updateBanner(req, { params }) {
@@ -423,16 +424,16 @@ class AdminController {
             if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const banner = await AdminService.updateBanner(params.id, body, req);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, { banner });
-        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, { banner });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
     }
 
     async deleteBanner(req, { params }) {
         try {
             if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             await AdminService.deleteBanner(params.id, req);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, {});
-        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, {});
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
     }
 
     // Coupons
@@ -444,10 +445,11 @@ class AdminController {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             }
             const coupon = await AdminService.createCoupon(body, req);
-            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.CREATE, { coupon });
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.CREATED, { coupon });
         } catch (e) {
-            const status = e.code === 11000 ? HTTP_STATUS.ALREADY_EXIST : HTTP_STATUS.INTERNAL_SERVER_ERROR;
-            return errorResponse(status, e.message, {});
+            const status = e.code === 11000 ? HTTP_STATUS.BAD_REQUEST : HTTP_STATUS.INTERNAL_SERVER_ERROR;
+            const msg = e.code === 11000 ? RESPONSE_MESSAGES.ERROR.ALREADY_EXISTS : RESPONSE_MESSAGES.ERROR.SERVER_ERROR;
+            return errorResponse(status, msg, {});
         }
     }
 
@@ -455,8 +457,8 @@ class AdminController {
         try {
             if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const coupons = await AdminService.getCoupons();
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { coupons });
-        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ADMIN.COUPONS_FETCHED, { coupons });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
     }
 
     async updateCoupon(req, { params }) {
@@ -464,16 +466,16 @@ class AdminController {
             if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const coupon = await AdminService.updateCoupon(params.id, body, req);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, { coupon });
-        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, { coupon });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
     }
 
     async deleteCoupon(req, { params }) {
         try {
             if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             await AdminService.deleteCoupon(params.id, req);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, {});
-        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, {});
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
     }
 
     // --- Support & Inquiries ---
@@ -486,16 +488,16 @@ class AdminController {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             }
             const inquiry = await AdminService.submitInquiry(body);
-            return successResponse(HTTP_STATUS.CREATED, "Inquiry submitted successfully", { inquiry });
-        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.INQUIRY.SUBMITTED, { inquiry });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
     }
 
     async getInquiries(req) {
         try {
             if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const inquiries = await AdminService.getInquiries();
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { inquiries });
-        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ADMIN.INQUIRIES_FETCHED, { inquiries });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
     }
 
     async updateInquiry(req, { params }) {
@@ -503,16 +505,16 @@ class AdminController {
             if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const inquiry = await AdminService.updateInquiry(params.id, body);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATE, { inquiry });
-        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, { inquiry });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
     }
 
     async deleteInquiry(req, { params }) {
         try {
             if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             await AdminService.deleteInquiry(params.id);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETE, {});
-        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, {});
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
     }
 
     // --- Analytics ---
@@ -545,8 +547,8 @@ class AdminController {
                 data = await AdminService.getAnalyticsData(period);
             }
 
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, { analytics: data });
-        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, { analytics: data });
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
     }
 
     // --- Audit Logs ---
@@ -564,8 +566,8 @@ class AdminController {
             const limit = parseInt(url.searchParams.get('limit') || '20');
 
             const result = await AdminService.getAuditLogs({ adminId, action, target, startDate }, page, limit);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCH, result);
-        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, e.message, {}); }
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ADMIN.AUDIT_LOGS_FETCHED, result);
+        } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
     }
 }
 

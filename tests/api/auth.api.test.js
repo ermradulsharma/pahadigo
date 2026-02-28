@@ -35,4 +35,23 @@ describe('Auth API Integration', () => {
         const data = await response.json();
         expect(data.message).toBe('Invalid email format');
     });
+
+    it('should successfully complete login flow and issue JWT token', async () => {
+        const email = 'fullauth@example.com';
+        await AuthController.sendOtp({ jsonBody: { email, role: USER_ROLES.TRAVELLER } });
+
+        // We know from OTPService tests that this goes to temporary storage but we'll use a mocked env OTP for speed
+        process.env.MASTER_OTP = '112233';
+
+        const req = {
+            jsonBody: { email, otp: '112233' }
+        };
+
+        const response = await AuthController.verifyOtp(req);
+        expect(response.status).toBe(200);
+        const data = await response.json();
+        expect(data.message).toBe('Verified successfully');
+        expect(data.data.token).toBeDefined(); // Token issuance verification
+        expect(typeof data.data.token).toBe('string');
+    });
 });

@@ -1,119 +1,403 @@
 import mongoose from 'mongoose';
+import { PACKAGE } from '@/constants/index.js';
 
 // --- Service Sub-Schemas ---
 
+const priceWithDecimal = { type: Number, required: true, default: 0, min: 0, get: (v) => (Math.round(v * 100) / 100).toFixed(2), set: (v) => Math.round(v * 100) / 100 };
+const optionalPriceWithDecimal = { type: Number, default: 0, min: 0, get: (v) => (Math.round(v * 100) / 100).toFixed(2), set: (v) => Math.round(v * 100) / 100 };
+
 const HomestaySchema = new mongoose.Schema({
-    roomType: { type: String, required: true },
-    minGuestPerRoom: { type: Number, required: true },
-    pricePerNight: { type: Number, required: true },
-    mealsIncluded: { type: String }, // Array of strings (Breakfast, Dinner)
-    location: { type: String, required: true },
-    amenities: [{
-        title: { type: String }
-    }],
+    // --- Basic Info ---
+    title: { type: String, default: '' },
+    description: { type: String, default: '' },
+    isActive: { type: Boolean, default: true },
+
+    // --- Type & Classification ---
+    homestayType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.HOMESTAY_TYPES), default: PACKAGE.ACCOMMODATION.HOMESTAY_TYPES.COTTAGE, required: true },
+    rentalType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.RENTAL_TYPES), default: PACKAGE.ACCOMMODATION.RENTAL_TYPES.PRIVATE_ROOM },
+    roomType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.ROOM_TYPES), default: PACKAGE.ACCOMMODATION.ROOM_TYPES.STANDARD, required: true },
+
+    // --- Pricing & Capacity ---
+    pricing: {
+        pricePerNight: optionalPriceWithDecimal,
+        maxGuestPerRoom: { type: Number, default: 2 },
+        maxAdults: { type: Number, default: 2 },
+        maxChildren: { type: Number, default: 1 },
+        childPrice: optionalPriceWithDecimal,
+        extraBedAvailable: { type: Boolean, default: false },
+        extraBedPrice: optionalPriceWithDecimal
+    },
+
+    // --- Room Details ---
+    roomDetails: {
+        roomSize: { type: Number },
+        bedType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.BED_TYPES), default: PACKAGE.ACCOMMODATION.BED_TYPES.DOUBLE },
+        bathroomType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.BATHROOM_TYPES), default: PACKAGE.ACCOMMODATION.BATHROOM_TYPES.PRIVATE },
+        baths: { type: Number, default: 1 },
+        balcony: { type: Boolean, default: false },
+        view: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.VIEW_TYPES), default: PACKAGE.ACCOMMODATION.VIEW_TYPES.MOUNTAIN }
+    },
+
+    // --- Policies & Timings ---
+    timings: {
+        checkIn: { type: String, default: '12:00 PM' },
+        checkOut: { type: String, default: '11:00 AM' },
+    },
+    policies: {
+        houseRules: [{ type: String, default: '' }],
+        cancellationPolicy: { type: String, default: '' },
+        isCouplesFriendly: { type: Boolean, default: false },
+        isPetFriendly: { type: Boolean, default: false },
+        isSmokingAllowed: { type: Boolean, default: false },
+    },
+
+    // --- Location Details ---
+    location: {
+        address: { type: String, required: true, default: '' },
+        latitude: { type: String, default: null },
+        longitude: { type: String, default: null },
+        coordinates: {
+            type: { type: String, default: 'Point' },
+            coordinates: { type: [Number], default: [0, 0] }
+        }
+    },
+
+    // --- Media ---
     photos: [{
-        url: { type: String },
-        type: { type: String }
+        url: { type: String, default: '' },
+        type: { type: String, default: '' }
     }],
-    isActive: { type: Boolean, default: true }
-});
+
+    seoMetadata: {
+        metaTitle: { type: String, default: '' },
+        metaDescription: { type: String, default: '' },
+        keywords: [{ type: String, default: '' }]
+    }
+}, { toJSON: { getters: true }, toObject: { getters: true } });
 
 const CampingSchema = new mongoose.Schema({
-    campingType: { type: String, required: true },
-    pricePerPerson: { type: Number, required: true },
-    foodIncluded: { type: Boolean, default: false },
-    activitiesIncluded: [{ type: String }],
-    location: { type: String, required: true },
-    photos: [{
-        url: { type: String },
-        type: { type: String }
-    }],
-    isActive: { type: Boolean, default: true }
-});
+    title: { type: String, required: true, default: '' },
+    description: { type: String, required: true, default: '' },
+    isActive: { type: Boolean, default: true },
+
+    pricing: {
+        pricePerPerson: optionalPriceWithDecimal,
+        foodIncluded: { type: Boolean, default: false },
+        maxGuests: { type: Number, default: 2 },
+    },
+
+    details: {
+        campingType: { type: String, enum: Object.values(PACKAGE.ACTIVITY.CAMPING_TYPES), default: PACKAGE.ACTIVITY.CAMPING_TYPES.RIVERSIDE },
+        activitiesIncluded: [{ type: String }],
+    },
+
+    timings: {
+        checkIn: { type: String, default: '12:00 PM' },
+        checkOut: { type: String, default: '11:00 AM' },
+    },
+
+    policies: {
+        houseRules: [{ type: String, default: '' }],
+        cancellationPolicy: { type: String, default: '' },
+    },
+
+    location: {
+        address: { type: String, required: true, default: '' },
+        latitude: { type: String, default: null },
+        longitude: { type: String, default: null },
+        coordinates: {
+            type: { type: String, default: 'Point' },
+            coordinates: { type: [Number], default: [0, 0] }
+        }
+    },
+    amenities: [{ title: { type: String, default: '' } }],
+    photos: [{ url: { type: String, default: '' }, type: { type: String, default: '' } }],
+    seoMetadata: {
+        metaTitle: { type: String, default: '' },
+        metaDescription: { type: String, default: '' },
+        keywords: [{ type: String, default: '' }]
+    }
+}, { toJSON: { getters: true }, toObject: { getters: true } });
 
 const TrekkingSchema = new mongoose.Schema({
-    trekkingName: { type: String, required: true },
-    duration: { type: String, required: true },
-    difficultyLevel: { type: String },
-    bestSeason: { type: String },
-    pricePerPerson: { type: Number, required: true },
-    location: { type: String, required: true },
-    amenities: [{
-        title: { type: String }
+    title: { type: String, required: true, default: '' },
+    description: { type: String, required: true, default: '' },
+    isActive: { type: Boolean, default: true },
+
+    pricing: {
+        pricePerPerson: optionalPriceWithDecimal,
+    },
+
+    details: {
+        trekType: { type: String, enum: Object.values(PACKAGE.ACTIVITY.TREK_TYPES), default: PACKAGE.ACTIVITY.TREK_TYPES.DAY_TREK },
+        difficultyLevel: { type: String, enum: Object.values(PACKAGE.DIFFICULTY), default: PACKAGE.DIFFICULTY.EASY },
+        bestSeason: { type: String, enum: Object.values(PACKAGE.SEASONS), default: PACKAGE.SEASONS.ALL_YEAR },
+        duration: { type: String, default: '' },
+        maxAltitude: { type: String, default: '' },
+        trekDistance: { type: String, default: '' },
+        guideAvailable: { type: Boolean, default: true },
+        inclusions: [{ type: String, default: '' }],
+        exclusions: [{ type: String, default: '' }],
+    },
+
+    itinerary: [{
+        day: { type: Number, default: 1 },
+        title: { type: String, default: '' },
+        description: { type: String, default: '' }
     }],
-    photos: [{
-        url: { type: String },
-        type: { type: String }
-    }],
-    isActive: { type: Boolean, default: true }
-});
+
+    location: {
+        address: { type: String, required: true, default: '' },
+        latitude: { type: String, default: null },
+        longitude: { type: String, default: null },
+        coordinates: {
+            type: { type: String, default: 'Point' },
+            coordinates: { type: [Number], default: [0, 0] }
+        }
+    },
+    amenities: [{ title: { type: String, default: '' } }],
+    photos: [{ url: { type: String, default: '' }, type: { type: String, default: '' } }],
+    seoMetadata: {
+        metaTitle: { type: String, default: '' },
+        metaDescription: { type: String, default: '' },
+        keywords: [{ type: String, default: '' }]
+    }
+}, { toJSON: { getters: true }, toObject: { getters: true } });
 
 const RaftingSchema = new mongoose.Schema({
-    stretchName: { type: String, required: true },
-    distanceKm: { type: Number, required: true },
-    duration: { type: String },
-    difficultyLevel: { type: String },
-    pricePerPerson: { type: Number, required: true },
-    location: { type: String, required: true },
-    amenities: [{
-        title: { type: String }
-    }],
-    photos: [{
-        url: { type: String },
-        type: { type: String }
-    }],
-    isActive: { type: Boolean, default: true }
-});
+    title: { type: String, required: true, default: '' },
+    description: { type: String, required: true, default: '' },
+    isActive: { type: Boolean, default: true },
+
+    pricing: {
+        pricePerPerson: optionalPriceWithDecimal,
+    },
+
+    details: {
+        stretchName: { type: String, default: '' },
+        distanceKm: { type: Number, default: 0 },
+        duration: { type: String, default: '' },
+        difficultyLevel: { type: String, enum: Object.values(PACKAGE.DIFFICULTY), default: PACKAGE.DIFFICULTY.EASY },
+        rapidGrade: { type: String, enum: Object.values(PACKAGE.ACTIVITY.RAPID_GRADES), default: PACKAGE.ACTIVITY.RAPID_GRADES.I },
+        batchSize: { type: Number, default: 0 },
+        safetyGearProvided: { type: Boolean, default: true },
+    },
+
+    policies: {
+        minAge: { type: Number, default: 0 },
+        maxAge: { type: Number, default: 0 },
+        maxWeightKg: { type: Number, default: 0 },
+    },
+
+    location: {
+        address: { type: String, default: null },
+        latitude: { type: String, default: null },
+        longitude: { type: String, default: null },
+        coordinates: {
+            type: { type: String, default: 'Point' },
+            coordinates: { type: [Number], default: [0, 0] }
+        }
+    },
+    amenities: [{ title: { type: String, default: '' } }],
+    photos: [{ url: { type: String, default: '' }, type: { type: String, default: '' } }],
+    seoMetadata: {
+        metaTitle: { type: String, default: '' },
+        metaDescription: { type: String, default: '' },
+        keywords: [{ type: String, default: '' }]
+    }
+}, { toJSON: { getters: true }, toObject: { getters: true } });
 
 const BungeeSchema = new mongoose.Schema({
-    jumpName: { type: String, required: true },
-    heightMeters: { type: Number },
-    minAge: { type: Number },
-    maxWeightKg: { type: Number },
-    pricePerPerson: { type: Number, required: true },
-    location: { type: String, required: true },
-    amenities: [{
-        title: { type: String }
-    }],
-    photos: [{
-        url: { type: String },
-        type: { type: String }
-    }],
-    isActive: { type: Boolean, default: true }
-});
+    title: { type: String, required: true, default: '' },
+    description: { type: String, required: true, default: '' },
+    isActive: { type: Boolean, default: true },
+
+    pricing: {
+        pricePerPerson: optionalPriceWithDecimal,
+    },
+
+    details: {
+        jumpName: { type: String, default: '' },
+        heightMeters: { type: Number, default: 0 },
+        safetyStandards: { type: String, default: '' },
+        videoIncluded: { type: Boolean, default: false },
+        transferIncluded: { type: Boolean, default: false },
+    },
+
+    policies: {
+        minAge: { type: Number, default: 0 },
+        maxWeightKg: { type: Number, default: 0 },
+    },
+
+    location: {
+        address: { type: String, default: null },
+        latitude: { type: String, default: null },
+        longitude: { type: String, default: null },
+        coordinates: {
+            type: { type: String, default: 'Point' },
+            coordinates: { type: [Number], default: [0, 0] }
+        }
+    },
+    amenities: [{ title: { type: String, default: '' } }],
+    photos: [{ url: { type: String, default: '' }, type: { type: String, default: '' } }],
+    seoMetadata: {
+        metaTitle: { type: String, default: '' },
+        metaDescription: { type: String, default: '' },
+        keywords: [{ type: String, default: '' }]
+    }
+}, { toJSON: { getters: true }, toObject: { getters: true } });
 
 const VehicleRentalSchema = new mongoose.Schema({
-    vehicleType: { type: String, required: true }, // Bike, Car
-    model: { type: String, required: true },
-    pricePerDay: { type: Number, required: true },
-    fuelPolicy: { type: String },
-    location: { type: String, required: true },
-    amenities: [{
-        title: { type: String }
-    }],
-    photos: [{
-        url: { type: String },
-        type: { type: String }
-    }],
-    isActive: { type: Boolean, default: true }
-});
+    title: { type: String, required: true, default: '' },
+    description: { type: String, required: true, default: '' },
+    isActive: { type: Boolean, default: true },
+
+    pricing: {
+        pricePerDay: optionalPriceWithDecimal,
+        depositAmount: optionalPriceWithDecimal,
+    },
+
+    vehicleDetails: {
+        vehicleType: { type: String, enum: Object.values(PACKAGE.TRANSPORT.VEHICLE_TYPES), default: PACKAGE.TRANSPORT.VEHICLE_TYPES.BIKE },
+        model: { type: String, default: '' },
+        brand: { type: String, default: '' },
+        year: { type: Number, default: new Date().getFullYear() },
+        transmission: { type: String, enum: Object.values(PACKAGE.TRANSPORT.TRANSMISSION_TYPES), default: PACKAGE.TRANSPORT.TRANSMISSION_TYPES.MANUAL },
+        seats: { type: Number, default: 2 },
+        fuelPolicy: { type: String, enum: Object.values(PACKAGE.TRANSPORT.FUEL_POLICIES), default: PACKAGE.TRANSPORT.FUEL_POLICIES.FULL_TO_FULL },
+    },
+
+    policies: {
+        minAge: { type: Number, default: 18 },
+    },
+
+    location: {
+        address: { type: String, default: null },
+        latitude: { type: String, default: null },
+        longitude: { type: String, default: null },
+        coordinates: {
+            type: { type: String, default: 'Point' },
+            coordinates: { type: [Number], default: [0, 0] }
+        }
+    },
+    amenities: [{ title: { type: String, default: '' } }],
+    photos: [{ url: { type: String, default: '' }, type: { type: String, default: '' } }],
+    seoMetadata: {
+        metaTitle: { type: String, default: '' },
+        metaDescription: { type: String, default: '' },
+        keywords: [{ type: String, default: '' }]
+    }
+}, { toJSON: { getters: true }, toObject: { getters: true } });
 
 const ChardhamTourSchema = new mongoose.Schema({
-    tourName: { type: String, required: true },
-    duration: { type: String, required: true },
-    placesCovered: [{ type: String }],
-    pricePerPerson: { type: Number, required: true },
-    inclusions: { type: String },
-    bestSeason: { type: String },
-    amenities: [{
-        title: { type: String }
-    }],
-    photos: [{
-        url: { type: String },
-        type: { type: String }
-    }],
-    isActive: { type: Boolean, default: true }
-});
+    title: { type: String, required: true, default: '' },
+    description: { type: String, required: true, default: '' },
+    isActive: { type: Boolean, default: true },
+
+    pricing: {
+        pricePerPerson: optionalPriceWithDecimal,
+    },
+
+    tourDetails: {
+        tourName: { type: String, default: '' },
+        duration: { type: String, default: '' },
+        placesCovered: [{ type: String }],
+        bestSeason: { type: String, enum: Object.values(PACKAGE.SEASONS), default: PACKAGE.SEASONS.ALL_YEAR },
+        transportType: { type: String, enum: Object.values(PACKAGE.TRANSPORT.TOUR_MODE) },
+        hotelType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.HOTEL_TYPES), default: PACKAGE.ACCOMMODATION.HOTEL_TYPES.BUDGET },
+        nightStayLocations: [{ type: String }],
+        inclusions: { type: String, default: '' },
+    },
+
+    location: {
+        address: { type: String, default: null },
+        latitude: { type: String, default: null },
+        longitude: { type: String, default: null },
+        coordinates: {
+            type: { type: String, default: 'Point' },
+            coordinates: { type: [Number], default: [0, 0] }
+        }
+    },
+    amenities: [{ title: { type: String, default: '' } }],
+    photos: [{ url: { type: String, default: '' }, type: { type: String, default: '' } }],
+    seoMetadata: {
+        metaTitle: { type: String, default: '' },
+        metaDescription: { type: String, default: '' },
+        keywords: [{ type: String, default: '' }]
+    }
+}, { toJSON: { getters: true }, toObject: { getters: true } });
+
+const SkiingSchema = new mongoose.Schema({
+    title: { type: String, required: true, default: '' },
+    description: { type: String, required: true, default: '' },
+    isActive: { type: Boolean, default: true },
+
+    pricing: {
+        pricePerPerson: optionalPriceWithDecimal,
+    },
+
+    details: {
+        slopeName: { type: String, default: '' },
+        difficultyLevel: { type: String, enum: Object.values(PACKAGE.ACTIVITY.SKI_DIFFICULTY), default: PACKAGE.ACTIVITY.SKI_DIFFICULTY.BEGINNER },
+        duration: { type: String, default: '' },
+        instructorIncluded: { type: Boolean, default: true },
+        equipmentIncluded: { type: Boolean, default: true },
+        videoIncluded: { type: Boolean, default: false },
+    },
+
+    location: {
+        address: { type: String, default: null },
+        latitude: { type: String, default: null },
+        longitude: { type: String, default: null },
+        coordinates: {
+            type: { type: String, default: 'Point' },
+            coordinates: { type: [Number], default: [0, 0] }
+        }
+    },
+    amenities: [{ title: { type: String, default: '' } }],
+    photos: [{ url: { type: String, default: '' }, type: { type: String, default: '' } }],
+    seoMetadata: {
+        metaTitle: { type: String, default: '' },
+        metaDescription: { type: String, default: '' },
+        keywords: [{ type: String, default: '' }]
+    }
+}, { toJSON: { getters: true }, toObject: { getters: true } });
+
+const ParaglidingSchema = new mongoose.Schema({
+    title: { type: String, required: true, default: '' },
+    description: { type: String, required: true, default: '' },
+    isActive: { type: Boolean, default: true },
+
+    pricing: {
+        pricePerPerson: optionalPriceWithDecimal,
+    },
+
+    details: {
+        siteName: { type: String, default: '' },
+        flyType: { type: String, enum: Object.values(PACKAGE.ACTIVITY.PARAGLIDING_TYPES), default: PACKAGE.ACTIVITY.PARAGLIDING_TYPES.SHORT_FLY },
+        duration: { type: String, default: '' },
+        heightFeet: { type: Number, default: 0 },
+        videoIncluded: { type: Boolean, default: false },
+        transferIncluded: { type: Boolean, default: false },
+    },
+
+    location: {
+        address: { type: String, default: null },
+        latitude: { type: String, default: null },
+        longitude: { type: String, default: null },
+        coordinates: {
+            type: { type: String, default: 'Point' },
+            coordinates: { type: [Number], default: [0, 0] }
+        }
+    },
+    amenities: [{ title: { type: String, default: '' } }],
+    photos: [{ url: { type: String, default: '' }, type: { type: String, default: '' } }],
+    seoMetadata: {
+        metaTitle: { type: String, default: '' },
+        metaDescription: { type: String, default: '' },
+        keywords: [{ type: String, default: '' }]
+    }
+}, { toJSON: { getters: true }, toObject: { getters: true } });
 
 
 // --- Root Catalog Schema ---
@@ -129,9 +413,11 @@ const VendorPackageSchema = new mongoose.Schema({
         rafting: [RaftingSchema],
         bungeeJumping: [BungeeSchema],
         vehicleRental: [VehicleRentalSchema],
-        chardhamTour: [ChardhamTourSchema]
+        chardhamTour: [ChardhamTourSchema],
+        skiing: [SkiingSchema],
+        paragliding: [ParaglidingSchema]
     },
-    price: { type: Number, default: 0 },
+    price: { type: Number, default: 0, min: 0 },
 
     createdAt: { type: Date, default: Date.now }
 });

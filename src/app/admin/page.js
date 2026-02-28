@@ -103,7 +103,7 @@ export default function AdminDashboard() {
                             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                                 <h3 className="text-lg font-bold text-gray-800 mb-6">Revenue Trend</h3>
                                 <div className="h-64">
-                                    <ResponsiveContainer width="100%" height="100%">
+                                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                         <AreaChart data={analyticsData.revenueData}>
                                             <defs>
                                                 <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -125,7 +125,7 @@ export default function AdminDashboard() {
                             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
                                 <h3 className="text-lg font-bold text-gray-800 mb-6">Booking Distribution</h3>
                                 <div className="h-64 flex items-center justify-center">
-                                    <ResponsiveContainer width="100%" height="100%">
+                                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                         <PieChart>
                                             <Pie data={analyticsData.bookingStatus} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" >
                                                 {analyticsData.bookingStatus.map((entry, index) => (
@@ -145,7 +145,7 @@ export default function AdminDashboard() {
                             <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-2">
                                 <h3 className="text-lg font-bold text-gray-800 mb-6">User Growth</h3>
                                 <div className="h-64">
-                                    <ResponsiveContainer width="100%" height="100%">
+                                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
                                         <BarChart data={analyticsData.userGrowth}>
                                             <CartesianGrid strokeDasharray="3 3" vertical={false} />
                                             <XAxis dataKey="_id" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />

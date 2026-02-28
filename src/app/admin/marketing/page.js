@@ -43,7 +43,10 @@ function BannersManager() {
 
     const fetchBanners = async () => {
         try {
-            const res = await fetch('/api/admin/marketing/banners');
+            const token = getToken();
+            const res = await fetch('/api/admin/marketing/banners', {
+                headers: { 'Authorization': `Bearer ${token}` }
+            });
             const data = await res.json();
             if (data.success) setBanners(data.data.banners || []);
         } catch (e) {

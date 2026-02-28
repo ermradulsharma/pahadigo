@@ -5,14 +5,12 @@ import { Country, State } from 'country-state-city';
 export const seedLocations = async () => {
     try {
         console.log('Seeding Locations from country-state-city...');
-
         const allCountries = Country.getAllCountries();
         let countriesCreated = 0;
         let statesCreated = 0;
 
         for (const c of allCountries) {
             try {
-                // validation check
                 if (!c.currency) {
                     console.warn(`Skipping ${c.name} (${c.isoCode}): No currency defined`);
                     continue;
@@ -33,7 +31,6 @@ export const seedLocations = async () => {
                 );
                 countriesCreated++;
 
-                // Get states for this country
                 const countryStates = State.getStatesOfCountry(c.isoCode);
 
                 if (countryStates && countryStates.length > 0) {
@@ -58,15 +55,11 @@ export const seedLocations = async () => {
                         }
                     }));
 
-                    // Batch process states
                     if (stateOps.length > 0) {
                         try {
                             await StateModel.bulkWrite(stateOps, { ordered: false });
                             statesCreated += stateOps.length;
                         } catch (stateError) {
-                            // Some might still fail if both code and name conflict with DIFFERENT existing records
-                            // but $or should cover most cases where one of them matches.
-                            // We log and continue.
                             console.error(`Error seeding states for ${c.name}:`, stateError.message);
                         }
                     }

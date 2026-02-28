@@ -2,9 +2,12 @@ import { NextResponse } from 'next/server';
 import routesImport from '@/routes/api.js';
 import dbConnect from '@/config/db.js';
 import authMiddleware from '@/middleware/auth.js';
+import { rateLimit } from '@/middleware/rateLimit.js';
 import { HTTP_STATUS } from '@/constants/index.js';
 
 const routes = Array.isArray(routesImport) ? routesImport : (routesImport.default || []);
+const authRateLimiter = rateLimit({ limit: 5, windowMs: 60 * 1000 }); // 5 requests per minute
+
 
 function findRoute(method, slug) {
     const path = '/' + slug.join('/').replace(/\/$/, '');
@@ -38,16 +41,31 @@ async function handler(req, { params }) {
 
         if (!match) {
             return NextResponse.json({
-                error: 'Route not found',
-                debug: { method, path: '/' + slug.join('/') }
+                success: false,
+                message: 'Route not found',
+                data: { method, path: '/' + slug.join('/') }
             }, { status: HTTP_STATUS.NOT_FOUND });
         }
         const { routeDef, params: routeParams } = match;
+        const path = '/' + slug.join('/').replace(/\/$/, '');
+
+        // --- Rate Limiting for Auth Routes ---
+        if (path.startsWith('/auth/otp') || path.startsWith('/auth/login')) {
+            const limitResponse = await authRateLimiter(req, { params });
+            if (limitResponse instanceof Response) {
+                return limitResponse; // Blocked by rate limit
+            }
+        }
+
         let userContext = null;
         if (routeDef.middleware && routeDef.middleware.includes('auth')) {
             const authResult = await authMiddleware(req);
             if (!authResult.authorized) {
-                return NextResponse.json({ error: authResult.message }, { status: HTTP_STATUS.UNAUTHORIZED });
+                return NextResponse.json({
+                    success: false,
+                    message: authResult.message || 'Unauthorized access',
+                    data: {}
+                }, { status: HTTP_STATUS.UNAUTHORIZED });
             }
             userContext = authResult.user;
         }
@@ -59,13 +77,9 @@ async function handler(req, { params }) {
         const contentType = req.headers.get('content-type') || '';
         try {
             if (contentType.includes('multipart/form-data')) {
-                console.log(`[API] Parsing multipart/form-data...`);
                 req.formDataBody = await req.formData();
-                console.log(`[API] multipart/form-data parsed successfully`);
             } else if (contentType.includes('application/json')) {
-                console.log(`[API] Parsing application/json...`);
                 req.jsonBody = await req.json();
-                console.log(`[API] application/json parsed successfully`);
             }
         } catch (parseError) {
             console.warn("API: Body parsing attempt failed (might be already consumed or empty):", parseError.message);
@@ -80,7 +94,16 @@ async function handler(req, { params }) {
         }
 
         // Support Legacy Format { status, data }
-        return NextResponse.json(result.data, { status: result.status || HTTP_STATUS.OK });
+        if (result && typeof result === 'object' && result.data && (result.success !== undefined)) {
+            return NextResponse.json(result, { status: result.status || HTTP_STATUS.OK });
+        }
+
+        // Ensure legacy format is wrapped correctly
+        return NextResponse.json({
+            success: result.success ?? true,
+            message: result.message ?? 'Success',
+            data: result.data ?? result
+        }, { status: result.status || HTTP_STATUS.OK });
     } catch (error) {
         console.error("API Handler Error:", error);
         return NextResponse.json({
