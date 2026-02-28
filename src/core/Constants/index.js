@@ -197,6 +197,14 @@ export const RESPONSE_MESSAGES = {
         FETCHED: 'Location data retrieved successfully',
         SEED_INFO: 'Use CLI seeder for locations',
     },
+    VALIDATION: {
+        REQUIRED_FIELDS: 'All required fields must be provided',
+        EMAIL_REQUIRED: 'Email address is required',
+        PHONE_REQUIRED: 'Phone number is required',
+        EMAIL_OR_PHONE_REQUIRED: 'Either email or phone number is required',
+        INVALID_EMAIL: 'Invalid email format',
+        INVALID_ROLE: 'Invalid user role'
+    },
     ERROR: {
         GENERIC: 'Something went wrong',
         UNAUTHORIZED: 'Unauthorized access',
