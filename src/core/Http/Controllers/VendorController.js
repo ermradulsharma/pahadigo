@@ -9,6 +9,7 @@ import Category from '@/models/Category.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, PACKAGE } from '@/constants/index.js';
 import { parseNestedFormData } from '@/helpers/parseNestedFormData.js';
 import { uploadToCloudinary } from '@/helpers/cloudinary.js';
+import { log } from 'console';
 
 class VendorController {
 
@@ -421,21 +422,7 @@ class VendorController {
             if (!packages) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             const catalog = await PackageService.getVendorCatalog(packages._id);
-            const allowedServices = await PackageService._getAllowedCategories(user.id);
-            const catalogObj = catalog.toObject();
-            const filteredServices = {};
-            allowedServices.forEach(key => {
-                if (catalogObj[key]) {
-                    filteredServices[key] = catalogObj[key];
-                }
-            });
-
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, {
-                _id: catalogObj._id,
-                vendor: catalogObj.vendor,
-                services: filteredServices,
-                createdAt: catalogObj.createdAt
-            });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, catalog);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
@@ -491,7 +478,8 @@ class VendorController {
             const updatedCatalog = await PackageService.addServiceItem(vendor._id, category, item);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ITEM.ADDED, updatedCatalog);
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+            const status = error.message && (error.message.includes('not authorized') || error.message.includes('Invalid category')) ? HTTP_STATUS.BAD_REQUEST : HTTP_STATUS.INTERNAL_SERVER_ERROR;
+            return errorResponse(status, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -643,7 +631,7 @@ class VendorController {
             bedType: PACKAGE.ACCOMMODATION.BED_TYPES,
             bathroomType: PACKAGE.ACCOMMODATION.BATHROOM_TYPES,
             view: PACKAGE.ACCOMMODATION.VIEW_TYPES,
-            mealsIncluded: PACKAGE.ACCOMMODATION.MEAL_TYPES,
+            mealType: PACKAGE.ACCOMMODATION.MEAL_TYPES,
             campingType: PACKAGE.ACTIVITY.CAMPING_TYPES,
             difficultyLevel: PACKAGE.DIFFICULTY,
             bestSeason: PACKAGE.SEASONS,
@@ -694,9 +682,8 @@ class VendorController {
         }
 
         if (item.amenities && Array.isArray(item.amenities)) {
-            item.amenities = item.amenities.map(a =>
-                typeof a === 'string' ? { title: a } : a
-            );
+            // Keep it as a string instead of mapping to object, as new schema expects String
+            item.amenities = item.amenities.join(', ');
         }
 
         return item;

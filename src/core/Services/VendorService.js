@@ -39,8 +39,7 @@ class VendorService {
     }
 
     async getFullProfile(userId) {
-        return await Vendor.findOne({ user: userId, deletedAt: null })
-            .populate('user', 'email phone role');
+        return await Vendor.findOne({ user: userId, deletedAt: null }).populate('user', 'email phone role');
     }
 
     async deleteProfile(userId, deletedBy) {

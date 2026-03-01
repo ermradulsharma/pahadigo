@@ -567,11 +567,32 @@ export const PACKAGE = {
         },
 
         MEAL_TYPES: {
+            // General Options
+            NO_MEALS: 'No Meals',
+            FOOD_INCLUDED: 'Food Included',
             ALL_MEALS: 'All Meals',
+
+            // Single Meals
             BREAKFAST: 'Breakfast',
-            DINNER: 'Dinner',
             LUNCH: 'Lunch',
-            NO_MEALS: 'No Meals'
+            DINNER: 'Dinner',
+            BREAKFAST_ONLY: 'Breakfast Only',
+            LUNCH_ONLY: 'Lunch Only',
+            DINNER_ONLY: 'Dinner Only',
+
+            // Combinations
+            BREAKFAST_LUNCH: 'Breakfast & Lunch',
+            BREAKFAST_DINNER: 'Breakfast & Dinner',
+            LUNCH_DINNER: 'Lunch & Dinner',
+            BREAKFAST_LUNCH_DINNER: 'Breakfast, Lunch & Dinner',
+
+            // Dietary Preferences
+            VEG_ONLY: 'Veg Only',
+            EGGETARIAN: 'Eggetarian',
+            NON_VEG: 'Non Veg',
+            VEG_NON_VEG: 'Veg & Non Veg',
+            VEGAN: 'Vegan',
+            JAIN: 'Jain'
         },
 
         VIEW_TYPES: {

@@ -63,7 +63,8 @@ const HomestaySchema = new mongoose.Schema({
     },
 
     amenities: { type: String, default: '' },
-    mealsIncluded: { type: String, default: '' },
+    mealsIncluded: { type: Boolean, default: true },
+    mealType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.MEAL_TYPES), default: PACKAGE.ACCOMMODATION.MEAL_TYPES.NO_MEALS },
 
     // --- Location Details ---
     location: {
@@ -95,15 +96,29 @@ const CampingSchema = new mongoose.Schema({
     description: { type: String, required: true, default: '' },
     isActive: { type: Boolean, default: true },
 
+    // --- Availability ---
+    availability: {
+        totalRooms: { type: Number, default: 0 },
+        availableRooms: { type: Number, default: 0 },
+        occupiedRooms: { type: Number, default: 0 },
+        reservedRooms: { type: Number, default: 0 },
+        cancelledRooms: { type: Number, default: 0 }
+    },
+
+    // --- Pricing & Capacity ---
     pricing: {
         pricePerPerson: optionalPriceWithDecimal,
-        foodIncluded: { type: Boolean, default: false },
         maxGuests: { type: Number, default: 2 },
+        maxAdults: { type: Number, default: 2 },
+        maxChildren: { type: Number, default: 1 },
+        childPrice: optionalPriceWithDecimal,
+        extraBedAvailable: { type: Boolean, default: false },
+        extraBedPrice: optionalPriceWithDecimal,
     },
 
     details: {
         campingType: { type: String, enum: Object.values(PACKAGE.ACTIVITY.CAMPING_TYPES), default: PACKAGE.ACTIVITY.CAMPING_TYPES.RIVERSIDE },
-        activitiesIncluded: [{ type: String }],
+        activitiesIncluded: { type: String, default: '' },
     },
 
     timings: {
@@ -111,9 +126,16 @@ const CampingSchema = new mongoose.Schema({
         checkOut: { type: String, default: '11:00 AM' },
     },
 
+    // --- Policies ---
     policies: {
-        houseRules: [{ type: String, default: '' }],
+        campingRules: { type: String, default: '' },
+        campingSafetyRules: { type: String, default: '' },
         cancellationPolicy: { type: String, default: '' },
+        isCouplesFriendly: { type: Boolean, default: false },
+        isPetFriendly: { type: Boolean, default: false },
+        isSmokingAllowed: { type: Boolean, default: false },
+        isCampfireAllowed: { type: Boolean, default: false },
+        isMusicAllowed: { type: Boolean, default: false }
     },
 
     location: {
@@ -125,12 +147,16 @@ const CampingSchema = new mongoose.Schema({
             coordinates: { type: [Number], default: [0, 0] }
         }
     },
-    amenities: [{ title: { type: String, default: '' } }],
+
+    amenities: { type: String, default: '' },
+    mealsIncluded: { type: Boolean, default: true },
+    mealType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.MEAL_TYPES), default: PACKAGE.ACCOMMODATION.MEAL_TYPES.NO_MEALS },
+
     photos: [{ url: { type: String, default: '' }, type: { type: String, default: '' } }],
     seoMetadata: {
         metaTitle: { type: String, default: '' },
         metaDescription: { type: String, default: '' },
-        keywords: [{ type: String, default: '' }]
+        keywords: { type: String, default: '' }
     }
 }, { toJSON: { getters: true }, toObject: { getters: true } });
 
