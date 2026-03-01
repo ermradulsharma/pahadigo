@@ -9,6 +9,7 @@ import Category from '@/models/Category.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, PACKAGE } from '@/constants/index.js';
 import { parseNestedFormData } from '@/helpers/parseNestedFormData.js';
 import { uploadToCloudinary } from '@/helpers/cloudinary.js';
+import { mapToGeoJSON } from '@/helpers/geoUtils.js';
 import { log } from 'console';
 
 class VendorController {
@@ -65,16 +66,12 @@ class VendorController {
                     country: parsedData.address?.country || null,
                     pincode: parsedData.address?.pincode || null,
                     latitude: parsedData.address?.latitude || null,
-                    longitude: parsedData.address?.longitude || null,
-                    location: {
-                        type: 'Point',
-                        coordinates: [
-                            parseFloat(parsedData.address?.longitude) || 0,
-                            parseFloat(parsedData.address?.latitude) || 0
-                        ]
-                    }
+                    longitude: parsedData.address?.longitude || null
                 }
             };
+
+            // Map latitude and longitude to GeoJSON point in 'location' property
+            mapToGeoJSON(data.address, 'location');
 
             // Basic validation
             if (data.profileType === 'business' && !data.businessName) {
@@ -684,6 +681,13 @@ class VendorController {
         if (item.amenities && Array.isArray(item.amenities)) {
             // Keep it as a string instead of mapping to object, as new schema expects String
             item.amenities = item.amenities.join(', ');
+        }
+
+        // Map latitude and longitude to GeoJSON coordinates using Helper
+        mapToGeoJSON(item.location);
+        if (item.details) {
+            mapToGeoJSON(item.details.startPoint);
+            mapToGeoJSON(item.details.endPoint);
         }
 
         return item;

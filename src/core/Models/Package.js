@@ -165,10 +165,22 @@ const TrekkingSchema = new mongoose.Schema({
     description: { type: String, required: true, default: '' },
     isActive: { type: Boolean, default: true },
 
-    pricing: {
-        pricePerPerson: optionalPriceWithDecimal,
+    // --- Availability ---
+    availability: {
+        totalRooms: { type: Number, default: 0 },
+        availableRooms: { type: Number, default: 0 },
+        occupiedRooms: { type: Number, default: 0 },
+        reservedRooms: { type: Number, default: 0 },
+        cancelledRooms: { type: Number, default: 0 }
     },
 
+    // --- Pricing ---
+    pricing: {
+        pricePerPerson: optionalPriceWithDecimal,
+        porterPricePerDay: optionalPriceWithDecimal,
+    },
+
+    // --- Core Details ---
     details: {
         trekType: { type: String, enum: Object.values(PACKAGE.ACTIVITY.TREK_TYPES), default: PACKAGE.ACTIVITY.TREK_TYPES.DAY_TREK },
         difficultyLevel: { type: String, enum: Object.values(PACKAGE.DIFFICULTY), default: PACKAGE.DIFFICULTY.EASY },
@@ -177,16 +189,54 @@ const TrekkingSchema = new mongoose.Schema({
         maxAltitude: { type: String, default: '' },
         trekDistance: { type: String, default: '' },
         guideAvailable: { type: Boolean, default: true },
-        inclusions: [{ type: String, default: '' }],
-        exclusions: [{ type: String, default: '' }],
+        porterAvailable: { type: Boolean, default: false },
+        muleAvailable: { type: Boolean, default: false },
+        minAge: { type: Number, default: 12 },
+        fitnessLevelRequired: { type: String, default: '' },
+        startPoint: {
+            name: { type: String, default: '' },
+            latitude: { type: String, default: null },
+            longitude: { type: String, default: null },
+            coordinates: {
+                type: { type: String, default: 'Point' },
+                coordinates: { type: [Number], default: [0, 0] }
+            }
+        },
+        endPoint: {
+            name: { type: String, default: '' },
+            latitude: { type: String, default: null },
+            longitude: { type: String, default: null },
+            coordinates: {
+                type: { type: String, default: 'Point' },
+                coordinates: { type: [Number], default: [0, 0] }
+            }
+        },
+        baseCamp: { type: String, default: '' },
+        inclusions: { type: String, default: '' },
+        exclusions: { type: String, default: '' },
     },
 
+    // --- Timings ---
+    timings: {
+        departureTime: { type: String, default: '06:00 AM' },
+        reportingTime: { type: String, default: '05:30 AM' },
+    },
+
+    // --- Itinerary ---
     itinerary: [{
         day: { type: Number, default: 1 },
         title: { type: String, default: '' },
         description: { type: String, default: '' }
     }],
 
+    // --- Policies ---
+    policies: {
+        thingsToCarry: { type: String, default: '' },
+        healthAdvisory: { type: String, default: '' },
+        cancellationPolicy: { type: String, default: '' },
+    },
+
+    // --- Location Details ---
     location: {
         address: { type: String, required: true, default: '' },
         latitude: { type: String, default: null },
@@ -196,12 +246,20 @@ const TrekkingSchema = new mongoose.Schema({
             coordinates: { type: [Number], default: [0, 0] }
         }
     },
-    amenities: [{ title: { type: String, default: '' } }],
+
+    // --- Extra Information ---
+    amenities: { type: String, default: '' },
+    mealsIncluded: { type: Boolean, default: true },
+    mealType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.MEAL_TYPES), default: PACKAGE.ACCOMMODATION.MEAL_TYPES.NO_MEALS },
+
+    // --- Media ---
     photos: [{ url: { type: String, default: '' }, type: { type: String, default: '' } }],
+
+    // --- SEO ---
     seoMetadata: {
         metaTitle: { type: String, default: '' },
         metaDescription: { type: String, default: '' },
-        keywords: [{ type: String, default: '' }]
+        keywords: { type: String, default: '' }
     }
 }, { toJSON: { getters: true }, toObject: { getters: true } });
 
