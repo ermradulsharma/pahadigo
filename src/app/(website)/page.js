@@ -308,11 +308,11 @@ export default async function Home() {
                                     </div>
                                 </div>
                                 <div className="relative">
-                                    <select id="subject" className="peer w-full border-b-2 border-gray-200 bg-transparent py-3 text-gray-900 focus:border-primary-600 focus:outline-none transition-colors appearance-none">
-                                        <option value="" disabled selected>Select a topic</option>
-                                        <option>General Inquiry</option>
-                                        <option>Support</option>
-                                        <option>Vendor Partnership</option>
+                                    <select id="subject" defaultValue="" className="peer w-full border-b-2 border-gray-200 bg-transparent py-3 text-gray-900 focus:border-primary-600 focus:outline-none transition-colors appearance-none">
+                                        <option value="" disabled>Select a topic</option>
+                                        <option value="General Inquiry">General Inquiry</option>
+                                        <option value="Support">Support</option>
+                                        <option value="Vendor Partnership">Vendor Partnership</option>
                                     </select>
                                     <label htmlFor="subject" className="absolute left-0 -top-3.5 text-xs text-gray-500 transition-all peer-focus:-top-3.5 peer-focus:text-xs peer-focus:text-primary-600">Subject</label>
                                 </div>
