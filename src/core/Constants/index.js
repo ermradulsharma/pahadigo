@@ -429,7 +429,9 @@ export const PACKAGE = {
         BUNGEE_JUMPING: 'bungeeJumping',
         CAMPING: 'camping',
         CHARDHAM_TOUR: 'chardhamTour',
+        CUSTOM_TRIP: 'customTrip',
         HOMESTAY: 'homestay',
+        HOTEL: 'hotel',
         PARAGLIDING: 'paragliding',
         RAFTING: 'rafting',
         SKIING: 'skiing',
@@ -699,6 +701,12 @@ export const PACKAGE = {
             TEMPO_TRAVELLER: 'Tempo Traveller',
             CAR: 'Car',
             HELICOPTER: 'Helicopter'
+        },
+
+        CUSTOM_TRIP_SERVICE_TYPES: {
+            POINT_TO_POINT: 'Point-to-Point',
+            OUTSTATION: 'Outstation',
+            FULL_DAY_RENTAL: 'Full-Day Rental'
         }
     }
 };
