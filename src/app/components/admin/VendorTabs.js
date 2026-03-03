@@ -10,7 +10,7 @@ export default function VendorTabs({ id }) {
         { name: 'Overview', href: `/admin/vendors/${id}` },
         { name: 'Personal Profile', href: `/admin/vendors/${id}/personal` },
         { name: 'Business Profile', href: `/admin/vendors/${id}/business` },
-        { name: 'Packages', href: `/admin/vendors/${id}/packages` },
+        { name: 'Packages', href: `/admin/packages/${id}` },
     ];
 
     return (

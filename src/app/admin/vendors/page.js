@@ -107,7 +107,7 @@ export default function VendorsPage() {
 
                                         {/* View Packages Icon */}
                                         <Link
-                                            href={`/admin/packages?vendorId=${v._id}`}
+                                            href={`/admin/packages/${v._id}`}
                                             title="View Vendor Packages"
                                             className="p-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
                                         >
