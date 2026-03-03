@@ -127,68 +127,76 @@ export default function InventoryPage() {
                     </select>
                 </div>
 
-                {/* Table */}
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-gray-50 text-gray-500 text-xs uppercase tracking-wider">
-                            <tr>
-                                <th className="px-6 py-4 font-semibold">Service Name</th>
-                                <th className="px-6 py-4 font-semibold">Vendor</th>
-                                <th className="px-6 py-4 font-semibold">Category</th>
-                                <th className="px-6 py-4 font-semibold">Price</th>
-                                <th className="px-6 py-4 font-semibold">Status</th>
-                                <th className="px-6 py-4 font-semibold text-right">Action</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-100 italic-rows">
-                            {loading ? (
-                                [1, 2, 3].map(i => (
-                                    <tr key={i} className="animate-pulse">
-                                        <td colSpan="6" className="px-6 py-4 h-16 bg-gray-50/50"></td>
-                                    </tr>
-                                ))
-                            ) : filteredPackages.length > 0 ? (
-                                filteredPackages.map((pkg) => (
-                                    <tr key={`${pkg._id}-${pkg.serviceType}`} className="hover:bg-gray-50 transition-colors">
-                                        <td className="px-6 py-4">
-                                            <div className="font-medium text-gray-800">{getServiceName(pkg)}</div>
-                                            <div className="text-xs text-gray-400 capitalize">
-                                                {typeof pkg.location === 'object' ? pkg.location?.address : (pkg.location || 'No location')}
+                {/* Content Grid */}
+                <div className="p-6">
+                    {loading ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
+                                <div key={i} className="bg-slate-50 h-[380px] rounded-3xl animate-pulse"></div>
+                            ))}
+                        </div>
+                    ) : filteredPackages.length > 0 ? (
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
+                            {filteredPackages.map((pkg) => (
+                                <div key={`${pkg._id}-${pkg.serviceType}`} className="group bg-white rounded-3xl border border-slate-200 overflow-hidden hover:shadow-xl hover:border-indigo-100 transition-all flex flex-col">
+                                    {/* Thumbnail */}
+                                    <div className="relative h-48 w-full bg-slate-100">
+                                        {pkg.photos?.[0]?.url ? (
+                                            <img src={pkg.photos[0].url} alt={getServiceName(pkg)} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-1h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
                                             </div>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm text-gray-600">
-                                            {pkg.vendor?.businessName || 'Unknown Vendor'}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className="px-2 py-1 bg-indigo-50 text-indigo-700 rounded text-[10px] font-bold uppercase tracking-tighter">
+                                        )}
+                                        <div className="absolute top-4 right-4">
+                                            <span className={`px-2.5 py-1 rounded-lg text-[10px] font-black uppercase tracking-widest backdrop-blur-md ${pkg.isActive ? 'bg-emerald-500/90 text-white' : 'bg-rose-500/90 text-white'}`}>
+                                                {pkg.isActive ? 'Live' : 'Hidden'}
+                                            </span>
+                                        </div>
+                                        <div className="absolute bottom-4 left-4">
+                                            <span className="px-2 py-1 bg-indigo-600 text-white rounded text-[9px] font-black uppercase tracking-widest">
                                                 {pkg.serviceType}
                                             </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-sm font-semibold text-gray-700">
-                                            ₹{getPrice(pkg).toLocaleString()}
-                                        </td>
-                                        <td className="px-6 py-4">
-                                            <span className={`px-2 py-1 rounded-full text-[10px] font-bold uppercase ${pkg.isActive ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                                                {pkg.isActive ? 'Active' : 'Hidden'}
-                                            </span>
-                                        </td>
-                                        <td className="px-6 py-4 text-right">
-                                            <button
-                                                onClick={() => toggleStatus(pkg)}
-                                                className={`text-xs font-bold px-3 py-1.5 rounded-lg transition-all ${pkg.isActive ? 'text-red-600 hover:bg-red-50' : 'text-green-600 hover:bg-green-50'}`}
-                                            >
-                                                {pkg.isActive ? 'Deactivate' : 'Activate'}
-                                            </button>
-                                        </td>
-                                    </tr>
-                                ))
-                            ) : (
-                                <tr>
-                                    <td colSpan="6" className="px-6 py-10 text-center text-gray-400 italic">No services found matching your criteria.</td>
-                                </tr>
-                            )}
-                        </tbody>
-                    </table>
+                                        </div>
+                                    </div>
+
+                                    {/* Details */}
+                                    <div className="p-5 flex-1 flex flex-col">
+                                        <div className="mb-4">
+                                            <h3 className="font-black text-slate-900 text-lg leading-tight mb-1 group-hover:text-indigo-600 transition-colors line-clamp-1">{getServiceName(pkg)}</h3>
+                                            <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
+                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
+                                                <span className="line-clamp-1">{typeof pkg.location === 'object' ? pkg.location?.address : (pkg.location || 'Standard Location')}</span>
+                                            </div>
+                                        </div>
+
+                                        <div className="mt-auto pt-4 border-t border-slate-50 flex items-center justify-between">
+                                            <div>
+                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Vendor</div>
+                                                <div className="text-xs font-black text-slate-700 truncate max-w-[120px]">{pkg.vendor?.businessName || 'Unknown'}</div>
+                                            </div>
+                                            <div className="text-right">
+                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Base Price</div>
+                                                <div className="text-lg font-black text-slate-900">₹{getPrice(pkg).toLocaleString()}</div>
+                                            </div>
+                                        </div>
+
+                                        <button
+                                            onClick={() => toggleStatus(pkg)}
+                                            className={`mt-4 w-full py-2.5 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all border ${pkg.isActive ? 'border-rose-100 text-rose-600 hover:bg-rose-50' : 'border-emerald-100 text-emerald-600 hover:bg-emerald-50'}`}
+                                        >
+                                            {pkg.isActive ? 'Deactivate Service' : 'Activate Service'}
+                                        </button>
+                                    </div>
+                                </div>
+                            ))}
+                        </div>
+                    ) : (
+                        <div className="h-64 flex flex-col items-center justify-center text-slate-400 bg-slate-50/50 rounded-3xl border-2 border-dashed border-slate-200">
+                            <svg className="w-12 h-12 mb-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>
+                            <p className="text-sm font-bold uppercase tracking-widest">No components found</p>
+                        </div>
+                    )}
                 </div>
             </div>
         </div>

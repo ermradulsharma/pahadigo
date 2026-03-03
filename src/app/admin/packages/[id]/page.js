@@ -198,41 +198,58 @@ export default function VendorPackagesPage({ params }) {
 
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                             {groupedPackages[selectedCategory].map((pkg) => (
-                                <div key={pkg._id} className="bg-white rounded-3xl border border-slate-200 p-6 hover:shadow-lg transition-all border-l-4 border-l-indigo-500">
-                                    <div className="flex justify-between items-start mb-4">
-                                        <div>
-                                            <h4 className="font-black text-slate-900 text-lg leading-tight mb-1">{getServiceName(pkg)}</h4>
+                                <div key={pkg._id} className="group bg-white rounded-3xl border border-slate-200 overflow-hidden hover:shadow-xl hover:border-indigo-100 transition-all flex flex-col">
+                                    {/* Thumbnail */}
+                                    <div className="relative h-48 w-full bg-slate-100">
+                                        {pkg.photos?.[0]?.url ? (
+                                            <img src={pkg.photos[0].url} alt={getServiceName(pkg)} className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110" />
+                                        ) : (
+                                            <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                                <svg className="w-12 h-12" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-1h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                            </div>
+                                        )}
+                                        <div className="absolute top-4 right-4">
+                                            <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest backdrop-blur-md ${pkg.isActive ? 'bg-emerald-500 text-white' : 'bg-rose-500 text-white'}`}>
+                                                {pkg.isActive ? 'Active' : 'Hidden'}
+                                            </span>
+                                        </div>
+                                    </div>
+
+                                    {/* Content */}
+                                    <div className="p-6 flex-1 flex flex-col">
+                                        <div className="mb-6">
+                                            <h4 className="font-black text-slate-900 text-lg leading-tight mb-2 group-hover:text-indigo-600 transition-colors line-clamp-1">{getServiceName(pkg)}</h4>
                                             <div className="flex items-center gap-1.5 text-slate-400 text-[10px] font-bold uppercase tracking-widest">
                                                 <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /></svg>
-                                                {typeof pkg.location === 'object' ? pkg.location?.address : (pkg.location || pkg.address || 'Standard Location')}
+                                                <span className="line-clamp-1">{typeof pkg.location === 'object' ? pkg.location?.address : (pkg.location || 'Standard Location')}</span>
                                             </div>
                                         </div>
-                                        <span className={`px-2 py-1 rounded-lg text-[9px] font-black uppercase tracking-widest ${pkg.isActive ? 'bg-emerald-50 text-emerald-600' : 'bg-rose-50 text-rose-600'}`}>
-                                            {pkg.isActive ? 'Active' : 'Disabled'}
-                                        </span>
-                                    </div>
-                                    <div className="flex items-center justify-between mt-8">
-                                        <div>
-                                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Price</div>
-                                            <div className="text-xl font-black text-slate-900">₹{Number(getPrice(pkg)).toLocaleString()}</div>
-                                        </div>
-                                        <div className="flex gap-2">
-                                            <button
-                                                onClick={() => setViewingItem(pkg)}
-                                                className="px-4 py-2.5 bg-slate-900 text-white rounded-xl text-[10px] font-bold uppercase tracking-widest hover:bg-slate-800 transition-all"
-                                            >
-                                                View Details
-                                            </button>
-                                            <button
-                                                onClick={() => toggleStatus(pkg)}
-                                                className={`p-2.5 rounded-xl border transition-all ${pkg.isActive ? 'border-rose-100 text-rose-600 hover:bg-rose-50' : 'border-emerald-100 text-emerald-600 hover:bg-emerald-50'}`}
-                                            >
-                                                {pkg.isActive ? (
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
-                                                ) : (
-                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
-                                                )}
-                                            </button>
+
+                                        <div className="mt-auto flex items-center justify-between py-4 border-t border-slate-50">
+                                            <div>
+                                                <div className="text-[10px] font-bold text-slate-400 uppercase tracking-widest mb-0.5">Base Fare</div>
+                                                <div className="text-xl font-black text-slate-900 tracking-tight">₹{Number(getPrice(pkg)).toLocaleString()}</div>
+                                            </div>
+                                            <div className="flex gap-2">
+                                                <button
+                                                    onClick={() => setViewingItem(pkg)}
+                                                    className="p-2.5 bg-slate-900 text-white rounded-xl hover:bg-slate-800 transition-all shadow-lg shadow-slate-200"
+                                                    title="View Details"
+                                                >
+                                                    <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                                </button>
+                                                <button
+                                                    onClick={() => toggleStatus(pkg)}
+                                                    className={`p-2.5 rounded-xl border transition-all ${pkg.isActive ? 'border-rose-100 text-rose-600 hover:bg-rose-50' : 'border-emerald-100 text-emerald-600 hover:bg-emerald-50'}`}
+                                                    title={pkg.isActive ? 'Deactivate' : 'Activate'}
+                                                >
+                                                    {pkg.isActive ? (
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18.364 18.364A9 9 0 005.636 5.636m12.728 12.728A9 9 0 015.636 5.636m12.728 12.728L5.636 5.636" /></svg>
+                                                    ) : (
+                                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" /></svg>
+                                                    )}
+                                                </button>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>

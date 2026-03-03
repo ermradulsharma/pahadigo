@@ -109,13 +109,12 @@ class AdminService {
     }
 
     async getDashboardStats() {
-        const [userCount, vendorCount, verifiedVendorCount, pendingVendorCount, bookingCount, packageCount, categoryCount, revenue, recentBookings, recentVendors] = await Promise.all([
+        const [userCount, vendorCount, verifiedVendorCount, pendingVendorCount, bookingCount, categoryCount, revenue, recentBookings, recentVendors] = await Promise.all([
             User.countDocuments({ role: 'traveller' }),
             User.countDocuments({ role: 'vendor' }),
             Vendor.countDocuments({ isApproved: true }),
             Vendor.countDocuments({ isApproved: false }),
             Booking.countDocuments(),
-            Package.countDocuments(),
             Category.countDocuments(),
             Booking.aggregate([
                 { $match: { paymentStatus: 'paid', refundStatus: 'none' } },
@@ -127,6 +126,37 @@ class AdminService {
             Vendor.find().sort({ createdAt: -1 }).limit(5)
                 .populate('user', 'email')
         ]);
+
+        // Aggregate total items in all service categories across all vendors
+        const packageItemsStats = await Package.aggregate([
+            {
+                $project: {
+                    totalItems: {
+                        $add: [
+                            { $size: { $ifNull: ["$homestay", []] } },
+                            { $size: { $ifNull: ["$hotel", []] } },
+                            { $size: { $ifNull: ["$camping", []] } },
+                            { $size: { $ifNull: ["$trekking", []] } },
+                            { $size: { $ifNull: ["$rafting", []] } },
+                            { $size: { $ifNull: ["$bungeeJumping", []] } },
+                            { $size: { $ifNull: ["$vehicleRental", []] } },
+                            { $size: { $ifNull: ["$chardhamTour", []] } },
+                            { $size: { $ifNull: ["$skiing", []] } },
+                            { $size: { $ifNull: ["$paragliding", []] } },
+                            { $size: { $ifNull: ["$customTrip", []] } }
+                        ]
+                    }
+                }
+            },
+            {
+                $group: {
+                    _id: null,
+                    totalCount: { $sum: "$totalItems" }
+                }
+            }
+        ]);
+
+        const packageCount = packageItemsStats[0]?.totalCount || 0;
 
         return {
             users: userCount,

@@ -14,6 +14,7 @@ const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState({ users: 0, totalVendors: 0, pendingVendors: 0, packages: 0, categories: 0, revenue: 0, recentBookings: [], recentVendors: [] });
+    const [latestPackages, setLatestPackages] = useState([]);
     const [loading, setLoading] = useState(true);
     const [isMounted, setIsMounted] = useState(false);
 
@@ -53,6 +54,15 @@ export default function AdminDashboard() {
                         setStats(resData.data.stats);
                     }
                 }
+
+                // Fetch Latest Packages
+                const pkgRes = await fetch('/api/admin/packages', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const pkgData = await pkgRes.json();
+                if (pkgData.success) {
+                    setLatestPackages(pkgData.data.packages.slice(0, 4));
+                }
             } catch (e) {
             } finally {
                 setLoading(false);
@@ -74,12 +84,12 @@ export default function AdminDashboard() {
                 </div>
             ) : (
                 <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <StatCard title="Travellers" value={stats.users || 0} color="bg-gradient-to-br from-blue-600 to-indigo-700" icon="users" />
-                    <StatCard title="Vendors" value={stats.totalVendors || 0} color="bg-gradient-to-br from-emerald-500 to-teal-700" icon="briefcase" />
-                    <StatCard title="Pending Approval" value={stats.pendingVendors || 0} color="bg-gradient-to-br from-amber-500 to-orange-600" icon="alert" />
-                    <StatCard title="Packages" value={stats.packages || 0} color="bg-gradient-to-br from-pink-500 to-rose-700" icon="package" />
-                    <StatCard title="Categories" value={stats.categories || 0} color="bg-gradient-to-br from-slate-600 to-slate-800" icon="folder" />
-                    <StatCard title="Revenue" value={`₹${(Number(stats.revenue) || 0).toLocaleString('en-IN')}`} color="bg-gradient-to-br from-green-600 to-green-800" icon="cash" />
+                    <StatCard title="Travellers" value={stats.users || 0} color="bg-gradient-to-br from-blue-600 to-indigo-700" icon="users" href="/admin/travellers" />
+                    <StatCard title="Vendors" value={stats.totalVendors || 0} color="bg-gradient-to-br from-emerald-500 to-teal-700" icon="briefcase" href="/admin/vendors" />
+                    <StatCard title="Pending Approval" value={stats.pendingVendors || 0} color="bg-gradient-to-br from-amber-500 to-orange-600" icon="alert" href="/admin/vendors" />
+                    <StatCard title="Packages" value={stats.packages || 0} color="bg-gradient-to-br from-pink-500 to-rose-700" icon="package" href="/admin/packages" />
+                    <StatCard title="Categories" value={stats.categories || 0} color="bg-gradient-to-br from-slate-600 to-slate-800" icon="folder" href="/admin/categories" />
+                    <StatCard title="Revenue" value={`₹${(Number(stats.revenue) || 0).toLocaleString('en-IN')}`} color="bg-gradient-to-br from-green-600 to-green-800" icon="cash" href="/admin/payments" />
                 </div>
             )}
 
@@ -279,33 +289,77 @@ export default function AdminDashboard() {
                 </div>
             </div>
 
+            {/* Latest Packages Widget */}
+            <div className="mt-12">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
+                        <span className="w-2 h-6 bg-pink-500 rounded-full"></span>
+                        Latest Service Listings
+                    </h2>
+                    <Link href="/admin/packages" className="text-xs text-indigo-600 hover:underline font-bold uppercase tracking-widest">Manage All Packages →</Link>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+                    {loading ? (
+                        [1, 2, 3, 4].map(i => <div key={i} className="h-64 bg-gray-100 rounded-2xl animate-pulse"></div>)
+                    ) : latestPackages.map((pkg) => (
+                        <div key={pkg._id} className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all flex flex-col">
+                            <div className="relative h-40 bg-gray-100">
+                                {pkg.photos?.[0]?.url ? (
+                                    <img src={pkg.photos[0].url} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                ) : (
+                                    <div className="w-full h-full flex items-center justify-center text-gray-300">
+                                        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-1h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    </div>
+                                )}
+                                <div className="absolute top-3 right-3">
+                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${pkg.isActive ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
+                                        {pkg.isActive ? 'Active' : 'Draft'}
+                                    </span>
+                                </div>
+                            </div>
+                            <div className="p-4 flex-1 flex flex-col">
+                                <h3 className="font-bold text-gray-800 text-sm line-clamp-1 mb-1">{pkg.title || pkg.tourDetails?.tourName || pkg.details?.jumpName || pkg.vehicleDetails?.model || 'Service Listing'}</h3>
+                                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-4">{pkg.vendor?.businessName || 'Anonymous Vendor'}</div>
+                                <div className="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
+                                    <div className="text-sm font-black text-gray-900">₹{(pkg.pricing?.pricePerPerson || pkg.pricing?.pricePerNight || pkg.pricing?.baseFare || 0).toLocaleString()}</div>
+                                    <Link href={`/admin/packages/${pkg.vendorId}`} className="p-1.5 hover:bg-indigo-50 text-indigo-600 rounded-lg transition-colors">
+                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                                    </Link>
+                                </div>
+                            </div>
+                        </div>
+                    ))}
+                    {!loading && latestPackages.length === 0 && <div className="col-span-full py-10 text-center text-gray-400 italic">No packages listed yet</div>}
+                </div>
 
 
 
 
-            <div className="mt-8 bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
-                <h2 className="text-lg font-bold text-gray-800">Quick Actions</h2>
-                <div className="flex flex-wrap gap-2">
-                    <Link href="/admin/vendors" className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm font-medium">Review Vendors</Link>
-                    <Link href="/admin/travellers" className="px-6 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition font-medium">Manage Travellers</Link>
-                    <Link href="/admin/categories" className="px-6 py-2.5 bg-pink-50 text-pink-700 rounded-lg hover:bg-pink-100 transition font-medium">Categories</Link>
-                    <Link href="/admin/bookings" className="px-6 py-2.5 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition font-medium">Bookings</Link>
+
+                <div className="mt-8 bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
+                    <h2 className="text-lg font-bold text-gray-800">Quick Actions</h2>
+                    <div className="flex flex-wrap gap-2">
+                        <Link href="/admin/vendors" className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm font-medium">Review Vendors</Link>
+                        <Link href="/admin/travellers" className="px-6 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition font-medium">Manage Travellers</Link>
+                        <Link href="/admin/categories" className="px-6 py-2.5 bg-pink-50 text-pink-700 rounded-lg hover:bg-pink-100 transition font-medium">Categories</Link>
+                        <Link href="/admin/bookings" className="px-6 py-2.5 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition font-medium">Bookings</Link>
+                    </div>
                 </div>
             </div>
         </div>
     );
 }
 
-function StatCard({ title, value, color, icon }) {
-    return (
-        <div className={`p-6 rounded-xl shadow-lg text-white ${color} transition-transform hover:scale-105`}>
+function StatCard({ title, value, color, icon, href }) {
+    const CardContent = (
+        <div className={`p-6 rounded-xl shadow-lg text-white ${color} transition-transform hover:scale-105 h-full`}>
             <div className="flex justify-between items-start">
                 <div>
                     <h3 className="text-sm font-medium opacity-80 uppercase tracking-wider">{title}</h3>
                     <p className="text-4xl font-bold mt-2">{value}</p>
                 </div>
                 <div className="p-2 bg-opacity-20 rounded-lg">
-                    {/* Simple Icon Placeholders based on prop */}
                     {icon === 'users' && <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
                     {icon === 'briefcase' && <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
                     {icon === 'alert' && <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
@@ -317,4 +371,6 @@ function StatCard({ title, value, color, icon }) {
             </div>
         </div>
     );
+
+    return href ? <Link href={href} className="block h-full">{CardContent}</Link> : CardContent;
 }
