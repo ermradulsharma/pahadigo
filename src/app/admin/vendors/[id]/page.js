@@ -4,6 +4,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { getToken } from '@/helpers/authUtils';
 import Image from 'next/image';
+import VendorTabs from '@/components/admin/VendorTabs';
+import { DetailItem, StatusBadge } from '@/components/admin/VendorUIFragments';
 
 export default function VendorDetailsPage({ params }) {
     const resolvedParams = use(params);
@@ -14,7 +16,6 @@ export default function VendorDetailsPage({ params }) {
     const [loading, setLoading] = useState(true);
     const [verifying, setVerifying] = useState(null);
     const [previewImage, setPreviewImage] = useState(null);
-    const [showMapModal, setShowMapModal] = useState(false);
     const [refreshKey, setRefreshKey] = useState(0);
 
     useEffect(() => {
@@ -122,10 +123,26 @@ export default function VendorDetailsPage({ params }) {
         }
     };
 
+    const calculateKYCProgress = () => {
+        if (!vendor?.documents) return 0;
+        const mandatory = ['aadharCard', 'panCard', 'businessRegistration', 'gstRegistration'];
+        const uploaded = mandatory.filter(key => {
+            const doc = vendor.documents[key];
+            if (Array.isArray(doc)) return doc.length > 0 && doc.some(d => d.url);
+            return doc && doc.url;
+        });
+        return Math.round((uploaded.length / mandatory.length) * 100);
+    };
+
+    const calculateBankProgress = () => {
+        if (!vendor?.bankDetails?.accountNumber) return 0;
+        return 100; // Basic check for account number
+    };
+
     if (loading) return (
         <div className="min-h-screen flex flex-col items-center justify-center bg-white">
             <div className="w-10 h-10 border-2 border-slate-200 border-t-indigo-600 rounded-full animate-spin"></div>
-            <p className="mt-4 text-[13px] font-medium text-slate-500">Loading Vendor Interface</p>
+            <p className="mt-4 text-[13px] font-medium text-slate-500">Loading Vendor Overiew</p>
         </div>
     );
 
@@ -133,7 +150,6 @@ export default function VendorDetailsPage({ params }) {
         <div className="min-h-screen flex items-center justify-center bg-slate-50 p-8">
             <div className="text-center max-w-md">
                 <h2 className="text-2xl font-bold text-slate-900 mb-2">Vendor not found</h2>
-                <p className="text-slate-500 mb-6">The requested vendor record could not be retrieved from the database.</p>
                 <button onClick={() => router.back()} className="px-6 py-2 bg-indigo-600 text-white rounded-lg font-semibold shadow-sm hover:bg-indigo-700 transition active:scale-95">Go Back</button>
             </div>
         </div>
@@ -142,7 +158,7 @@ export default function VendorDetailsPage({ params }) {
     return (
         <div className="min-h-screen bg-slate-50/50 pb-24">
             {/* Header Section */}
-            <header className="sticky top-0 z-40 bg-white border-b border-slate-200 px-8 py-4 shadow-sm">
+            <header className="sticky top-0 z-40 bg-white border-b border-slate-200 px-8 py-4">
                 <div className="max-w-[1600px] mx-auto flex items-center justify-between">
                     <div className="flex items-center gap-6">
                         <button onClick={() => router.back()} className="p-2 hover:bg-slate-100 rounded-lg transition-colors text-slate-500">
@@ -176,70 +192,57 @@ export default function VendorDetailsPage({ params }) {
                     </div>
                 </div>
             </header>
-
-            <main className="max-w-[1600px] mx-auto px-8 pt-10">
+            <VendorTabs id={id} />
+            <main className="max-w-[1600px] mx-auto p-8">
                 <div className="grid grid-cols-12 gap-8">
 
                     {/* Sidebar Overview */}
                     <div className="col-span-12 lg:col-span-4 space-y-6">
-                        {/* Business Card */}
+                        {/* Personal Details Card */}
                         <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Business Snapshot</h3>
+                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-50 pb-4">Personal Details</h3>
                             <div className="space-y-6">
-                                <DetailItem label="Establishment Name" value={vendor.businessName} />
-                                <DetailItem label="Owner / Authorized Signatory" value={vendor.ownerName} />
-                                <DetailItem label="Primary Contact" value={vendor.businessNumber || vendor.user?.phone} />
-                                <DetailItem label="Business Email" value={vendor.user?.email} />
+                                <DetailItem label="Full Name" value={vendor.user?.name || vendor.ownerName} />
+                                <div className="pt-4 border-t border-slate-50">
+                                    <DetailItem label="Mobile Number" value={vendor.user?.phone} />
+                                </div>
+                                <div className="pt-4 border-t border-slate-50">
+                                    <DetailItem label="Email Address" value={vendor.user?.email || 'No email associated'} />
+                                </div>
+                                <div className="pt-4 border-t border-slate-50 flex items-center justify-between">
+                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Account Status</span>
+                                    <StatusBadge status={vendor.user?.status} />
+                                </div>
+                            </div>
+                        </div>
+
+                        {/* Quick Snapshot Card */}
+                        <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
+                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6 border-b border-slate-50 pb-4">Quick Snapshot</h3>
+                            <div className="space-y-6">
+                                <div>
+                                    <DetailItem label="Business Entity" value={vendor.businessName} />
+                                    <Link href={`/admin/vendors/${id}/business`} className="text-indigo-600 text-[10px] font-bold mt-1 inline-block hover:underline">View Business Profile</Link>
+                                </div>
+                                <div className="pt-4 border-t border-slate-50">
+                                    <DetailItem label="Owner/Signatory" value={vendor.ownerName} />
+                                    <Link href={`/admin/vendors/${id}/personal`} className="text-indigo-600 text-[10px] font-bold mt-1 inline-block hover:underline">View Personal Profile</Link>
+                                </div>
                                 <div className="pt-6 border-t border-slate-100">
-                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-3">About the Business</label>
-                                    <p className="text-[13px] text-slate-600 leading-relaxed italic">
-                                        &quot;{vendor.businessAbout || 'No description provided.'}&quot;
-                                    </p>
+                                    <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-2">Business Contact</label>
+                                    <div className="text-sm font-bold text-slate-700">{vendor.businessNumber || 'Not provided'}</div>
                                 </div>
                             </div>
                         </div>
 
-                        {/* Location Card */}
-                        <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">HQ Location</h3>
-                            <div className="space-y-4 text-slate-700 font-medium">
-                                <p className="text-sm text-slate-600 leading-relaxed">
-                                    {[
-                                        vendor.address?.addressLine1,
-                                        vendor.address?.addressLine2,
-                                        vendor.address?.city,
-                                        vendor.address?.state,
-                                        vendor.address?.country,
-                                        vendor.address?.pincode
-                                    ].filter(Boolean).join(', ')}
-                                </p>
-
-                                {(vendor.address?.latitude && vendor.address?.longitude) && (
-                                    <button onClick={() => setShowMapModal(true)} className="px-4 py-2 bg-slate-50 border border-slate-200 hover:bg-slate-100 hover:border-slate-300 text-slate-700 text-xs font-bold uppercase tracking-wider rounded-lg transition-all flex items-center gap-2 place-self-end">
-                                        <svg className="w-4 h-4 text-indigo-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 11a3 3 0 11-6 0 3 3 0 016 0z" /></svg>
-                                        View on Map
-                                    </button>
-                                )}
+                        {/* Quick Stats or Status Placeholder */}
+                        <div className="bg-slate-900 rounded-2xl p-8 text-white shadow-xl shadow-indigo-500/10">
+                            <div className="text-[10px] font-bold text-slate-400 uppercase tracking-[0.2em] mb-4">Application Progress</div>
+                            <div className="space-y-4">
+                                <ProgressItem label="KYC Documents" percent={calculateKYCProgress()} color="bg-emerald-500" />
+                                <ProgressItem label="Bank Details" percent={calculateBankProgress()} color="bg-emerald-500" />
+                                <ProgressItem label="Profile Setup" percent={75} color="bg-indigo-500" />
                             </div>
-                        </div>
-
-                        {/* Payout Information */}
-                        <div className="bg-white rounded-2xl border border-slate-200 p-8 shadow-sm">
-                            <h3 className="text-xs font-bold text-slate-400 uppercase tracking-widest mb-6">Financial Settlement</h3>
-                            {vendor.bankDetails?.accountNumber ? (
-                                <div className="space-y-6">
-                                    <DetailItem label="Bank Account Number" value={vendor.bankDetails.accountNumber} mono />
-                                    <DetailItem label="IFSC Code" value={vendor.bankDetails.ifscCode} mono />
-                                    <DetailItem label="Institution Name" value={vendor.bankDetails.bankName} />
-                                    <DetailItem label="Beneficiary Name" value={vendor.bankDetails.accountHolderName} />
-                                    <div className="pt-4 flex items-center justify-between">
-                                        <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">Payout Status</span>
-                                        <StatusBadge status={vendor.bankDetails.status} />
-                                    </div>
-                                </div>
-                            ) : (
-                                <p className="text-sm text-slate-400 italic py-4">Financial details pending submission.</p>
-                            )}
                         </div>
                     </div>
 
@@ -254,7 +257,7 @@ export default function VendorDetailsPage({ params }) {
                             </div>
 
                             <div className="grid grid-cols-1 gap-8">
-                                <DocumentSection title="Aadhar Card" docs={vendor.documents?.aadharCard} field="aadharCard" onVerify={verifyDocument} onOCR={triggerOCR} verifying={verifying} onPreview={setPreviewImage} ocr />
+                                <DocumentSection title="Aadhar Card" docs={vendor.documents?.aadharCard} field="aadharCard" onVerify={verifyDocument} onOCR={triggerOCR} verifying={verifying} onPreview={setPreviewImage} ocr priority />
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                                     <DocumentSection title="PAN Card" docs={vendor.documents?.panCard} field="panCard" onVerify={verifyDocument} onOCR={triggerOCR} verifying={verifying} onPreview={setPreviewImage} ocr />
                                     <DocumentSection title="Business Registration" docs={vendor.documents?.businessRegistration} field="businessRegistration" onVerify={verifyDocument} onPreview={setPreviewImage} compact />
@@ -267,42 +270,19 @@ export default function VendorDetailsPage({ params }) {
                     </div>
                 </div>
             </main>
-
             {/* Premium SaaS Ultra Lightbox Preview */}
             {previewImage && (
                 <div onClick={() => setPreviewImage(null)} className="fixed inset-0 z-[100] bg-slate-950/90 backdrop-blur-xl flex items-center justify-center p-4 sm:p-12 cursor-zoom-out animate-in fade-in duration-300">
                     <div className="relative w-full h-full flex flex-col items-center justify-center">
                         {/* Image Container */}
                         <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-[0_0_100px_rgba(0,0,0,0.5)] border border-white/5">
-                            <Image src={previewImage} alt="Document Review" fill className="object-contain" priority />
+                            <Image src={previewImage} alt="Document Review" fill className="object-contain" priority sizes="100vw" />
                         </div>
 
                         {/* Floating Close Button */}
                         <button className="absolute top-0 -right-2 sm:-right-8 bg-white/10 hover:bg-white/20 text-white p-3 rounded-full transition-all border border-white/10 backdrop-blur-md">
                             <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
                         </button>
-
-                        <div className="absolute bottom-8 left-1/2 -translate-x-1/2 px-6 py-2 bg-white/10 backdrop-blur-md border border-white/10 rounded-full text-white/60 text-[10px] font-bold uppercase tracking-[0.2em]">
-                            Full Quality Preview
-                        </div>
-                    </div>
-                </div>
-            )}
-
-            {/* Premium Map Modal */}
-            {showMapModal && (
-                <div className="fixed inset-0 z-[100] bg-slate-950/60 backdrop-blur-sm flex items-center justify-center p-4 sm:p-6 animate-in fade-in duration-200">
-                    <div className="relative w-full max-w-4xl h-[70vh] bg-white rounded-2xl shadow-2xl overflow-hidden flex flex-col scale-100 animate-in zoom-in-95 duration-200">
-                        <button onClick={() => setShowMapModal(false)} className="absolute top-4 right-4 z-50 p-2 bg-white/90 hover:bg-white text-slate-600 hover:text-rose-600 shadow-lg border border-slate-200 backdrop-blur-md rounded-full transition-all" title="Close map">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
-                        </button>
-                        <div className="flex-1 w-full bg-slate-100 relative">
-                            <div className="absolute inset-0 flex flex-col items-center justify-center text-slate-400 z-0">
-                                <div className="w-8 h-8 border-2 border-slate-300 border-t-indigo-500 rounded-full animate-spin mb-3"></div>
-                                <span className="text-xs font-bold uppercase tracking-widest">Loading Map Data...</span>
-                            </div>
-                            <iframe className="absolute inset-0 w-full h-full z-10" src={`https://maps.google.com/maps?q=${vendor.address?.latitude},${vendor.address?.longitude}&z=15&output=embed`} />
-                        </div>
                     </div>
                 </div>
             )}
@@ -311,40 +291,23 @@ export default function VendorDetailsPage({ params }) {
 }
 
 // --- Internal UI Fragments ---
-
-function DetailItem({ label, value, mono }) {
+function ProgressItem({ label, percent, color }) {
     return (
         <div>
-            <label className="text-[10px] font-bold text-slate-400 uppercase tracking-widest block mb-1">{label}</label>
-            <div className={`text-[15px] font-bold text-slate-900 ${mono ? 'font-mono' : ''}`}>
-                {value || 'Not provided'}
+            <div className="flex justify-between text-[10px] font-bold mb-1">
+                <span className="text-slate-400">{label}</span>
+                <span className="text-slate-200">{percent}%</span>
+            </div>
+            <div className="h-1 bg-white/5 rounded-full overflow-hidden">
+                <div className={`h-full ${color} transition-all duration-1000`} style={{ width: `${percent}%` }}></div>
             </div>
         </div>
     );
 }
 
-function StatusBadge({ status }) {
-    const config = {
-        verified: { bg: 'bg-emerald-500/10', text: 'text-emerald-500', dot: 'bg-emerald-500' },
-        rejected: { bg: 'bg-rose-500/10', text: 'text-rose-500', dot: 'bg-rose-500' },
-        pending: { bg: 'bg-amber-500/10', text: 'text-amber-500', dot: 'bg-amber-500' }
-    };
-    const { bg, text, dot } = config[status] || { bg: 'bg-slate-500/10', text: 'text-slate-500', dot: 'bg-slate-500' };
-
-    return (
-        <span className={`px-2.5 py-1 rounded-full text-[9px] font-bold uppercase tracking-wider flex items-center gap-1.5 backdrop-blur-md border border-white/10 ${bg} ${text}`}>
-            <span className={`w-1 h-1 rounded-full animate-pulse ${dot}`}></span>
-            {status}
-        </span>
-    );
-}
-
-function DocumentSection({ title, docs: rawDocs, field, onVerify, onOCR, verifying, onPreview, compact, ocr }) {
-    const docs = Array.isArray(rawDocs) ? rawDocs : (rawDocs ? [rawDocs] : []);
-
+function DocumentSection({ title, docs: rawDocs, field, onVerify, onOCR, verifying, onPreview, compact, ocr, priority }) {
+    const docs = (Array.isArray(rawDocs) ? rawDocs : (rawDocs ? [rawDocs] : [])).filter(doc => doc && doc.url);
     if (docs.length === 0) return null;
-
-    console.log(docs.length);
     return (
         <div className="space-y-4">
             <div className="flex items-center justify-between px-2">
@@ -355,13 +318,11 @@ function DocumentSection({ title, docs: rawDocs, field, onVerify, onOCR, verifyi
                 {docs.map((doc, idx) => (
                     <div key={idx} className="group relative bg-white/40 hover:bg-white backdrop-blur-xl border border-slate-200/60 rounded-2xl overflow-hidden transition-all duration-500 hover:shadow-2xl hover:shadow-indigo-500/10 hover:-translate-y-1">
                         {/* Status Float */}
-                        <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300">
-                            <StatusBadge status={doc.status} />
-                        </div>
+                        <div className="absolute top-3 right-3 z-10 opacity-0 group-hover:opacity-100 transition-opacity duration-300"> <StatusBadge status={doc.status} /> </div>
 
                         {/* SaaS Ultra Image Preview */}
                         <div className="relative h-44 w-full bg-slate-950 overflow-hidden cursor-zoom-in group" onClick={() => onPreview(doc.url)}>
-                            <Image src={doc.url} alt={title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" />
+                            <Image src={doc.url} alt={title} fill className="object-cover transition-transform duration-700 group-hover:scale-105" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" priority={priority && idx === 0} />
 
                             {/* Glassmorphism Zoom Indicator */}
                             <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">

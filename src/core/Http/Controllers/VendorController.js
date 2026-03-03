@@ -462,12 +462,16 @@ class VendorController {
             if (req.formDataBody) {
                 const parsed = parseNestedFormData(req.formDataBody);
                 category = this._normalizeCategory(parsed.category);
-                const rawItems = Array.isArray(parsed.item) ? parsed.item : [parsed.item];
-                item = await this._processItemData(user, category, rawItems[0]);
+
+                // Postman often sends item[0][field], which parseNestedFormData might 
+                // return as an array in parsed.item. If so, take the first element.
+                const rawItem = Array.isArray(parsed.item) ? parsed.item[0] : parsed.item;
+                item = await this._processItemData(user, category, rawItem);
             } else {
                 const body = req.jsonBody || await req.json();
                 category = this._normalizeCategory(body.category);
-                item = await this._processItemData(user, category, body.item);
+                const rawItem = Array.isArray(body.item) ? body.item[0] : body.item;
+                item = await this._processItemData(user, category, rawItem);
             }
 
             if (!category || !item) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
@@ -643,7 +647,7 @@ class VendorController {
             if (typeof val !== 'string') return val;
             const validValues = Object.values(mapObj);
             if (validValues.includes(val)) return val;
-            const upperKey = val.toUpperCase();
+            const upperKey = val.toUpperCase().replace(/\s+/g, '_').replace(/-/g, '_');
             return mapObj[upperKey] || val;
         };
 
@@ -665,11 +669,11 @@ class VendorController {
         const photoUrls = [];
         if (item.photos && Array.isArray(item.photos)) {
             for (const photo of item.photos) {
-                if (photo instanceof File) {
-
+                if (photo instanceof File || (photo instanceof Blob && photo.name)) {
                     const result = await uploadToCloudinary(photo, `packages/${user.id}/${category || 'general'}`);
                     photoUrls.push({ url: result.url, type: 'image', publicId: result.publicId });
-                } else if (typeof photo === 'string') {
+                } else if (typeof photo === 'string' && photo.length > 0) {
+                    // Handle direct string URLs (like Postman cloud URLs or existing links)
                     photoUrls.push({ url: photo, type: 'image' });
                 } else if (photo && photo.url) {
                     photoUrls.push(photo);
@@ -701,11 +705,16 @@ class VendorController {
             'camping': 'camping',
             'trekking': 'trekking',
             'rafting': 'rafting',
-            'river rafting': 'rafting',
+            'river-rafting': 'rafting',
+            'bungee-jumping': 'bungeeJumping',
             'bungee jumping': 'bungeeJumping',
             'bike/scooter rental': 'vehicleRental',
+            'bike-scooter-rental': 'vehicleRental',
             'vehicle rental': 'vehicleRental',
             'chardham tour': 'chardhamTour',
+            'chardham-tour': 'chardhamTour',
+            'custom-trip': 'customTrip',
+            'custom trip': 'customTrip'
         };
         return categoryMap[category.toLowerCase()] || category;
     }

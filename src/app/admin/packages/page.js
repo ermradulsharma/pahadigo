@@ -67,11 +67,25 @@ export default function InventoryPage() {
     });
 
     const getServiceName = (pkg) => {
-        return pkg.trekkingName || pkg.roomType || pkg.stretchName || pkg.jumpName || pkg.model || pkg.tourName || 'Unnamed Service';
+        // Try to find a title/name in common fields across all service types
+        return pkg.title ||
+            pkg.tourDetails?.tourName ||
+            pkg.details?.jumpName ||
+            pkg.details?.stretchName ||
+            pkg.vehicleDetails?.model ||
+            pkg.roomDetails?.roomType ||
+            pkg.details?.trekType ||
+            pkg.details?.serviceType ||
+            'Unnamed Service';
     };
 
     const getPrice = (pkg) => {
-        return pkg.pricePerPerson || pkg.pricePerNight || pkg.pricePerDay || 0;
+        // Handle varied pricing structures across types
+        return pkg.pricing?.pricePerPerson ||
+            pkg.pricing?.pricePerNight ||
+            pkg.pricing?.pricePerDay ||
+            pkg.pricing?.baseFare ||
+            0;
     };
 
     return (
@@ -107,6 +121,9 @@ export default function InventoryPage() {
                         <option value="vehicleRental">Vehicle Rental</option>
                         <option value="chardhamTour">Chardham Tour</option>
                         <option value="camping">Camping</option>
+                        <option value="customTrip">Custom Trip</option>
+                        <option value="skiing">Skiing</option>
+                        <option value="paragliding">Paragliding</option>
                     </select>
                 </div>
 
@@ -135,7 +152,9 @@ export default function InventoryPage() {
                                     <tr key={`${pkg._id}-${pkg.serviceType}`} className="hover:bg-gray-50 transition-colors">
                                         <td className="px-6 py-4">
                                             <div className="font-medium text-gray-800">{getServiceName(pkg)}</div>
-                                            <div className="text-xs text-gray-400 capitalize">{pkg.location || 'No location'}</div>
+                                            <div className="text-xs text-gray-400 capitalize">
+                                                {typeof pkg.location === 'object' ? pkg.location?.address : (pkg.location || 'No location')}
+                                            </div>
                                         </td>
                                         <td className="px-6 py-4 text-sm text-gray-600">
                                             {pkg.vendor?.businessName || 'Unknown Vendor'}

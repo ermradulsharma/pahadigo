@@ -18,6 +18,7 @@ class PackageService {
                     bungeeJumping: [],
                     vehicleRental: [],
                     chardhamTour: [],
+                    customTrip: [],
                     skiing: [],
                     paragliding: []
                 }
@@ -31,11 +32,35 @@ class PackageService {
         return await this.ensureCatalog(vendorId);
     }
 
-    // Helper to get allowed categories for a vendor
+    // Helper to get allowed categories (slugs + normalized keys) for a vendor
     async _getAllowedCategories(vendorId) {
         const vendor = await Vendor.findById(vendorId);
         if (!vendor || !vendor.category) return [];
-        return vendor.category.map(c => c.slug).filter(Boolean);
+
+        const categoryMap = {
+            'homestay': 'homestay',
+            'hotel': 'hotel',
+            'camping': 'camping',
+            'trekking': 'trekking',
+            'rafting': 'rafting',
+            'river-rafting': 'rafting',
+            'bungee-jumping': 'bungeeJumping',
+            'bike-scooter-rental': 'vehicleRental',
+            'chardham-tour': 'chardhamTour',
+            'custom-trip': 'customTrip'
+        };
+
+        const allowed = new Set();
+        vendor.category.forEach(c => {
+            if (!c.slug) return;
+            allowed.add(c.slug.toLowerCase());
+            // Also allow the normalized schema key
+            if (categoryMap[c.slug.toLowerCase()]) {
+                allowed.add(categoryMap[c.slug.toLowerCase()]);
+            }
+        });
+
+        return Array.from(allowed);
     }
 
     // Add Item to Specific Service Array

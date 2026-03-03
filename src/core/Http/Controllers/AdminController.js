@@ -113,6 +113,22 @@ class AdminController {
         }
     }
 
+    // PATCH /admin/vendors/:id
+    async updateVendor(req, { params }) {
+        try {
+            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
+            const { id } = params;
+            const body = req.jsonBody || await req.json();
+
+            if (!id) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
+
+            const vendor = await AdminService.updateVendor(id, body, req);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.UPDATED, { vendor });
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+        }
+    }
+
     // POST /admin/trigger-ocr
     async verifyDocumentOCR(req) {
         try {

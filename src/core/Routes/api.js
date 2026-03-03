@@ -104,6 +104,7 @@ const routes = [
 
         { method: 'POST', path: '/travellers', handler: wrap(AdminController.createTraveller.bind(AdminController)) },
         { method: 'POST', path: '/approve-vendor', handler: wrap(AdminController.approveVendor.bind(AdminController)) },
+        { method: 'PATCH', path: '/vendors/:id', handler: wrap(AdminController.updateVendor.bind(AdminController)) },
         { method: 'POST', path: '/add-package', handler: wrap(AdminController.addPackageOnBehalf.bind(AdminController)) },
         { method: 'POST', path: '/payout', handler: wrap(AdminController.markPayout.bind(AdminController)) },
         { method: 'POST', path: '/refund', handler: wrap(AdminController.refundBooking.bind(AdminController)) },

@@ -1,5 +1,6 @@
 import VendorController from '../../src/core/Http/Controllers/VendorController.js';
 import User from '../../src/core/Models/User.js';
+import Vendor from '../../src/core/Models/Vendor.js';
 import VendorService from '../../src/core/Services/VendorService.js';
 
 describe('Vendor API Controller Test Suite', () => {

@@ -154,7 +154,7 @@ class AdminService {
     }
 
     async getAllVendors() {
-        const users = await User.find({ role: 'vendor' }).select('name email phone createdAt');
+        const users = await User.find({ role: 'vendor' }).lean(); // Fetch full user objects for complete profile view
         const profiles = await Vendor.find().lean();
 
         return users.map(u => {
@@ -198,6 +198,94 @@ class AdminService {
 
     async approveVendor(vendorId) {
         return await Vendor.findByIdAndUpdate(vendorId, { isApproved: true }, { new: true });
+    }
+
+    async updateVendor(vendorId, data, req = null) {
+        try {
+            console.log("LOG: [AdminService.updateVendor] Start for ID:", vendorId);
+
+            const vendor = await Vendor.findById(vendorId);
+            if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+
+            const user = await User.findById(vendor.user).lean();
+
+            // 1. Separate Data by Model
+            // User Fields (Personal Profile)
+            const userFields = [
+                'name', 'phone', 'gender', 'dateOfBirth', 'designation',
+                'bio', 'website', 'socialLinks', 'expertise',
+                'emergencyContact', 'address', 'preferences', 'status', 'isVerified'
+            ];
+
+            // Vendor Fields (Business Profile)
+            const vendorFields = [
+                'ownerName', 'personalNumber', 'personalPanCard', 'personalAbout',
+                'businessName', 'businessNumber', 'businessRegistration', 'gstNumber',
+                'businessAbout', 'address', 'isApproved', 'bankDetails', 'documents', 'category'
+            ];
+
+            const userData = {};
+            const vendorUpdateData = {};
+
+            Object.keys(data).forEach(key => {
+                if (userFields.includes(key)) userData[key] = data[key];
+                else if (vendorFields.includes(key)) vendorUpdateData[key] = data[key];
+            });
+
+            // 2. Process Vendor Update (Business Profile)
+            if (Object.keys(vendorUpdateData).length > 0) {
+                console.log("LOG: [AdminService.updateVendor] Updating Vendor (Business Profile)...");
+                await Vendor.findByIdAndUpdate(vendorId, { $set: vendorUpdateData });
+            }
+
+            // 3. Process User Update (Personal Profile)
+            if (user && Object.keys(userData).length > 0) {
+                console.log("LOG: [AdminService.updateVendor] Updating User (Personal Profile)...");
+                const userUpdate = {};
+
+                ['name', 'phone', 'gender', 'dateOfBirth', 'designation', 'bio', 'website', 'expertise', 'status', 'isVerified'].forEach(field => {
+                    if (userData[field] !== undefined) userUpdate[field] = userData[field];
+                });
+
+                if (userData.socialLinks) userUpdate.socialLinks = { ...(user.socialLinks || {}), ...userData.socialLinks };
+                if (userData.emergencyContact) userUpdate.emergencyContact = { ...(user.emergencyContact || {}), ...userData.emergencyContact };
+                if (userData.address) {
+                    userUpdate.address = { ...(user.address || {}), ...userData.address };
+                    if (userData.address.latitude || userData.address.longitude) {
+                        const lat = parseFloat(userData.address.latitude || user.address?.latitude || 0);
+                        const lng = parseFloat(userData.address.longitude || user.address?.longitude || 0);
+                        userUpdate.address.location = { type: 'Point', coordinates: [lng, lat] };
+                    }
+                }
+                if (userData.preferences) {
+                    const existingPrefs = user.preferences || {};
+                    const newPrefs = userData.preferences || {};
+                    userUpdate.preferences = {
+                        ...existingPrefs,
+                        ...newPrefs,
+                        notifications: {
+                            ...(existingPrefs.notifications || {}),
+                            ...(newPrefs.notifications || {})
+                        }
+                    };
+                }
+
+                await User.findByIdAndUpdate(user._id, { $set: userUpdate });
+            }
+
+            const updatedVendor = await Vendor.findById(vendorId).populate('user');
+
+            if (req && req.user) {
+                const adminId = req.user.id || req.user._id;
+                this.logAction(adminId, 'UPDATE', 'VENDOR', vendorId, { changes: data }, req);
+            }
+
+            console.log("LOG: [AdminService.updateVendor] Success");
+            return updatedVendor;
+        } catch (error) {
+            console.error("LOG: [AdminService.updateVendor] Error:", error);
+            throw error;
+        }
     }
 
     async getPaymentHistory() {
@@ -277,45 +365,49 @@ class AdminService {
             });
 
         const allServices = [];
+        // Dynamically get all keys from the schema that represent categorical service arrays
+        const categories = Object.keys(Package.schema.paths).filter(path =>
+            Package.schema.paths[path].instance === 'Array' &&
+            !path.startsWith('_')
+        );
+
         packages.forEach(pkg => {
-            if (pkg.services) {
-                Object.keys(pkg.services).forEach(type => {
-                    if (Array.isArray(pkg.services[type])) {
-                        pkg.services[type].forEach(service => {
-                            allServices.push({
-                                ...service.toObject(),
-                                serviceType: type,
-                                vendor: pkg.vendor,
-                                vendorId: pkg.vendor?._id
-                            });
+            categories.forEach(type => {
+                if (Array.isArray(pkg[type])) {
+                    pkg[type].forEach(service => {
+                        allServices.push({
+                            ...service.toObject(),
+                            serviceType: type,
+                            vendor: pkg.vendor,
+                            vendorId: pkg.vendor?._id
                         });
-                    }
-                });
-            }
+                    });
+                }
+            });
         });
 
         return allServices;
     }
 
-    async toggleServiceStatus(vendorId, serviceType, serviceId, status) {
+    async toggleServiceStatus(vendorId, serviceType, serviceId, status, req = null) {
         const pkg = await Package.findOne({ vendor: vendorId });
         if (!pkg) throw new Error(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
 
-        const services = pkg.services[serviceType];
+        const services = pkg[serviceType];
         if (!services) throw new Error(`Service type ${serviceType} not found`);
 
         const serviceIndex = services.findIndex(s => s._id.toString() === serviceId);
         if (serviceIndex === -1) throw new Error(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
 
-        pkg.services[serviceType][serviceIndex].isActive = status;
-        pkg.markModified(`services.${serviceType}`);
+        pkg[serviceType][serviceIndex].isActive = status;
+        pkg.markModified(serviceType);
         await pkg.save();
 
         // Audit Log
         const adminId = req?.user?.id || req?.user?._id;
         if (adminId) this.logAction(adminId, 'UPDATE_STATUS', 'INVENTORY', serviceId, { status: status }, req);
 
-        return pkg.services[serviceType][serviceIndex];
+        return pkg[serviceType][serviceIndex];
     }
 
     async getAllReviews() {
