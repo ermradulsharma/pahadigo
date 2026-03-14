@@ -426,17 +426,17 @@ export const PACKAGE = {
     },
 
     TYPES: {
-        BUNGEE_JUMPING: 'bungeeJumping',
+        BUNGEE_JUMPING: 'bungee-jumping',
         CAMPING: 'camping',
-        CHARDHAM_TOUR: 'chardhamTour',
-        CUSTOM_TRIP: 'customTrip',
+        CHARDHAM_TOUR: 'chardham-tour',
+        CUSTOM_TRIP: 'custom-trip',
         HOMESTAY: 'homestay',
         HOTEL: 'hotel',
         PARAGLIDING: 'paragliding',
         RAFTING: 'rafting',
         SKIING: 'skiing',
         TREKKING: 'trekking',
-        VEHICLE_RENTAL: 'vehicleRental'
+        VEHICLE_RENTAL: 'vehicle-rental'
     },
 
     DIFFICULTY: {

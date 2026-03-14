@@ -53,3 +53,6 @@ test_output.txt
 
 /public/uploads/
 /scripts/
+postman/
+.postman/
+.agent/
