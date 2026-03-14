@@ -440,10 +440,15 @@ export const PACKAGE = {
     },
 
     DIFFICULTY: {
-        EASY: 'easy',
-        EXTREME: 'extreme',
-        HARD: 'hard',
-        MODERATE: 'moderate'
+        EASY: 'Easy',
+        MODERATE: 'Moderate',
+        HARD: 'Hard'
+    },
+
+    FITNESS_LEVELS: {
+        BASIC: 'Basic',
+        GOOD: 'Good',
+        EXCELLENT: 'Excellent'
     },
 
     SEASONS: {
@@ -474,7 +479,6 @@ export const PACKAGE = {
         },
 
         HOMESTAY_TYPES: {
-            // Structure Based
             BUNGALOW: 'Bungalow',
             COTTAGE: 'Cottage',
             FARMSTAY: 'Farmstay',
@@ -485,8 +489,6 @@ export const PACKAGE = {
             TREEHOUSE: 'Treehouse',
             VILLA: 'Villa',
             WOODEN_CHALET: 'Wooden Chalet',
-
-            // Location/Experience Based
             ALPINE: 'Alpine',
             APPLE_ORCHARD_STAY: 'Apple Orchard Stay',
             DESERT: 'Desert',
@@ -505,10 +507,7 @@ export const PACKAGE = {
             DORMITORY: 'Dormitory',
             DUPLEX: 'Duplex',
             FAMILY_ROOM: 'Family Room',
-            FEMALE_DORM: 'Female Dormitory',
             GLASS_HOUSE: 'Glass House',
-            MALE_DORM: 'Male Dormitory',
-            MIXED_DORM: 'Mixed Dormitory',
             MUD_ROOM: 'Mud Room',
             PAHADI_HOUSE: 'Pahadi House',
             PENTHOUSE: 'Penthouse',
@@ -530,7 +529,8 @@ export const PACKAGE = {
 
         BATHROOM_TYPES: {
             PRIVATE: 'Private',
-            SHARED: 'Shared'
+            SHARED: 'Shared',
+            COMMON: 'Common'
         },
 
         RENTAL_TYPES: {
@@ -569,32 +569,16 @@ export const PACKAGE = {
         },
 
         MEAL_TYPES: {
-            // General Options
-            NO_MEALS: 'No Meals',
-            FOOD_INCLUDED: 'Food Included',
-            ALL_MEALS: 'All Meals',
-
-            // Single Meals
-            BREAKFAST: 'Breakfast',
-            LUNCH: 'Lunch',
-            DINNER: 'Dinner',
+            NO_MEALS: 'No Meals Included',
             BREAKFAST_ONLY: 'Breakfast Only',
-            LUNCH_ONLY: 'Lunch Only',
-            DINNER_ONLY: 'Dinner Only',
-
-            // Combinations
-            BREAKFAST_LUNCH: 'Breakfast & Lunch',
             BREAKFAST_DINNER: 'Breakfast & Dinner',
-            LUNCH_DINNER: 'Lunch & Dinner',
-            BREAKFAST_LUNCH_DINNER: 'Breakfast, Lunch & Dinner',
-
-            // Dietary Preferences
-            VEG_ONLY: 'Veg Only',
-            EGGETARIAN: 'Eggetarian',
-            NON_VEG: 'Non Veg',
-            VEG_NON_VEG: 'Veg & Non Veg',
-            VEGAN: 'Vegan',
-            JAIN: 'Jain'
+            ALL_MEALS: 'All Meals',
+            VEG_ONLY: 'Vegetarian Only',
+            TRADITIONAL_PAHADI: 'Traditional Pahadi Meals',
+            BUFFET: 'Buffet',
+            A_LA_CARTE: 'A La Carte (As per menu)',
+            SELF_COOKING: 'Self Cooking Kitchen Available',
+            TEA_SNACKS: 'Tea & Snacks Only'
         },
 
         VIEW_TYPES: {
@@ -623,27 +607,16 @@ export const PACKAGE = {
     ACTIVITY: {
         TREK_TYPES: {
             DAY_TREK: 'Day Trek',
-            EXPEDITION: 'Expedition',
-            JUNGLE_TREK: 'Jungle Trek',
             MULTI_DAY_TREK: 'Multi-Day Trek',
-            SNOW_TREK: 'Snow Trek',
-            SPIRITUAL_TREK: 'Spiritual Trek',
-            SUMMIT_TREK: 'Summit Trek',
-            WINTER_TREK: 'Winter Trek'
+            EXPEDITION: 'Expedition'
         },
 
         CAMPING_TYPES: {
-            ALPINE: 'Alpine',
-            BEACH: 'Beach',
-            CAVE: 'Cave',
-            DESERT: 'Desert',
-            FOREST: 'Forest',
-            GLAMPING: 'Glamping',
-            JUNGLE: 'Jungle',
-            LUXURY: 'Luxury',
-            MEADOW: 'Meadow',
             RIVERSIDE: 'Riverside',
-            TREKKING: 'Trekking'
+            ALPINE: 'Alpine',
+            LUXURY_SWISS: 'Luxury Swiss',
+            DOME_TENT: 'Dome Tent',
+            JUNGLE_CAMP: 'Jungle Camp'
         },
 
         RAPID_GRADES: {
@@ -665,29 +638,31 @@ export const PACKAGE = {
             LONG_FLY: 'Long Fly',
             MEDIUM_FLY: 'Medium Fly',
             SHORT_FLY: 'Short Fly'
+        },
+
+        JUMP_TYPES: {
+            FORWARD: 'Forward',
+            BACKWARD: 'Backward',
+            TANDEM: 'Tandem'
         }
     },
 
     TRANSPORT: {
         VEHICLE_TYPES: {
             BIKE: 'Bike',
-            CAMPER_VAN: 'Camper Van',
-            ELECTRIC_VEHICLE: 'Electric Vehicle',
-            HATCHBACK: 'Hatchback',
-            LUXURY_COACH: 'Luxury Coach',
-            MINI_BUS: 'Mini Bus',
-            OFF_ROAD_4X4: 'Off-Road 4x4',
             SCOOTER: 'Scooter',
+            ELECTRIC_BIKE: 'Electric Bike',
+            CRUISER: 'Cruiser',
+            SPORT_BIKE: 'Sport Bike',
             SEDAN: 'Sedan',
             SUV: 'SUV',
-            TEMPO_TRAVELLER: 'Tempo Traveller',
-            VINTAGE_CAR: 'Vintage Car',
-            VOLVO_BUS: 'Volvo Bus'
+            HATCHBACK: 'Hatchback',
+            LUXURY: 'Luxury'
         },
 
         TRANSMISSION_TYPES: {
-            AUTOMATIC: 'Automatic',
-            MANUAL: 'Manual'
+            MANUAL: 'Manual',
+            AUTOMATIC_VARIOMATIC: 'Automatic/Variomatic'
         },
 
         FUEL_POLICIES: {
@@ -705,8 +680,21 @@ export const PACKAGE = {
 
         CUSTOM_TRIP_SERVICE_TYPES: {
             POINT_TO_POINT: 'Point-to-Point',
-            OUTSTATION: 'Outstation',
-            FULL_DAY_RENTAL: 'Full-Day Rental'
+            SIGHTSEEING: 'Sightseeing',
+            OUTSTATION: 'Outstation'
+        },
+
+        YATRA_TYPES: {
+            COMPLETE_CHAR_DHAM: 'Complete Char Dham (4 Dham)',
+            DO_DHAM: 'Do Dham (Kedarnath-Badrinath)',
+            GANGOTRI_YAMUNOTRI: 'Gangotri-Yamunotri',
+            EK_DHAM: 'Ek Dham'
+        },
+
+        CHARDHAM_VEHICLE_CATEGORIES: {
+            BUDGET: 'Budget (Sumo/Bolero)',
+            COMFORT: 'Comfort (Innova/Ertiga)',
+            TEMPO_TRAVELLER: 'Tempo Traveller'
         }
     }
 };

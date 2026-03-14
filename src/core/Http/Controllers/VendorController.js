@@ -10,7 +10,6 @@ import { HTTP_STATUS, RESPONSE_MESSAGES, PACKAGE } from '@/constants/index.js';
 import { parseNestedFormData } from '@/helpers/parseNestedFormData.js';
 import { uploadToCloudinary } from '@/helpers/cloudinary.js';
 import { mapToGeoJSON } from '@/helpers/geoUtils.js';
-import { log } from 'console';
 
 class VendorController {
 
@@ -645,25 +644,35 @@ class VendorController {
 
         const normalizeValue = (val, mapObj) => {
             if (typeof val !== 'string') return val;
+            const trimmed = val.trim();
             const validValues = Object.values(mapObj);
-            if (validValues.includes(val)) return val;
-            const upperKey = val.toUpperCase().replace(/\s+/g, '_').replace(/-/g, '_');
-            return mapObj[upperKey] || val;
+            
+            // 1. Direct match (Case-sensitive)
+            if (validValues.includes(trimmed)) return trimmed;
+            
+            // 2. Case-insensitive match
+            const ciMatch = validValues.find(v => v.toLowerCase() === trimmed.toLowerCase());
+            if (ciMatch) return ciMatch;
+
+            // 3. Mapping based on common keys
+            const upperKey = trimmed.toUpperCase().replace(/\s+/g, '_').replace(/-/g, '_');
+            
+            // Handle specific legacy/short mappings
+            if (upperKey === 'BREAKFAST') return mapObj['BREAKFAST_ONLY'] || trimmed;
+            if (upperKey === 'NO_MEALS') return mapObj['NO_MEALS'] || 'No Meals Included';
+
+            return mapObj[upperKey] || trimmed;
         };
 
         Object.keys(ENUM_MAPS).forEach(key => {
             if (item[key] !== undefined) {
                 item[key] = normalizeValue(item[key], ENUM_MAPS[key]);
             }
-            if (item.roomDetails && item.roomDetails[key] !== undefined) {
-                item.roomDetails[key] = normalizeValue(item.roomDetails[key], ENUM_MAPS[key]);
-            }
-            if (item.vehicleDetails && item.vehicleDetails[key] !== undefined) {
-                item.vehicleDetails[key] = normalizeValue(item.vehicleDetails[key], ENUM_MAPS[key]);
-            }
-            if (item.details && item.details[key] !== undefined) {
-                item.details[key] = normalizeValue(item.details[key], ENUM_MAPS[key]);
-            }
+            ['roomDetails', 'vehicleDetails', 'details'].forEach(subKey => {
+                if (item[subKey] && item[subKey][key] !== undefined) {
+                    item[subKey][key] = normalizeValue(item[subKey][key], ENUM_MAPS[key]);
+                }
+            });
         });
 
         const photoUrls = [];
