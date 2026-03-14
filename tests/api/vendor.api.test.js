@@ -56,4 +56,39 @@ describe('Vendor API Controller Test Suite', () => {
         // It should either pass or return 400 validation depending on the exact Package Schema constraints. We verify it doesn't 500.
         expect(res.status).not.toBe(500);
     });
+    it('should return the vendor catalog with formatted services array', async () => {
+        const user = await User.create({ email: 'v3@test.com', role: 'vendor' });
+        const catId = new mongoose.Types.ObjectId();
+        
+        await Vendor.create({
+            user: user._id,
+            businessName: 'Dynamic Tours',
+            category: [{ _id: catId, name: 'Camping', slug: 'camping' }],
+            bankDetails: {
+                accountHolderName: 'Dynamic User',
+                accountNumber: '0987654321',
+                ifscCode: 'ICIC0001234',
+                bankName: 'ICICI',
+                cancelledCheque: { url: 'http://test.com/cheque.jpg' }
+            },
+            documents: {
+                aadharCard: [{ url: 'http://test.com/aadhar.jpg' }],
+                panCard: { url: 'http://test.com/pan.jpg' },
+                businessRegistration: { url: 'http://test.com/reg.jpg' },
+                gstRegistration: { url: 'http://test.com/gst.jpg' }
+            },
+            isApproved: true
+        });
+
+        const req = { user: { role: 'vendor', id: user._id.toString() } };
+        const res = await VendorController.getPackages(req);
+        const data = await res.json();
+
+        expect(res.status).toBe(200);
+        expect(data.data.services).toBeDefined();
+        expect(Array.isArray(data.data.services)).toBe(true);
+        expect(data.data.services.length).toBe(1);
+        expect(data.data.services[0].slug).toBe('camping');
+        expect(data.data.camping).toBeUndefined(); // Should be cleaned up
+    });
 });

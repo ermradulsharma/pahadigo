@@ -11,6 +11,7 @@ import Inquiry from '@/models/Inquiry.js';
 import AuditLog from '@/models/AuditLog.js';
 import SearchLog from '@/models/SearchLog.js';
 import { RESPONSE_MESSAGES } from '@/constants/index.js';
+import { SCHEMA_KEYS } from '@/constants/categories.js';
 
 class AdminService {
     // ... existing stats ...
@@ -134,17 +135,7 @@ class AdminService {
                 $project: {
                     totalItems: {
                         $add: [
-                            { $size: { $ifNull: ["$homestay", []] } },
-                            { $size: { $ifNull: ["$hotel", []] } },
-                            { $size: { $ifNull: ["$camping", []] } },
-                            { $size: { $ifNull: ["$trekking", []] } },
-                            { $size: { $ifNull: ["$rafting", []] } },
-                            { $size: { $ifNull: ["$bungeeJumping", []] } },
-                            { $size: { $ifNull: ["$vehicleRental", []] } },
-                            { $size: { $ifNull: ["$chardhamTour", []] } },
-                            { $size: { $ifNull: ["$skiing", []] } },
-                            { $size: { $ifNull: ["$paragliding", []] } },
-                            { $size: { $ifNull: ["$customTrip", []] } }
+                            ...SCHEMA_KEYS.map(key => ({ $size: { $ifNull: [`$${key}`, []] } }))
                         ]
                     }
                 }
@@ -396,11 +387,7 @@ class AdminService {
             });
 
         const allServices = [];
-        // Dynamically get all keys from the schema that represent categorical service arrays
-        const categories = Object.keys(Package.schema.paths).filter(path =>
-            Package.schema.paths[path].instance === 'Array' &&
-            !path.startsWith('_')
-        );
+        const categories = SCHEMA_KEYS;
 
         packages.forEach(pkg => {
             categories.forEach(type => {

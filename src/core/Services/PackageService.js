@@ -1,6 +1,7 @@
 import Package from '@/models/Package.js';
 import Vendor from '@/models/Vendor.js';
 import { RESPONSE_MESSAGES } from '@/constants/index.js';
+import { CATEGORY_MAP, SCHEMA_KEYS } from '@/constants/categories.js';
 
 class PackageService {
 
@@ -8,25 +9,45 @@ class PackageService {
     async ensureCatalog(vendorId) {
         let pkg = await Package.findOne({ vendor: vendorId });
         if (!pkg) {
-            pkg = await Package.create({
-                vendor: vendorId,
-                homestay: [],
-                camping: [],
-                trekking: [],
-                rafting: [],
-                bungeeJumping: [],
-                vehicleRental: [],
-                chardhamTour: [],
-                customTrip: [],
-                skiing: [],
-                paragliding: []
+            const initialData = { vendor: vendorId };
+            SCHEMA_KEYS.forEach(key => {
+                initialData[key] = [];
             });
+            pkg = await Package.create(initialData);
         }
         return pkg;
     }
 
     async getVendorCatalog(vendorId) {
         return await this.ensureCatalog(vendorId);
+    }
+
+    async getFormattedVendorCatalog(vendorId) {
+        const catalog = await this.ensureCatalog(vendorId);
+        const vendor = await Vendor.findById(vendorId);
+
+        const result = catalog.toObject();
+        result.services = [];
+
+        if (vendor && vendor.category && Array.isArray(vendor.category)) {
+            result.services = vendor.category.map(c => {
+                const slug = (c.slug || '').trim().toLowerCase();
+                const schemaKey = CATEGORY_MAP[slug] || slug;
+                return {
+                    id: c._id || "",
+                    title: c.name || "",
+                    slug: c.slug || "",
+                    items: catalog[schemaKey] || []
+                };
+            });
+        }
+
+        // Clean up individual root-level category keys to provide a clean response
+        SCHEMA_KEYS.forEach(key => {
+            if (result[key]) delete result[key];
+        });
+
+        return result;
     }
 
     async createPackage(vendorId, data = {}) {
@@ -38,26 +59,14 @@ class PackageService {
         const vendor = await Vendor.findById(vendorId);
         if (!vendor || !vendor.category) return [];
 
-        const categoryMap = {
-            'homestay': 'homestay',
-            'hotel': 'hotel',
-            'camping': 'camping',
-            'trekking': 'trekking',
-            'rafting': 'rafting',
-            'river-rafting': 'rafting',
-            'bungee-jumping': 'bungeeJumping',
-            'bike-scooter-rental': 'vehicleRental',
-            'chardham-tour': 'chardhamTour',
-            'custom-trip': 'customTrip'
-        };
-
         const allowed = new Set();
         vendor.category.forEach(c => {
             if (!c.slug) return;
-            allowed.add(c.slug.toLowerCase());
+            const slug = c.slug.toLowerCase();
+            allowed.add(slug);
             // Also allow the normalized schema key
-            if (categoryMap[c.slug.toLowerCase()]) {
-                allowed.add(categoryMap[c.slug.toLowerCase()]);
+            if (CATEGORY_MAP[slug]) {
+                allowed.add(CATEGORY_MAP[slug]);
             }
         });
 
@@ -127,27 +136,39 @@ class PackageService {
 
     async getAvailablePackages(query = '') {
         const filter = {};
-        let packages = await Package.find({}).populate('vendor');
 
         if (query) {
             const regex = new RegExp(query, 'i');
-            packages = packages.filter(p => {
-                if (p.vendor?.businessName && regex.test(p.vendor.businessName)) return true;
 
-                // Search in all service arrays at root level
-                const serviceKeys = ['homestay', 'camping', 'trekking', 'rafting', 'bungeeJumping', 'vehicleRental', 'chardhamTour', 'skiing', 'paragliding'];
+            // Build $or query to search in all service arrays
+            const orConditions = [
+                { 'vendorDetails.businessName': regex }
+            ];
 
-                for (let key of serviceKeys) {
-                    if (p[key] && Array.isArray(p[key])) {
-                        if (p[key].some(s => regex.test(s.name) || regex.test(s.title) || regex.test(s.description))) {
-                            return true;
-                        }
-                    }
-                }
-                return false;
+            // Add conditions for each service category
+            SCHEMA_KEYS.forEach(key => {
+                orConditions.push({ [`${key}.title`]: regex });
+                orConditions.push({ [`${key}.name`]: regex });
+                orConditions.push({ [`${key}.description`]: regex });
             });
+
+            // Note: Vendor details are in a separate model, so we need a lookup or populate
+            // For now, mirroring the existing logic but more efficiently via aggregation
+            return await Package.aggregate([
+                {
+                    $lookup: {
+                        from: 'vendors',
+                        localField: 'vendor',
+                        foreignField: '_id',
+                        as: 'vendorDetails'
+                    }
+                },
+                { $unwind: '$vendorDetails' },
+                { $match: { $or: orConditions } }
+            ]);
         }
-        return packages;
+
+        return await Package.find({}).populate('vendor');
     }
 
     // Toggle Category Status (Bulk)

@@ -2,6 +2,7 @@ import VendorService from '@/services/VendorService.js';
 import PackageService from '@/services/PackageService.js';
 import Vendor from '@/models/Vendor.js';
 import { successResponse, errorResponse } from '@/helpers/response.js';
+import { CATEGORY_MAP } from '@/constants/categories.js';
 import fs from 'fs';
 import path from 'path';
 import CategoryService from '@/services/CategoryService.js';
@@ -417,7 +418,7 @@ class VendorController {
             const packages = await VendorService.findByUserId(user.id);
             if (!packages) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
-            const catalog = await PackageService.getVendorCatalog(packages._id);
+            const catalog = await PackageService.getFormattedVendorCatalog(packages._id);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, catalog);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
@@ -475,8 +476,9 @@ class VendorController {
 
             if (!category || !item) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
-            const updatedCatalog = await PackageService.addServiceItem(vendor._id, category, item);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ITEM.ADDED, updatedCatalog);
+            await PackageService.addServiceItem(vendor._id, category, item);
+            const catalog = await PackageService.getFormattedVendorCatalog(vendor._id);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ITEM.ADDED, catalog);
         } catch (error) {
             const status = error.message && (error.message.includes('not authorized') || error.message.includes('Invalid category')) ? HTTP_STATUS.BAD_REQUEST : HTTP_STATUS.INTERNAL_SERVER_ERROR;
             return errorResponse(status, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
@@ -506,8 +508,9 @@ class VendorController {
 
             if (!category || !itemId || !updates) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
-            const updatedCatalog = await PackageService.updateServiceItem(vendor._id, category, itemId, updates);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, { catalog: updatedCatalog });
+            await PackageService.updateServiceItem(vendor._id, category, itemId, updates);
+            const catalog = await PackageService.getFormattedVendorCatalog(vendor._id);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, catalog);
         } catch (error) {
             console.error("Update Item Error:", error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
@@ -527,8 +530,9 @@ class VendorController {
             category = this._normalizeCategory(category);
             if (!category || !itemId) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
-            const updatedCatalog = await PackageService.removeServiceItem(vendor._id, category, itemId);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, { catalog: updatedCatalog });
+            await PackageService.removeServiceItem(vendor._id, category, itemId);
+            const catalog = await PackageService.getFormattedVendorCatalog(vendor._id);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, catalog);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
@@ -547,8 +551,9 @@ class VendorController {
             category = this._normalizeCategory(category);
             if (!category || !itemId || typeof isActive !== 'boolean') return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
-            const updatedCatalog = await PackageService.toggleItemStatus(vendor._id, category, itemId, isActive);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, { catalog: updatedCatalog });
+            await PackageService.toggleItemStatus(vendor._id, category, itemId, isActive);
+            const catalog = await PackageService.getFormattedVendorCatalog(vendor._id);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, catalog);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
@@ -567,8 +572,9 @@ class VendorController {
             category = this._normalizeCategory(category);
             if (!category || typeof isActive !== 'boolean') return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
-            const updatedCatalog = await PackageService.toggleCategoryStatus(vendor._id, category, isActive);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, { catalog: updatedCatalog });
+            await PackageService.toggleCategoryStatus(vendor._id, category, isActive);
+            const catalog = await PackageService.getFormattedVendorCatalog(vendor._id);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, catalog);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
@@ -646,17 +652,17 @@ class VendorController {
             if (typeof val !== 'string') return val;
             const trimmed = val.trim();
             const validValues = Object.values(mapObj);
-            
+
             // 1. Direct match (Case-sensitive)
             if (validValues.includes(trimmed)) return trimmed;
-            
+
             // 2. Case-insensitive match
             const ciMatch = validValues.find(v => v.toLowerCase() === trimmed.toLowerCase());
             if (ciMatch) return ciMatch;
 
             // 3. Mapping based on common keys
             const upperKey = trimmed.toUpperCase().replace(/\s+/g, '_').replace(/-/g, '_');
-            
+
             // Handle specific legacy/short mappings
             if (upperKey === 'BREAKFAST') return mapObj['BREAKFAST_ONLY'] || trimmed;
             if (upperKey === 'NO_MEALS') return mapObj['NO_MEALS'] || 'No Meals Included';
@@ -708,24 +714,8 @@ class VendorController {
 
     _normalizeCategory(category) {
         if (!category) return null;
-        const categoryMap = {
-            'homestay': 'homestay',
-            'hotel': 'hotel',
-            'camping': 'camping',
-            'trekking': 'trekking',
-            'rafting': 'rafting',
-            'river-rafting': 'rafting',
-            'bungee-jumping': 'bungeeJumping',
-            'bungee jumping': 'bungeeJumping',
-            'bike/scooter rental': 'vehicleRental',
-            'bike-scooter-rental': 'vehicleRental',
-            'vehicle rental': 'vehicleRental',
-            'chardham tour': 'chardhamTour',
-            'chardham-tour': 'chardhamTour',
-            'custom-trip': 'customTrip',
-            'custom trip': 'customTrip'
-        };
-        return categoryMap[category.toLowerCase()] || category;
+        const trimmed = category.trim().toLowerCase();
+        return CATEGORY_MAP[trimmed] || trimmed;
     }
 }
 
