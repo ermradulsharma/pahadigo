@@ -1,4 +1,4 @@
-import OTPService from '../../src/services/OTPService.js';
+import OTPService from '../../src/core/Services/OTPService.js';
 
 describe('OTPService', () => {
     const email = 'test@example.com';

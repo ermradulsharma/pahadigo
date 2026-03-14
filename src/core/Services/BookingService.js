@@ -1,4 +1,5 @@
 import Booking from '@/models/Booking.js';
+import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 class BookingService {
     async createBooking({ userId, packageId, travelDate, price }) {

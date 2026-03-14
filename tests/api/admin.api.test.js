@@ -31,7 +31,7 @@ describe('Admin API Integration', () => {
         const vendor = await Vendor.create({
             user: new mongoose.Types.ObjectId(),
             businessName: 'Unapproved Vendor',
-            category: [{ name: 'Hotel', slug: 'hotel' }],
+            category: [{ _id: new mongoose.Types.ObjectId(), name: 'Hotel', slug: 'hotel' }],
             bankDetails: {
                 accountHolderName: 'Hemant',
                 accountNumber: '1234567890',

@@ -8,7 +8,7 @@
         "build": "next build",
         "start": "next start",
         "lint": "eslint",
-        "test": "jest --detectOpenHandles",
+        "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --detectOpenHandles",
         "seed": "node src/core/Database/Seeders/resetAndSeed.js"
     },
     "dependencies": {

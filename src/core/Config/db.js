@@ -1,7 +1,8 @@
 import mongoose from 'mongoose';
 
-const MONGODB_URI = process.env.MONGODB_URI;
-if (!MONGODB_URI) {
+const MONGODB_URI = process.env.MONGODB_URI || (process.env.NODE_ENV === 'test' ? 'mongodb://localhost:27017/test_dummy' : null);
+
+if (!MONGODB_URI && process.env.NODE_ENV !== 'test') {
     console.warn("MONGODB_URI is not defined. Database connection will likely fail.");
 }
 let cached = global.mongoose;

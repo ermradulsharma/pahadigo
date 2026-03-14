@@ -2,6 +2,7 @@ import VendorController from '../../src/core/Http/Controllers/VendorController.j
 import User from '../../src/core/Models/User.js';
 import Vendor from '../../src/core/Models/Vendor.js';
 import VendorService from '../../src/core/Services/VendorService.js';
+import mongoose from 'mongoose';
 
 describe('Vendor API Controller Test Suite', () => {
 
@@ -25,7 +26,7 @@ describe('Vendor API Controller Test Suite', () => {
         await Vendor.create({
             user: user._id,
             businessName: 'Himalayan Tours',
-            category: [{ name: 'Hotel', slug: 'hotel' }],
+            category: [{ _id: new mongoose.Types.ObjectId(), name: 'Hotel', slug: 'hotel' }],
             bankDetails: {
                 accountHolderName: 'Hemant',
                 accountNumber: '1234567890',
@@ -42,15 +43,13 @@ describe('Vendor API Controller Test Suite', () => {
             isApproved: true
         });
 
-        // Mock FormData for Package Details
-        const formData = new Map();
-        formData.set('title', 'Everest Trip');
-        formData.set('price', '10000');
-        formData.set('duration', 'str'); // Avoid parsing errors in the controller
-
         const req = {
             user: { role: 'vendor', id: user._id.toString() },
-            formDataBody: formData
+            jsonBody: {
+                title: 'Everest Trip',
+                price: 10000,
+                duration: 'str'
+            }
         };
 
         const res = await VendorController.createPackage(req);

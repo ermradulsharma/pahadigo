@@ -56,3 +56,4 @@ test_output.txt
 postman/
 .postman/
 .agent/
+*.txt

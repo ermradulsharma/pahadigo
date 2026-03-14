@@ -1,17 +1,13 @@
+import { jest } from '@jest/globals';
 import PaymentController from '../../src/core/Http/Controllers/PaymentController.js';
 import Booking from '../../src/core/Models/Booking.js';
 import RazorpayService from '../../src/core/Services/RazorpayService.js';
 import mongoose from 'mongoose';
 
-jest.mock('../../src/core/Services/RazorpayService.js', () => ({
-    createOrder: jest.fn(),
-    verifySignature: jest.fn()
-}));
-
 describe('Payment API Controller Test Suite', () => {
 
     afterEach(() => {
-        jest.clearAllMocks();
+        jest.restoreAllMocks();
     });
 
     it('should successfully initiate a payment order', async () => {
@@ -25,7 +21,9 @@ describe('Payment API Controller Test Suite', () => {
             razorpay: {}
         });
 
-        RazorpayService.createOrder.mockResolvedValue({ id: 'order_test_api' });
+        // Use spying instead of top-level mock for ESM stability
+        const mockCreateOrder = jest.spyOn(RazorpayService, 'createOrder')
+            .mockResolvedValue({ id: 'order_test_api' });
 
         const req = {
             user: { id: 'user123' },
@@ -37,11 +35,12 @@ describe('Payment API Controller Test Suite', () => {
 
         const data = await res.json();
         expect(data.data.order.id).toBe('order_test_api');
-        expect(RazorpayService.createOrder).toHaveBeenCalledWith(5000, booking._id.toString());
+        expect(mockCreateOrder).toHaveBeenCalledWith(5000, booking._id.toString());
     });
 
     it('should fail verification on bad signature', async () => {
-        RazorpayService.verifySignature.mockReturnValue(false);
+        const mockVerifySignature = jest.spyOn(RazorpayService, 'verifySignature')
+            .mockReturnValue(false);
 
         const req = {
             jsonBody: {

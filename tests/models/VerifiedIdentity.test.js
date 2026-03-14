@@ -2,6 +2,10 @@ import mongoose from 'mongoose';
 import VerifiedIdentity from '../../src/core/Models/VerifiedIdentity.js';
 
 describe('VerifiedIdentityModel Test Suite', () => {
+    beforeEach(async () => {
+        await VerifiedIdentity.syncIndexes();
+    });
+
     it('should require vendor, docType, and idNumber', async () => {
         const identity = new VerifiedIdentity({});
         let error;

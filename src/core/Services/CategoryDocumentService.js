@@ -1,4 +1,5 @@
 import CategoryDocument from '@/models/CategoryDocument.js';
+import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 class CategoryDocumentService {
 
@@ -46,7 +47,7 @@ class CategoryDocumentService {
 
     async update(id, data) {
         try {
-            const document = await CategoryDocument.findById(id.trim());
+            const document = await CategoryDocument.findById(id.toString());
 
             if (!document) {
                 const dbName = CategoryDocument.db.name;

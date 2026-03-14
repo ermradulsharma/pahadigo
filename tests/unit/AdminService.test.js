@@ -44,7 +44,7 @@ describe('AdminService Test Suite', () => {
         const vendor = await Vendor.create({
             user: user._id,
             businessName: 'Test Vendor Co',
-            category: [{ name: 'Hotel', slug: 'hotel' }],
+            category: [{ _id: new mongoose.Types.ObjectId(), name: 'Hotel', slug: 'hotel' }],
             bankDetails: {
                 accountHolderName: 'Hemant',
                 accountNumber: '1234567890',
@@ -62,6 +62,6 @@ describe('AdminService Test Suite', () => {
         });
 
         const approved = await AdminService.approveVendor(vendor._id);
-        expect(approved.verificationStatus).toBe('approved');
+        expect(approved.isApproved).toBe(true);
     });
 });

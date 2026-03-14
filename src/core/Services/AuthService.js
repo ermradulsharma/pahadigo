@@ -191,7 +191,7 @@ class AuthService {
         }
 
         const token = generateToken({ id: user._id, role: user.role, email: user.email });
-        return { token, isNewUser, user, ...vendorData };
+        return { token, role: user.role, isNewUser, user, ...vendorData };
     }
 
     async facebookAuth(accessToken, targetRole) {
@@ -242,7 +242,7 @@ class AuthService {
         }
 
         const token = generateToken({ id: user._id, role: user.role, email: user.email });
-        return { token, isNewUser, user, ...vendorData };
+        return { token, role: user.role, isNewUser, user, ...vendorData };
     }
 
     async appleAuth(idToken, targetRole, userFn, userEmail) {
@@ -295,7 +295,7 @@ class AuthService {
         }
 
         const token = generateToken({ id: user._id, role: user.role, email: user.email });
-        return { token, isNewUser, user, ...vendorData };
+        return { token, role: user.role, isNewUser, user, ...vendorData };
     }
 
     async logout(token) {
@@ -407,7 +407,7 @@ class AuthService {
             vendorData = await this._getVendorStatus(user);
         }
         const token = generateToken({ id: user._id, role: user.role, email: user.email });
-        return { token, isNewUser, user, ...vendorData };
+        return { token, role: user.role, isNewUser, user, ...vendorData };
     }
 }
 

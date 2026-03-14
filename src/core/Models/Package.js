@@ -1,8 +1,6 @@
 import mongoose from 'mongoose';
 import { PACKAGE } from '@/constants/index.js';
 
-// --- Service Sub-Schemas ---
-
 const priceWithDecimal = { type: Number, required: true, default: 0, min: 0, get: (v) => (Math.round(v * 100) / 100).toFixed(2), set: (v) => Math.round(v * 100) / 100 };
 const optionalPriceWithDecimal = { type: Number, default: 0, min: 0, get: (v) => (Math.round(v * 100) / 100).toFixed(2), set: (v) => Math.round(v * 100) / 100 };
 
@@ -830,8 +828,6 @@ const CustomTripSchema = new mongoose.Schema({
     }
 }, { toJSON: { getters: true }, toObject: { getters: true } });
 
-
-// --- Root Catalog Schema ---
 const VendorPackageSchema = new mongoose.Schema({
     vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true, unique: true },
     homestay: [HomestaySchema],

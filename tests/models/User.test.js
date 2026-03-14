@@ -11,8 +11,8 @@ describe('UserModel Test Suite', () => {
 
         expect(savedUser._id).toBeDefined();
         expect(savedUser.email).toBe(userData.email);
-        expect(savedUser.authProvider).toBe(AUTH_PROVIDERS.LOCAL);
-        expect(savedUser.status).toBe(USER_STATUS.ACTIVE);
+        expect(savedUser.authProvider).toBe(AUTH_PROVIDERS.PHONE);
+        expect(savedUser.status).toBe(USER_STATUS.PENDING);
         expect(savedUser.isVerified).toBe(false);
     });
 

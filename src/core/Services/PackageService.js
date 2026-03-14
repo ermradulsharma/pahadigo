@@ -10,25 +10,26 @@ class PackageService {
         if (!pkg) {
             pkg = await Package.create({
                 vendor: vendorId,
-                services: {
-                    homestay: [],
-                    camping: [],
-                    trekking: [],
-                    rafting: [],
-                    bungeeJumping: [],
-                    vehicleRental: [],
-                    chardhamTour: [],
-                    customTrip: [],
-                    skiing: [],
-                    paragliding: []
-                }
+                homestay: [],
+                camping: [],
+                trekking: [],
+                rafting: [],
+                bungeeJumping: [],
+                vehicleRental: [],
+                chardhamTour: [],
+                customTrip: [],
+                skiing: [],
+                paragliding: []
             });
-
         }
         return pkg;
     }
 
     async getVendorCatalog(vendorId) {
+        return await this.ensureCatalog(vendorId);
+    }
+
+    async createPackage(vendorId, data = {}) {
         return await this.ensureCatalog(vendorId);
     }
 

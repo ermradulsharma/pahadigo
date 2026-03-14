@@ -1,7 +1,7 @@
 import AuthService from '../../src/core/Services/AuthService.js';
 import OTPService from '../../src/core/Services/OTPService.js';
 import User from '../../src/core/Models/User.js';
-import { USER_STATUS } from '../../src/core/Constants/index.js';
+import { USER_STATUS, RESPONSE_MESSAGES } from '../../src/core/Constants/index.js';
 
 describe('AuthService', () => {
     describe('verifyAndLogin', () => {
@@ -10,7 +10,7 @@ describe('AuthService', () => {
                 identifier: 'test@example.com',
                 otp: '123456',
                 email: 'test@example.com'
-            })).rejects.toThrow('Invalid or expired OTP');
+            })).rejects.toThrow(RESPONSE_MESSAGES.AUTH.INVALID_OTP);
         });
 
         it('should create a new user and return a token for valid OTP', async () => {
@@ -61,7 +61,7 @@ describe('AuthService', () => {
                 identifier: email,
                 otp,
                 email
-            })).rejects.toThrow('Your account has been suspended or deleted.');
+            })).rejects.toThrow(RESPONSE_MESSAGES.AUTH.ACCOUNT_SUSPENDED);
         });
     });
 
@@ -75,7 +75,7 @@ describe('AuthService', () => {
 
         it('should throw config error for real token without client id', async () => {
             delete process.env.GOOGLE_CLIENT_ID;
-            await expect(AuthService.googleAuth('real_token', 'user')).rejects.toThrow('Google Client ID is not configured');
+            await expect(AuthService.googleAuth('real_token', 'user')).rejects.toThrow(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
         });
     });
 });

@@ -234,6 +234,7 @@ export const RESPONSE_MESSAGES = {
         TOKEN_REQUIRED: 'Authentication token is required',
         CONFIG_MISSING: 'Authentication service is not configured',
         DIFFERENT_METHOD: 'Account uses a different login method',
+        UNAUTHORIZED: 'Unauthorized access',
         VENDORS_ONLY: 'This action is restricted to vendors only',
         ADMIN_ONLY: 'This action is restricted to administrators only',
         LOGIN_SUCCESS: 'Login successful',

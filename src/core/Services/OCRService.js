@@ -1,6 +1,7 @@
 import Tesseract from 'tesseract.js';
 import path from 'path';
 import { fileURLToPath } from 'url';
+import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,7 +37,7 @@ class OCRService {
             const cleanText = text.replace(/\s+/g, ' ');
 
             // 1. Patterns for Indian IDs (Flexible for spacing and OCR slips)
-            const aadharPattern = /\b\d{4}\s?\d{4}\s?\d{4}\b/g;
+            const aadharPattern = /\b[2-9]\d{3}\s?\d{4}\s?\d{4}\b/g;
             // PAN: Often misreads last B as 8 or 3. No word boundaries to handle symbols like '='
             const panPattern = /[A-Z]{5}[0-9]{4}[A-Z0-9]{1}/gi;
             const dobPattern = /\d{2}\/\d{2}\/\d{4}|\d{2}\/\d{2}\/\d{3}[\d¢$#%]/;

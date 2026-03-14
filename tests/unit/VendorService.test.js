@@ -19,7 +19,9 @@ describe('VendorService Test Suite', () => {
 
         const vendor = await VendorService.upsertProfile(userId, profileData);
         expect(vendor).toBeDefined();
-        expect(vendor.user.toString()).toBe(userId.toString());
+        // Check both cases: populated or just ID
+        const vendorUserId = vendor.user._id || vendor.user;
+        expect(vendorUserId.toString()).toBe(userId.toString());
         expect(vendor.businessName).toBe('Himalayan Tours');
     });
 

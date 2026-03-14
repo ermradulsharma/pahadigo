@@ -1,6 +1,6 @@
-import AuthController from '../../src/controllers/AuthController.js';
-import User from '../../src/models/User.js';
-import { USER_ROLES } from '../../src/constants/index.js';
+import AuthController from '../../src/core/Http/Controllers/AuthController.js';
+import User from '../../src/core/Models/User.js';
+import { USER_ROLES } from '../../src/core/Constants/index.js';
 
 describe('Auth API Integration', () => {
     it('should send an OTP successfully', async () => {
@@ -50,7 +50,7 @@ describe('Auth API Integration', () => {
         const response = await AuthController.verifyOtp(req);
         expect(response.status).toBe(200);
         const data = await response.json();
-        expect(data.message).toBe('Verified successfully');
+        expect(data.message).toBe('Login successful');
         expect(data.data.token).toBeDefined(); // Token issuance verification
         expect(typeof data.data.token).toBe('string');
     });

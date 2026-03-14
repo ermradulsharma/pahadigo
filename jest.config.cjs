@@ -12,6 +12,7 @@ module.exports = {
         '^@/helpers/(.*)$': '<rootDir>/src/core/Helpers/$1',
         '^@/constants/(.*)$': '<rootDir>/src/core/Constants/$1',
         '^@/lib/(.*)$': '<rootDir>/src/core/Lib/$1',
+        '^@/seeders/(.*)$': '<rootDir>/src/core/Database/Seeders/$1',
         '^@/(.*)$': '<rootDir>/src/$1',
     },
 };

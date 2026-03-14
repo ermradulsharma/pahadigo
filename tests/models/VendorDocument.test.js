@@ -2,6 +2,10 @@ import mongoose from 'mongoose';
 import VendorDocument from '../../src/core/Models/VendorDocument.js';
 
 describe('VendorDocumentModel Test Suite', () => {
+    beforeEach(async () => {
+        await VendorDocument.syncIndexes();
+    });
+
     it('should require vendor_id, category_slug, document_slug, and url', async () => {
         const doc = new VendorDocument({});
         let error;

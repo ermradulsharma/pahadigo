@@ -1,21 +1,31 @@
 import CategoryDocumentService from '../../src/core/Services/CategoryDocumentService.js';
 import CategoryDocument from '../../src/core/Models/CategoryDocument.js';
+import { jest } from '@jest/globals';
 
 describe('CategoryDocumentService Test Suite', () => {
     let mockDocId;
 
-    it('should create a document successfully', async () => {
+    beforeEach(async () => {
         const doc = await CategoryDocumentService.create({
             name: 'Aadhar Card',
             category_slug: 'all',
             document_slug: 'aadhar'
         });
         mockDocId = doc._id;
-        expect(doc.name).toBe('Aadhar Card');
+    });
+
+    it('should create a document successfully', async () => {
+        const doc = await CategoryDocumentService.create({
+            name: 'PAN Card',
+            category_slug: 'all',
+            document_slug: 'pan'
+        });
+        expect(doc.name).toBe('PAN Card');
     });
 
     it('should return paginated results', async () => {
-        await CategoryDocumentService.create({ name: 'PAN', category_slug: 'all', document_slug: 'pan' });
+        await CategoryDocument.create({ name: 'Doc 2', category_slug: 'test', type: 'image', url: 'http://test2.com' });
+        await CategoryDocument.create({ name: 'Doc 3', category_slug: 'test', type: 'image', url: 'http://test3.com' });
         const result = await CategoryDocumentService.getAll({}, 1, 1);
         expect(result.docs.length).toBe(1);
         expect(result.totalDocs).toBeGreaterThan(1);

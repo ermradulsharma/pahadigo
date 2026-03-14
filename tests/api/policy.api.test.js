@@ -1,5 +1,6 @@
 import PolicyController from '../../src/core/Http/Controllers/PolicyController.js';
 import Policy from '../../src/core/Models/Policy.js';
+import mongoose from 'mongoose';
 
 describe('Policy API Controller Test Suite', () => {
 
@@ -43,7 +44,7 @@ describe('Policy API Controller Test Suite', () => {
 
     it('should allow admin to update policy', async () => {
         const req = {
-            user: { role: 'admin', id: 'admin123' },
+            user: { role: 'admin', id: new mongoose.Types.ObjectId().toString() },
             jsonBody: { target: 'vendor', type: 'privacy_policy', content: 'Updated rule' }
         };
         const params = { target: 'vendor', type: 'privacy-policy' };

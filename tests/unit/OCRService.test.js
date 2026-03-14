@@ -1,14 +1,17 @@
+import { jest } from '@jest/globals';
 import OCRService from '../../src/core/Services/OCRService.js';
 import Tesseract from 'tesseract.js';
 
-jest.mock('tesseract.js', () => ({
-    recognize: jest.fn()
-}));
-
 describe('OCRService Test Suite', () => {
 
+    beforeEach(() => {
+        jest.spyOn(Tesseract, 'recognize').mockResolvedValue({
+            data: { text: '' }
+        });
+    });
+
     afterEach(() => {
-        jest.clearAllMocks();
+        jest.restoreAllMocks();
     });
 
     it('should extract PAN details correctly', async () => {
@@ -31,9 +34,10 @@ describe('OCRService Test Suite', () => {
 
     it('should extract Aadhar details correctly', async () => {
         // Mock Tesseract to return a simulated Aadhar card string
+        // Note: Aadhar numbers officially start with 2-9
         Tesseract.recognize.mockResolvedValue({
             data: {
-                text: 'Government of India\nJohn Doe\nDOB: 15/08/1985\n1234 5678 9012\nMale'
+                text: 'Government of India\nJohn Doe\nDOB: 15/08/1985\n2234 5678 9012\nMale'
             }
         });
 
@@ -42,7 +46,7 @@ describe('OCRService Test Suite', () => {
 
         expect(Tesseract.recognize).toHaveBeenCalled();
         expect(result.idType).toBe('Aadhar');
-        expect(result.identifiedId).toBe('1234 5678 9012');
+        expect(result.identifiedId).toBe('2234 5678 9012');
         expect(result.name).toBe('John Doe'); // Fetches name right above DOB
     });
 

@@ -1,8 +1,8 @@
-import UserController from '../../src/controllers/UserController.js';
-import Package from '../../src/models/Package.js';
-import Vendor from '../../src/models/Vendor.js';
+import UserController from '../../src/core/Http/Controllers/UserController.js';
+import Package from '../../src/core/Models/Package.js';
+import Vendor from '../../src/core/Models/Vendor.js';
 import mongoose from 'mongoose';
-import { USER_ROLES } from '../../src/constants/index.js';
+import { USER_ROLES } from '../../src/core/Constants/index.js';
 
 describe('User API Integration', () => {
     let pkgId;
@@ -13,8 +13,15 @@ describe('User API Integration', () => {
         const vendor = await Vendor.create({
             user: new mongoose.Types.ObjectId(),
             businessName: 'Travel Co',
-            category: ['Trekking'],
+            category: [{ _id: new mongoose.Types.ObjectId(), name: 'Trekking', slug: 'trekking' }],
             isApproved: true,
+            bankDetails: {
+                accountHolderName: 'Test Vendor',
+                accountNumber: '1234567890',
+                ifscCode: 'SBIN0001234',
+                bankName: 'SBI',
+                cancelledCheque: { url: 'http://test.com/cheque.jpg' }
+            },
             documents: {
                 aadharCard: [{ url: 'http://test.com/aadhar.jpg' }],
                 panCard: { url: 'http://test.com/pan.jpg' },
@@ -25,14 +32,16 @@ describe('User API Integration', () => {
 
         const pkg = await Package.create({
             vendor: vendor._id,
-            services: {
-                trekking: [{
-                    trekkingName: 'Himalayan Adventure',
-                    pricePerPerson: 10000,
-                    duration: '4 Days',
-                    location: 'Himalayas'
-                }]
-            }
+            trekking: [{
+                title: 'Himalayan Adventure',
+                description: 'A great adventure',
+                pricing: { pricePerPerson: 10000 },
+                details: {
+                    trekType: 'Day Trek',
+                    duration: '4 Days'
+                },
+                location: { address: 'Himalayas' }
+            }]
         });
         pkgId = pkg._id;
     });
@@ -70,12 +79,12 @@ describe('User API Integration', () => {
             url: new URL('http://localhost:3000/api/user/packages?q=Himalayan&type=trekking')
         };
 
-        const response = await UserController.getPackages(req);
+        const response = await UserController.browsePackages(req);
         expect(response.status).toBe(200);
         const data = await response.json();
-        expect(data.message).toBe('Success');
+        expect(data.message).toBe('Packages retrieved successfully');
         expect(data.data.packages).toBeDefined();
         // Should find our seeded 'Himalayan Adventure' trek
-        expect(data.data.packages.data.length).toBeGreaterThan(0);
+        expect(data.data.packages.length).toBeGreaterThan(0);
     });
 });

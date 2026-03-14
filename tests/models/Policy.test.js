@@ -2,6 +2,10 @@ import mongoose from 'mongoose';
 import Policy from '../../src/core/Models/Policy.js';
 
 describe('PolicyModel Test Suite', () => {
+    beforeEach(async () => {
+        await Policy.syncIndexes();
+    });
+
     it('should require target, type, and content', async () => {
         const policy = new Policy({});
         let error;

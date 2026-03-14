@@ -2,6 +2,10 @@ import mongoose from 'mongoose';
 import State from '../../src/core/Models/State.js';
 
 describe('StateModel Test Suite', () => {
+    beforeEach(async () => {
+        await State.syncIndexes();
+    });
+
     it('should require name, code, and country reference', async () => {
         const state = new State({});
         let error;
