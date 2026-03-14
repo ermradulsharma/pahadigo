@@ -6,6 +6,8 @@ process.env.NODE_ENV = 'test';
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 
+// Removed jest.setTimeout, relying on proper teardown instead.
+
 let mongoServer;
 
 beforeAll(async () => {
@@ -19,14 +21,21 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
+    if (mongoose.connection.readyState !== 0) {
+        await mongoose.connection.close();
+    }
     await mongoose.disconnect();
-    await mongoServer.stop();
+    if (mongoServer) {
+        await mongoServer.stop();
+    }
 });
 
 afterEach(async () => {
-    const collections = mongoose.connection.collections;
-    for (const key in collections) {
-        const collection = collections[key];
-        await collection.deleteMany();
+    if (mongoose.connection.readyState !== 0) {
+        const collections = mongoose.connection.collections;
+        for (const key in collections) {
+            const collection = collections[key];
+            await collection.deleteMany();
+        }
     }
 });

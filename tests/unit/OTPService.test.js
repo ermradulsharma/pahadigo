@@ -1,3 +1,4 @@
+import { jest } from '@jest/globals';
 import OTPService from '../../src/core/Services/OTPService.js';
 
 describe('OTPService', () => {
@@ -5,6 +6,7 @@ describe('OTPService', () => {
 
     beforeEach(() => {
         OTPService.otps.clear();
+        jest.spyOn(OTPService, '_sendOTP').mockResolvedValue();
     });
 
     it('should generate an OTP and store it', () => {
