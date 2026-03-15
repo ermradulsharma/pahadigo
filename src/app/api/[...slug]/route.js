@@ -2,9 +2,13 @@ import { NextResponse } from 'next/server';
 import routesImport from '@/routes/api.js';
 import dbConnect from '@/config/db.js';
 import authMiddleware from '@/middleware/auth.js';
+import roleMiddleware from '@/middleware/roleMiddleware.js';
 import { rateLimit } from '@/middleware/rateLimit.js';
-import { HTTP_STATUS } from '@/constants/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 import { sanitizeNoSQL } from '@/helpers/security.js';
+import { errorResponse, successResponse } from '@/helpers/response.js';
+import { parseNestedFormData } from '@/helpers/parseNestedFormData.js';
+import { validate } from '@/helpers/validation.js';
 
 const routes = Array.isArray(routesImport) ? routesImport : (routesImport.default || []);
 const authRateLimiter = rateLimit({ limit: 5, windowMs: 60 * 1000 }); // 5 requests per minute
@@ -40,11 +44,7 @@ async function handler(req, { params }) {
         const match = findRoute(method, slug);
 
         if (!match) {
-            return NextResponse.json({
-                success: false,
-                message: 'Route not found',
-                data: { method, path: '/' + slug.join('/') }
-            }, { status: HTTP_STATUS.NOT_FOUND });
+            return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.NOT_FOUND, { method, path: '/' + slug.join('/') });
         }
         const { routeDef, params: routeParams } = match;
         const path = '/' + slug.join('/').replace(/\/$/, '');
@@ -62,11 +62,7 @@ async function handler(req, { params }) {
         if (routeDef.middleware && routeDef.middleware.includes('auth')) {
             const authResult = await authMiddleware(req);
             if (!authResult.authorized) {
-                return NextResponse.json({
-                    success: false,
-                    message: authResult.message || 'Unauthorized access',
-                    data: {}
-                }, { status: HTTP_STATUS.UNAUTHORIZED });
+                return errorResponse(HTTP_STATUS.UNAUTHORIZED, authResult.message || RESPONSE_MESSAGES.ERROR.UNAUTHORIZED, {});
             }
             userContext = authResult.user;
         }
@@ -75,16 +71,19 @@ async function handler(req, { params }) {
             req.user = userContext;
         }
 
+        if (routeDef.roles && routeDef.roles.length > 0) {
+            const roleResult = roleMiddleware({ user: userContext }, routeDef.roles);
+            if (!roleResult.authorized) {
+                return errorResponse(HTTP_STATUS.FORBIDDEN, roleResult.message || RESPONSE_MESSAGES.ERROR.FORBIDDEN, {});
+            }
+        }
+
         const contentType = req.headers.get('content-type') || '';
         try {
             let bodyToValidate = null;
             if (contentType.includes('multipart/form-data')) {
                 req.formDataBody = await req.formData();
-                const body = {};
-                for (const [key, value] of req.formDataBody.entries()) {
-                    body[key] = value;
-                }
-                bodyToValidate = body;
+                bodyToValidate = parseNestedFormData(req.formDataBody);
             } else if (contentType.includes('application/json')) {
                 const body = await req.json();
                 const sanitizedBody = sanitizeNoSQL(body);
@@ -92,34 +91,22 @@ async function handler(req, { params }) {
                 bodyToValidate = sanitizedBody;
             } else if (contentType.includes('application/x-www-form-urlencoded')) {
                 const formData = await req.formData();
-                const body = {};
-                for (const [key, value] of formData.entries()) {
-                    body[key] = value;
-                }
-                bodyToValidate = body;
+                bodyToValidate = parseNestedFormData(formData);
+                req.formDataBody = formData;
             }
 
             // [VALIDATION] Unified Schema Validation
             if (routeDef.schema && bodyToValidate) {
-                const { validate } = await import('@/helpers/validation.js');
                 const validationResult = validate(routeDef.schema, bodyToValidate);
                 if (!validationResult.success) {
-                    return NextResponse.json({
-                        success: false,
-                        message: validationResult.error,
-                        data: {}
-                    }, { status: HTTP_STATUS.BAD_REQUEST });
+                    return errorResponse(HTTP_STATUS.BAD_REQUEST, validationResult.error, {});
                 }
                 // Attach validated data to request for controller use
                 req.validData = validationResult.data;
             }
         } catch (parseError) {
-            console.warn("API: Body parsing attempt failed (might be already consumed or empty):", parseError.message);
-            return NextResponse.json({
-                success: false,
-                message: "Invalid request payload or format",
-                data: {}
-            }, { status: HTTP_STATUS.BAD_REQUEST });
+            console.log("=== API PARSING CRASH ===", parseError);
+            return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.BAD_REQUEST, {});
         }
 
         // Pass extracted route params as second argument
@@ -131,23 +118,18 @@ async function handler(req, { params }) {
         }
 
         // Support Legacy Format { status, data }
-        if (result && typeof result === 'object' && result.data && (result.success !== undefined)) {
-            return NextResponse.json(result, { status: result.status || HTTP_STATUS.OK });
+        if (result && typeof result === 'object' && result.data !== undefined && (result.success !== undefined)) {
+            if (result.success === false) {
+                return errorResponse(result.status || HTTP_STATUS.BAD_REQUEST, result.message || RESPONSE_MESSAGES.ERROR.GENERIC, result.data);
+            }
+            return successResponse(result.status || HTTP_STATUS.OK, result.message || RESPONSE_MESSAGES.SUCCESS.GENERIC, result.data);
         }
 
-        // Ensure legacy format is wrapped correctly
-        return NextResponse.json({
-            success: result.success ?? true,
-            message: result.message ?? 'Success',
-            data: result.data ?? result
-        }, { status: result.status || HTTP_STATUS.OK });
+        // Ensure legacy format is wrapped correctly if just arbitrary data is returned
+        return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.GENERIC, result);
     } catch (error) {
         console.error("API Handler Error:", error);
-        return NextResponse.json({
-            success: false,
-            message: 'Internal Server Error',
-            error: error.message
-        }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR });
+        return NextResponse.json({ success: false, message: error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, data: { stack: error.stack } }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR });
     }
 }
 

@@ -1,6 +1,8 @@
 import VendorService from '@/services/VendorService.js';
 import PackageService from '@/services/PackageService.js';
 import Vendor from '@/models/Vendor.js';
+import User from '@/models/User.js';
+import AuthService from '@/services/AuthService.js';
 import { successResponse, errorResponse } from '@/helpers/response.js';
 import { CATEGORY_MAP } from '@/constants/categories.js';
 import fs from 'fs';
@@ -20,11 +22,8 @@ class VendorController {
     async getBusinessProfile(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
             const vendor = await VendorService.getFullProfile(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
-
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, vendor);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
@@ -35,14 +34,9 @@ class VendorController {
     async createBusinessProfile(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
             const formDataBody = req.formDataBody;
             if (!formDataBody) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.FORM_DATA_REQUIRED, {});
-
             const parsedData = parseNestedFormData(formDataBody);
-
-            // Explicitly map fields from parsedData to match Vendor schema
             const data = {
                 profileType: parsedData.profileType,
                 ownerName: parsedData.ownerName,
@@ -69,28 +63,18 @@ class VendorController {
                     longitude: parsedData.address?.longitude || null
                 }
             };
-
-            // Map latitude and longitude to GeoJSON point in 'location' property
             mapToGeoJSON(data.address, 'location');
-
-            // Basic validation
             if (data.profileType === 'business' && !data.businessName) {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             }
             if (data.profileType === 'individual' && !data.ownerName) {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             }
-
-            // Handle profile image separately
             const profileImageFile = formDataBody.get('profile_image');
             if (profileImageFile && profileImageFile instanceof File) {
-
                 const result = await uploadToCloudinary(profileImageFile, `profile/${user.id}`);
                 data.profileImage = result.url;
-
             }
-
-            // Resolve category slugs from businessCategory
             let categorySlugs = parsedData.businessCategory;
             if (categorySlugs) {
                 if (!Array.isArray(categorySlugs)) {
@@ -108,8 +92,24 @@ class VendorController {
             }
 
             const vendor = await VendorService.upsertProfile(user.id, data);
+            const fullUser = await User.findById(user.id);
+            const vendorData = await AuthService._getVendorStatus(fullUser);
+            const userObj = fullUser.toObject();
+            const authHeader = req.headers.get('authorization');
+            const token = authHeader ? authHeader.split(' ')[1] : null;
+            const responsePayload = {
+                ...userObj,
+                password: undefined,
+                token,
+                isNewUser: false,
+                businessProfileStatus: vendorData.businessProfileStatus,
+                businessProfile: {
+                    ...(vendor.toObject ? vendor.toObject() : vendor),
+                    user: userObj._id
+                }
+            };
 
-            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.PROFILE_UPDATED, vendor);
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, responsePayload);
         } catch (error) {
             console.error("Create Profile Error:", error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
@@ -120,29 +120,21 @@ class VendorController {
     async updateBusinessProfile(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
             const formDataBody = req.formDataBody;
             if (!formDataBody) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.FORM_DATA_REQUIRED, {});
-
             const parsedData = parseNestedFormData(formDataBody);
             const data = { ...parsedData };
-
-            // Handle profile image separately
             const profileImageFile = formDataBody.get('profile_image');
             if (profileImageFile && profileImageFile instanceof File) {
                 const result = await uploadToCloudinary(profileImageFile, `profile/${user.id}`);
                 data.profileImage = result.url;
             }
-
-            // Resolve categories if provided as slugs
             if (data.businessCategory) {
                 let categorySlugs = Array.isArray(data.businessCategory) ? data.businessCategory : [data.businessCategory];
                 const categories = await Category.find({ slug: { $in: categorySlugs } }).select('_id name slug');
                 data.category = categories.map(c => ({ _id: c._id, name: c.name, slug: c.slug }));
                 delete data.businessCategory;
             }
-
             const vendor = await VendorService.upsertProfile(user.id, data);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PROFILE_UPDATED, vendor);
         } catch (error) {
@@ -155,8 +147,6 @@ class VendorController {
     async deleteBusinessProfile(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
             await VendorService.deleteProfile(user.id, user.id);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, {});
         } catch (error) {
@@ -164,15 +154,10 @@ class VendorController {
         }
     }
 
-
-    // --- BUSINESS DOCUMENTS ---
-
     // GET /vendor/business/documents
     async getBusinessDocuments(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
@@ -187,8 +172,6 @@ class VendorController {
         const startTime = Date.now();
         const user = req.user;
         try {
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
             const currentVendor = await Vendor.findOne({ user: user.id });
             if (!currentVendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
@@ -256,8 +239,6 @@ class VendorController {
     async updateBusinessDocument(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
             const formDataBody = req.formDataBody;
             if (!formDataBody) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.FORM_DATA_REQUIRED, {});
 
@@ -300,8 +281,6 @@ class VendorController {
     async deleteBusinessDocument(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
             const { type, id } = req.jsonBody || await req.json();
             if (!type) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
@@ -331,8 +310,6 @@ class VendorController {
     async getBankDetails(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
@@ -346,8 +323,6 @@ class VendorController {
     async createBankDetails(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
             const formDataBody = req.formDataBody;
             if (!formDataBody) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.FORM_DATA_REQUIRED, {});
             const parsedData = parseNestedFormData(formDataBody);
@@ -397,8 +372,6 @@ class VendorController {
     async deleteBankDetails(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
             const updatedVendor = await VendorService.deleteBankDetails(user.id);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, updatedVendor);
         } catch (error) {
@@ -413,8 +386,6 @@ class VendorController {
     async getPackages(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
             const packages = await VendorService.findByUserId(user.id);
             if (!packages) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
@@ -429,8 +400,6 @@ class VendorController {
     async createPackage(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.INCOMPLETE, {});
 
@@ -453,8 +422,6 @@ class VendorController {
     async addItem(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
@@ -489,7 +456,6 @@ class VendorController {
     async updateItem(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
@@ -521,7 +487,6 @@ class VendorController {
     async deleteItem(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
@@ -542,7 +507,6 @@ class VendorController {
     async toggleItemStatus(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
@@ -563,7 +527,6 @@ class VendorController {
     async toggleCategoryStatus(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
@@ -592,8 +555,6 @@ class VendorController {
     async addBusinessCategory(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
             const { categorySlug } = req.jsonBody || await req.json();
             if (!categorySlug) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
@@ -615,8 +576,6 @@ class VendorController {
     async removeBusinessCategory(req) {
         try {
             const user = req.user;
-            if (!user || user.role !== 'vendor') return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.VENDORS_ONLY, {});
-
             const { categorySlug } = req.jsonBody || await req.json();
             if (!categorySlug) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 

@@ -1,4 +1,5 @@
 import { z } from 'zod';
+import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 /**
  * Common validation schemas for the Pahadigo platform.
@@ -6,8 +7,8 @@ import { z } from 'zod';
 export const schemas = {
     // Auth Schemas
     passwordLogin: z.object({
-        email: z.string().email('Invalid email address'),
-        password: z.string().min(6, 'Password must be at least 6 characters'),
+        email: z.string().email(RESPONSE_MESSAGES.VALIDATION.INVALID_EMAIL),
+        password: z.string().min(6, RESPONSE_MESSAGES.VALIDATION.PASSWORD_MIN_LENGTH),
         rememberMe: z.boolean().optional()
     }),
 
@@ -15,11 +16,11 @@ export const schemas = {
         identifier: z.string().optional(),
         email: z.string().email().optional(),
         phone: z.string().optional(),
-        otp: z.string().min(4, 'OTP must be at least 4 digits'),
+        otp: z.string().min(4, RESPONSE_MESSAGES.VALIDATION.OTP_MIN_LENGTH),
         targetRole: z.enum(['traveller', 'vendor']).optional(),
         role: z.enum(['traveller', 'vendor']).optional()
     }).refine(data => data.identifier || data.email || data.phone, {
-        message: 'Either identifier, email, or phone is required',
+        message: RESPONSE_MESSAGES.VALIDATION.EITHER_IDENTIFIER_REQUIRED,
         path: ['identifier']
     }).transform(data => {
         if (!data.identifier) {
@@ -33,18 +34,18 @@ export const schemas = {
 
     // Booking Schemas
     booking: z.object({
-        catalogId: z.string().min(1, 'Catalog ID is required'),
-        category: z.string().min(1, 'Category is required'),
-        itemId: z.string().min(1, 'Item ID is required'),
+        catalogId: z.string().min(1, RESPONSE_MESSAGES.VALIDATION.CATALOG_ID_REQUIRED),
+        category: z.string().min(1, RESPONSE_MESSAGES.VALIDATION.CATEGORY_REQUIRED),
+        itemId: z.string().min(1, RESPONSE_MESSAGES.VALIDATION.ITEM_ID_REQUIRED),
         travelDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
-            message: "Invalid date format",
+            message: RESPONSE_MESSAGES.VALIDATION.INVALID_DATE,
         })
     }),
 
     // User Profile Schemas
     profileUpdate: z.object({
-        name: z.string().min(2, 'Name must be at least 2 characters').optional(),
-        phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, 'Invalid phone number format').optional(),
+        name: z.string().min(2, RESPONSE_MESSAGES.VALIDATION.NAME_MIN_LENGTH).optional(),
+        phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, RESPONSE_MESSAGES.VALIDATION.INVALID_PHONE).optional(),
     })
 };
 
@@ -63,9 +64,9 @@ export const validate = (schema, data) => {
             const issues = error.errors || error.issues || [];
             return {
                 success: false,
-                error: issues.map(err => `${(err.path || []).join('.')}: ${err.message}`).join(', ') || 'Validation failed'
+                error: issues.map(err => `${(err.path || []).join('.')}: ${err.message}`).join(', ') || RESPONSE_MESSAGES.ERROR.VALIDATION
             };
         }
-        return { success: false, error: 'Validation failed' };
+        return { success: false, error: RESPONSE_MESSAGES.ERROR.VALIDATION };
     }
 };

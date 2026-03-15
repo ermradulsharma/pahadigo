@@ -34,6 +34,14 @@ class AuthController {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.INVALID_EMAIL, {});
             }
             const identifier = email || phone;
+            
+            // SECURITY: Prevent Admins from requesting OTPs
+            const { default: User } = await import('@/models/User.js');
+            const existingUser = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
+            if (existingUser && existingUser.role === 'admin') {
+                return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD, {});
+            }
+
             const otp = await OTPService.generateOTP(identifier, role, { termsAccepted: body.termsAccepted });
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.OTP_SENT, { otp, email, phone });
         } catch (error) {
@@ -69,9 +77,13 @@ class AuthController {
                 businessProfile: result.businessProfile
             });
         } catch (error) {
-            const status = error.message === RESPONSE_MESSAGES.AUTH.INVALID_OTP ? HTTP_STATUS.BAD_REQUEST : HTTP_STATUS.INTERNAL_SERVER_ERROR;
-            const msg = error.message === RESPONSE_MESSAGES.AUTH.INVALID_OTP ? RESPONSE_MESSAGES.AUTH.INVALID_OTP : RESPONSE_MESSAGES.ERROR.SERVER_ERROR;
-            return errorResponse(status, msg, {});
+            if (error.message === RESPONSE_MESSAGES.AUTH.INVALID_OTP) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.AUTH.INVALID_OTP, {});
+            }
+            if (error.message === RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD) {
+                return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD, {});
+            }
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 

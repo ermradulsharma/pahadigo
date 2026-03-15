@@ -1,5 +1,7 @@
 import mongoose from 'mongoose';
-import { sanitizeHTML } from '@/helpers/security.js';
+import { sanitizeHTML, redactSensitiveData } from '@/helpers/security.js';
+import { getStartDateByPeriod } from '@/helpers/dateUtils.js';
+import { getRequestMetadata } from '@/helpers/requestUtils.js';
 import User from '@/models/User.js';
 import Vendor from '@/models/Vendor.js';
 import Booking from '@/models/Booking.js';
@@ -14,6 +16,7 @@ import AuditLog from '@/models/AuditLog.js';
 import SearchLog from '@/models/SearchLog.js';
 import { RESPONSE_MESSAGES } from '@/constants/index.js';
 import { SCHEMA_KEYS } from '@/constants/categories.js';
+import { mapToGeoJSON } from '@/helpers/geoUtils.js';
 
 class AdminService {
     // ... existing stats ...
@@ -262,12 +265,33 @@ class AdminService {
 
             Object.keys(data).forEach(key => {
                 if (userFields.includes(key)) userData[key] = data[key];
-                else if (vendorFields.includes(key)) vendorUpdateData[key] = data[key];
+                if (vendorFields.includes(key)) vendorUpdateData[key] = data[key];
             });
 
             if (Object.keys(vendorUpdateData).length > 0) {
                 if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-                await Vendor.findByIdAndUpdate(vendor._id, { $set: vendorUpdateData });
+
+                const finalVendorUpdate = {};
+                ['ownerName', 'personalNumber', 'personalPanCard', 'personalAbout',
+                 'businessName', 'businessNumber', 'businessRegistration', 'gstNumber',
+                 'businessAbout', 'isApproved', 'category'].forEach(field => {
+                    if (vendorUpdateData[field] !== undefined) finalVendorUpdate[field] = vendorUpdateData[field];
+                });
+
+                if (vendorUpdateData.address) {
+                    finalVendorUpdate.address = { ...(vendor.address || {}), ...vendorUpdateData.address };
+                    mapToGeoJSON(finalVendorUpdate.address, 'location');
+                }
+
+                if (vendorUpdateData.bankDetails) {
+                    finalVendorUpdate.bankDetails = { ...(vendor.bankDetails || {}), ...vendorUpdateData.bankDetails };
+                }
+
+                if (vendorUpdateData.documents) {
+                    finalVendorUpdate.documents = { ...(vendor.documents || {}), ...vendorUpdateData.documents };
+                }
+
+                await Vendor.findByIdAndUpdate(vendor._id, { $set: finalVendorUpdate });
             }
 
             if (user && Object.keys(userData).length > 0) {
@@ -280,11 +304,7 @@ class AdminService {
                 if (userData.emergencyContact) userUpdate.emergencyContact = { ...(user.emergencyContact || {}), ...userData.emergencyContact };
                 if (userData.address) {
                     userUpdate.address = { ...(user.address || {}), ...userData.address };
-                    if (userData.address.latitude || userData.address.longitude) {
-                        const lat = parseFloat(userData.address.latitude || user.address?.latitude || 0);
-                        const lng = parseFloat(userData.address.longitude || user.address?.longitude || 0);
-                        userUpdate.address.location = { type: 'Point', coordinates: [lng, lat] };
-                    }
+                    mapToGeoJSON(userUpdate.address, 'location');
                 }
                 if (userData.preferences) {
                     const existingPrefs = user.preferences || {};
@@ -554,19 +574,7 @@ class AdminService {
     // --- Analytics ---
 
     async getAnalyticsData(period = 'monthly') {
-        const now = new Date();
-        let startDate;
-
-        if (period === 'yearly') {
-            startDate = new Date(now.getFullYear(), 0, 1);
-        } else if (period === 'weekly') {
-            startDate = new Date(now);
-            startDate.setDate(now.getDate() - 7);
-        } else {
-            // Default: Monthly (Last 30 days)
-            startDate = new Date(now);
-            startDate.setMonth(now.getMonth() - 1);
-        }
+        const startDate = getStartDateByPeriod(period);
 
         const [revenueData, bookingStatus, userGrowth, topVendors] = await Promise.all([
             Booking.aggregate([
@@ -644,17 +652,8 @@ class AdminService {
      */
     async logAction(adminId, action, target, targetId, details, req = null, session = null) {
         try {
-            // [SECURITY] Redact sensitive fields from logs
-            const sanitizedDetails = JSON.parse(JSON.stringify(details || {}));
-            const sensitiveKeys = ['password', 'token', 'otp', 'cardNumber', 'cvv', 'key_secret', 'accountNumber'];
-
-            const redact = (obj) => {
-                for (const key in obj) {
-                    if (sensitiveKeys.includes(key)) obj[key] = '***REDACTED***';
-                    else if (typeof obj[key] === 'object' && obj[key] !== null) redact(obj[key]);
-                }
-            };
-            redact(sanitizedDetails);
+            const sanitizedDetails = redactSensitiveData(details);
+            const { ipAddress, userAgent } = getRequestMetadata(req);
 
             const log = new AuditLog({
                 adminId: adminId,
@@ -662,8 +661,8 @@ class AdminService {
                 target,
                 targetId,
                 details: sanitizedDetails,
-                ipAddress: req ? (req.headers?.get('x-forwarded-for') || req.headers?.get('x-real-ip') || 'unknown') : 'system',
-                userAgent: req ? req.headers?.get('user-agent') : 'system'
+                ipAddress,
+                userAgent
             });
             await log.save({ session });
         } catch (error) {

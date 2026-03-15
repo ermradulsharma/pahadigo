@@ -62,6 +62,11 @@ class AuthService {
         const user = await User.findOne({ email }).select('+password');
         if (!user) throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
 
+        // Security Validation: Only Admins can use Password Login
+        if (user.role !== USER_ROLES.ADMIN) {
+            throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
+        }
+
         // Check if user has password set (might be social/OTP user trying password login)
         if (!user.password) throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
 
@@ -107,6 +112,12 @@ class AuthService {
         }
 
         let user = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
+        
+        // Security Validation: Admins cannot use OTP Login
+        if (user && user.role === USER_ROLES.ADMIN) {
+            throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
+        }
+
         let isNewUser = false;
         if (!user) {
             const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];

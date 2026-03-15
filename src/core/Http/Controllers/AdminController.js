@@ -9,17 +9,9 @@ import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 
 class AdminController {
 
-    // Helper to verify admin
-    _isAdmin(req) {
-        return req.user && req.user.role === 'admin';
-    }
-
     // GET /admin/stats
     async getStats(req) {
         try {
-            if (!this._isAdmin(req)) {
-                return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.ADMIN_ONLY, {});
-            }
 
             const stats = await AdminService.getDashboardStats();
 
@@ -32,7 +24,6 @@ class AdminController {
     // GET /admin/bookings
     async getBookings(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const bookings = await AdminService.getAllBookings();
 
@@ -45,7 +36,6 @@ class AdminController {
     // GET /admin/vendors
     async getVendors(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const vendors = await AdminService.getAllVendors();
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, { vendors });
@@ -57,7 +47,6 @@ class AdminController {
     // GET /admin/travellers
     async getTravellers(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const travellers = await AdminService.getAllTravellers();
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, { travellers });
@@ -69,7 +58,6 @@ class AdminController {
     // POST /admin/travellers
     async createTraveller(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
 
             if (!body.name || !body.email || !body.password) {
@@ -86,7 +74,6 @@ class AdminController {
     // POST /admin/approve-vendor
     async approveVendor(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const { vendorId, status, rejectionReason } = body;
 
@@ -116,7 +103,6 @@ class AdminController {
     // PATCH /admin/vendors/:id
     async updateVendor(req, { params }) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const { id } = params;
             const body = req.jsonBody || await req.json();
 
@@ -133,7 +119,6 @@ class AdminController {
     // POST /admin/trigger-ocr
     async verifyDocumentOCR(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const { vendorId, documentField, index } = body;
 
@@ -236,7 +221,6 @@ class AdminController {
     // POST /admin/verify-document
     async verifyDocument(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const { vendorId, documentField, status, reason, index } = body;
 
@@ -277,7 +261,6 @@ class AdminController {
     // POST /admin/add-package
     async addPackageOnBehalf(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const { vendorId, ...pkgData } = body;
 
@@ -293,7 +276,6 @@ class AdminController {
     // POST /admin/payout
     async markPayout(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const { bookingId } = body;
 
@@ -312,7 +294,6 @@ class AdminController {
     // POST /admin/refund
     async refundBooking(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const { bookingId } = body;
 
@@ -331,7 +312,6 @@ class AdminController {
     // GET /admin/payment-history
     async getPaymentHistory(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const history = await AdminService.getPaymentHistory();
 
@@ -344,7 +324,6 @@ class AdminController {
     // GET /admin/packages
     async getPackages(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const packages = await AdminService.getAllServices();
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, { packages });
@@ -356,7 +335,6 @@ class AdminController {
     // PATCH /admin/packages
     async updateServiceStatus(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const { vendorId, serviceType, serviceId, status } = body;
 
@@ -374,7 +352,6 @@ class AdminController {
     // GET /admin/reviews
     async getReviews(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const reviews = await AdminService.getAllReviews();
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, { reviews });
@@ -386,7 +363,6 @@ class AdminController {
     // PATCH /admin/reviews
     async updateReviewStatus(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const { reviewId, isVisible } = body;
 
@@ -404,7 +380,6 @@ class AdminController {
     // DELETE /admin/reviews
     async deleteReview(req, { params }) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const { id } = params;
 
             if (!id) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
@@ -421,7 +396,6 @@ class AdminController {
     // Banners
     async createBanner(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             if (!body.imageUrl) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             const banner = await AdminService.createBanner(body, req);
@@ -438,7 +412,6 @@ class AdminController {
 
     async updateBanner(req, { params }) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const banner = await AdminService.updateBanner(params.id, body, req);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, { banner });
@@ -447,7 +420,6 @@ class AdminController {
 
     async deleteBanner(req, { params }) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             await AdminService.deleteBanner(params.id, req);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, {});
         } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
@@ -456,7 +428,6 @@ class AdminController {
     // Coupons
     async createCoupon(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             if (!body.code || !body.discountType || !body.value || !body.expiryDate) {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
@@ -472,7 +443,6 @@ class AdminController {
 
     async getCoupons(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const coupons = await AdminService.getCoupons();
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ADMIN.COUPONS_FETCHED, { coupons });
         } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
@@ -480,7 +450,6 @@ class AdminController {
 
     async updateCoupon(req, { params }) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const coupon = await AdminService.updateCoupon(params.id, body, req);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, { coupon });
@@ -489,7 +458,6 @@ class AdminController {
 
     async deleteCoupon(req, { params }) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             await AdminService.deleteCoupon(params.id, req);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, {});
         } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
@@ -511,7 +479,6 @@ class AdminController {
 
     async getInquiries(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const inquiries = await AdminService.getInquiries();
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ADMIN.INQUIRIES_FETCHED, { inquiries });
         } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
@@ -519,7 +486,6 @@ class AdminController {
 
     async updateInquiry(req, { params }) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             const body = req.jsonBody || await req.json();
             const inquiry = await AdminService.updateInquiry(params.id, body);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, { inquiry });
@@ -528,7 +494,6 @@ class AdminController {
 
     async deleteInquiry(req, { params }) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
             await AdminService.deleteInquiry(params.id);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, {});
         } catch (e) { return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}); }
@@ -538,7 +503,6 @@ class AdminController {
 
     async getAnalytics(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             // Extract query params from URL
             const url = new URL(req.url);
@@ -572,7 +536,6 @@ class AdminController {
 
     async getAuditLogs(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
 
             const url = new URL(req.url);
             const adminId = url.searchParams.get('adminId');

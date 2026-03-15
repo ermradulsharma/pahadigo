@@ -6,7 +6,7 @@ import { seedSettings } from './SettingSeeder.js';
 import { seedLocations } from './locationSeeder.js';
 import { seedPolicies } from './policySeeder.js';
 import { loadEnv } from '../../Helpers/env.js';
-import { connectDB } from '../../Helpers/dbConnect.js';
+import connectDB from '../../Config/db.js';
 
 const resetAndSeed = async () => {
     try {

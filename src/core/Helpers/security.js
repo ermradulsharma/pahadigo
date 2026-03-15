@@ -38,3 +38,23 @@ export const sanitizeHTML = (html) => {
         .replace(/"/g, '&quot;')
         .replace(/'/g, '&#39;');
 };
+
+/**
+ * Recursively redacts sensitive fields from an object to prevent logging PII/PCI data.
+ * @param {any} details - The object to sanitize.
+ * @returns {any} A cleanly cloned and sanitized object.
+ */
+export const redactSensitiveData = (details) => {
+    const sanitizedDetails = JSON.parse(JSON.stringify(details || {}));
+    const sensitiveKeys = ['password', 'token', 'otp', 'cardNumber', 'cvv', 'key_secret', 'accountNumber'];
+
+    const redact = (obj) => {
+        for (const key in obj) {
+            if (sensitiveKeys.includes(key)) obj[key] = '***REDACTED***';
+            else if (typeof obj[key] === 'object' && obj[key] !== null) redact(obj[key]);
+        }
+    };
+
+    redact(sanitizedDetails);
+    return sanitizedDetails;
+};

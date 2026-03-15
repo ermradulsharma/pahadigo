@@ -4,15 +4,8 @@ import { errorResponse, successResponse } from '@/helpers/response.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 class CategoryController {
 
-    // Helper to verify admin
-    _isAdmin(req) {
-        return req.user && req.user.role === 'admin';
-    }
-
     async create(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
-
             const body = req.jsonBody || await req.json();
             const { name } = body;
 
@@ -50,8 +43,6 @@ class CategoryController {
 
     async update(req, { params }) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
-
             const id = params?.id;
             if (!id) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
 
@@ -66,8 +57,6 @@ class CategoryController {
 
     async delete(req, { params }) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
-
             const id = params?.id;
             if (!id) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
 
@@ -80,8 +69,6 @@ class CategoryController {
 
     async seed(req) {
         try {
-            if (!this._isAdmin(req)) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.FORBIDDEN, {});
-
             const result = await seedCategories();
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.SEED, { result });
         } catch (error) {

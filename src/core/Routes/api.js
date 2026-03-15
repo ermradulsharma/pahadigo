@@ -39,7 +39,7 @@ const routes = [
     ]),
 
     // Vendor
-    ...Router.group({ prefix: '/vendor' }, [
+    ...Router.group({ prefix: '/vendor', roles: ['vendor'] }, [
         { method: 'GET', path: '/me', handler: wrap(AuthController.me.bind(AuthController)), middleware: ['auth'] },
         { method: 'PATCH', path: '/update', handler: wrap(AuthController.updateProfile.bind(AuthController)), middleware: ['auth'] },
         { method: 'DELETE', path: '/delete', handler: wrap(AuthController.deleteProfile.bind(AuthController)), middleware: ['auth'] },
@@ -95,7 +95,7 @@ const routes = [
     ]),
 
     // Admin
-    ...Router.group({ prefix: '/admin', middleware: ['auth'] }, [
+    ...Router.group({ prefix: '/admin', middleware: ['auth'], roles: ['admin'] }, [
         { method: 'GET', path: '/stats', handler: wrap(AdminController.getStats.bind(AdminController)) },
         { method: 'GET', path: '/bookings', handler: wrap(AdminController.getBookings.bind(AdminController)) },
         { method: 'GET', path: '/vendors', handler: wrap(AdminController.getVendors.bind(AdminController)) },
@@ -176,10 +176,10 @@ const routes = [
     ...Router.group({ prefix: '/categories' }, [
         { method: 'GET', path: '/', handler: wrap(CategoryController.getAll.bind(CategoryController)) },
         { method: 'GET', path: '/:id', handler: wrap(CategoryController.getById.bind(CategoryController)) },
-        { method: 'POST', path: '/', handler: wrap(CategoryController.create.bind(CategoryController)), middleware: ['auth'] },
-        { method: 'PUT', path: '/:id', handler: wrap(CategoryController.update.bind(CategoryController)), middleware: ['auth'] },
-        { method: 'DELETE', path: '/:id', handler: wrap(CategoryController.delete.bind(CategoryController)), middleware: ['auth'] },
-        { method: 'POST', path: '/seed', handler: wrap(CategoryController.seed.bind(CategoryController)), middleware: ['auth'] },
+        { method: 'POST', path: '/', handler: wrap(CategoryController.create.bind(CategoryController)), middleware: ['auth'], roles: ['admin'] },
+        { method: 'PUT', path: '/:id', handler: wrap(CategoryController.update.bind(CategoryController)), middleware: ['auth'], roles: ['admin'] },
+        { method: 'DELETE', path: '/:id', handler: wrap(CategoryController.delete.bind(CategoryController)), middleware: ['auth'], roles: ['admin'] },
+        { method: 'POST', path: '/seed', handler: wrap(CategoryController.seed.bind(CategoryController)), middleware: ['auth'], roles: ['admin'] },
     ]),
 
     // Policies (Explicit Aliases & Dynamic)

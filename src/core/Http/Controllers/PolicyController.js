@@ -3,17 +3,9 @@ import { errorResponse, successResponse } from '@/helpers/response.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 
 class PolicyController {
-    // Helper to verify admin
-    _isAdmin(req) {
-        return req.user && req.user.role === 'admin';
-    }
-
     // GET /admin/policies
     async getPolicies(req) {
         try {
-            if (!this._isAdmin(req)) {
-                return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.ADMIN_ONLY, {});
-            }
 
             const { searchParams } = new URL(req.url);
             const target = searchParams.get('target');
@@ -71,9 +63,6 @@ class PolicyController {
     // POST /admin/policies
     async updatePolicy(req) {
         try {
-            if (!this._isAdmin(req)) {
-                return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.ADMIN_ONLY, {});
-            }
             const body = req.jsonBody || await req.json();
             const { target, type, content } = body;
             if (!target || !type || content === undefined) {
@@ -100,9 +89,6 @@ class PolicyController {
     // POST /admin/policies/seed
     async seed(req) {
         try {
-            if (!this._isAdmin(req)) {
-                return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.ADMIN_ONLY, {});
-            }
             const { seedPolicies } = await import('@/seeders/policySeeder.js');
             const result = await seedPolicies();
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.SEED, { result });

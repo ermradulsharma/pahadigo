@@ -13,7 +13,7 @@ class Router {
      * @returns {Array} - Flattened routes
      */
     static group(options, children) {
-        const { prefix = '', middleware = [] } = options;
+        const { prefix = '', middleware = [], roles = [] } = options;
         let childRoutes = typeof children === 'function' ? children() : children;
 
         // Ensure childRoutes is an array
@@ -29,11 +29,13 @@ class Router {
 
             const newPath = (prefix + (route.path || '')).replace(/\/+/g, '/') || '/';
             const newMiddleware = [...middleware, ...(route.middleware || [])];
+            const newRoles = [...roles, ...(route.roles || [])];
 
             return {
                 ...route,
                 path: newPath,
-                middleware: newMiddleware.length > 0 ? [...new Set(newMiddleware)] : undefined
+                middleware: newMiddleware.length > 0 ? [...new Set(newMiddleware)] : undefined,
+                roles: newRoles.length > 0 ? [...new Set(newRoles)] : undefined
             };
         }).flat(Infinity);
     }

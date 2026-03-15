@@ -1,5 +1,5 @@
 import { v2 as cloudinary } from 'cloudinary';
-import { HTTP_STATUS } from '@/constants/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 
 // Allowed MIME types for the entire application
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
@@ -14,16 +14,18 @@ export const uploadToCloudinary = async (file, folder = 'general') => {
 
         // 1. File Type Validation
         if (!ALLOWED_MIME_TYPES.includes(file.type)) {
-            const error = new Error(`Invalid file type. Only JPG, PNG, WEBP, and PDF are allowed. Received: ${file.type}`);
-            error.status = HTTP_STATUS.BAD_REQUEST;
-            throw error;
+            return Promise.reject({
+                status: HTTP_STATUS.BAD_REQUEST,
+                message: `${RESPONSE_MESSAGES.ERROR.INVALID_FILE_TYPE} Received: ${file.type}`
+            });
         }
 
         // 2. File Size Validation
         if (file.size > MAX_FILE_SIZE_BYTES) {
-            const error = new Error(`File size exceeds the ${MAX_FILE_SIZE_MB}MB limit. Received: ${(file.size / (1024 * 1024)).toFixed(2)}MB`);
-            error.status = HTTP_STATUS.BAD_REQUEST;
-            throw error;
+            return Promise.reject({
+                status: HTTP_STATUS.BAD_REQUEST,
+                message: `${RESPONSE_MESSAGES.ERROR.FILE_TOO_LARGE} Maximum ${MAX_FILE_SIZE_MB}MB. Received: ${(file.size / (1024 * 1024)).toFixed(2)}MB`
+            });
         }
 
         const buffer = Buffer.from(await file.arrayBuffer());
