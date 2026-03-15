@@ -1,33 +1,30 @@
+import Cookies from 'js-cookie';
+
 export const getToken = () => {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem('token') || sessionStorage.getItem('token');
+    return Cookies.get('token');
 };
 
 export const getRole = () => {
     if (typeof window === 'undefined') return null;
-    return localStorage.getItem('role') || sessionStorage.getItem('role');
+    return Cookies.get('role');
 };
 
 export const setToken = (token, role, rememberMe = false) => {
     if (typeof window === 'undefined') return;
 
-    if (rememberMe) {
-        localStorage.setItem('token', token);
-        localStorage.setItem('role', role);
-        sessionStorage.removeItem('token');
-        sessionStorage.removeItem('role');
-    } else {
-        sessionStorage.setItem('token', token);
-        sessionStorage.setItem('role', role);
-        localStorage.removeItem('token');
-        localStorage.removeItem('role');
-    }
+    const options = {
+        secure: window.location.protocol === 'https:',
+        sameSite: 'strict',
+        expires: rememberMe ? 30 : undefined // 30 days or session
+    };
+
+    Cookies.set('token', token, options);
+    Cookies.set('role', role, options);
 };
 
 export const removeToken = () => {
     if (typeof window === 'undefined') return;
-    localStorage.removeItem('token');
-    localStorage.removeItem('role');
-    sessionStorage.removeItem('token');
-    sessionStorage.removeItem('role');
+    Cookies.remove('token');
+    Cookies.remove('role');
 };

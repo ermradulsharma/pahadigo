@@ -34,7 +34,7 @@ class AuthController {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.INVALID_EMAIL, {});
             }
             const identifier = email || phone;
-            const otp = OTPService.generateOTP(identifier, role, { termsAccepted: body.termsAccepted });
+            const otp = await OTPService.generateOTP(identifier, role, { termsAccepted: body.termsAccepted });
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.OTP_SENT, { otp, email, phone });
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.AUTH.OTP_SEND_FAILED, {});
@@ -44,9 +44,8 @@ class AuthController {
     // POST /auth/login (Password Login for Admin/Dev)
     async login(req) {
         try {
-            const body = await parseBody(req);
+            const body = req.validData || req.jsonBody || await parseBody(req);
             const { email, password, rememberMe } = body;
-            if (!email || !password) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
             const result = await AuthService.loginWithPassword({ email, password, rememberMe });
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, result);
@@ -58,16 +57,10 @@ class AuthController {
     // POST /auth/verify (Verify OTP and Login/Signup)
     async verifyOtp(req) {
         try {
-            const body = await parseBody(req);
-            let { email, phone, otp, role } = body;
-            if (email) email = email.toLowerCase().trim();
-            if (phone) phone = phone.trim();
-            if (role) role = role.toLowerCase().trim();
-            const identifier = email || phone;
-            if (!identifier || !otp) {
-                return errorResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
-            }
-            const result = await AuthService.verifyAndLogin({ identifier, otp, email, phone, targetRole: role });
+            const body = req.validData || req.jsonBody || await parseBody(req);
+            let { identifier, otp, targetRole } = body;
+
+            const result = await AuthService.verifyAndLogin({ identifier, otp, targetRole });
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, {
                 ...(result.user.toObject ? result.user.toObject() : result.user),
                 token: result.token,

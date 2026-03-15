@@ -52,6 +52,23 @@ class RazorpayService {
             Buffer.from(signature)
         );
     }
+
+    async verifyWebhookSignature(body, signature) {
+        const config = await getAppConfig();
+        const secret = config.razorpay.webhook_secret;
+
+        if (!secret) return false;
+
+        const expectedSignature = crypto
+            .createHmac('sha256', secret)
+            .update(JSON.stringify(body))
+            .digest('hex');
+
+        return crypto.timingSafeEqual(
+            Buffer.from(expectedSignature),
+            Buffer.from(signature)
+        );
+    }
 }
 
 const razorpayService = new RazorpayService();

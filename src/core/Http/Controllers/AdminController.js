@@ -298,7 +298,7 @@ class AdminController {
 
             if (!bookingId) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
 
-            await BookingService.markPayout(bookingId);
+            await BookingService.markPayout(bookingId, req);
 
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.PAYMENT.PAYOUT_MARKED, {});
         } catch (error) {
@@ -317,7 +317,7 @@ class AdminController {
 
             if (!bookingId) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
 
-            await BookingService.processRefund(bookingId);
+            await BookingService.processRefund(bookingId, req);
 
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.REFUNDED, {});
         } catch (error) {

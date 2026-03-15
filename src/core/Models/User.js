@@ -135,12 +135,7 @@ UserSchema.index(
     }
 );
 
-UserSchema.index(
-    { phone: 1 },
-    {
-        unique: true,
-        partialFilterExpression: { phone: { $type: "string" } }
-    }
-);
+UserSchema.index({ status: 1 });
+UserSchema.index({ phone: 1 }, { unique: true, partialFilterExpression: { phone: { $type: "string" } } });
 
 export default mongoose.models.User || mongoose.model('User', UserSchema);

@@ -18,28 +18,25 @@ class UserController {
                 return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED, {});
             }
 
-            const body = req.jsonBody || await req.json();
-            const { packageId, travelDate } = body;
+            const body = req.validData || req.jsonBody || await req.json();
+            const { catalogId, category, itemId, travelDate } = body;
 
-            if (!packageId || !travelDate) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
-            }
-
-            const pkg = await PackageService.getPackageById(packageId);
-            if (!pkg) {
+            const item = await PackageService.getGranularItem(catalogId, category, itemId);
+            if (!item) {
                 return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.PACKAGE.NOT_FOUND, {});
             }
 
             const bookingDate = new Date(travelDate);
-            if (isNaN(bookingDate.getTime())) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.INVALID_DATE, {});
-            }
+            // price calculation logic...
+            const price = item.pricing?.pricePerNight || item.pricing?.pricePerPerson || item.pricing?.price || 0;
 
             const booking = await BookingService.createBooking({
                 userId: user.id,
-                packageId: pkg._id,
+                catalogId,
+                category,
+                itemId,
                 travelDate: bookingDate,
-                price: pkg.price
+                price
             });
 
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.CREATED, { booking });

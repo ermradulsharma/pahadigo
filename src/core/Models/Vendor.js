@@ -109,6 +109,8 @@ const VendorSchema = new mongoose.Schema({
     toObject: { virtuals: true, getters: true, minimize: false }
 });
 
+VendorSchema.index({ isApproved: 1 });
+VendorSchema.index({ 'address.location': '2dsphere' });
 if (mongoose.models.Vendor) {
     delete mongoose.models.Vendor;
 }

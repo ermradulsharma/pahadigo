@@ -1,4 +1,5 @@
 import Vendor from '@/models/Vendor.js';
+import { CATEGORY_TITLES } from '@/constants/categories.js';
 
 class VendorService {
     async upsertProfile(userId, profileData) {
@@ -21,15 +22,26 @@ class VendorService {
             }
         }
 
+        const { businessName, description, address, socialLinks, contactEmail, contactPhone } = profileData;
+        const validProfileData = {
+            businessName,
+            description,
+            address,
+            socialLinks,
+            contactEmail,
+            contactPhone
+        };
+
         const vendor = await Vendor.findOneAndUpdate(
             { user: userId, deletedAt: null },
             {
                 user: userId,
+                ...validProfileData,
                 ...updateData,
-                deletedAt: null, // Ensure we are active or restoring if explicitly handled
+                deletedAt: null,
                 deletedBy: null
             },
-            { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: false }
+            { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true }
         ).populate('user', 'email phone role');
         return vendor;
     }
@@ -79,21 +91,7 @@ class VendorService {
     }
 
     getCategories() {
-        return [
-            'Homestay',
-            'Hotel',
-            'Camping',
-            'Trekking',
-            'Cafe/Restaurant',
-            'Bike/Car Rental',
-            'Adventure Sports',
-            'Rafting', // Added to match Package Schema
-            'Bungee Jumping',
-            'Taxi/Driver',
-            'Local Guide',
-            'Temple Darshan',
-            'Chardham Tour'
-        ];
+        return Object.values(CATEGORY_TITLES);
     }
 }
 

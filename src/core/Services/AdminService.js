@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+import { sanitizeHTML } from '@/helpers/security.js';
 import User from '@/models/User.js';
 import Vendor from '@/models/Vendor.js';
 import Booking from '@/models/Booking.js';
@@ -176,11 +178,14 @@ class AdminService {
     }
 
     async getAllVendors() {
-        const users = await User.find({ role: 'vendor' }).lean(); // Fetch full user objects for complete profile view
+        const users = await User.find({ role: 'vendor' }).lean();
         const profiles = await Vendor.find().lean();
+        
+        // Create a lookup map for profiles to avoid O(N^2) search
+        const profileMap = new Map(profiles.map(p => [p.user?.toString(), p]));
 
         return users.map(u => {
-            const profile = profiles.find(p => p.user?.toString() === u._id.toString());
+            const profile = profileMap.get(u._id.toString());
             if (profile) {
                 return { ...profile, user: u, hasProfile: true };
             }
@@ -223,23 +228,20 @@ class AdminService {
     }
 
     async updateVendor(vendorId, data, req = null) {
+        const session = await mongoose.startSession();
+        session.startTransaction();
         try {
-            console.log("LOG: [AdminService.updateVendor] Start for ID:", vendorId);
-
-            const vendor = await Vendor.findById(vendorId);
+            const vendor = await Vendor.findById(vendorId).session(session);
             if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-            const user = await User.findById(vendor.user).lean();
+            const user = await User.findById(vendor.user).session(session).lean();
 
-            // 1. Separate Data by Model
-            // User Fields (Personal Profile)
+            // ... separate logic ...
             const userFields = [
                 'name', 'phone', 'gender', 'dateOfBirth', 'designation',
                 'bio', 'website', 'socialLinks', 'expertise',
                 'emergencyContact', 'address', 'preferences', 'status', 'isVerified'
             ];
-
-            // Vendor Fields (Business Profile)
             const vendorFields = [
                 'ownerName', 'personalNumber', 'personalPanCard', 'personalAbout',
                 'businessName', 'businessNumber', 'businessRegistration', 'gstNumber',
@@ -254,17 +256,12 @@ class AdminService {
                 else if (vendorFields.includes(key)) vendorUpdateData[key] = data[key];
             });
 
-            // 2. Process Vendor Update (Business Profile)
             if (Object.keys(vendorUpdateData).length > 0) {
-                console.log("LOG: [AdminService.updateVendor] Updating Vendor (Business Profile)...");
-                await Vendor.findByIdAndUpdate(vendorId, { $set: vendorUpdateData });
+                await Vendor.findByIdAndUpdate(vendorId, { $set: vendorUpdateData }, { session });
             }
 
-            // 3. Process User Update (Personal Profile)
             if (user && Object.keys(userData).length > 0) {
-                console.log("LOG: [AdminService.updateVendor] Updating User (Personal Profile)...");
                 const userUpdate = {};
-
                 ['name', 'phone', 'gender', 'dateOfBirth', 'designation', 'bio', 'website', 'expertise', 'status', 'isVerified'].forEach(field => {
                     if (userData[field] !== undefined) userUpdate[field] = userData[field];
                 });
@@ -292,21 +289,23 @@ class AdminService {
                     };
                 }
 
-                await User.findByIdAndUpdate(user._id, { $set: userUpdate });
+                await User.findByIdAndUpdate(user._id, { $set: userUpdate }, { session });
             }
 
+            await session.commitTransaction();
             const updatedVendor = await Vendor.findById(vendorId).populate('user');
 
             if (req && req.user) {
                 const adminId = req.user.id || req.user._id;
-                this.logAction(adminId, 'UPDATE', 'VENDOR', vendorId, { changes: data }, req);
+                await this.logAction(adminId, 'UPDATE', 'VENDOR', vendorId, { changes: data }, req, session);
             }
 
-            console.log("LOG: [AdminService.updateVendor] Success");
             return updatedVendor;
         } catch (error) {
-            console.error("LOG: [AdminService.updateVendor] Error:", error);
+            await session.abortTransaction();
             throw error;
+        } finally {
+            session.endSession();
         }
     }
 
@@ -366,10 +365,13 @@ class AdminService {
     }
 
     async updatePolicy(target, type, content, adminId) {
+        // [SECURITY] Sanitize HTML content before saving to prevent Stored XSS
+        const sanitizedContent = sanitizeHTML(content);
+
         return await Policy.findOneAndUpdate(
             { target, type },
             {
-                content,
+                content: sanitizedContent,
                 lastUpdatedBy: adminId
             },
             {
@@ -558,64 +560,59 @@ class AdminService {
             startDate.setMonth(now.getMonth() - 1);
         }
 
-        // 1. Revenue & Bookings Trend
-        const revenueData = await Booking.aggregate([
-            { $match: { createdAt: { $gte: startDate } } },
-            {
-                $group: {
-                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-                    revenue: { $sum: "$amount" },
-                    bookings: { $sum: 1 }
+        const [revenueData, bookingStatus, userGrowth, topVendors] = await Promise.all([
+            Booking.aggregate([
+                { $match: { createdAt: { $gte: startDate } } },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                        revenue: { $sum: "$totalPrice" },
+                        bookings: { $sum: 1 }
+                    }
+                },
+                { $sort: { _id: 1 } }
+            ]),
+            Booking.aggregate([
+                { $group: { _id: "$status", value: { $sum: 1 } } }
+            ]),
+            User.aggregate([
+                { $match: { createdAt: { $gte: startDate }, role: { $in: ['traveller', 'vendor'] } } },
+                {
+                    $group: {
+                        _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+                        users: { $sum: 1 }
+                    }
+                },
+                { $sort: { _id: 1 } }
+            ]),
+            Booking.aggregate([
+                { $match: { status: 'completed' } },
+                {
+                    $group: {
+                        _id: "$package",
+                        revenue: { $sum: "$totalPrice" },
+                        bookings: { $sum: 1 }
+                    }
+                },
+                { $sort: { revenue: -1 } },
+                { $limit: 5 },
+                {
+                    $lookup: {
+                        from: "packages",
+                        localField: "_id",
+                        foreignField: "_id",
+                        as: "packageDetails"
+                    }
+                },
+                { $unwind: "$packageDetails" },
+                {
+                    $project: {
+                        name: "$packageDetails.title",
+                        revenue: 1,
+                        bookings: 1
+                    }
                 }
-            },
-            { $sort: { _id: 1 } }
-        ]);
-
-        // 2. Booking Status Distribution
-        const bookingStatus = await Booking.aggregate([
-            { $group: { _id: "$status", value: { $sum: 1 } } }
-        ]);
-
-        // 3. User Growth
-        const userGrowth = await User.aggregate([
-            { $match: { createdAt: { $gte: startDate }, role: { $in: ['traveller', 'vendor'] } } },
-            {
-                $group: {
-                    _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
-                    users: { $sum: 1 }
-                }
-            },
-            { $sort: { _id: 1 } }
-        ]);
-
-        // 4. Top Vendors by Revenue
-        const topVendors = await Booking.aggregate([
-            { $match: { status: 'completed' } }, // Only confirmed revenue
-            {
-                $group: {
-                    _id: "$vendor",
-                    revenue: { $sum: "$amount" },
-                    bookings: { $sum: 1 }
-                }
-            },
-            { $sort: { revenue: -1 } },
-            { $limit: 5 },
-            {
-                $lookup: {
-                    from: "vendors",
-                    localField: "_id",
-                    foreignField: "_id",
-                    as: "vendorDetails"
-                }
-            },
-            { $unwind: "$vendorDetails" },
-            {
-                $project: {
-                    name: "$vendorDetails.businessName",
-                    revenue: 1,
-                    bookings: 1
-                }
-            }
+            ])
         ]);
 
         return {
@@ -637,26 +634,30 @@ class AdminService {
      * @param {object} details - Any metadata to store (e.g. changed fields).
      * @param {object} req - Optional: To extract IP/UA if passed.
      */
-    async logAction(adminId, action, target, targetId, details, req = null) {
+    async logAction(adminId, action, target, targetId, details, req = null, session = null) {
         try {
-            let ipAddress = null;
-            let userAgent = null;
+            // [SECURITY] Redact sensitive fields from logs
+            const sanitizedDetails = JSON.parse(JSON.stringify(details || {}));
+            const sensitiveKeys = ['password', 'token', 'otp', 'cardNumber', 'cvv', 'key_secret', 'accountNumber'];
+            
+            const redact = (obj) => {
+                for (const key in obj) {
+                    if (sensitiveKeys.includes(key)) obj[key] = '***REDACTED***';
+                    else if (typeof obj[key] === 'object' && obj[key] !== null) redact(obj[key]);
+                }
+            };
+            redact(sanitizedDetails);
 
-            if (req) {
-                // Next.js: standard headers or socket
-                ipAddress = req.headers.get('x-forwarded-for') || req.socket?.remoteAddress;
-                userAgent = req.headers.get('user-agent');
-            }
-
-            await AuditLog.create({
-                adminId,
+            const log = new AuditLog({
+                adminId: adminId,
                 action,
                 target,
                 targetId,
-                details,
-                ipAddress,
-                userAgent
+                details: sanitizedDetails,
+                ipAddress: req ? (req.headers?.get('x-forwarded-for') || req.headers?.get('x-real-ip') || 'unknown') : 'system',
+                userAgent: req ? req.headers?.get('user-agent') : 'system'
             });
+            await log.save({ session });
         } catch (error) {
             console.error("Failed to write audit log:", error);
             // Non-blocking: Don't throw, just log the error.

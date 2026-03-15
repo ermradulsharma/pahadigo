@@ -134,41 +134,62 @@ class PackageService {
         return await Package.findById(id);
     }
 
+    async getGranularItem(catalogId, category, itemId) {
+        const pkg = await Package.findById(catalogId);
+        if (!pkg || !pkg[category]) return null;
+        return pkg[category].id(itemId);
+    }
+
     async getAvailablePackages(query = '') {
-        const filter = {};
+        const regex = new RegExp(query, 'i');
+        
+        // Aggregation to flatten all service arrays into a single list of items
+        const pipeline = [
+            {
+                $lookup: {
+                    from: 'vendors',
+                    localField: 'vendor',
+                    foreignField: '_id',
+                    as: 'vendorDetails'
+                }
+            },
+            { $unwind: '$vendorDetails' }
+        ];
 
+        // Add matching logic if query exists
         if (query) {
-            const regex = new RegExp(query, 'i');
-
-            // Build $or query to search in all service arrays
+            // First attempt: Text Search (Uses Index)
+            // Note: $text search is best for whole words. Regex is better for partials but slower.
             const orConditions = [
+                { $text: { $search: query } },
                 { 'vendorDetails.businessName': regex }
             ];
-
-            // Add conditions for each service category
-            SCHEMA_KEYS.forEach(key => {
-                orConditions.push({ [`${key}.title`]: regex });
-                orConditions.push({ [`${key}.name`]: regex });
-                orConditions.push({ [`${key}.description`]: regex });
-            });
-
-            // Note: Vendor details are in a separate model, so we need a lookup or populate
-            // For now, mirroring the existing logic but more efficiently via aggregation
-            return await Package.aggregate([
-                {
-                    $lookup: {
-                        from: 'vendors',
-                        localField: 'vendor',
-                        foreignField: '_id',
-                        as: 'vendorDetails'
-                    }
-                },
-                { $unwind: '$vendorDetails' },
-                { $match: { $or: orConditions } }
-            ]);
+            // If text search doesn't find anything, we still include regex for partial title matches
+            pipeline.push({ $match: { $or: orConditions } });
         }
 
-        return await Package.find({}).populate('vendor');
+        const catalogs = await Package.aggregate(pipeline);
+        
+        const flattened = [];
+        catalogs.forEach(cat => {
+            SCHEMA_KEYS.forEach(key => {
+                if (cat[key] && Array.isArray(cat[key])) {
+                    cat[key].forEach(item => {
+                        // filter by query again if needed or rely on aggregation
+                        if (!query || regex.test(item.title || item.name || '')) {
+                            flattened.push({
+                                ...item,
+                                category: key,
+                                catalogId: cat._id,
+                                vendor: cat.vendorDetails
+                            });
+                        }
+                    });
+                }
+            });
+        });
+
+        return flattened;
     }
 
     // Toggle Category Status (Bulk)

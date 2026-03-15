@@ -1,149 +1,164 @@
 # 🏔️ PahadiGo API Documentation
 
-Welcome to the **PahadiGo** API reference. This documentation provides a comprehensive guide for developers to integrate with our travel and experiences platform.
+Welcome to the **PahadiGo** API reference. This living documentation provides a comprehensive guide for developers, mobile app teams, and third-party integrators to connect with our travel and experiences platform.
 
 ---
 
-## 🚀 Fundamentals
+## 🚀 1. Core Fundamentals
 
 ### Base URL
-- **Production**: `https://pahadigo.com/api`
+All API requests must be prefixed with the appropriate base URL:
+
+- **Production**: `https://api.pahadigo.com/v1`
 - **Development**: `http://localhost:3000/api`
 
-### Authentication
-Most endpoints require a **Bearer Token**. You can obtain a token via the `/auth/login` or `/auth/verify` (OTP) endpoints.
+### Authentication Protocols
 
-**Headers**:
-- `Authorization: Bearer <your_jwt_token>`
-- `Content-Type: application/json` (for standard requests)
-- `Content-Type: multipart/form-data` (for file uploads or complex nested forms)
+PahadiGo utilizes a secure, stateless JWT strategy. Depending on the endpoint, authentication is provided via the standard Authorization header.
 
-### Standard Response Format
+**Headers required for secured endpoints**:
+```http
+Authorization: Bearer <your_jwt_token>
+Content-Type: application/json
+```
+> [!NOTE]
+> File uploads (like KYC documents or profile pictures) require the `Content-Type: multipart/form-data` header rather than standard JSON.
+
+### Standardized Response Contract
+
+Every endpoint strictly adheres to the following JSON structure to ensure predictable parsing on the client side:
+
 ```json
 {
-  "success": true,
+  "success": true,        // Boolean indicating the exact result
   "message": "Operation successful",
-  "data": { ... }
+  "data": {               // Relevant payload or pagination wrapper
+    "id": "60d0fe4f5311236168a109ca"
+  }
 }
 ```
 
 ---
 
-## 🔐 1. Authentication & Profile
+## 🔐 2. Authentication & IAM
 
-### Auth Methods
-| Method | Path | Description | Access |
+### Universal Auth Endpoints
+
+| Method | Path | Description | Access Level |
 | :--- | :--- | :--- | :--- |
-| `POST` | `/auth/otp` | Send OTP to Email/Phone (`role`: 'traveller' or 'vendor') | Public |
-| `POST` | `/auth/verify` | Verify OTP and Login/Signup | Public |
-| `POST` | `/auth/login` | Password Login (Admin/Dev) | Public |
-| `POST` | `/auth/google` | Google Social Login | Public |
-| `GET` | `/auth/me` | Get current user's profile | Auth |
-| `POST` | `/auth/refresh` | Refresh JWT Token | Auth |
-| `POST` | `/auth/logout` | Revoke current session | Auth |
+| `POST` | `/auth/otp` | Trigger SMS/Email OTP (`role`: 'traveller' or 'vendor') | Public |
+| `POST` | `/auth/verify` | Verify OTP and authenticate session | Public |
+| `POST` | `/auth/login` | Email/Password Login (Reserved for Admin/Devs) | Public |
+| `POST` | `/auth/google` | OAuth2 Google Social Identity | Public |
+| `GET` | `/auth/me` | Fetch detailed context about the current authorized user | Auth |
+| `POST` | `/auth/refresh` | Refresh an expiring JWT Token | Auth |
+| `POST` | `/auth/logout` | Revoke the active session token | Auth |
 
-### Password Management
-- `POST /auth/forget-password`: Send reset link to email.
-- `POST /auth/reset-password`: Update password using reset token.
-- `POST /auth/change-password`: Update password (Requires Auth).
-
----
-
-## 💼 2. Vendor Operations
-
-Vendors manage their business profile, documents, and service listings (Packages).
-
-### Business Profile
-- `GET /vendor/business/profile`: Get business details.
-- `POST /vendor/business/profile/create`: Initialize business profile.
-- `PATCH /vendor/business/profile/update`: Update business information.
-
-### Documentation & Verification
-- `GET /vendor/business/documents`: List uploaded documents (Aadhar, PAN, GST, etc.).
-- `POST /vendor/business/documents/upload`: Upload new documents (Multipart).
-- `PATCH /vendor/business/documents/update`: Update specific document metadata.
-
-### Package & Item Management
-- `GET /vendor/packages`: Get all service categories and items.
-- `POST /vendor/create-package`: Initialize a new package category.
-- `POST /vendor/package/add-item`: Add a service item (e.g., a Homestay or Trek).
-- `PATCH /vendor/package/update-item`: Update existing item details.
-- `POST /vendor/package/toggle-item`: Enable/Disable a specific item.
-- `DELETE /vendor/package/delete-item`: Remove an item.
+### Password Recovery Suite
+- `POST /auth/forget-password`: Dispatches a secure reset link to the email.
+- `POST /auth/reset-password`: Commits a new password utilizing the reset token.
+- `POST /auth/change-password`: Safely updates password (Requires active Auth).
 
 ---
 
-## 🛠️ 3. Admin Operations
+## 💼 3. Vendor Operations (B2B)
 
-Restricted to users with the `admin` role.
+Vendors manage their financial profiles, legal compliance, and regional travel listings.
 
-### Management
-- `GET /admin/stats`: Real-time dashboard statistics.
-- `GET /admin/vendors`: List and filter all registered vendors.
-- `POST /admin/approve-vendor`: Approve or reject vendor verification (`status`: 'verified'\|'rejected').
-- `POST /admin/trigger-ocr`: Run AI OCR on vendor documents to auto-verify identity.
-- `GET /admin/audit-logs`: Track all administrative actions.
+### Business Identity & Ledger
+- `GET /vendor/business/profile`: Fetch banking and business metadata.
+- `POST /vendor/business/profile/create`: Bootstrap a fresh business profile.
+- `PATCH /vendor/business/profile/update`: Modify active business information.
 
-### Financials & Bookings
-- `GET /admin/bookings`: View all system bookings.
-- `POST /admin/payout`: Mark a booking as paid out to the vendor.
-- `POST /admin/refund`: Process a refund for a cancelled booking.
-- `GET /admin/payment-history`: Comprehensive financial logs.
+### KYC Documentation
+- `GET /vendor/business/documents`: Retrieve current document verification status.
+- `POST /vendor/business/documents/upload`: Dispatch files (Multipart) to Cloudinary.
+- `PATCH /vendor/business/documents/update`: Adjust metadata for existing physical docs.
+
+### Catalog Management
+Manage trekking routes, homestays, and tour itineraries:
+- `GET /vendor/packages`: Return all configured categories and items.
+- `POST /vendor/create-package`: Draft a new master package category.
+- `POST /vendor/package/add-item`: Append a specialized service item to a package.
+- `PATCH /vendor/package/update-item`: Refresh item variants or inventory.
+- `POST /vendor/package/toggle-item`: Halt/Resume bookings for an item.
+- `DELETE /vendor/package/delete-item`: Permanently expunge an item.
 
 ---
 
-## 📦 4. Service Schemas (Deep Dive)
+## 🛠️ 4. Super Admin Operations
 
-When adding items via `POST /vendor/package/add-item`, use the `category` field with one of the following schemas in the `item[0]` array.
+Protected management layer, exclusively restricted to the `admin` RBAC role.
 
-| Category | Schema Target | Key Enums |
+### Enterprise Governance
+- `GET /admin/stats`: Master timeline and system KPI statistics.
+- `GET /admin/vendors`: Global directory, filterable by activation state.
+- `POST /admin/approve-vendor`: Authorize or reject vendor compliance (`status`: `verified`\|`rejected`).
+- `POST /admin/trigger-ocr`: Initialize Machine Vision to auto-verify documents.
+- `GET /admin/audit-logs`: Pagination trace of all sovereign administrative actions.
+
+### Financial Oversight
+- `GET /admin/bookings`: Live ledger of all system transactions.
+- `POST /admin/payout`: Reconcile a successfully serviced booking and issue vendor payout.
+- `POST /admin/refund`: Execute a payment gateway refund against a cancelled itinerary.
+- `GET /admin/payment-history`: Comprehensive audit of all gross volume.
+
+---
+
+## 📦 5. Service Schemas 
+
+### Dynamic Polymorphic Schemas
+When registering inventory via `POST /vendor/package/add-item`, dynamic validation is enforced against the `category` identifier.
+
+| Category Enum | Schema Target | Specialized Keys |
 | :--- | :--- | :--- |
 | `homestay` | `HomestaySchema` | `homestayType`, `roomType`, `mealType` |
 | `hotel` | `HotelSchema` | `hotelType`, `roomType`, `starRating` |
 | `trekking` | `TrekkingSchema` | `trekType`, `difficultyLevel`, `bestSeason` |
-| `rafting` | `RaftingSchema` | `rapidGrade`, `difficultyLevel` |
+| `rafting` | `RaftingSchema` | `rapidGrade` |
 | `chardham-tour` | `ChardhamTourSchema` | `transportType`, `hotelType` |
 | `custom-trip` | `CustomTripSchema` | `serviceType`, `vehicleType` |
 
-### 🏨 Example: Hotel Schema
-The Hotel category requires detailed pricing and amenity information.
-
-```json
-{
-  "category": "hotel",
-  "item[0][title]": "String",
-  "item[0][hotelType]": "Resort | Luxury | Boutique | Budget | ...",
-  "item[0][starRating]": "1-5 (Number)",
-  "item[0][availability][totalRooms]": "Number",
-  "item[0][pricing][pricePerNight]": "Number",
-  "item[0][roomDetails][isAC]": "Boolean",
-  "item[0][amenities]": "Comma-separated string",
-  "item[0][mealType]": "Breakfast Only | Breakfast & Dinner | ..."
-}
-```
+> [!TIP]
+> **Example Payload: Committing a Hotel Item**
+> ```json
+> {
+>   "category": "hotel",
+>   "item[0][title]": "Himalayan View Resort",
+>   "item[0][hotelType]": "Resort",
+>   "item[0][starRating]": 5,
+>   "item[0][availability][totalRooms]": 14,
+>   "item[0][pricing][pricePerNight]": 4500,
+>   "item[0][roomDetails][isAC]": false,
+>   "item[0][mealType]": "Breakfast & Dinner"
+> }
+> ```
 
 ---
 
-## 🌍 5. Shared & Public Resources
+## 🌍 6. Shared Master Data
 
-### Categories & Locations
-- `GET /categories`: Fetch all active service categories.
-- `GET /countries`: List available countries with pagination.
-- `GET /countries/:id/states`: Fetch states for a specific country.
+### Geography & Metadata
+- `GET /categories`: Real-time dictionary of available travel categories.
+- `GET /countries`: Paginated catalog of ISO-supported countries.
+- `GET /countries/:id/states`: Fetch localized states/provinces.
 
-### Policies
-- `GET /policies/:target`: Fetch all policies for a target (`vendor`\|`traveller`).
-- `GET /policies/:target/:type`: Fetch specific policy like `privacy-policy` or `refund-policy`.
+### Dynamic Policies
+- `GET /policies/:target`: Retrieve T&C for specific RBAC layers (`vendor`\|`traveller`).
+- `GET /policies/:target/:type`: Narrow search to `privacy-policy` or `refund-policy`.
 
 ---
 
-## ⚠️ 6. Error Reference
+## ⚠️ 7. HTTP Status Codes & Error Diagnosis
 
-| Code | Status | Meaning |
+We utilize standard RESTful semantics.
+
+| Code | Status | Diagnosis |
 | :--- | :--- | :--- |
-| `400` | Bad Request | Validation failed or missing required fields. |
-| `401` | Unauthorized | Token is missing or invalid. |
-| `403` | Forbidden | Insufficient permissions (e.g., non-admin accessing admin route). |
-| `404` | Not Found | Resource (User, Vendor, Package) does not exist. |
-| `409` | Conflict | Email or Phone number already registered. |
-| `500` | Server Error | Internal system error. Contact support. |
+| `400` | Bad Request | Schema validation failure, corrupt JSON, or missing parameters. |
+| `401` | Unauthorized | Token is malformed, missing, or crypto-signature failed validation. |
+| `403` | Forbidden | Insufficient RBAC clearance for the invoked endpoint. |
+| `404` | Not Found | Requested entity UUID or slug doesn't exist. |
+| `409` | Conflict | Data contention, typically an email/phone number duplication. |
+| `429` | Too Many Requests | Rate-limiter triggered across high-value routes (e.g. Auth). |
+| `500` | Server Error | Uncaught Node.js exception. Incident reported. |

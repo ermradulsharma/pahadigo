@@ -115,7 +115,6 @@ export default function AdminProfilePage() {
                 headers: { 'Authorization': 'Bearer ' + token }
             });
             const data = await res.json();
-            console.log(data);
             if (res.ok && data.success) {
                 const user = data.data;
                 setFormData({

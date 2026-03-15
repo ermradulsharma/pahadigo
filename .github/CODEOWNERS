@@ -1,0 +1,18 @@
+# These owners will be the default owners for everything in
+# the repo. Unless a later match takes precedence,
+# @global-owner will be requested for
+# review when someone opens a pull request.
+*       @ermradulsharma
+
+# Next.js configurations
+next.config.mjs @ermradulsharma
+package.json @ermradulsharma
+
+# Core Backend Infrastructure
+/src/core/ @ermradulsharma
+
+# Tests
+/tests/ @ermradulsharma
+
+# GitHub configurations
+/.github/ @ermradulsharma

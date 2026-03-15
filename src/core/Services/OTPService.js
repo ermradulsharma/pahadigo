@@ -1,19 +1,36 @@
+import User from '@/models/User.js';
 import nodemailer from 'nodemailer';
 import { getAppConfig } from '@/lib/appConfig';
 import crypto from 'crypto';
 const { createTransport } = nodemailer;
 
 class OTPService {
-    constructor() {
-        this.otps = new Map();
-    }
+    // constructor() {
+    //     this.otps = new Map();
+    // }
 
-    generateOTP(identifier, role, extraData = {}) {
+    async generateOTP(identifier, role, extraData = {}) {
         // Use cryptographically secure random number
         const otp = crypto.randomInt(100000, 1000000).toString();
+        const expiresAt = new Date(Date.now() + 5 * 60 * 1000);
 
-        const expiresAt = Date.now() + 5 * 60 * 1000;
-        this.otps.set(identifier, { otp, expiresAt, role, ...extraData });
+        const query = identifier.includes('@') ? { email: identifier.toLowerCase().trim() } : { phone: identifier.trim() };
+        
+        // Persist OTP in User model (upsert if not exists)
+        await User.findOneAndUpdate(
+            query,
+            { 
+                otp, 
+                otpExpires: expiresAt,
+                // We store the requested role and extraData (like terms) temporarily
+                // so it can be used during verification.
+                $set: { 
+                    'preferences.tempRole': role,
+                    'preferences.tempExtraData': extraData
+                }
+            },
+            { upsert: true, new: true, setDefaultsOnInsert: true }
+        );
 
         this._sendOTP(identifier, otp).catch(err => { });
         return otp;
@@ -83,25 +100,45 @@ class OTPService {
         }
     }
 
-    verifyOTP(identifier, code) {
+    async verifyOTP(identifier, code) {
+        // [AUDIT] Removed MASTER_OTP backdoor for security.
+        // [APP STORE REVIEW] Restored static MASTER_OTP for review compliance.
+        // This allows reviewers to bypass real OTP verification.
         const MASTER_OTP = process.env.MASTER_OTP;
         if (MASTER_OTP && code.toString() === MASTER_OTP) {
             return {
                 otp: MASTER_OTP,
-                expiresAt: Date.now() + 100000,
+                expiresAt: Date.now() + 86400000, // Long expiry for review session
                 role: 'master'
             };
         }
 
-        const record = this.otps.get(identifier);
-        if (!record) return null;
-        if (Date.now() > record.expiresAt) {
-            this.otps.delete(identifier);
+        const query = identifier.includes('@') ? { email: identifier.toLowerCase().trim() } : { phone: identifier.trim() };
+        const user = await User.findOne(query);
+
+        if (!user || !user.otp) return null;
+
+        if (new Date() > user.otpExpires) {
+            user.otp = undefined;
+            user.otpExpires = undefined;
+            await user.save();
             return null;
         }
-        if (record.otp.toString() === code.toString()) {
-            this.otps.delete(identifier);
-            return record;
+
+        if (user.otp.toString() === code.toString()) {
+            const role = user.preferences?.tempRole;
+            const extraData = user.preferences?.tempExtraData || {};
+            
+            // Clear OTP after successful verification
+            user.otp = undefined;
+            user.otpExpires = undefined;
+            if (user.preferences) {
+                user.preferences.tempRole = undefined;
+                user.preferences.tempExtraData = undefined;
+            }
+            await user.save();
+
+            return { otp: code, role, ...extraData };
         }
         return null;
     }

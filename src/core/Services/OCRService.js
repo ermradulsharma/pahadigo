@@ -14,9 +14,8 @@ class OCRService {
      */
     async processDocument(buffer) {
         try {
-            // Navigate from src/core/Services to project root/node_modules
-            // Path: src/core/Services/OCRService.js -> ../../../node_modules/...
-            const workerPath = path.resolve(__dirname, '../../../node_modules/tesseract.js/src/worker-script/node/index.js');
+            // More robust path resolution using process.cwd() or relative to project root
+            const workerPath = path.resolve(process.cwd(), 'node_modules/tesseract.js/src/worker-script/node/index.js');
 
             // Explicitly convert Buffer to Uint8Array which Tesseract handles better in some Node versions
             const uint8Array = new Uint8Array(buffer);
@@ -106,15 +105,9 @@ class OCRService {
                 }
             }
 
-            // Cleanup Name: Remove Hindi/Garbage and fix common OCR slips
+            // Cleanup Name: Remove Hindi/Garbage
             if (nameCandidate) {
-                // Fix specific misreads seen in Aadhar/PAN for this user
-                // Using more aggressive regex as OCR noise can break word boundaries
                 nameCandidate = nameCandidate
-                    .replace(/^[wo]d\s+/gi, 'Mradul ') // Handle 'wd ' or 'od ' at start
-                    .replace(/\s[wo]d\s+/gi, ' Mradul ') // Handle mid-string
-                    .replace(/\bod\b/gi, 'Mradul')
-                    .replace(/\bwd\b/gi, 'Mradul')
                     .replace(/[^a-zA-Z\s]/g, '')
                     .trim();
 

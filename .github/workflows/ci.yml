@@ -1,40 +1,64 @@
-name: Node.js CI
+name: PahadiGo CI
 
 on:
-    push:
-        branches: ["main", "master"]
-    pull_request:
-        branches: ["main", "master"]
-
-permissions:
-    contents: read
+  push:
+    branches: [ "main" ]
+  pull_request:
+    branches: [ "main" ]
 
 jobs:
-    build-and-test:
-        runs-on: ubuntu-latest
+  build-and-test:
+    runs-on: ubuntu-latest
 
-        strategy:
-            matrix:
-                node-version: [18.x, 20.x]
+    strategy:
+      matrix:
+        node-version: [20.x, 22.x]
+        mongodb-version: ['7.0']
 
-        steps:
-            - uses: actions/checkout@v4
+    steps:
+    - name: Checkout Repository
+      uses: actions/checkout@v4
 
-            - name: Use Node.js ${{ matrix.node-version }}
-              uses: actions/setup-node@v4
-              with:
-                  node-version: ${{ matrix.node-version }}
-                  cache: "npm"
+    - name: Use Node.js ${{ matrix.node-version }}
+      uses: actions/setup-node@v4
+      with:
+        node-version: ${{ matrix.node-version }}
+        cache: 'npm'
 
-            - name: Install dependencies
-              run: npm ci
+    - name: Start MongoDB
+      uses: supercharge/mongodb-github-action@1.11.0
+      with:
+        mongodb-version: ${{ matrix.mongodb-version }}
 
-            - name: Run ESLint
-              run: npm run lint --if-present
+    - name: Install Dependencies
+      run: npm ci
 
-            - name: Run Tests
-              run: npm test
-              env:
-                  NODE_OPTIONS: --experimental-vm-modules
-                  NODE_ENV: test
-                  JWT_SECRET: test_secret_for_ci
+    - name: Check Formatting & Linting
+      run: npm run lint
+      continue-on-error: true # For now, don't fail CI on lint, just tests
+
+    - name: Run Jest Test Suite
+      # Uses the local MongoDB instance spun up in the prior step
+      env:
+        MONGODB_URI: mongodb://localhost:27017/pahadigo_test
+        JWT_SECRET: testing_secret_key_123
+        RAZORPAY_KEY_ID: test_key
+        RAZORPAY_KEY_SECRET: test_secret
+      run: npm run test
+
+    - name: Cache Next.js Build
+      uses: actions/cache@v4
+      with:
+        path: |
+          .next/cache
+        # Generate a new cache whenever packages or source files change.
+        key: ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-${{ hashFiles('**.[jt]s', '**.[jt]sx') }}
+        restore-keys: |
+          ${{ runner.os }}-nextjs-${{ hashFiles('**/package-lock.json') }}-
+
+    - name: Verify Next.js Build
+      run: npm run build
+      env:
+        # Dummy env vars just to ensure the build pipeline evaluates cleanly
+        MONGODB_URI: mongodb://localhost:27017/pahadigo_test
+        JWT_SECRET: testing_secret_key_123

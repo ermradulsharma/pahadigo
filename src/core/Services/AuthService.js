@@ -86,7 +86,7 @@ class AuthService {
     }
 
     async verifyAndLogin({ identifier, otp, email, phone, targetRole }) {
-        const otpRecord = OTPService.verifyOTP(identifier, otp);
+        const otpRecord = await OTPService.verifyOTP(identifier, otp);
         if (!otpRecord) {
             throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_OTP);
         }
@@ -144,10 +144,6 @@ class AuthService {
     }
 
     async googleAuth(idToken, targetRole) {
-        if (idToken === 'MASTER_TOKEN' || idToken === 'master_token') {
-            return this._mockSocialLogin('master_google_user@example.com', 'Master Google User', 'google_master_id', targetRole);
-        }
-
         const googleClientId = process.env.GOOGLE_CLIENT_ID;
         if (!googleClientId) {
             throw new Error(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
@@ -195,10 +191,6 @@ class AuthService {
     }
 
     async facebookAuth(accessToken, targetRole) {
-        if (accessToken === 'MASTER_TOKEN' || accessToken === 'master_token') {
-            return this._mockSocialLogin('master_fb_user@example.com', 'Master FB User', 'fb_master_id', targetRole);
-        }
-
         if (!accessToken) throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED);
 
         const response = await fetch(`https://graph.facebook.com/me?access_token=${accessToken}&fields=id,name,email`);
@@ -246,10 +238,6 @@ class AuthService {
     }
 
     async appleAuth(idToken, targetRole, userFn, userEmail) {
-        if (idToken === 'MASTER_TOKEN' || idToken === 'master_token') {
-            return this._mockSocialLogin('master_apple_user@example.com', 'Master Apple User', 'apple_master_id', targetRole);
-        }
-
         if (!idToken) throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED);
 
         const decoded = jwt.decode(idToken);
@@ -383,31 +371,6 @@ class AuthService {
 
     async logoutAll(email) {
         return true;
-    }
-
-    async _mockSocialLogin(email, name, id, targetRole) {
-        let user = await User.findOne({ email });
-        let isNewUser = false;
-        if (!user) {
-            const validRoles = ['user', 'vendor'];
-            const userRole = (targetRole && validRoles.includes(targetRole)) ? targetRole : 'user';
-            user = await User.create({
-                email,
-                name,
-                role: userRole,
-                isVerified: true,
-                authProvider: 'google'
-            });
-            isNewUser = true;
-        }
-        await this._handleDeactivation(user);
-
-        let vendorData = {};
-        if (user.role === 'vendor') {
-            vendorData = await this._getVendorStatus(user);
-        }
-        const token = generateToken({ id: user._id, role: user.role, email: user.email });
-        return { token, role: user.role, isNewUser, user, ...vendorData };
     }
 }
 

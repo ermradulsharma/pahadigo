@@ -6,8 +6,11 @@ import PaymentController from '@/controllers/PaymentController.js';
 import AuthController from '@/controllers/AuthController.js';
 import CategoryController from '@/controllers/CategoryController.js';
 import LocationController from '@/controllers/LocationController.js';
+import SettingsController from '@/controllers/SettingsController.js';
+import CategoryDocumentController from '@/controllers/CategoryDocumentController.js';
 import { apiHandler } from '@/helpers/apiHandler.js';
 import Router from './Router.js';
+import { schemas } from '@/helpers/validation.js';
 
 // Helper to wrap controller methods
 const wrap = (method) => apiHandler(method);
@@ -21,8 +24,8 @@ const routes = [
         { method: 'GET', path: '/verify', handler: wrap(AuthController.verify.bind(AuthController)) },
         { method: 'GET', path: '/refresh', handler: wrap(AuthController.refresh.bind(AuthController)) },
         { method: 'POST', path: '/otp', handler: wrap(AuthController.sendOtp.bind(AuthController)) },
-        { method: 'POST', path: '/login', handler: wrap(AuthController.login.bind(AuthController)) },
-        { method: 'POST', path: '/verify', handler: wrap(AuthController.verifyOtp.bind(AuthController)) },
+        { method: 'POST', path: '/login', handler: wrap(AuthController.login.bind(AuthController)), schema: schemas.passwordLogin },
+        { method: 'POST', path: '/verify', handler: wrap(AuthController.verifyOtp.bind(AuthController)), schema: schemas.otpLogin },
         { method: 'POST', path: '/google', handler: wrap(AuthController.googleLogin.bind(AuthController)) },
         { method: 'POST', path: '/facebook', handler: wrap(AuthController.facebookLogin.bind(AuthController)) },
         { method: 'POST', path: '/apple', handler: wrap(AuthController.appleLogin.bind(AuthController)) },
@@ -32,7 +35,7 @@ const routes = [
         { method: 'POST', path: '/reset-password', handler: wrap(AuthController.resetPassword.bind(AuthController)) },
         { method: 'POST', path: '/change-password', handler: wrap(AuthController.changePassword.bind(AuthController)) },
         { method: 'POST', path: '/update-profile', handler: wrap(AuthController.updateProfile.bind(AuthController)), middleware: ['auth'] },
-        { method: 'POST', path: '/delete-profile', handler: wrap(AuthController.deleteProfile.bind(AuthController)) },
+        { method: 'POST', path: '/delete-profile', handler: wrap(AuthController.deleteProfile.bind(AuthController)), middleware: ['auth'] },
     ]),
 
     // Vendor
@@ -81,13 +84,14 @@ const routes = [
     // User
     ...Router.group({ prefix: '/user' }, [
         { method: 'GET', path: '/packages', handler: wrap(UserController.browsePackages.bind(UserController)) },
-        { method: 'POST', path: '/book', handler: wrap(UserController.bookPackage.bind(UserController)), middleware: ['auth'] },
+        { method: 'POST', path: '/book', handler: wrap(UserController.bookPackage.bind(UserController)), middleware: ['auth'], schema: schemas.booking },
     ]),
 
     // Payments
-    ...Router.group({ prefix: '/payment', middleware: ['auth'] }, [
-        { method: 'POST', path: '/create-order', handler: wrap(PaymentController.createOrder.bind(PaymentController)) },
-        { method: 'POST', path: '/verify', handler: wrap(PaymentController.verifyPayment.bind(PaymentController)) },
+    ...Router.group({ prefix: '/payment' }, [
+        { method: 'POST', path: '/create-order', handler: wrap(PaymentController.createOrder.bind(PaymentController)), middleware: ['auth'] },
+        { method: 'POST', path: '/verify', handler: wrap(PaymentController.verifyPayment.bind(PaymentController)), middleware: ['auth'] },
+        { method: 'POST', path: '/webhook', handler: wrap(PaymentController.webhook.bind(PaymentController)) },
     ]),
 
     // Admin
@@ -143,6 +147,21 @@ const routes = [
             { method: 'GET', path: '/', handler: wrap(PolicyController.getPolicies.bind(PolicyController)) },
             { method: 'POST', path: '/', handler: wrap(PolicyController.updatePolicy.bind(PolicyController)) },
             { method: 'POST', path: '/seed', handler: wrap(PolicyController.seed.bind(PolicyController)) },
+        ]),
+
+        // Settings (Admin management)
+        ...Router.group({ prefix: '/settings' }, [
+            { method: 'GET', path: '/', handler: wrap(SettingsController.getSettings.bind(SettingsController)) },
+            { method: 'POST', path: '/', handler: wrap(SettingsController.updateSettings.bind(SettingsController)) },
+        ]),
+
+        // Category Documents (Admin management)
+        ...Router.group({ prefix: '/category-documents' }, [
+            { method: 'GET', path: '/', handler: wrap(CategoryDocumentController.getAll.bind(CategoryDocumentController)) },
+            { method: 'POST', path: '/', handler: wrap(CategoryDocumentController.create.bind(CategoryDocumentController)) },
+            { method: 'GET', path: '/:id', handler: wrap(CategoryDocumentController.getById.bind(CategoryDocumentController)) },
+            { method: 'PUT', path: '/:id', handler: wrap(CategoryDocumentController.update.bind(CategoryDocumentController)) },
+            { method: 'DELETE', path: '/:id', handler: wrap(CategoryDocumentController.delete.bind(CategoryDocumentController)) },
         ]),
 
         // Location (Admin management)

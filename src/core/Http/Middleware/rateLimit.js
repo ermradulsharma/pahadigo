@@ -1,33 +1,5 @@
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-
-class LRUCache {
-    constructor(maxCount = 1000) {
-        this.cache = new Map();
-        this.maxCount = maxCount;
-    }
-
-    get(key) {
-        if (!this.cache.has(key)) return null;
-        // Refresh usage
-        const val = this.cache.get(key);
-        this.cache.delete(key);
-        this.cache.set(key, val);
-        return val;
-    }
-
-    set(key, value) {
-        if (this.cache.has(key)) {
-            this.cache.delete(key);
-        } else if (this.cache.size >= this.maxCount) {
-            // Drop oldest
-            const firstKey = this.cache.keys().next().value;
-            this.cache.delete(firstKey);
-        }
-        this.cache.set(key, value);
-    }
-}
-
-const tokenCache = new LRUCache(1000);
+import { HTTP_STATUS } from '@/constants/index.js';
+import RateLimit from '@/models/RateLimit.js';
 
 /**
  * Creates a rate limiter middleware for Next.js Route Handlers.
@@ -39,24 +11,27 @@ const tokenCache = new LRUCache(1000);
  */
 export const rateLimit = ({ limit = 5, windowMs = 60000, message = 'Too many requests. Please try again later.' }) => {
     return async (req, handlerArgs) => {
-        // Extract IP. In Next.js App Router, rely on standard headers or req.ip if provided by deployment (like Vercel).
+        // Extract IP. In Next.js App Router, rely on standard headers or req.ip if provided by deployment.
         const ip = req.ip || req.headers.get('x-forwarded-for') || '127.0.0.1';
         const routePath = new URL(req.url).pathname;
         const cacheKey = `${ip}:${routePath}`;
 
-        const tokenData = tokenCache.get(cacheKey) || { count: 0, startTime: Date.now() };
+        let rateLimitData = await RateLimit.findOne({ key: cacheKey });
 
-        if (Date.now() - tokenData.startTime > windowMs) {
-            // Reset window
-            tokenData.count = 1;
-            tokenData.startTime = Date.now();
+        if (!rateLimitData) {
+            // New record
+            rateLimitData = await RateLimit.create({
+                key: cacheKey,
+                count: 1,
+                resetAt: new Date(Date.now() + windowMs)
+            });
         } else {
-            tokenData.count++;
+            // Increment existing
+            rateLimitData.count += 1;
+            await rateLimitData.save();
         }
 
-        tokenCache.set(cacheKey, tokenData);
-
-        if (tokenData.count > limit) {
+        if (rateLimitData.count > limit) {
             console.warn(`[RateLimit] Blocked request from ${ip} to ${routePath}`);
             return new Response(JSON.stringify({
                 success: false,
@@ -67,7 +42,7 @@ export const rateLimit = ({ limit = 5, windowMs = 60000, message = 'Too many req
                     'Content-Type': 'application/json',
                     'X-RateLimit-Limit': limit,
                     'X-RateLimit-Remaining': 0,
-                    'Retry-After': Math.ceil((windowMs - (Date.now() - tokenData.startTime)) / 1000)
+                    'Retry-After': Math.ceil((rateLimitData.resetAt - Date.now()) / 1000)
                 }
             });
         }

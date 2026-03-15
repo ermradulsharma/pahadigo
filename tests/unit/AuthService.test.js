@@ -2,6 +2,19 @@ import AuthService from '../../src/core/Services/AuthService.js';
 import OTPService from '../../src/core/Services/OTPService.js';
 import User from '../../src/core/Models/User.js';
 import { USER_STATUS, RESPONSE_MESSAGES } from '../../src/core/Constants/index.js';
+import { jest } from '@jest/globals';
+
+// For ESM mocking, we use this pattern if possible or mock the imported object
+import googleAuthLib from 'google-auth-library';
+const { OAuth2Client } = googleAuthLib;
+
+jest.mock('google-auth-library', () => ({
+    OAuth2Client: jest.fn().mockImplementation(() => ({
+        verifyIdToken: jest.fn()
+    }))
+}));
+
+
 
 describe('AuthService', () => {
     describe('verifyAndLogin', () => {
@@ -65,17 +78,32 @@ describe('AuthService', () => {
         });
     });
 
-    describe('Social Authentication Mocks', () => {
-        it('should return mock google user for MASTER_TOKEN', async () => {
-            const result = await AuthService.googleAuth('MASTER_TOKEN', 'vendor');
+    describe('Social Authentication', () => {
+        it('should successfully authenticate with Google', async () => {
+            const mockPayload = {
+                email: 'google@example.com',
+                name: 'Google User',
+                sub: 'google_id_123'
+            };
+
+            const clientInstance = new OAuth2Client();
+            clientInstance.verifyIdToken.mockResolvedValue({
+                getPayload: () => mockPayload
+            });
+
+            process.env.GOOGLE_CLIENT_ID = 'test-client-id';
+            const result = await AuthService.googleAuth('valid_token', 'user');
+
             expect(result.token).toBeDefined();
-            expect(result.role).toBe('vendor');
-            expect(result.user.email).toBe('master_google_user@example.com');
+            expect(result.user.email).toBe('google@example.com');
+            expect(result.user.googleId).toBe('google_id_123');
         });
 
         it('should throw config error for real token without client id', async () => {
+            const oldId = process.env.GOOGLE_CLIENT_ID;
             delete process.env.GOOGLE_CLIENT_ID;
             await expect(AuthService.googleAuth('real_token', 'user')).rejects.toThrow(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
+            process.env.GOOGLE_CLIENT_ID = oldId;
         });
     });
 });

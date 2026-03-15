@@ -4,10 +4,10 @@ import dbConnect from '@/config/db.js';
 import authMiddleware from '@/middleware/auth.js';
 import { rateLimit } from '@/middleware/rateLimit.js';
 import { HTTP_STATUS } from '@/constants/index.js';
+import { sanitizeNoSQL } from '@/helpers/security.js';
 
 const routes = Array.isArray(routesImport) ? routesImport : (routesImport.default || []);
 const authRateLimiter = rateLimit({ limit: 5, windowMs: 60 * 1000 }); // 5 requests per minute
-
 
 function findRoute(method, slug) {
     const path = '/' + slug.join('/').replace(/\/$/, '');
@@ -49,8 +49,9 @@ async function handler(req, { params }) {
         const { routeDef, params: routeParams } = match;
         const path = '/' + slug.join('/').replace(/\/$/, '');
 
-        // --- Rate Limiting for Auth Routes ---
-        if (path.startsWith('/auth/otp') || path.startsWith('/auth/login')) {
+        // --- Rate Limiting ---
+        const authLimitPaths = ['/auth/otp', '/auth/login', '/auth/verify', '/auth/forget-password', '/auth/reset-password'];
+        if (authLimitPaths.some(p => path.startsWith(p))) {
             const limitResponse = await authRateLimiter(req, { params });
             if (limitResponse instanceof Response) {
                 return limitResponse; // Blocked by rate limit
@@ -79,7 +80,24 @@ async function handler(req, { params }) {
             if (contentType.includes('multipart/form-data')) {
                 req.formDataBody = await req.formData();
             } else if (contentType.includes('application/json')) {
-                req.jsonBody = await req.json();
+                const body = await req.json();
+                const sanitizedBody = sanitizeNoSQL(body);
+                req.jsonBody = sanitizedBody;
+
+                // [VALIDATION] Unified Schema Validation
+                if (routeDef.schema) {
+                    const { validate } = await import('@/helpers/validation.js');
+                    const validationResult = validate(routeDef.schema, sanitizedBody);
+                    if (!validationResult.success) {
+                        return NextResponse.json({
+                            success: false,
+                            message: validationResult.error,
+                            data: {}
+                        }, { status: HTTP_STATUS.BAD_REQUEST });
+                    }
+                    // Attach validated data to request for controller use
+                    req.validData = validationResult.data;
+                }
             }
         } catch (parseError) {
             console.warn("API: Body parsing attempt failed (might be already consumed or empty):", parseError.message);
