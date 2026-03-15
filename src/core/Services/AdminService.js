@@ -180,7 +180,7 @@ class AdminService {
     async getAllVendors() {
         const users = await User.find({ role: 'vendor' }).lean();
         const profiles = await Vendor.find().lean();
-        
+
         // Create a lookup map for profiles to avoid O(N^2) search
         const profileMap = new Map(profiles.map(p => [p.user?.toString(), p]));
 
@@ -227,14 +227,23 @@ class AdminService {
         return await Vendor.findByIdAndUpdate(vendorId, { isApproved: true }, { new: true });
     }
 
-    async updateVendor(vendorId, data, req = null) {
-        const session = await mongoose.startSession();
-        session.startTransaction();
+    async updateVendor(id, data, req = null) {
         try {
-            const vendor = await Vendor.findById(vendorId).session(session);
-            if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+            // id could be Vendor._id or User._id
+            let vendor = await Vendor.findById(id);
+            let user = null;
 
-            const user = await User.findById(vendor.user).session(session).lean();
+            if (vendor) {
+                user = await User.findById(vendor.user).lean();
+            } else {
+                // It might be a user id instead
+                user = await User.findById(id).lean();
+                if (user) {
+                    vendor = await Vendor.findOne({ user: id });
+                }
+            }
+
+            if (!vendor && !user) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
             // ... separate logic ...
             const userFields = [
@@ -257,7 +266,8 @@ class AdminService {
             });
 
             if (Object.keys(vendorUpdateData).length > 0) {
-                await Vendor.findByIdAndUpdate(vendorId, { $set: vendorUpdateData }, { session });
+                if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+                await Vendor.findByIdAndUpdate(vendor._id, { $set: vendorUpdateData });
             }
 
             if (user && Object.keys(userData).length > 0) {
@@ -289,23 +299,21 @@ class AdminService {
                     };
                 }
 
-                await User.findByIdAndUpdate(user._id, { $set: userUpdate }, { session });
+                await User.findByIdAndUpdate(user._id, { $set: userUpdate });
             }
-
-            await session.commitTransaction();
-            const updatedVendor = await Vendor.findById(vendorId).populate('user');
 
             if (req && req.user) {
                 const adminId = req.user.id || req.user._id;
-                await this.logAction(adminId, 'UPDATE', 'VENDOR', vendorId, { changes: data }, req, session);
+                await this.logAction(adminId, 'UPDATE', 'VENDOR', id, { changes: data }, req);
             }
 
-            return updatedVendor;
+            if (vendor) {
+                return await Vendor.findById(vendor._id).populate('user');
+            } else {
+                return await User.findById(user._id);
+            }
         } catch (error) {
-            await session.abortTransaction();
             throw error;
-        } finally {
-            session.endSession();
         }
     }
 
@@ -639,7 +647,7 @@ class AdminService {
             // [SECURITY] Redact sensitive fields from logs
             const sanitizedDetails = JSON.parse(JSON.stringify(details || {}));
             const sensitiveKeys = ['password', 'token', 'otp', 'cardNumber', 'cvv', 'key_secret', 'accountNumber'];
-            
+
             const redact = (obj) => {
                 for (const key in obj) {
                     if (sensitiveKeys.includes(key)) obj[key] = '***REDACTED***';

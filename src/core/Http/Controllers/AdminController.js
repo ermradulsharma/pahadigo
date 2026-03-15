@@ -125,7 +125,8 @@ class AdminController {
             const vendor = await AdminService.updateVendor(id, body, req);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.UPDATED, { vendor });
         } catch (error) {
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+            console.error("AdminController.updateVendor Error:", error);
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, { debugObj: error.message });
         }
     }
 
