@@ -23,7 +23,7 @@
         "next": "16.1.6",
         "next-cloudinary": "^6.17.5",
         "nodemailer": "^7.0.13",
-        "quill": "^2.0.2",
+        "quill": "^2.0.3",
         "razorpay": "^2.9.6",
         "react": "19.2.4",
         "react-dom": "19.2.4",
