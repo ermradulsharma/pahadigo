@@ -30,9 +30,11 @@ export const sanitizeNoSQL = (obj) => {
 export const sanitizeHTML = (html) => {
     if (typeof html !== 'string') return html;
     
-    // Very basic regex-based stripping of common XSS vectors
+    // Safely escape HTML entities to prevent XSS instead of using fragile regex parsing
     return html
-        .replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, "")
-        .replace(/on\w+\s*=\s*(?:'[^']*'|"[^"]*"|[^\s>]+)/gi, "")
-        .replace(/href\s*=\s*(?:"javascript:[^"]*"|'javascript:[^']*'|javascript:[^\s>]+)/gi, "");
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
 };
