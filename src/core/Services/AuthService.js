@@ -86,6 +86,14 @@ class AuthService {
     }
 
     async verifyAndLogin({ identifier, otp, email, phone, targetRole }) {
+        if (!email && !phone && identifier) {
+            if (identifier.includes('@')) {
+                email = identifier.toLowerCase().trim();
+            } else {
+                phone = identifier.trim();
+            }
+        }
+
         const otpRecord = await OTPService.verifyOTP(identifier, otp);
         if (!otpRecord) {
             throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_OTP);

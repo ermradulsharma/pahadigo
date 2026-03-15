@@ -77,30 +77,49 @@ async function handler(req, { params }) {
 
         const contentType = req.headers.get('content-type') || '';
         try {
+            let bodyToValidate = null;
             if (contentType.includes('multipart/form-data')) {
                 req.formDataBody = await req.formData();
+                const body = {};
+                for (const [key, value] of req.formDataBody.entries()) {
+                    body[key] = value;
+                }
+                bodyToValidate = body;
             } else if (contentType.includes('application/json')) {
                 const body = await req.json();
                 const sanitizedBody = sanitizeNoSQL(body);
                 req.jsonBody = sanitizedBody;
-
-                // [VALIDATION] Unified Schema Validation
-                if (routeDef.schema) {
-                    const { validate } = await import('@/helpers/validation.js');
-                    const validationResult = validate(routeDef.schema, sanitizedBody);
-                    if (!validationResult.success) {
-                        return NextResponse.json({
-                            success: false,
-                            message: validationResult.error,
-                            data: {}
-                        }, { status: HTTP_STATUS.BAD_REQUEST });
-                    }
-                    // Attach validated data to request for controller use
-                    req.validData = validationResult.data;
+                bodyToValidate = sanitizedBody;
+            } else if (contentType.includes('application/x-www-form-urlencoded')) {
+                const formData = await req.formData();
+                const body = {};
+                for (const [key, value] of formData.entries()) {
+                    body[key] = value;
                 }
+                bodyToValidate = body;
+            }
+
+            // [VALIDATION] Unified Schema Validation
+            if (routeDef.schema && bodyToValidate) {
+                const { validate } = await import('@/helpers/validation.js');
+                const validationResult = validate(routeDef.schema, bodyToValidate);
+                if (!validationResult.success) {
+                    return NextResponse.json({
+                        success: false,
+                        message: validationResult.error,
+                        data: {}
+                    }, { status: HTTP_STATUS.BAD_REQUEST });
+                }
+                // Attach validated data to request for controller use
+                req.validData = validationResult.data;
             }
         } catch (parseError) {
             console.warn("API: Body parsing attempt failed (might be already consumed or empty):", parseError.message);
+            return NextResponse.json({
+                success: false,
+                message: "Invalid request payload or format",
+                data: {}
+            }, { status: HTTP_STATUS.BAD_REQUEST });
         }
 
         // Pass extracted route params as second argument

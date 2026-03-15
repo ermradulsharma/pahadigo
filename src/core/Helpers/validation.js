@@ -12,9 +12,23 @@ export const schemas = {
     }),
 
     otpLogin: z.object({
-        identifier: z.string().min(1, 'Identifier is required'),
-        otp: z.string().length(6, 'OTP must be 6 digits'),
-        targetRole: z.enum(['traveller', 'vendor']).optional()
+        identifier: z.string().optional(),
+        email: z.string().email().optional(),
+        phone: z.string().optional(),
+        otp: z.string().min(4, 'OTP must be at least 4 digits'),
+        targetRole: z.enum(['traveller', 'vendor']).optional(),
+        role: z.enum(['traveller', 'vendor']).optional()
+    }).refine(data => data.identifier || data.email || data.phone, {
+        message: 'Either identifier, email, or phone is required',
+        path: ['identifier']
+    }).transform(data => {
+        if (!data.identifier) {
+            data.identifier = data.email || data.phone;
+        }
+        if (!data.targetRole && data.role) {
+            data.targetRole = data.role;
+        }
+        return data;
     }),
 
     // Booking Schemas
@@ -45,10 +59,11 @@ export const validate = (schema, data) => {
         const validData = schema.parse(data);
         return { success: true, data: validData };
     } catch (error) {
-        if (error instanceof z.ZodError) {
+        if (error instanceof z.ZodError || error.name === 'ZodError') {
+            const issues = error.errors || error.issues || [];
             return {
                 success: false,
-                error: error.errors.map(err => `${err.path.join('.')}: ${err.message}`).join(', ')
+                error: issues.map(err => `${(err.path || []).join('.')}: ${err.message}`).join(', ') || 'Validation failed'
             };
         }
         return { success: false, error: 'Validation failed' };

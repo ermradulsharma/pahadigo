@@ -399,7 +399,7 @@ class AdminService {
                             ...service.toObject(),
                             serviceType: type,
                             vendor: pkg.vendor,
-                            vendorId: pkg.vendor?._id
+                            vendorId: pkg.vendor?._id?.toString() || pkg.vendor?.toString() || null
                         });
                     });
                 }
