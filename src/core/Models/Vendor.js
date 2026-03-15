@@ -51,12 +51,12 @@ const VendorSchema = new mongoose.Schema({
 
     // bank details
     bankDetails: {
-        accountHolderName: { type: String, default: null, required: true },
-        accountNumber: { type: String, default: null, required: true },
-        ifscCode: { type: String, default: null, required: true },
-        bankName: { type: String, default: null, required: true },
+        accountHolderName: { type: String, default: null },
+        accountNumber: { type: String, default: null },
+        ifscCode: { type: String, default: null },
+        bankName: { type: String, default: null },
         cancelledCheque: {
-            url: { type: String, default: null, required: true },
+            url: { type: String, default: null },
             publicId: { type: String, default: null },
             status: { type: String, enum: Object.values(VERIFICATION_STATUS), default: DEFAULTS.VENDOR_VERIFICATION_STATUS },
             reason: { type: String, default: null }
@@ -66,7 +66,7 @@ const VendorSchema = new mongoose.Schema({
     // documents
     documents: {
         aadharCard: [{
-            url: { type: String, required: true, default: null },
+            url: { type: String, default: null },
             publicId: { type: String, default: null },
             status: { type: String, enum: Object.values(VERIFICATION_STATUS), default: DEFAULTS.VENDOR_VERIFICATION_STATUS },
             reason: { type: String, default: null },
@@ -77,7 +77,7 @@ const VendorSchema = new mongoose.Schema({
         }],
 
         panCard: {
-            url: { type: String, required: true, default: null },
+            url: { type: String, default: null },
             publicId: { type: String, default: null },
             status: { type: String, enum: Object.values(VERIFICATION_STATUS), default: DEFAULTS.VENDOR_VERIFICATION_STATUS },
             reason: { type: String, default: null },
@@ -88,14 +88,14 @@ const VendorSchema = new mongoose.Schema({
         },
 
         businessRegistration: {
-            url: { type: String, required: true, default: null },
+            url: { type: String, default: null },
             publicId: { type: String, default: null },
             status: { type: String, enum: Object.values(VERIFICATION_STATUS), default: DEFAULTS.VENDOR_VERIFICATION_STATUS },
             reason: { type: String, default: null }
         },
 
         gstRegistration: {
-            url: { type: String, required: true, default: null },
+            url: { type: String, default: null },
             publicId: { type: String, default: null },
             status: { type: String, enum: Object.values(VERIFICATION_STATUS), default: DEFAULTS.VENDOR_VERIFICATION_STATUS },
             reason: { type: String, default: null }
