@@ -15,8 +15,11 @@ const authMiddleware = async (req) => {
 
     // [SECURITY] Real-time status check to block suspended/deleted users
     const user = await User.findById(decoded.id).select('status deletedAt');
-    if (!user || user.status !== USER_STATUS.ACTIVE || user.deletedAt) {
+    if (!user || user.deletedAt) {
         return { authorized: false, message: 'Your account is suspended or deleted.' };
+    }
+    if (user.status !== USER_STATUS.ACTIVE) {
+        return { authorized: false, message: 'Your account is does not active. Please contact support.' };
     }
 
     return { authorized: true, user: decoded };
