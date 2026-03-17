@@ -457,9 +457,9 @@ export const PACKAGE = {
     },
 
     DIFFICULTY: {
-        EASY: 'Easy',
-        MODERATE: 'Moderate',
-        HARD: 'Hard'
+        EASY: 'easy',
+        MODERATE: 'moderate',
+        HARD: 'hard'
     },
 
     FITNESS_LEVELS: {
@@ -645,9 +645,9 @@ export const PACKAGE = {
         },
 
         SKI_DIFFICULTY: {
-            ADVANCED: 'Advanced',
-            BEGINNER: 'Beginner',
-            INTERMEDIATE: 'Intermediate'
+            ADVANCED: 'advanced',
+            BEGINNER: 'beginner',
+            INTERMEDIATE: 'intermediate'
         },
 
         PARAGLIDING_TYPES: {

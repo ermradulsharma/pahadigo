@@ -36,7 +36,6 @@ class AdminController {
     // GET /admin/vendors
     async getVendors(req) {
         try {
-
             const vendors = await AdminService.getAllVendors();
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, { vendors });
         } catch (error) {
@@ -324,7 +323,6 @@ class AdminController {
     // GET /admin/packages
     async getPackages(req) {
         try {
-
             const packages = await AdminService.getAllServices();
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, { packages });
         } catch (error) {

@@ -183,10 +183,7 @@ class AdminService {
     async getAllVendors() {
         const users = await User.find({ role: 'vendor' }).lean();
         const profiles = await Vendor.find().lean();
-
-        // Create a lookup map for profiles to avoid O(N^2) search
         const profileMap = new Map(profiles.map(p => [p.user?.toString(), p]));
-
         return users.map(u => {
             const profile = profileMap.get(u._id.toString());
             if (profile) {
@@ -273,10 +270,10 @@ class AdminService {
 
                 const finalVendorUpdate = {};
                 ['ownerName', 'personalNumber', 'personalPanCard', 'personalAbout',
-                 'businessName', 'businessNumber', 'businessRegistration', 'gstNumber',
-                 'businessAbout', 'isApproved', 'category'].forEach(field => {
-                    if (vendorUpdateData[field] !== undefined) finalVendorUpdate[field] = vendorUpdateData[field];
-                });
+                    'businessName', 'businessNumber', 'businessRegistration', 'gstNumber',
+                    'businessAbout', 'isApproved', 'category'].forEach(field => {
+                        if (vendorUpdateData[field] !== undefined) finalVendorUpdate[field] = vendorUpdateData[field];
+                    });
 
                 if (vendorUpdateData.address) {
                     finalVendorUpdate.address = { ...(vendor.address || {}), ...vendorUpdateData.address };
@@ -410,15 +407,12 @@ class AdminService {
     }
 
     async getAllServices() {
-        const packages = await Package.find()
-            .populate({
-                path: 'vendor',
-                select: 'businessName'
-            });
-
+        const packages = await Package.find().populate({
+            path: 'vendor',
+            select: 'businessName'
+        });
         const allServices = [];
         const categories = SCHEMA_KEYS;
-
         packages.forEach(pkg => {
             categories.forEach(type => {
                 if (Array.isArray(pkg[type])) {

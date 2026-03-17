@@ -12,6 +12,7 @@ export default function VendorPackagesPage({ params }) {
     const router = useRouter();
     const [vendor, setVendor] = useState(null);
     const [packages, setPackages] = useState([]);
+    const [categories, setCategories] = useState([]);
     const [loading, setLoading] = useState(true);
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [viewingItem, setViewingItem] = useState(null);
@@ -20,32 +21,45 @@ export default function VendorPackagesPage({ params }) {
         const fetchData = async () => {
             try {
                 const token = getToken();
-
-                // Fetch Vendor Info for Header
                 let found = null;
                 const vendorRes = await fetch('/api/admin/vendors', {
                     headers: { 'Authorization': 'Bearer ' + token }
                 });
+
                 if (vendorRes.ok) {
+                    console.log("vendorRes", vendorRes);
                     const vendorData = await vendorRes.json();
                     found = (vendorData.data?.vendors || []).find(v => v._id === id);
                     if (found) setVendor(found);
                 }
-
-                // Fetch All Packages and Filter by Vendor ID
                 const pkgRes = await fetch('/api/admin/packages', {
                     headers: { 'Authorization': `Bearer ${token}` }
                 });
                 const pkgData = await pkgRes.json();
-                console.log("[DEBUG] All Packages:", pkgData);
                 if (pkgData.success) {
-                    console.log("[DEBUG] Checking packages for Vendor ID:", id);
-
-                    const vendorPackages = pkgData.data.packages.filter(pkg => {
-                        const pkgId = pkg.vendorId || pkg.vendor?._id || pkg.vendor;
-                        return String(pkgId) === String(id);
-                    });
-                    setPackages(vendorPackages);
+                    const vendorPkgDoc = pkgData.data.packages.find(p => String(p.vendor) === String(id) || String(p.vendor?._id) === String(id));
+                    const allItemsFlattened = [];
+                    if (vendorPkgDoc) {
+                        const ignoreKeys = ['_id', 'vendor', '__v', 'createdAt', 'updatedAt'];
+                        Object.keys(vendorPkgDoc).forEach(key => {
+                            if (!ignoreKeys.includes(key) && Array.isArray(vendorPkgDoc[key])) {
+                                vendorPkgDoc[key].forEach(item => {
+                                    allItemsFlattened.push({
+                                        ...item,
+                                        serviceType: key // Use the dynamically found array key
+                                    });
+                                });
+                            }
+                        });
+                    }
+                    setPackages(allItemsFlattened);
+                }
+                const catRes = await fetch('/api/categories', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const catData = await catRes.json();
+                if (catData.success) {
+                    setCategories(catData.data.categories || []);
                 }
             } catch (error) {
                 console.error("Failed to fetch vendor packages:", error);
@@ -85,29 +99,40 @@ export default function VendorPackagesPage({ params }) {
         }
     };
 
+    const createSlugToServiceTypeMap = () => {
+        const slugToServiceMap = {};
+        categories.forEach(cat => {
+            const serviceKeyMatch = packages.find(pkg => {
+                return pkg.serviceType && pkg.serviceType.toLowerCase() === cat.slug.replace(/-/g, '').toLowerCase();
+            });
+            slugToServiceMap[cat.slug] = serviceKeyMatch ? serviceKeyMatch.serviceType : cat.slug.replace(/-([a-z])/g, g => g[1].toUpperCase());
+        });
+        return slugToServiceMap;
+    };
+
     const groupedPackages = {};
     if (vendor && Array.isArray(vendor.category)) {
+        const slugMap = createSlugToServiceTypeMap();
         vendor.category.forEach(catObj => {
-            // Category can be a string or an object { name: 'Vehicle Rental' } from the populated DB schema
-            const catPhrase = typeof catObj === 'string' ? catObj : (catObj?.name || 'Other');
-
-            // Convert 'Vehicle Rental' -> 'vehicleRental'
-            const camelCat = catPhrase.split(' ').map((word, index) => {
-                if (index === 0) return word.toLowerCase();
-                return word.charAt(0).toUpperCase() + word.slice(1).toLowerCase();
-            }).join('');
-            groupedPackages[camelCat] = [];
+            if (typeof catObj === 'object' && catObj !== null && catObj.slug) {
+                const mappedCategory = slugMap[catObj.slug] || catObj.slug;
+                groupedPackages[mappedCategory] = [];
+            } else if (typeof catObj === 'string') {
+                const mappedCategory = slugMap[catObj] || catObj;
+                groupedPackages[mappedCategory] = [];
+            }
         });
     }
 
     packages.forEach(pkg => {
-        const cat = pkg.serviceType || 'Other';
-        console.log(cat);
-        if (!groupedPackages[cat]) groupedPackages[cat] = [];
-        groupedPackages[cat].push(pkg);
+        const cat = pkg.serviceType;
+        if (groupedPackages[cat]) {
+            groupedPackages[cat].push(pkg);
+        }
     });
 
     const getServiceName = (pkg) => {
+        console.log("pkg", pkg);
         return pkg.title ||
             pkg.tourDetails?.tourName ||
             pkg.details?.jumpName ||
@@ -184,11 +209,9 @@ export default function VendorPackagesPage({ params }) {
                     /* Level 1: Category Selection Grid */
                     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
                         {Object.entries(groupedPackages).map(([category, items]) => (
-                            <button
-                                key={category}
-                                onClick={() => setSelectedCategory(category)}
-                                className="group bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-indigo-50 transition-all text-left relative overflow-hidden"
-                            >
+                            console.log("category", category),
+                            console.log("items", items),
+                            <button key={category} onClick={() => setSelectedCategory(category)} className="group bg-white p-8 rounded-3xl border border-slate-200 shadow-sm hover:shadow-xl hover:border-indigo-50 transition-all text-left relative overflow-hidden">
                                 <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-50 rounded-full -mr-16 -mt-16 group-hover:bg-indigo-600 transition-colors duration-500 opacity-20"></div>
                                 <div className="relative z-10">
                                     <div className="w-12 h-12 bg-indigo-50 rounded-2xl flex items-center justify-center text-indigo-600 group-hover:bg-indigo-600 group-hover:text-white transition-colors mb-6">

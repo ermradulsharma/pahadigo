@@ -105,7 +105,6 @@ async function handler(req, { params }) {
                 req.validData = validationResult.data;
             }
         } catch (parseError) {
-            console.log("=== API PARSING CRASH ===", parseError);
             return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.BAD_REQUEST, {});
         }
 

@@ -4,7 +4,6 @@ import { Country, State } from 'country-state-city';
 
 export const seedLocations = async () => {
     try {
-        console.log('Seeding Locations from country-state-city...');
         const allCountries = Country.getAllCountries();
         let countriesCreated = 0;
         let statesCreated = 0;
@@ -68,8 +67,6 @@ export const seedLocations = async () => {
                 console.error(`Error seeding country ${c.name}:`, countryError.message);
             }
         }
-
-        console.log(`Seeding complete. Processed ${countriesCreated} countries and ${statesCreated} states.`);
         return true;
     } catch (error) {
         console.error('Error seeding locations:', error);
