@@ -27,7 +27,7 @@ const ChardhamTourSchema = new mongoose.Schema({
         duration: { type: String, default: '' },
         placesCovered: { type: String, default: '' },
         bestSeason: { type: String, enum: Object.values(PACKAGE.SEASONS), default: PACKAGE.SEASONS.ALL_YEAR },
-        transportType: { type: String, enum: Object.values(PACKAGE.TRANSPORT.CHARDHAM_VEHICLE_CATEGORIES) },
+        transportType: { type: String, enum: [...Object.values(PACKAGE.TRANSPORT.TOUR_MODE), ...Object.values(PACKAGE.TRANSPORT.CHARDHAM_VEHICLE_CATEGORIES)] },
         hotelType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.HOTEL_TYPES), default: PACKAGE.ACCOMMODATION.HOTEL_TYPES.BUDGET },
         nightStayLocations: { type: String, default: '' },
         inclusions: { type: String, default: '' },
