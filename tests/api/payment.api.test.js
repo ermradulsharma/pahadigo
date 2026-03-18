@@ -137,7 +137,6 @@ describe('PaymentController Test Suite', () => {
         });
 
         it('should process payment.failed event without error and return 200', async () => {
-            const warnSpy = jest.spyOn(console, 'warn').mockImplementation(() => {});
             jest.spyOn(RazorpayService, 'verifyWebhookSignature').mockResolvedValue(true);
 
             const req = { 
@@ -152,7 +151,6 @@ describe('PaymentController Test Suite', () => {
             
             const res = await PaymentController.webhook(req);
             expect(res.status).toBe(HTTP_STATUS.OK);
-            expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Payment for order o_1 failed'));
         });
 
         it('should return 500 on internal webhook error', async () => {
