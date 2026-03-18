@@ -2,15 +2,17 @@
 import { useEffect, useState } from 'react';
 import { getToken } from '@/helpers/authUtils';
 import Link from 'next/link';
+import { motion } from 'framer-motion';
+import {
+    Users, Briefcase, AlertTriangle, PackageSearch, FolderTree, IndianRupee,
+    TrendingUp, ExternalLink, Calendar, CheckCircle2, XCircle, ArrowRight
+} from 'lucide-react';
 import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    BarChart, Bar,
-    PieChart, Pie, Cell, Legend
+    BarChart, Bar, PieChart, Pie, Cell, Legend
 } from 'recharts';
 
-
-
-const COLORS = ['#0088FE', '#00C49F', '#FFBB28', '#FF8042', '#8884d8'];
+const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export default function AdminDashboard() {
     const [stats, setStats] = useState({ users: 0, totalVendors: 0, pendingVendors: 0, packages: 0, categories: 0, revenue: 0, recentBookings: [], recentVendors: [] });
@@ -75,31 +77,54 @@ export default function AdminDashboard() {
     if (!isMounted) return null;
 
     return (
-        <div className="p-8">
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-8 max-w-[1600px] mx-auto space-y-8 bg-slate-50 min-h-screen"
+        >
+            <div className="flex justify-between items-end">
+                <div>
+                    <h1 className="text-3xl font-black text-slate-800 tracking-tight">Admin Overview</h1>
+                    <p className="text-slate-500 font-medium">Welcome back! Here's what's happening today.</p>
+                </div>
+                <div className="flex gap-2">
+                    <Link href="/admin/vendors" className="px-5 py-2.5 bg-indigo-600/10 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-xl transition-all font-bold flex items-center gap-2">
+                        <Briefcase className="w-4 h-4" /> Review Vendors
+                    </Link>
+                </div>
+            </div>
+
             {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4 animate-pulse">
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 animate-pulse">
                     {[1, 2, 3, 4, 5, 6].map(i => (
-                        <div key={i} className="h-32 bg-gray-200 rounded-xl"></div>
+                        <div key={i} className="h-36 bg-slate-200 rounded-2xl"></div>
                     ))}
                 </div>
             ) : (
-                <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
-                    <StatCard title="Travellers" value={stats.users || 0} color="bg-gradient-to-br from-blue-600 to-indigo-700" icon="users" href="/admin/travellers" />
-                    <StatCard title="Vendors" value={stats.totalVendors || 0} color="bg-gradient-to-br from-emerald-500 to-teal-700" icon="briefcase" href="/admin/vendors" />
-                    <StatCard title="Pending Approval" value={stats.pendingVendors || 0} color="bg-gradient-to-br from-amber-500 to-orange-600" icon="alert" href="/admin/vendors" />
-                    <StatCard title="Packages" value={stats.packages || 0} color="bg-gradient-to-br from-pink-500 to-rose-700" icon="package" href="/admin/packages" />
-                    <StatCard title="Categories" value={stats.categories || 0} color="bg-gradient-to-br from-slate-600 to-slate-800" icon="folder" href="/admin/categories" />
-                    <StatCard title="Revenue" value={`₹${(Number(stats.revenue) || 0).toLocaleString('en-IN')}`} color="bg-gradient-to-br from-green-600 to-green-800" icon="cash" href="/admin/payments" />
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
+                    <StatCard title="Travellers" value={stats.users || 0} gradient="from-indigo-500 to-blue-600" Icon={Users} href="/admin/travellers" delay={0.1} />
+                    <StatCard title="Vendors" value={stats.totalVendors || 0} gradient="from-teal-400 to-emerald-600" Icon={Briefcase} href="/admin/vendors" delay={0.2} />
+                    <StatCard title="Pending Auth" value={stats.pendingVendors || 0} gradient="from-orange-400 to-red-500" Icon={AlertTriangle} href="/admin/vendors" delay={0.3} pulse={stats.pendingVendors > 0} />
+                    <StatCard title="Packages" value={stats.packages || 0} gradient="from-pink-500 to-rose-600" Icon={PackageSearch} href="/admin/packages" delay={0.4} />
+                    <StatCard title="Categories" value={stats.categories || 0} gradient="from-slate-600 to-slate-800" Icon={FolderTree} href="/admin/categories" delay={0.5} />
+                    <StatCard title="Revenue" value={`₹${(Number(stats.revenue) || 0).toLocaleString('en-IN')}`} gradient="from-green-500 to-emerald-700" Icon={IndianRupee} href="/admin/payments" delay={0.6} />
                 </div>
             )}
 
             {/* Analytics Section */}
-            <div className="mt-8 mb-8">
+            <motion.div 
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                transition={{ delay: 0.2, duration: 0.5 }}
+                className="pt-4"
+            >
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-gray-800">Analytics Overview</h2>
-                    <div className="flex gap-1 bg-white border border-gray-200 rounded-lg p-1">
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
+                        <TrendingUp className="text-indigo-600 w-6 h-6" /> Growth Analytics
+                    </h2>
+                    <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200/60 inline-flex">
                         {['weekly', 'monthly', 'yearly'].map(p => (
-                            <button key={p} onClick={() => setPeriod(p)} className={`px-4 py-1.5 text-xs font-bold rounded-md capitalize transition-colors ${period === p ? 'bg-indigo-100 text-indigo-700' : 'text-gray-500 hover:bg-gray-50'}`}> {p} </button>
+                            <button key={p} onClick={() => setPeriod(p)} className={`px-5 py-2 text-sm font-bold rounded-lg capitalize transition-all duration-300 ${period === p ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-indigo-600 hover:bg-slate-50'}`}> {p} </button>
                         ))}
                     </div>
                 </div>
@@ -145,231 +170,220 @@ export default function AdminDashboard() {
                                             <Tooltip />
                                             <Legend />
                                         </PieChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
+                            </ResponsiveContainer>
                         </div>
-
-                        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-                            {/* User Growth */}
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 lg:col-span-2">
-                                <h3 className="text-lg font-bold text-gray-800 mb-6">User Growth</h3>
-                                <div className="h-64">
-                                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                                        <BarChart data={analyticsData.userGrowth}>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                            <XAxis dataKey="_id" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-                                            <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-                                            <Tooltip cursor={{ fill: '#f3f4f6' }} contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                                            <Bar dataKey="users" fill="#10b981" radius={[4, 4, 0, 0]} name="New Users" barSize={30} />
-                                        </BarChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-
-                            {/* Top Vendors */}
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                                <h3 className="text-lg font-bold text-gray-800 mb-4">Top Performing Vendors</h3>
-                                <div className="space-y-4">
-                                    {analyticsData.topVendors.length === 0 ? <p className="text-sm text-gray-400 italic">No data available</p> :
-                                        analyticsData.topVendors.map((vendor, i) => (
-                                            <div key={i} className="flex items-center gap-3 pb-3 border-b last:border-0 border-gray-50">
-                                                <div className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center text-xs font-bold text-gray-500">#{i + 1}</div>
-                                                <div className="flex-1 min-w-0">
-                                                    <div className="text-sm font-bold text-gray-800 truncate">{vendor.name}</div>
-                                                    <div className="text-xs text-gray-400">{vendor.bookings} bookings</div>
-                                                </div>
-                                                <div className="text-sm font-bold text-indigo-600">₹{vendor.revenue.toLocaleString()}</div>
-                                            </div>
-                                        ))
-                                    }
-                                </div>
-                            </div>
-                        </div>
-                    </>
-                ) : (
-                    <div className="p-10 text-center text-gray-500">Failed to load analytics data</div>
-                )}
-            </div>
-
-
-
-
-
-            {/* Analytics Section */}
-            {/* ... keeping existing charts ... */}
-
-            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-8">
-                {/* Recent Bookings */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                            <span className="w-2 h-6 bg-violet-500 rounded-full"></span>
-                            Recent Bookings
-                        </h2>
-                        <Link href="/admin/bookings" className="text-xs text-indigo-600 hover:underline font-bold">View All →</Link>
                     </div>
-                    {/* ... table ... */}
+                </div>
+
+                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+                    {/* User Growth */}
+                    <div className="bg-white/80 backdrop-blur border border-white p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] lg:col-span-2">
+                        <h3 className="text-lg font-bold text-slate-800 mb-6">User Acquisition</h3>
+                        <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                                <BarChart data={analyticsData.userGrowth}>
+                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
+                                    <XAxis dataKey="_id" tick={{ fill: '#64748b', fontSize: 12 }} tickLine={false} axisLine={false} />
+                                    <YAxis tick={{ fill: '#64748b', fontSize: 12 }} tickLine={false} axisLine={false} />
+                                    <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
+                                    <Bar dataKey="users" fill="#10b981" radius={[6, 6, 0, 0]} name="New Users" barSize={40} />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    </div>
+
+                    {/* Top Vendors */}
+                    <div className="bg-white/80 backdrop-blur border border-white p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
+                        <h3 className="text-lg font-bold text-slate-800 mb-4">Top Generators</h3>
+                        <div className="space-y-4">
+                            {analyticsData.topVendors.length === 0 ? <p className="text-sm text-slate-400 italic font-medium">No sales data yet.</p> :
+                                analyticsData.topVendors.map((vendor, i) => (
+                                    <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: i * 0.1 }} key={i} className="flex items-center gap-4 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 rounded-xl px-2 transition-colors">
+                                        <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-sm font-black text-indigo-600">#{i + 1}</div>
+                                        <div className="flex-1 min-w-0">
+                                            <div className="text-sm font-bold text-slate-800 truncate">{vendor.name}</div>
+                                            <div className="text-[11px] font-bold text-slate-400 mt-0.5">{vendor.bookings} Bookings</div>
+                                        </div>
+                                        <div className="text-sm font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">₹{(vendor.revenue/1000).toFixed(1)}k</div>
+                                    </motion.div>
+                                ))
+                            }
+                        </div>
+                    </div>
+                </div>
+            </>
+        ) : (
+            <div className="p-10 text-center text-slate-500 font-medium bg-white rounded-2xl border border-dashed border-slate-200">Failed to load analytics data</div>
+        )}
+        </motion.div>
+
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
+            {/* Recent Bookings */}
+            <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} className="bg-white border border-slate-100 p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col">
+                <div className="flex justify-between items-center mb-6">
+                    <h2 className="text-xl font-bold text-slate-800 flex items-center gap-3">
+                        <Calendar className="w-5 h-5 text-indigo-500" /> Recent Bookings
+                    </h2>
+                    <Link href="/admin/bookings" className="text-sm text-indigo-600 hover:text-indigo-800 font-bold transition-colors">View All &rarr;</Link>
+                </div>
                     <div className="overflow-x-auto flex-1">
                         <table className="w-full text-sm text-left">
                             <thead className="text-gray-400 font-medium border-b border-gray-50">
                                 <tr>
                                     <th className="pb-3 px-2">Traveller</th>
-                                    <th className="pb-3 px-2">Package</th>
-                                    <th className="pb-3 px-2 text-right">Status</th>
+                                    <th className="pb-4 font-bold uppercase tracking-wider text-[11px] text-slate-400">Package</th>
+                                    <th className="pb-4 font-bold uppercase tracking-wider text-[11px] text-slate-400 text-right">Status</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50">
+                            <tbody className="divide-y divide-slate-50">
                                 {(stats.recentBookings || []).map((b, i) => (
-                                    <tr key={b?._id || i} className="hover:bg-gray-50 transition-colors">
-                                        <td className="py-3 px-2 font-medium text-gray-700">{b?.user?.name || 'Anonymous'}</td>
-                                        <td className="py-3 px-2 text-gray-600 truncate max-w-[150px]">
-                                            <Link href="/admin/bookings" className="hover:text-indigo-600">{b?.package?.title || 'Package'}</Link>
+                                    <tr key={b?._id || i} className="hover:bg-slate-50/50 transition-colors group">
+                                        <td className="py-4 font-bold text-slate-700">{b?.user?.name || 'Anonymous'}</td>
+                                        <td className="py-4 text-slate-500 font-medium truncate max-w-[150px]">
+                                            <Link href="/admin/bookings" className="group-hover:text-indigo-600 transition-colors">{b?.package?.title || 'Package'}</Link>
                                         </td>
-                                        <td className="py-3 px-2 text-right">
-                                            <span className={`px-2 py-0.5 rounded-full text-[10px] uppercase font-bold ${b?.status === 'confirmed' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'
+                                        <td className="py-4 text-right">
+                                            <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${b?.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
                                                 }`}>
+                                                {b?.status === 'confirmed' ? <CheckCircle2 className="w-3 h-3 inline mr-1 -mt-0.5"/> : <AlertTriangle className="w-3 h-3 inline mr-1 -mt-0.5"/>}
                                                 {b?.status || 'pending'}
                                             </span>
                                         </td>
                                     </tr>
                                 ))}
                                 {(!stats.recentBookings || stats.recentBookings.length === 0) && (
-                                    <tr><td colSpan="3" className="py-4 text-center text-gray-400">No recent bookings</td></tr>
+                                    <tr><td colSpan="3" className="py-6 text-center text-slate-400 font-medium">No recent bookings</td></tr>
                                 )}
                             </tbody>
                         </table>
                     </div>
-                </div>
+                </motion.div>
 
                 {/* Recent Vendors */}
-                <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100 flex flex-col">
-                    <div className="flex justify-between items-center mb-4">
-                        <h2 className="text-lg font-bold text-gray-800 flex items-center gap-2">
-                            <span className="w-2 h-6 bg-emerald-500 rounded-full"></span>
-                            New Vendors
+                <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="bg-white border border-slate-100 p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col">
+                    <div className="flex justify-between items-center mb-6">
+                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-3">
+                            <Briefcase className="w-5 h-5 text-emerald-500" /> New Vendors
                         </h2>
-                        <Link href="/admin/vendors" className="text-xs text-indigo-600 hover:underline font-bold">View All →</Link>
+                        <Link href="/admin/vendors" className="text-sm text-indigo-600 hover:text-indigo-800 font-bold transition-colors">View All &rarr;</Link>
                     </div>
                     <div className="overflow-x-auto flex-1">
                         <table className="w-full text-sm text-left">
                             <thead className="text-gray-400 font-medium border-b border-gray-50">
                                 <tr>
-                                    <th className="pb-3 px-2">Business</th>
-                                    <th className="pb-3 px-2">Action</th>
-                                    <th className="pb-3 px-2 text-right">Joined</th>
+                                    <th className="pb-4 font-bold uppercase tracking-wider text-[11px] text-slate-400">Buesiness Name</th>
+                                    <th className="pb-4 font-bold uppercase tracking-wider text-[11px] text-slate-400">Action</th>
+                                    <th className="pb-4 font-bold uppercase tracking-wider text-[11px] text-slate-400 text-right">Joined</th>
                                 </tr>
                             </thead>
-                            <tbody className="divide-y divide-gray-50">
+                            <tbody className="divide-y divide-slate-50">
                                 {(stats.recentVendors || []).map((v, i) => (
-                                    <tr key={v?._id || i} className="hover:bg-gray-50 transition-colors">
-                                        <td className="py-3 px-2 font-medium text-gray-700">
-                                            <div>{v?.businessName || 'New Business'}</div>
-                                            <div className="text-[10px] text-gray-400 -mt-1">{v?.user?.email || 'N/A'}</div>
+                                    <tr key={v?._id || i} className="hover:bg-slate-50/50 transition-colors">
+                                        <td className="py-4">
+                                            <div className="font-bold text-slate-800">{v?.businessName || 'New Business'}</div>
+                                            <div className="text-[11px] font-medium text-slate-400">{v?.user?.email || 'N/A'}</div>
                                         </td>
-                                        <td className="py-3 px-2">
+                                        <td className="py-4">
                                             <Link
                                                 href={`/admin/vendors/${v?._id || '#'}`}
-                                                className="text-indigo-600 hover:text-indigo-800 font-bold"
+                                                className="text-indigo-600 hover:text-white bg-indigo-50 hover:bg-indigo-600 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors inline-block"
                                             >
                                                 Review
                                             </Link>
                                         </td>
-                                        <td className="py-3 px-2 text-right text-gray-400 italic">
+                                        <td className="py-4 text-right text-slate-400 font-medium text-xs">
                                             {v?.createdAt ? new Date(v.createdAt).toLocaleDateString() : 'N/A'}
                                         </td>
                                     </tr>
                                 ))}
                                 {(!stats.recentVendors || stats.recentVendors.length === 0) && (
-                                    <tr><td colSpan="3" className="py-4 text-center text-gray-400">No new vendors</td></tr>
+                                    <tr><td colSpan="3" className="py-6 text-center text-slate-400 font-medium">No new vendors</td></tr>
                                 )}
                             </tbody>
                         </table>
                     </div>
-                </div>
+                </motion.div>
             </div>
 
             {/* Latest Packages Widget */}
-            <div className="mt-12">
+            <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} className="pt-8">
                 <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-gray-800 flex items-center gap-2">
-                        <span className="w-2 h-6 bg-pink-500 rounded-full"></span>
-                        Latest Service Listings
+                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
+                        <PackageSearch className="w-6 h-6 text-pink-500" /> Latest Experiences
                     </h2>
-                    <Link href="/admin/packages" className="text-xs text-indigo-600 hover:underline font-bold uppercase tracking-widest">Manage All Packages →</Link>
+                    <Link href="/admin/packages" className="text-sm text-indigo-600 hover:text-indigo-800 font-bold transition-colors">Manage All &rarr;</Link>
                 </div>
 
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
                     {loading ? (
-                        [1, 2, 3, 4].map(i => <div key={i} className="h-64 bg-gray-100 rounded-2xl animate-pulse"></div>)
-                    ) : latestPackages.map((pkg) => (
-                        <div key={pkg._id} className="group bg-white rounded-2xl border border-gray-100 overflow-hidden hover:shadow-xl transition-all flex flex-col">
-                            <div className="relative h-40 bg-gray-100">
+                        [1, 2, 3, 4].map(i => <div key={i} className="h-64 bg-slate-200 rounded-3xl animate-pulse delay-75"></div>)
+                    ) : latestPackages.map((pkg, idx) => (
+                        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: idx * 0.1 }} key={pkg._id} className="group bg-white rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-2xl hover:-translate-y-1 border border-white transition-all duration-500 flex flex-col">
+                            <div className="relative h-48 bg-slate-100 overflow-hidden">
                                 {pkg.photos?.[0]?.url ? (
-                                    <img src={pkg.photos[0].url} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" />
+                                    <img src={pkg.photos[0].url} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
                                 ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-gray-300">
-                                        <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-1h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" /></svg>
+                                    <div className="w-full h-full flex items-center justify-center text-slate-300">
+                                        <PackageSearch className="w-12 h-12 stroke-1" />
                                     </div>
                                 )}
-                                <div className="absolute top-3 right-3">
-                                    <span className={`px-2 py-0.5 rounded text-[9px] font-black uppercase tracking-widest ${pkg.isActive ? 'bg-emerald-500 text-white' : 'bg-red-500 text-white'}`}>
-                                        {pkg.isActive ? 'Active' : 'Draft'}
+                                <div className="absolute top-4 right-4">
+                                    <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-sm border border-white/20 ${pkg.isActive ? 'bg-emerald-500/90 text-white' : 'bg-red-500/90 text-white'}`}>
+                                        {pkg.isActive ? 'LIVE' : 'DRAFT'}
                                     </span>
                                 </div>
+                                <div className="absolute bottom-0 inset-x-0 h-1/2 bg-gradient-to-t from-slate-900/40 to-transparent"></div>
                             </div>
-                            <div className="p-4 flex-1 flex flex-col">
-                                <h3 className="font-bold text-gray-800 text-sm line-clamp-1 mb-1">{pkg.title || pkg.tourDetails?.tourName || pkg.details?.jumpName || pkg.vehicleDetails?.model || 'Service Listing'}</h3>
-                                <div className="text-[10px] text-gray-400 font-bold uppercase tracking-wider mb-4">{pkg.vendor?.businessName || 'Anonymous Vendor'}</div>
-                                <div className="mt-auto pt-3 border-t border-gray-50 flex items-center justify-between">
-                                    <div className="text-sm font-black text-gray-900">₹{(pkg.pricing?.pricePerPerson || pkg.pricing?.pricePerNight || pkg.pricing?.baseFare || 0).toLocaleString()}</div>
-                                    <Link href={`/admin/packages/${pkg.vendorId}`} className="p-1.5 hover:bg-indigo-50 text-indigo-600 rounded-lg transition-colors">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
+                            <div className="p-6 flex-1 flex flex-col bg-white">
+                                <h3 className="font-bold text-slate-800 text-lg line-clamp-1 mb-1 group-hover:text-indigo-600 transition-colors">{pkg.title || pkg.tourDetails?.tourName || pkg.details?.jumpName || pkg.vehicleDetails?.model || 'Service Listing'}</h3>
+                                <div className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mb-6 flex items-center gap-1.5"><Briefcase className="w-3 h-3"/> {pkg.vendor?.businessName || 'Anonymous'}</div>
+                                <div className="mt-auto flex items-end justify-between">
+                                    <div>
+                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Price</p>
+                                        <div className="text-xl font-black text-slate-900">₹{(pkg.pricing?.pricePerPerson || pkg.pricing?.pricePerNight || pkg.pricing?.baseFare || 0).toLocaleString()}</div>
+                                    </div>
+                                    <Link href={`/admin/packages/${pkg.vendorId}`} className="w-10 h-10 flex items-center justify-center bg-slate-50 hover:bg-indigo-600 hover:text-white text-indigo-600 rounded-xl transition-all shadow-sm">
+                                        <ExternalLink className="w-4 h-4" />
                                     </Link>
                                 </div>
                             </div>
-                        </div>
+                        </motion.div>
                     ))}
-                    {!loading && latestPackages.length === 0 && <div className="col-span-full py-10 text-center text-gray-400 italic">No packages listed yet</div>}
+                    {!loading && latestPackages.length === 0 && <div className="col-span-full py-16 text-center text-slate-400 font-medium bg-slate-100/50 rounded-3xl border border-dashed border-slate-200">No active experiences available on the platform yet.</div>}
                 </div>
-
-
-
-
-
-                <div className="mt-8 bg-white p-3 rounded-xl shadow-sm border border-gray-100 flex justify-between items-center">
-                    <h2 className="text-lg font-bold text-gray-800">Quick Actions</h2>
-                    <div className="flex flex-wrap gap-2">
-                        <Link href="/admin/vendors" className="px-6 py-2.5 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition shadow-sm font-medium">Review Vendors</Link>
-                        <Link href="/admin/travellers" className="px-6 py-2.5 bg-blue-50 text-blue-700 rounded-lg hover:bg-blue-100 transition font-medium">Manage Travellers</Link>
-                        <Link href="/admin/categories" className="px-6 py-2.5 bg-pink-50 text-pink-700 rounded-lg hover:bg-pink-100 transition font-medium">Categories</Link>
-                        <Link href="/admin/bookings" className="px-6 py-2.5 bg-purple-50 text-purple-700 rounded-lg hover:bg-purple-100 transition font-medium">Bookings</Link>
-                    </div>
-                </div>
-            </div>
-        </div>
+            </motion.div>
+        </motion.div>
     );
 }
 
-function StatCard({ title, value, color, icon, href }) {
+function StatCard({ title, value, gradient, Icon, href, delay = 0, pulse = false }) {
     const CardContent = (
-        <div className={`p-6 rounded-xl shadow-lg text-white ${color} transition-transform hover:scale-105 h-full`}>
-            <div className="flex justify-between items-start">
-                <div>
-                    <h3 className="text-sm font-medium opacity-80 uppercase tracking-wider">{title}</h3>
-                    <p className="text-4xl font-bold mt-2">{value}</p>
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay, duration: 0.5 }}
+            className={`p-6 bg-gradient-to-br ${gradient} rounded-3xl shadow-xl text-white relative overflow-hidden group h-full transition-transform hover:-translate-y-1`}
+        >
+            <div className="absolute top-0 right-0 p-4 opacity-20 transform group-hover:scale-125 transition-transform duration-500 ease-out">
+                <Icon className="w-24 h-24 -mt-4 -mr-4" />
+            </div>
+            <div className="relative z-10 flex flex-col h-full">
+                <div className="flex justify-between items-start mb-4">
+                    <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
+                        <Icon className="w-6 h-6 text-white" />
+                    </div>
+                    {pulse && <span className="flex h-3 w-3 relative">
+                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
+                        <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
+                    </span>}
                 </div>
-                <div className="p-2 bg-opacity-20 rounded-lg">
-                    {icon === 'users' && <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4.354a4 4 0 110 5.292M15 21H3v-1a6 6 0 0112 0v1zm0 0h6v-1a6 6 0 00-9-5.197M13 7a4 4 0 11-8 0 4 4 0 018 0z" /></svg>}
-                    {icon === 'briefcase' && <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 13.255A23.931 23.931 0 0112 15c-3.183 0-6.22-.62-9-1.745M16 6V4a2 2 0 00-2-2h-4a2 2 0 00-2 2v2m4 6h.01M5 20h14a2 2 0 002-2V8a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>}
-                    {icon === 'alert' && <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>}
-                    {icon === 'package' && <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4" /></svg>}
-                    {icon === 'folder' && <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 7v10a2 2 0 002 2h14a2 2 0 002-2V9a2 2 0 00-2-2h-6l-2-2H5a2 2 0 00-2 2z" /></svg>}
-                    {icon === 'ticket' && <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 5v2m0 4v2m0 4v2M5 5a2 2 0 00-2 2v3a2 2 0 110 4v3a2 2 0 002 2h14a2 2 0 002-2v-3a2 2 0 110-4V7a2 2 0 00-2-2H5z" /></svg>}
-                    {icon === 'cash' && <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>}
+                <h3 className="text-4xl font-black tracking-tight mb-1">{value}</h3>
+                <p className="text-sm font-bold uppercase tracking-widest text-white/80">{title}</p>
+                <div className="mt-auto pt-4 flex items-center text-xs font-bold text-white/90 group-hover:text-white">
+                    Manage <ArrowRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
                 </div>
             </div>
-        </div>
+        </motion.div>
     );
 
     return href ? <Link href={href} className="block h-full">{CardContent}</Link> : CardContent;
