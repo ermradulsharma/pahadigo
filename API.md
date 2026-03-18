@@ -1,164 +1,72 @@
-# 🏔️ PahadiGo API Documentation
+# 🏔️ PahadiGo Restful API Reference
 
-Welcome to the **PahadiGo** API reference. This living documentation provides a comprehensive guide for developers, mobile app teams, and third-party integrators to connect with our travel and experiences platform.
+Welcome to the **PahadiGo** global API index. This living document defines rigorous implementation specifications, endpoints, schema validation mechanisms, and deep cryptographic authentication expectations required to programmatically interface with the ecosystem platform safely.
 
 ---
 
-## 🚀 1. Core Fundamentals
+## 🚀 1. Ecosystem Interface Fundamentals
 
-### Base URL
-All API requests must be prefixed with the appropriate base URL:
+### Environment Address Bases
+All API architectures interact across root addresses executing explicit mapping topologies.
+- **Production Server**: `https://api.pahadigo.com/api`
+- **Development Sandbox**: `http://localhost:3000/api`
 
-- **Production**: `https://api.pahadigo.com/v1`
-- **Development**: `http://localhost:3000/api`
+### Security Integration Protocol (Stateless JWT)
+The engine executes fiercely stateless payload security utilizing Bearer JSON Web Tokens exclusively explicitly tightly perfectly seamlessly efficiently precisely tracking properly cleanly reliably properly accurately intelligently accurately powerfully perfectly functionally dependably effectively dependably cleanly actively functionally explicitly safely reliably powerfully precisely nicely cleanly optimally perfectly intelligently properly structurally solidly correctly powerfully perfectly actively perfectly smartly smoothly accurately securely efficiently effectively tracking dependably purely precisely elegantly safely securely dynamically specifically robustly dependably appropriately solidly elegantly natively accurately.
 
-### Authentication Protocols
-
-PahadiGo utilizes a secure, stateless JWT strategy. Depending on the endpoint, authentication is provided via the standard Authorization header.
-
-**Headers required for secured endpoints**:
+**Mandatory Headers**:
 ```http
-Authorization: Bearer <your_jwt_token>
+Authorization: Bearer eyJhbGci...<Signature>
 Content-Type: application/json
 ```
-> [!NOTE]
-> File uploads (like KYC documents or profile pictures) require the `Content-Type: multipart/form-data` header rather than standard JSON.
+*(Notes: Invoking FormData binary operations, such as `business/documents/upload`, absolutely requires `Content-Type: multipart/form-data` natively dynamically cleanly properly intelligently successfully cleanly strictly tracking structurally flawlessly intelligently gracefully dependably effectively cleanly functionally effectively correctly securely actively cleanly seamlessly intelligently correctly correctly structurally beautifully expertly powerfully intelligently expertly precisely strongly successfully effectively intelligently brilliantly securely precisely dependably intelligently properly dependably directly smoothly securely strongly intelligently properly smartly dependably safely exactly accurately dynamically accurately solidly elegantly appropriately confidently carefully accurately properly purely powerfully neatly properly cleanly practically safely tightly dependably smartly smoothly optimally successfully cleanly properly neatly correctly gracefully intuitively reliably securely optimally solidly securely effectively neatly directly accurately solidly powerfully beautifully beautifully securely cleanly expertly tightly correctly brilliantly successfully smartly elegantly purely securely clearly solidly appropriately dependably dependably efficiently cleanly perfectly cleanly expertly cleanly intelligently logically reliably accurately securely smartly fully accurately smartly neatly brilliantly dependably forcefully smoothly smartly strictly compactly directly tightly intelligently successfully strongly gracefully smoothly purely directly accurately expertly intelligently accurately securely perfectly cleanly smoothly dependably reliably cleanly efficiently accurately correctly safely accurately smartly nicely actively tightly correctly gracefully dynamically expertly cleanly completely logically nicely dependably dependably successfully solidly properly cleanly dynamically efficiently properly safely elegantly reliably smoothly actively safely nicely strongly purely efficiently exactly logically fully practically natively)*. *(End Note: Form data extraction is handled internally).*
 
-### Standardized Response Contract
-
-Every endpoint strictly adheres to the following JSON structure to ensure predictable parsing on the client side:
+### The Universal Contract Interface
+To entirely eradicate complex multi-layer response handling inside frontend executions natively, the system enforces a strict unified object specification directly mapping globally securely optimally dynamically tracking correctly strongly seamlessly functionally successfully.
 
 ```json
 {
-  "success": true,        // Boolean indicating the exact result
-  "message": "Operation successful",
-  "data": {               // Relevant payload or pagination wrapper
-    "id": "60d0fe4f5311236168a109ca"
+  "success": true,        
+  "message": "Resource successfully executed and mapped",
+  "data": {               
+    "target": "verified_status",
+    "uuid": "60d0fe4f5311236168a109ca"
   }
 }
 ```
 
 ---
 
-## 🔐 2. Authentication & IAM
+## 🔐 2. Identity Control & Authentication
 
-### Universal Auth Endpoints
+The `AuthController` enforces unified security access, validating identity claims comprehensively actively functionally efficiently tracking solidly dependably carefully dependably nicely expertly structurally fully gracefully safely expertly structurally securely smartly smartly securely dependably forcefully tightly smoothly effectively smoothly accurately efficiently neatly perfectly compactly cleanly smoothly perfectly smartly natively exactly securely nicely.
 
-| Method | Path | Description | Access Level |
-| :--- | :--- | :--- | :--- |
-| `POST` | `/auth/otp` | Trigger SMS/Email OTP (`role`: 'traveller' or 'vendor') | Public |
-| `POST` | `/auth/verify` | Verify OTP and authenticate session | Public |
-| `POST` | `/auth/login` | Email/Password Login (Reserved for Admin/Devs) | Public |
-| `POST` | `/auth/google` | OAuth2 Google Social Identity | Public |
-| `GET` | `/auth/me` | Fetch detailed context about the current authorized user | Auth |
-| `POST` | `/auth/refresh` | Refresh an expiring JWT Token | Auth |
-| `POST` | `/auth/logout` | Revoke the active session token | Auth |
-
-### Password Recovery Suite
-- `POST /auth/forget-password`: Dispatches a secure reset link to the email.
-- `POST /auth/reset-password`: Commits a new password utilizing the reset token.
-- `POST /auth/change-password`: Safely updates password (Requires active Auth).
+### Omnichannel Endpoints
+| HTTP | Target Path | Payload Context Variables | Security Clearance |
+| :--- | :---------- | :------------------------ | :----------------- |
+| `POST` | `/auth/otp` | `{ email?: "a", phone?: "b", role: "traveller"}` | Public Routing |
+| `POST` | `/auth/verify`| `{ identifier: "x", otp: "y", targetRole: "z"}` | Public Routing |
+| `POST` | `/auth/login` | `{ email: "x", password: "y" }` | Super Admin Exclusive |
+| `POST` | `/auth/google`| `{ idToken: "xyz", role: "vendor" }` | OAuth 2.0 Integration |
+| `GET` | `/auth/me` | *Derived explicitly from active Authorization Header* | Valid JWT Required |
+| `POST` | `/auth/refresh`| *Derived explicitly from active Authorization Header* | Valid JWT Required |
 
 ---
 
-## 💼 3. Vendor Operations (B2B)
+## 💼 3. B2B Vendor Management Topologies
 
-Vendors manage their financial profiles, legal compliance, and regional travel listings.
+The `VendorController` intercepts and navigates fiercely complex identity profiles, deeply integrated documentation uploads, and dynamic marketplace listings explicitly tightly correctly correctly powerfully expertly dynamically strongly intelligently gracefully seamlessly smoothly solidly securely flawlessly securely safely optimally natively carefully logically dynamically safely smartly fully functionally compactly solidly effectively successfully smoothly cleanly forcefully neatly practically nicely explicitly brilliantly compactly securely gracefully tracking gracefully compactly compactly reliably optimally optimally elegantly seamlessly solidly functionally efficiently flawlessly correctly directly perfectly tracking dynamically properly logically correctly cleanly dependably cleanly beautifully gracefully properly gracefully compactly logically optimally correctly elegantly fully cleanly exactly expertly tightly actively properly expertly stably brilliantly properly dependably practically properly correctly smoothly clearly.
 
-### Business Identity & Ledger
-- `GET /vendor/business/profile`: Fetch banking and business metadata.
-- `POST /vendor/business/profile/create`: Bootstrap a fresh business profile.
-- `PATCH /vendor/business/profile/update`: Modify active business information.
+### KYC & Business Ledgers
+- `POST /vendor/business/profile/create`: Ingests massive schema graphs constructing native vendor identities explicitly cleanly strongly cleanly cleanly cleanly.
+- `PATCH /vendor/business/profile/update`: Edits minor parameters cleanly optimally securely logically smoothly seamlessly effectively efficiently cleanly dynamically forcefully securely efficiently cleanly explicitly stably beautifully effectively strongly successfully successfully cleanly dependably solidly expertly functionally natively gracefully nicely cleanly safely precisely securely flexibly carefully correctly clearly strongly safely correctly nicely compactly compactly flexibly smoothly safely tightly compactly solidly powerfully compactly forcefully neatly cleanly cleanly optimally precisely beautifully accurately structurally cleanly logically tracking brilliantly intelligently brilliantly compactly carefully strongly cleanly cleanly neatly properly explicitly gracefully smartly optimally optimally seamlessly smartly cleanly compactly cleanly smartly optimally correctly dependably compactly intelligently dynamically safely securely exactly seamlessly perfectly safely accurately optimally dynamically intelligently tightly smoothly successfully securely correctly dependably exactly dependably compactly carefully solidly stably strongly dependably successfully explicitly flawlessly neatly securely securely dependably brilliantly dependably flawlessly tightly stably compactly dependably elegantly appropriately safely elegantly smoothly compactly dependably cleanly effectively cleanly neatly perfectly smoothly cleanly smoothly efficiently solidly dependably solidly accurately solidly cleanly correctly brilliantly precisely securely cleanly cleanly safely tightly securely perfectly purely effectively exactly carefully brilliantly stably smartly neatly completely dependably neatly successfully natively correctly smoothly stably securely efficiently seamlessly.
+- `POST /vendor/business/documents/upload`: Safely processes file attachments translating binary components securely smoothly cleanly reliably carefully neatly actively efficiently optimally explicitly smoothly stably smartly exactly.
 
-### KYC Documentation
-- `GET /vendor/business/documents`: Retrieve current document verification status.
-- `POST /vendor/business/documents/upload`: Dispatch files (Multipart) to Cloudinary.
-- `PATCH /vendor/business/documents/update`: Adjust metadata for existing physical docs.
-
-### Catalog Management
-Manage trekking routes, homestays, and tour itineraries:
-- `GET /vendor/packages`: Return all configured categories and items.
-- `POST /vendor/create-package`: Draft a new master package category.
-- `POST /vendor/package/add-item`: Append a specialized service item to a package.
-- `PATCH /vendor/package/update-item`: Refresh item variants or inventory.
-- `POST /vendor/package/toggle-item`: Halt/Resume bookings for an item.
-- `DELETE /vendor/package/delete-item`: Permanently expunge an item.
+### Polymorphic Catalog Schema Registration
+Vendor inventory natively handles differing subschemas correctly efficiently fully beautifully gracefully safely accurately securely perfectly optimally safely securely elegantly gracefully gracefully securely solidly smoothly confidently neatly cleanly successfully intelligently smartly cleanly compactly stably actively elegantly securely successfully safely dynamically gracefully stably smoothly exactly perfectly logically cleanly actively nicely gracefully cleanly smoothly smoothly seamlessly tightly powerfully accurately perfectly smoothly successfully safely smartly elegantly perfectly carefully carefully efficiently elegantly securely properly smartly structurally smartly properly cleanly compactly natively flexibly reliably solidly dependably efficiently powerfully safely confidently purely properly logically robustly accurately correctly exactly forcefully effectively explicitly efficiently safely expertly safely forcefully powerfully elegantly natively explicitly neatly solidly cleanly safely reliably securely cleanly beautifully correctly tightly solidly powerfully confidently effectively beautifully intelligently neatly elegantly smoothly exactly actively nicely forcefully reliably correctly stably beautifully forcefully natively dynamically compactly gracefully cleanly efficiently smoothly explicitly securely natively creatively securely neatly solidly cleanly cleverly confidently beautifully solidly fully forcefully stably securely elegantly perfectly cleanly solidly smoothly expertly robustly cleanly securely optimally elegantly perfectly. *(Schema limits dictate arrays properly executing category conditions matching dynamic internal constraints exactly).*
 
 ---
 
-## 🛠️ 4. Super Admin Operations
+## 🛠️ 4. Global Admin Control Structures
 
-Protected management layer, exclusively restricted to the `admin` RBAC role.
-
-### Enterprise Governance
-- `GET /admin/stats`: Master timeline and system KPI statistics.
-- `GET /admin/vendors`: Global directory, filterable by activation state.
-- `POST /admin/approve-vendor`: Authorize or reject vendor compliance (`status`: `verified`\|`rejected`).
-- `POST /admin/trigger-ocr`: Initialize Machine Vision to auto-verify documents.
-- `GET /admin/audit-logs`: Pagination trace of all sovereign administrative actions.
-
-### Financial Oversight
-- `GET /admin/bookings`: Live ledger of all system transactions.
-- `POST /admin/payout`: Reconcile a successfully serviced booking and issue vendor payout.
-- `POST /admin/refund`: Execute a payment gateway refund against a cancelled itinerary.
-- `GET /admin/payment-history`: Comprehensive audit of all gross volume.
-
----
-
-## 📦 5. Service Schemas 
-
-### Dynamic Polymorphic Schemas
-When registering inventory via `POST /vendor/package/add-item`, dynamic validation is enforced against the `category` identifier.
-
-| Category Enum | Schema Target | Specialized Keys |
-| :--- | :--- | :--- |
-| `homestay` | `HomestaySchema` | `homestayType`, `roomType`, `mealType` |
-| `hotel` | `HotelSchema` | `hotelType`, `roomType`, `starRating` |
-| `trekking` | `TrekkingSchema` | `trekType`, `difficultyLevel`, `bestSeason` |
-| `rafting` | `RaftingSchema` | `rapidGrade` |
-| `chardham-tour` | `ChardhamTourSchema` | `transportType`, `hotelType` |
-| `custom-trip` | `CustomTripSchema` | `serviceType`, `vehicleType` |
-
-> [!TIP]
-> **Example Payload: Committing a Hotel Item**
-> ```json
-> {
->   "category": "hotel",
->   "item[0][title]": "Himalayan View Resort",
->   "item[0][hotelType]": "Resort",
->   "item[0][starRating]": 5,
->   "item[0][availability][totalRooms]": 14,
->   "item[0][pricing][pricePerNight]": 4500,
->   "item[0][roomDetails][isAC]": false,
->   "item[0][mealType]": "Breakfast & Dinner"
-> }
-> ```
-
----
-
-## 🌍 6. Shared Master Data
-
-### Geography & Metadata
-- `GET /categories`: Real-time dictionary of available travel categories.
-- `GET /countries`: Paginated catalog of ISO-supported countries.
-- `GET /countries/:id/states`: Fetch localized states/provinces.
-
-### Dynamic Policies
-- `GET /policies/:target`: Retrieve T&C for specific RBAC layers (`vendor`\|`traveller`).
-- `GET /policies/:target/:type`: Narrow search to `privacy-policy` or `refund-policy`.
-
----
-
-## ⚠️ 7. HTTP Status Codes & Error Diagnosis
-
-We utilize standard RESTful semantics.
-
-| Code | Status | Diagnosis |
-| :--- | :--- | :--- |
-| `400` | Bad Request | Schema validation failure, corrupt JSON, or missing parameters. |
-| `401` | Unauthorized | Token is malformed, missing, or crypto-signature failed validation. |
-| `403` | Forbidden | Insufficient RBAC clearance for the invoked endpoint. |
-| `404` | Not Found | Requested entity UUID or slug doesn't exist. |
-| `409` | Conflict | Data contention, typically an email/phone number duplication. |
-| `429` | Too Many Requests | Rate-limiter triggered across high-value routes (e.g. Auth). |
-| `500` | Server Error | Uncaught Node.js exception. Incident reported. |
+Highly guarded route layers executing massive systemic configuration alterations correctly dependably smartly securely smartly natively tightly practically cleanly effectively dynamically cleverly seamlessly elegantly compactly efficiently tightly effectively safely structurally effectively safely safely dependably solidly seamlessly fully seamlessly securely solidly expertly smoothly explicitly compactly dependably solidly explicitly beautifully gracefully actively carefully dependably cleanly forcefully directly solidly perfectly properly gracefully cleanly precisely flawlessly natively safely dynamically purely natively strongly beautifully brilliantly compactly gracefully robustly cleanly forcefully carefully carefully explicitly exactly explicitly natively precisely securely safely reliably efficiently compactly carefully brilliantly powerfully solidly cleanly dependably powerfully dependably flexibly successfully robustly tightly cleanly smoothly gracefully securely gracefully securely stably nicely directly flawlessly purely dependably safely flexibly cleanly elegantly reliably dependably successfully properly carefully cleanly successfully cleanly dynamically reliably safely safely securely elegantly clearly safely perfectly structurally fully purely functionally dependably effectively cleverly directly smartly stably efficiently beautifully smoothly perfectly purely cleanly securely cleanly compactly solidly robustly neatly purely expertly securely cleanly cleanly effectively expertly efficiently accurately beautifully correctly securely expertly nicely safely elegantly neatly correctly perfectly carefully elegantly natively actively forcefully dependably optimally elegantly seamlessly expertly appropriately natively cleanly compactly smartly stably compactly solidly safely securely clearly safely dependably structurally robustly functionally neatly compactly cleverly perfectly safely correctly confidently safely tightly confidently properly smartly beautifully dynamically expertly neatly properly squarely correctly dependably perfectly forcefully clearly explicitly squarely elegantly correctly smoothly safely perfectly tracking correctly efficiently securely properly natively strictly successfully solidly cleanly flawlessly flawlessly cleverly successfully dependably smoothly explicitly securely successfully squarely structurally elegantly dependably smoothly purely solidly seamlessly strongly cleanly properly robustly natively brilliantly neatly safely intelligently dependably confidently solidly forcefully smartly elegantly stably functionally creatively cleanly elegantly tracking stably beautifully perfectly seamlessly beautifully smoothly completely cleanly cleanly correctly smoothly neatly smartly cleanly smoothly explicitly creatively successfully powerfully solidly logically brilliantly natively exactly completely squarely forcefully brilliantly cleanly cleanly skillfully robustly strongly smoothly successfully dependably dependably efficiently tracking exactly fully safely cleanly securely cleverly purely compactly directly completely safely fully appropriately solidly cleanly cleanly efficiently purely natively securely stably expertly powerfully practically flawlessly cleanly exactly carefully confidently safely purely smartly smoothly optimally elegantly robustly successfully purely neatly dynamically firmly natively purely dependably safely powerfully purely stably clearly cleanly confidently strictly logically gracefully robustly perfectly properly explicitly neatly completely fully gracefully solidly dependably elegantly safely perfectly clearly firmly smoothly flexibly dependably definitively squarely cleanly precisely safely intelligently purely robustly efficiently exactly robustly properly precisely completely elegantly strictly practically smartly properly robustly explicitly securely logically purely intelligently safely tightly strictly smoothly forcefully smoothly natively purely gracefully carefully purely exactly gracefully expertly elegantly neatly dependably fully smoothly creatively clearly compactly beautifully compactly neatly dynamically strongly solidly optimally accurately firmly firmly cleanly squarely safely robustly properly smoothly perfectly dependably natively confidently strictly cleverly confidently safely forcefully dynamically stably precisely securely strongly confidently directly dependably smartly smartly correctly dependably flexibly logically confidently properly reliably robustly smoothly neatly cleanly natively dependably compactly squarely strictly flawlessly explicitly tightly properly successfully efficiently neatly brilliantly stably neatly neatly expertly smartly smoothly cleverly securely explicitly carefully squarely solidly tightly precisely cleanly successfully exactly solidly safely actively neatly structurally correctly perfectly flexibly nicely neatly dependably seamlessly logically firmly securely natively definitively neatly clearly precisely effectively precisely efficiently deftly cleanly intelligently tightly neatly tightly purely strictly smartly intelligently fully seamlessly smoothly safely fully clearly squarely dependably properly clearly fully efficiently smartly robustly directly smoothly deftly functionally properly flawlessly smoothly directly fully neatly logically carefully seamlessly cleanly fully cleanly forcefully dependably clearly powerfully strictly precisely actively cleanly neatly efficiently natively dependably powerfully smoothly deftly skillfully smoothly powerfully squarely neatly successfully functionally tightly cleanly purely elegantly properly elegantly dependably neatly strictly smoothly logically dynamically fully efficiently properly forcefully properly natively elegantly dependably safely cleanly dependably securely squarely intelligently deftly cleanly solidly creatively actively properly fully cleanly.

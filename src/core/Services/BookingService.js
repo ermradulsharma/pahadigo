@@ -25,7 +25,7 @@ class BookingService {
             const updatedPackage = await Package.findOneAndUpdate(
                 matchQuery,
                 { $inc: updateQuery },
-                { session, new: true }
+                { session, returnDocument: 'after' }
             );
 
             if (!updatedPackage) {
@@ -124,7 +124,7 @@ class BookingService {
                     'razorpay.signature': signature
                 }
             },
-            { new: true }
+            { returnDocument: 'after' }
         );
 
         if (!booking) throw new Error('Booking order mismatch');

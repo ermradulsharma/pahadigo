@@ -187,7 +187,7 @@ class AdminController {
             await VerifiedIdentity.findOneAndUpdate(
                 { vendor: vendorId, docType: ocrResult.idType },
                 identityData,
-                { upsert: true, new: true }
+                { upsert: true, returnDocument: 'after' }
             );
 
             // 4. Update Document Status & OCR cache in Vendor model

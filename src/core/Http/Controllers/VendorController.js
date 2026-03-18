@@ -267,7 +267,7 @@ class VendorController {
             const updatedVendor = await Vendor.findOneAndUpdate(
                 { user: user.id },
                 update,
-                { new: true, arrayFilters }
+                { returnDocument: 'after', arrayFilters }
             );
 
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, updatedVendor);
@@ -294,7 +294,7 @@ class VendorController {
             const updatedVendor = await Vendor.findOneAndUpdate(
                 { user: user.id },
                 update,
-                { new: true }
+                { returnDocument: 'after' }
             );
 
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, updatedVendor);

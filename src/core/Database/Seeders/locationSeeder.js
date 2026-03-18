@@ -26,7 +26,7 @@ export const seedLocations = async () => {
                 const countryDoc = await CountryModel.findOneAndUpdate(
                     { isoCode: c.isoCode },
                     countryData,
-                    { upsert: true, new: true, setDefaultsOnInsert: true }
+                    { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
                 );
                 countriesCreated++;
 

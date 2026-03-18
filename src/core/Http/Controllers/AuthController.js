@@ -58,7 +58,7 @@ class AuthController {
             const result = await AuthService.loginWithPassword({ email, password, rememberMe });
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, result);
         } catch (error) {
-            return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.INVALID_OTP, {});
+            return errorResponse(HTTP_STATUS.UNAUTHORIZED, error.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS, {});
         }
     }
 
@@ -72,6 +72,7 @@ class AuthController {
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, {
                 ...(result.user.toObject ? result.user.toObject() : result.user),
                 token: result.token,
+                role: result.role,
                 isNewUser: result.isNewUser,
                 businessProfileStatus: result.businessProfileStatus,
                 businessProfile: result.businessProfile
@@ -83,7 +84,7 @@ class AuthController {
             if (error.message === RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD) {
                 return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD, {});
             }
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
@@ -94,7 +95,7 @@ class AuthController {
             const { idToken, role } = body;
             if (!idToken) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             const result = await AuthService.googleAuth(idToken, role);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, { token: result.token, isNewUser: result.isNewUser, user: result.user });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, result);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS, {});
         }
@@ -107,7 +108,7 @@ class AuthController {
             const { accessToken, role } = body;
             if (!accessToken) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             const result = await AuthService.facebookAuth(accessToken, role);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, { token: result.token, isNewUser: result.isNewUser, user: result.user });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, result);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS, {});
         }
@@ -122,7 +123,7 @@ class AuthController {
 
             // user and email are optional fields sent by Apple client on first login
             const result = await AuthService.appleAuth(idToken, role, user, email);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, { token: result.token, isNewUser: result.isNewUser, user: result.user });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, result);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS, {});
         }
@@ -137,7 +138,7 @@ class AuthController {
             const token = req.headers.get('authorization')?.split(' ')[1];
             if (!token) return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.NO_TOKEN, {});
             const result = await AuthService.verify(token);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.TOKEN_VALID, { result });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.TOKEN_VALID, result);
         } catch (error) {
             return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.TOKEN_INVALID, {});
         }
@@ -148,7 +149,7 @@ class AuthController {
             const token = req.headers.get('authorization')?.split(' ')[1];
             if (!token) return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.NO_TOKEN, {});
             const result = await AuthService.refresh(token);
-            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.TOKEN_REFRESHED, { result });
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.TOKEN_REFRESHED, result);
         } catch (error) {
             return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.TOKEN_INVALID, {});
         }
@@ -164,7 +165,7 @@ class AuthController {
                 const token = req.headers.get('authorization')?.split(' ')[1];
                 if (!token) return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.NO_TOKEN, {});
                 const user = await AuthService.me(token);
-                return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.TOKEN_VALID, { user });
+                return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.TOKEN_VALID, user);
             }
 
             const userProfile = await AuthService.getProfileById(userContext.id);
@@ -199,7 +200,25 @@ class AuthController {
     }
 
     async changePassword(req) {
-        return this.resetPassword(req);
+        try {
+            const body = await parseBody(req);
+            const { email, oldPassword, newPassword } = body;
+            if (!email || !oldPassword || !newPassword) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+            }
+
+            const { default: User } = await import('@/models/User.js');
+            const user = await User.findOne({ email }).select('+password');
+            if (!user) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.NOT_FOUND, {});
+
+            const isMatch = await user.comparePassword(oldPassword);
+            if (!isMatch) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS, {});
+
+            await AuthService.changePassword(email, newPassword);
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, {});
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+        }
     }
 
     async updateProfile(req) {

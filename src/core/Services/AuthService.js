@@ -53,7 +53,7 @@ class AuthService {
             status: USER_STATUS.DELETED
         };
 
-        const user = await User.findByIdAndUpdate(userId, updates, { new: true });
+        const user = await User.findByIdAndUpdate(userId, updates, { returnDocument: 'after' });
         if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         return true;
     }
@@ -371,13 +371,13 @@ class AuthService {
     }
 
     async updateProfile(email, updates) {
-        const user = await User.findOneAndUpdate({ email }, updates, { new: true });
+        const user = await User.findOneAndUpdate({ email }, updates, { returnDocument: 'after' });
         if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         return user;
     }
 
     async updateProfileById(userId, updates) {
-        const user = await User.findByIdAndUpdate(userId, updates, { new: true });
+        const user = await User.findByIdAndUpdate(userId, updates, { returnDocument: 'after' });
         if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         return user;
     }

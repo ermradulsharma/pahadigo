@@ -29,7 +29,7 @@ class OTPService {
                     'preferences.tempExtraData': extraData
                 }
             },
-            { upsert: true, new: true, setDefaultsOnInsert: true }
+            { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
         );
 
         this._sendOTP(identifier, otp).catch(err => { });

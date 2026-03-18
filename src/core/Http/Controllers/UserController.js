@@ -66,7 +66,7 @@ class UserController {
                             $set: { lastSearched: new Date(), resultsCount: packages.length },
                             // Optional: User tracking via $push? Keep simple for stats.
                         },
-                        { upsert: true, new: true }
+                        { upsert: true, returnDocument: 'after' }
                     );
                 } catch (e) { console.error("Search Log Error", e); }
             }

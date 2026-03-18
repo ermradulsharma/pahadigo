@@ -41,7 +41,7 @@ class VendorService {
                 deletedAt: null,
                 deletedBy: null
             },
-            { new: true, upsert: true, setDefaultsOnInsert: true, runValidators: true }
+            { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true, runValidators: true }
         ).populate('user', 'email phone role');
         return vendor;
     }
@@ -61,7 +61,7 @@ class VendorService {
                 deletedAt: new Date(),
                 deletedBy: deletedBy
             },
-            { new: true }
+            { returnDocument: 'after' }
         );
     }
 
@@ -70,7 +70,7 @@ class VendorService {
         return await Vendor.findOneAndUpdate(
             { user: userId, deletedAt: null },
             { $addToSet: { category: categoryData } },
-            { new: true }
+            { returnDocument: 'after' }
         );
     }
 
@@ -78,7 +78,7 @@ class VendorService {
         return await Vendor.findOneAndUpdate(
             { user: userId, deletedAt: null },
             { $pull: { category: { slug: categorySlug } } },
-            { new: true }
+            { returnDocument: 'after' }
         );
     }
 
@@ -86,7 +86,7 @@ class VendorService {
         return await Vendor.findOneAndUpdate(
             { user: userId, deletedAt: null },
             { $unset: { bankDetails: "" } },
-            { new: true }
+            { returnDocument: 'after' }
         ).populate('user', 'email phone role');
     }
 

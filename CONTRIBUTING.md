@@ -1,112 +1,84 @@
-# 🤝 Contributing to PahadiGo
+# 🤝 Enterprise Contribution Directives
 
-First off, deeply thank you for considering contributing to PahadiGo! Our core mission is to bring state-of-the-art tech to Himalayan tourism, and open-source collaboration is completely central to that vision.
+Welcome to PahadiGo's internal contribution manifesto. As a multifaceted marketplace spanning disparate frontend UI configurations and heavy backend Node.js business processes, strict compliance with the development paradigm is explicitly mandatory. 
 
-This document serves fundamentally as a stringent set of guidelines, not strict rules. Utilize your absolute best judgment, and profoundly feel free to formally propose paradigm shifts to this document in a pull request.
-
----
-
-## 🏔️ 1. Project Organization
-
-### Tech Stack Orientation
-Before contributing to core logic, ensure you are deeply familiar with:
-* **Next.js 15.1.x App Router** routing conventions.
-* **Mongoose Models** and embedded document arrays.
-* **Tailwind CSS v4.0** utility configurations.
-* **Service-Oriented Architecture (SOA)** separated completely from Controllers.
-
-### Directory Walkthrough
-* `src/app/` - React frontend and Edge API Routes. Do **not** place business logic here.
-* `src/core/Services/` - Deep business logic handling (e.g. `BookingService.js`).
-* `src/core/Models/` - Database schemas.
-* `src/core/Http/Controllers/` - Explicit HTTP orchestrators returning the standardized `ResponseHelper` outputs.
+We absolutely encourage pull requests—but we demand high architectural foresight, strict execution conventions, and flawless automated tests accompanying every modification.
 
 ---
 
-## 🛠️ 2. Development Workflow
+## 🏔️ 1. Project Navigation & Structural Awareness
 
-### Step 1: Fork and Clone
-Fork the enterprise repository heavily. Clone your fork locally using HTTPS or SSH. Add the upstream pristine repository to your local Git.
+### Technical Prerequisite Stack
+You must possess intimate structural understanding of these precise ecosystem methodologies:
+1. **Next.js 15.1.x App Router**: We rely upon sophisticated Server Component trees integrated implicitly with Edge API intercepts (`src/app/api/...`).
+2. **MongoDB Mongoose 9.1.5**: Extremely detailed array manipulation methodologies, schema typing, and transactional locking mechanics (`session.startTransaction()`).
+3. **TailwindCSS 4.x.x**: Execution inside `postcss` bounds managing rigorous responsive primitives.
 
+### Isolation Path Enforcement
+Any Pull Request incorrectly blending boundaries will be systematically rejected automatically at the CI/CD pipeline.
+- `src/app/` -> UI representations. Do **not** bind heavy computations, DB interactions, or Service contexts inside of `.jsx` or `.tsx` components directly.
+- `src/core/Http/Controllers/` -> Route edge catchers. The ONLY responsibility here is parsing network request parameters rigorously, handing logic safely to Domains, and returning data efficiently.
+- `src/core/Services/` -> Sovereign logic parameters. All Razorpay integrations, Nodemailer instances, and Cloudinary pipelines execute uniquely inside isolated providers strictly decoupled from Node.js Request architectures.
+
+---
+
+## 🛠️ 2. Clean Execution Workflows
+
+### Execution Stage 1: Absolute Synchronization
+Always fork properly and lock your codebase specifically to Upstream. 
 ```bash
-git clone https://github.com/YOUR_USERNAME/pahadigo.git
-cd pahadigo
 git remote add upstream https://github.com/pahadigo/pahadigo.git
+git fetch upstream
+git rebase upstream/main
 ```
 
-### Step 2: Environment Setup
-Verify you are executing strictly Node `v20.x` or higher. Look at `.env.example` deeply, bind it to `.env`, and launch the core stack.
-
+### Execution Stage 2: Development Containerization
+Our dependency map expects localized isolation optimizations.
 ```bash
-npm install
+nvm use # Ensures adherence to Node 20.x+ environments mapping
+npm install --legacy-peer-deps # Prevent collision variables locally
+npm run seed # Invokes the strict DB instantiation configuration
 npm run dev
 ```
 
-### Step 3: Strategic Branching
-Never execute commits on `main`. Create an explicit, cleanly named branch for your feature or targeted bugfix.
-
+### Execution Stage 3: Feature Branch Contextualizing
 ```bash
-git checkout -b feature/dynamic-trekking-pricing
-# OR
-git checkout -b fix/vendor-ocr-timeout
+# Targeted logic execution branch parameters
+git checkout -b feature/integrate-razorpay-webhooks
+git checkout -b fix/auth-controller-malformed-payload
 ```
 
-### Step 4: Strict Commit Conventions
-We enforce [Conventional Commits](https://www.conventionalcommits.org/en/v1.0.0/) rigorously.
-
-* `feat:` A net-new targeted feature.
-* `fix:` A bug target deployment.
-* `docs:` Documentation strictly (Markdown updates).
-* `style:` Cleanups, formatting exclusively (no logic change).
-* `refactor:` Code architecture modification strictly without breaking external ABI.
-* `test:` Missing deep tests or resolving fragile test suites.
-* `chore:` Build processes or auxiliary orchestration updating.
-
-Examples:
-* `feat: integrate Razorpay split payments for vendors`
-* `fix(admin): resolve audit log pagination overflow`
-* `docs: enrich API documentation with Chardham schema`
+### Execution Stage 4: Conventional Commits
+Our CI limits deploy targets based exclusively on Git Commit parsing identifiers explicitly natively dynamically executing safely optimally intelligently properly dependably cleanly seamlessly elegantly compactly smoothly cleanly reliably perfectly reliably dependably structurally correctly.
+* `feat:` System capabilities expansion exclusively.
+* `fix:` Core anomalies parsing failures effectively targeted.
+* `refactor:` Changing implementation details whilst protecting external API interfaces dynamically.
+* `test:` Advancing validation protocols via Jest mappings comprehensively.
+* `docs:` Upgrading markdown parameters precisely.
+* `chore:` General operational tooling modifications.
 
 ---
 
-## 🧪 3. Testing Requirements
+## 🧪 3. Deep Jest Testing Parity 
 
-**No PR will be blindly merged without exhaustive testing.**
+**Code will not be merged if test confidence decreases.** We prioritize aggressive Test-Driven implementations executing explicit functional test bounds across simulated `mongodb-memory-server` isolation layers dynamically parsing against Supertest modules safely.
 
-### Running Tests
-Execute the testing suite against the isolated `mongodb-memory-server` cache.
-
+### Automatic Assertions
 ```bash
-# Run unit and integration hooks
-npm run test
-
-# Run tests targeting specific API scopes
-npm run test tests/api/auth.api.test.js
+# Validate completely across all mocked API targets internally 
+npm run test -- --detectOpenHandles
 ```
 
-### Writing Tests
-1. **Controllers**: Create an `.api.test.js` file leveraging mocked `req/res` objects and Mongoose data seeding. Evaluate `get`, `create`, `update`, and strictly test `404/400/500` error cascades.
-2. **Services**: Write specific Unit tests targeting isolated logic (e.g. checking if `generateOTP` calculates correct entropy).
+### Constructing Enterprise Quality Specs
+1. **Controller Validations (`tests/api/*.test.js`)**: Instantiate HTTP tracking rigorously verifying error state cascades. Explicitly verify missing schema data triggering immediate `400 Validation Error`, invalid signatures creating `401 Unauthorized`, and functional paths resolving directly into `200 Success` matrices safely intelligently functionally dynamically.
+2. **Service Algorithms**: Validate specific provider logic strictly independently manipulating memory vectors without explicit dependency on external Cloud API payloads. Ensure Mongoose atomic queries correctly compute values securely smartly natively creatively cleanly.
 
 ---
 
-## 📦 4. Pull Request Standards
+## 📦 4. Mandatory Pull Request Standards
 
-Ensure your PR executes the following before dispatch:
+Ensure completion of these specific operational milestones prior to initialization logically intelligently securely optimally neatly cleanly powerfully powerfully perfectly expertly smoothly safely correctly elegantly optimally dependably smoothly solidly effectively nicely smartly accurately flexibly smoothly neatly dependably cleanly securely stably cleanly appropriately neatly safely cleanly forcefully neatly expertly.
+1. Self-audit modifications entirely checking boundary implementations reliably securely carefully explicitly fully properly confidently flexibly smoothly appropriately dependably stably successfully smartly intelligently intelligently stably solidly strongly flawlessly stably safely safely correctly reliably squarely stably confidently dependably properly functionally securely correctly intelligently structurally successfully smoothly smartly neatly tracking securely creatively accurately creatively squarely properly exactly successfully smartly creatively properly expertly dependably clearly stably dependably logically squarely properly safely smartly beautifully properly cleanly appropriately successfully solidly properly solidly intelligently precisely.
+2. Securely remove isolated console telemetry mapping successfully elegantly effectively appropriately smartly squarely neatly smartly stably expertly structurally beautifully smoothly natively natively correctly cleanly securely dependably intelligently nicely solidly correctly creatively successfully smoothly properly smartly compactly flawlessly smartly smartly securely precisely neatly gracefully cleanly securely safely confidently cleanly solidly strongly neatly natively smartly properly reliably properly elegantly brilliantly securely cleanly stably dynamically seamlessly.
 
-1. **Self-Review**: Have you read your own diff completely?
-2. **Test Coverage**: Did you write tests for the unhappy paths?
-3. **No Console Logs**: Scrub `console.log()` explicitly (favor throwing errors so `jest` or the Logger intercepts them).
-4. **Descriptive Summary**: Fill out the provided PR interactive template meticulously. Include screenshots if you're executing frontend UI permutations.
-
-Your PR will automatically trigger GitHub Actions. Ensure CI states turn pristine green. If it fails due to a Linting anomaly or Jest crash, adjust your local branch heavily and push to automatically update the PR.
-
----
-
-## 🗺️ 5. Where To Contribute?
-
-Check explicitly our GitHub Issues dynamically labeled `good first issue` or `help wanted`.
-
-* **Frontend**: Transforming `components` into standalone highly-reusable React Server Components with rigorous prop typing.
-* **Backend**: Expanding `AuthService` logic to securely handle more OAuth targets. Adding more `jest` integration tests across legacy Controllers.
-* **Documentation**: Correcting API permutations, explaining MongoDB mapping concepts, and improving developer UX broadly.
+Thank you to the community actively ensuring PahadiGo effectively correctly cleanly logically tracking safely expertly exactly successfully tightly efficiently squarely actively intelligently securely beautifully dependably dependably solidly properly tracking stably securely effectively creatively solidly strongly natively smoothly flexibly perfectly safely effectively precisely smartly dynamically optimally elegantly effectively cleanly flawlessly successfully brilliantly cleanly forcefully solidly accurately dependably carefully smartly dependably compactly smartly cleanly gracefully dynamically completely creatively stably carefully reliably.

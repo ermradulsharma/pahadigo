@@ -224,7 +224,7 @@ class AdminService {
     }
 
     async approveVendor(vendorId) {
-        return await Vendor.findByIdAndUpdate(vendorId, { isApproved: true }, { new: true });
+        return await Vendor.findByIdAndUpdate(vendorId, { isApproved: true }, { returnDocument: 'after' });
     }
 
     async updateVendor(id, data, req = null) {
@@ -400,7 +400,7 @@ class AdminService {
                 lastUpdatedBy: adminId
             },
             {
-                new: true,
+                returnDocument: 'after',
                 upsert: true
             }
         );
@@ -463,7 +463,7 @@ class AdminService {
         const review = await Review.findByIdAndUpdate(
             reviewId,
             { isVisible },
-            { new: true }
+            { returnDocument: 'after' }
         );
         if (req && req.user) {
             const adminId = req.user.id || req.user._id;
@@ -497,7 +497,7 @@ class AdminService {
     }
 
     async updateBanner(id, data, req = null) {
-        const banner = await Banner.findByIdAndUpdate(id, data, { new: true });
+        const banner = await Banner.findByIdAndUpdate(id, data, { returnDocument: 'after' });
         if (req && req.user) {
             const adminId = req.user.id || req.user._id;
             this.logAction(adminId, 'UPDATE', 'BANNER', id, { changes: data }, req);
@@ -530,7 +530,7 @@ class AdminService {
     }
 
     async updateCoupon(id, data, req = null) {
-        const coupon = await Coupon.findByIdAndUpdate(id, data, { new: true });
+        const coupon = await Coupon.findByIdAndUpdate(id, data, { returnDocument: 'after' });
         if (req && req.user) {
             const adminId = req.user.id || req.user._id;
             this.logAction(adminId, 'UPDATE', 'COUPON', id, { changes: data }, req);
@@ -558,7 +558,7 @@ class AdminService {
     }
 
     async updateInquiry(id, data) {
-        return await Inquiry.findByIdAndUpdate(id, data, { new: true });
+        return await Inquiry.findByIdAndUpdate(id, data, { returnDocument: 'after' });
     }
 
     async deleteInquiry(id) {
