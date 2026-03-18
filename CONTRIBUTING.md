@@ -1,8 +1,8 @@
 # 🤝 Enterprise Contribution Directives
 
-Welcome to PahadiGo's internal contribution manifesto. As a multifaceted marketplace spanning disparate frontend UI configurations and heavy backend Node.js business processes, strict compliance with the development paradigm is explicitly mandatory. 
+Welcome to PahadiGo's internal contribution manifesto. As a multifaceted marketplace spanning dynamic React UI configurations and heavy backend Node.js business processes, strict compliance with the development paradigm is explicitly mandatory. 
 
-We absolutely encourage pull requests—but we demand high architectural foresight, strict execution conventions, and flawless automated tests accompanying every modification.
+We highly encourage pull requests—but we demand architectural foresight, strict execution conventions, and thorough automated tests accompanying every modification.
 
 ---
 
@@ -15,10 +15,10 @@ You must possess intimate structural understanding of these precise ecosystem me
 3. **TailwindCSS 4.x.x**: Execution inside `postcss` bounds managing rigorous responsive primitives.
 
 ### Isolation Path Enforcement
-Any Pull Request incorrectly blending boundaries will be systematically rejected automatically at the CI/CD pipeline.
+Any Pull Request incorrectly blending architecture boundaries will be systematically rejected at the CI/CD pipeline.
 - `src/app/` -> UI representations. Do **not** bind heavy computations, DB interactions, or Service contexts inside of `.jsx` or `.tsx` components directly.
-- `src/core/Http/Controllers/` -> Route edge catchers. The ONLY responsibility here is parsing network request parameters rigorously, handing logic safely to Domains, and returning data efficiently.
-- `src/core/Services/` -> Sovereign logic parameters. All Razorpay integrations, Nodemailer instances, and Cloudinary pipelines execute uniquely inside isolated providers strictly decoupled from Node.js Request architectures.
+- `src/core/Http/Controllers/` -> Route edge catchers. The ONLY responsibility here is parsing network request parameters, validating permissions, handing logic safely to Domains, and returning standardized data.
+- `src/core/Services/` -> Sovereign logic parameters. All Razorpay integrations, Nodemailer instances, and Cloudinary pipelines execute uniquely inside isolated providers.
 
 ---
 
@@ -49,12 +49,12 @@ git checkout -b fix/auth-controller-malformed-payload
 ```
 
 ### Execution Stage 4: Conventional Commits
-Our CI limits deploy targets based exclusively on Git Commit parsing identifiers explicitly natively dynamically executing safely optimally intelligently properly dependably cleanly seamlessly elegantly compactly smoothly cleanly reliably perfectly reliably dependably structurally correctly.
+Our GitHub Actions pipelines rely exclusively on structured Git Commit descriptors to generate changelogs and trigger correct deployment targets.
 * `feat:` System capabilities expansion exclusively.
-* `fix:` Core anomalies parsing failures effectively targeted.
-* `refactor:` Changing implementation details whilst protecting external API interfaces dynamically.
+* `fix:` Core anomalies and parsing failures targeted.
+* `refactor:` Changing implement detail whilst protecting external API interfaces.
 * `test:` Advancing validation protocols via Jest mappings comprehensively.
-* `docs:` Upgrading markdown parameters precisely.
+* `docs:` Upgrading markdown paramaters precisely.
 * `chore:` General operational tooling modifications.
 
 ---

@@ -7,28 +7,34 @@ assignees: ''
 ---
 
 ## 🐛 Bug Description
-A clear and concise description of what the bug is.
+
+<!-- Provide a clear and concise description of the software defect. Is it an issue with Next.js Hydration, Database Polling, Payment Webhooks, or UI? -->
 
 ## 👣 Steps to Reproduce
-Steps to reproduce the behavior:
-1. Hit '...' API Endpoint or go to '...'
-2. Click on '....'
-3. Scroll down to '....'
-4. See error
+
+<!-- Please provide exact steps to reproduce the behavior so our maintainers can triage the issue rapidly -->
+1. Navigate to the API Endpoint or UI Route: `...`
+2. Execute the following action: `...`
+3. Observe the generated error or payload rejection: `...`
 
 ## 🎯 Expected Behavior
-A clear and concise description of what you expected to happen.
 
-## 🖼️ Screenshots / Payload
-If applicable, add screenshots, error stack traces, or the failing JSON payload matrix.
+<!-- What did you explicitly expect to dynamically happen based on the architectural documentation? -->
+
+## 🖼️ Contextual Payload / Stack Traces
+
+<!-- If this is an API Controller error or Mongoose exception, provide the exact sanitized JSON trace. -->
 ```json
-// Attach failing payload here
+// Paste exact JSON failing payload or Node.js Error Stack here
 ```
 
-## 💻 Environment
- - OS: [e.g. iOS, Windows]
- - Browser: [e.g. chrome, safari]
- - Framework Version: [e.g. Next.js 15.1.x]
+## 💻 Execution Environment
 
-## 💡 Additional Context
-Add any other context about the problem here (Did it work in a previous version? Are you testing locally or in production?).
+- **OS Node:** [e.g. Windows 11, Ubuntu 22.04]
+- **Browser/Client:** [e.g. Chrome 120, Postman]
+- **Framework Version:** Next.js 15.1.x
+- **Node.js Version:** [e.g. v20.x]
+
+## 💡 Systemic Impact & Additional Context
+
+<!-- How severe is this bug? Does it halt bookings, or is it a minor graphical glitch within the Admin dashboard? -->

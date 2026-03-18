@@ -1,19 +1,23 @@
 ---
-name: Feature request
+name: Feature Request
 about: Suggest an architectural or product idea for PahadiGo
 title: '[FEAT] '
 labels: enhancement
 assignees: ''
 ---
 
-## 🚀 Concept Description
-A clear and concise description of what the problem is. Ex. I'm always incredibly frustrated when [...]
+## 🚀 Concept & Problem Statement
 
-## 🛠️ Proposed Solution
-A clear and concise description of what you inherently prefer or expect to happen. Mention specific services, database collections, or UI pages.
+<!-- Provide a clear constraint or problem this feature solves. What workflow limitations are you currently experiencing? -->
 
-## 🧭 Alternatives Considered
-A clear and concise description of any alternative API implementations or features you've evaluated.
+## 🛠️ Proposed Cloud/UI Solution
 
-## 🔗 Additional Context
-Add any other systemic context, UX mockups, or screenshots about the feature request here.
+<!-- Explain the technical implementation you envision. Which Domain Service, Mongoose Model, or Next.js layout should be explicitly modified? -->
+
+## 🧭 Evaluated Alternatives
+
+<!-- Provide any other workarounds or system architecture patterns you evaluated before proposing this explicit feature. -->
+
+## 🔗 Technical Dependencies & Mockups
+
+<!-- List any third-party APIs (e.g. Razorpay, MSG91), NPM libraries, or UI wireframes (Figma links) required to successfully deploy this integration. -->
