@@ -39,9 +39,9 @@ The system guarantees transactional safety through distributed lock mechanisms, 
 - **Transactional Booking Engine:** State allocations implement native MongoDB Session boundary transactions executing `$inc` decrement operations. This mathematically neutralizes massive-scale race conditions and double-booking concurrency vectors during peak operational load.
 - **Financial Ledger & State Synchronization:** Complete **Razorpay** checkout lifecycle mapping utilizes asymmetric HMAC signature verification, facilitating split-payout state machines and immutable refund processing histories natively.
 
-### 📈 Global Administration Command Center
-- **Aggregated Telemetry Data:** Native MongoDB Aggregation Pipelines compute complex real-time revenue matrices and geographical execution heatmaps, directly injected into Recharts dynamic visualization canvases.
-- **Immutable Audit Trails:** A non-destructive internal `AuditLog` subsystem passively intercept administrative mutations, providing unforgeable historical context logs for every destructive (`PATCH`, `DELETE`) command issued by SuperAdmins.
+### 📈 Global Administration Command Center & Premium UX
+- **Dynamic Glassmorphic Telemetry:** Aggregated geographical heatmaps and real-time revenue matrices execute through `Recharts`, styled explicitly inside fluid, micro-animated `framer-motion` containment grids for enterprise-grade data legibility.
+- **Immutable Audit Trails:** A non-destructive internal `AuditLog` subsystem passively intercepts administrative mutations, providing unforgeable historical context logs for every destructive (`PATCH`, `DELETE`) command issued by SuperAdmins.
 
 ---
 
@@ -49,8 +49,8 @@ The system guarantees transactional safety through distributed lock mechanisms, 
 
 ### Frameworks & Presentation UI
 - **Framework & Routing:** `Next.js 15.1.x` (Full App Router Adoption / Edge Runtime capabilities)
-- **UI & State Synthesis:** React 19.x utilizing highly optimized React Server Component (RSC) limits.
-- **Styling Execution:** `Tailwind CSS 4.x` executing strictly alongside modernized PostCSS hooks.
+- **UI & State Synthesis:** React 19.x utilizing highly optimized React Server Component (RSC) limits alongside `framer-motion` for complex physics-based orchestration.
+- **Styling Execution:** `Tailwind CSS 4.x` executing strictly alongside modernized PostCSS hooks and `lucide-react` dynamically scaling SVGs.
 - **Data Visualization Canvas:** `Recharts 3.x` mapping server-cached telemetry payloads visually.
 
 ### Backend Orchestration & Persistence
@@ -61,6 +61,7 @@ The system guarantees transactional safety through distributed lock mechanisms, 
 
 ### DevOps, Quality Control & Security
 - **Integration Test Topologies:** Full CI automation capabilities resolving functional specifications via `Supertest` mapping to isolated `mongodb-memory-server` DB shards exclusively evaluated by `Jest`.
+- **Automated CI/CD Workflows:** Native GitHub Actions pipelines execute autonomous multi-platform linting, Dependabot resolutions, and security environment blocks proactively before main-branch synchronization.
 - **Static Analysis & Linting:** Strict reactive typing and syntax enforcement powered by next-generation flat `eslint` configurations.
 
 ---
