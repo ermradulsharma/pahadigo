@@ -16,7 +16,11 @@ const BookingSchema = new mongoose.Schema({
     refundStatus: { type: String, enum: ['none', 'refunded'], default: 'none' },
     refundAmount: { type: Number, default: 0, min: 0 },
     totalPrice: { type: Number, min: 0 },
-});
+    preferences: {
+        category: { type: String },
+        itemId: { type: mongoose.Schema.Types.ObjectId }
+    }
+}, { timestamps: true });
 
 BookingSchema.index({ user: 1 });
 BookingSchema.index({ package: 1 });
