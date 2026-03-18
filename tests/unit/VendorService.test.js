@@ -53,4 +53,59 @@ describe('VendorService Test Suite', () => {
         vendor = await VendorService.findByUserId(userId);
         expect(vendor.category.length).toBe(0);
     });
+
+    it('should upsert profile with bank details selectively updated', async () => {
+        const vendor = await VendorService.upsertProfile(userId, { 
+            businessName: 'My Bank',
+            bankDetails: {
+                accountHolderName: 'John Doe',
+                accountNumber: '123456789'
+            }
+        });
+
+        expect(vendor.bankDetails.accountHolderName).toBe('John Doe');
+
+        // Upsert with undefined value in bankDetails or documents should skip that key
+        const updated = await VendorService.upsertProfile(userId, {
+            documents: { aadharCard: undefined, gstRegistration: { url: 'gst.jpg' } },
+            bankDetails: { ifscCode: 'IFSC123', accountNumber: undefined }
+        });
+        
+        expect(updated.bankDetails.accountHolderName).toBe('John Doe'); // Preserved
+        expect(updated.bankDetails.ifscCode).toBe('IFSC123'); // Added
+        expect(updated.documents.gstRegistration.url).toBe('gst.jpg');
+    });
+
+    it('should fetch full profile via getFullProfile', async () => {
+        await VendorService.upsertProfile(userId, { businessName: 'Full Profile' });
+        const profile = await VendorService.getFullProfile(userId);
+        expect(profile.businessName).toBe('Full Profile');
+        expect(profile.user).toBeDefined();
+    });
+
+    it('should soft delete profile', async () => {
+        await VendorService.upsertProfile(userId, { businessName: 'To Delete' });
+        const deleted = await VendorService.deleteProfile(userId, userId);
+        expect(deleted.deletedAt).toBeDefined();
+        expect(deleted.deletedBy.toString()).toBe(userId.toString());
+        
+        // Ensure its not fetchable via findByUserId anymore
+        const notFound = await VendorService.findByUserId(userId);
+        expect(notFound).toBeNull();
+    });
+
+    it('should clear bank details', async () => {
+        await VendorService.upsertProfile(userId, { 
+            businessName: 'Bank Delete', 
+            bankDetails: { accountNumber: '000111' } 
+        });
+        const cleared = await VendorService.deleteBankDetails(userId);
+        expect(cleared.bankDetails.accountNumber).toBeNull();
+        expect(cleared.bankDetails.accountHolderName).toBeNull();
+    });
+
+    it('should get categories constant fallback', () => {
+        const categories = VendorService.getCategories();
+        expect(Array.isArray(categories)).toBe(true);
+    });
 });
