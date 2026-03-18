@@ -6,6 +6,9 @@ class CategoryController {
 
     async create(req) {
         try {
+            if (!req.user || req.user.role !== 'admin') {
+                return errorResponse(HTTP_STATUS.FORBIDDEN, 'Unauthorized error', {});
+            }
             const body = req.jsonBody || await req.json();
             const { name } = body;
 

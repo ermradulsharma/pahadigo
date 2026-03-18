@@ -60,7 +60,9 @@ const UserSchema = new mongoose.Schema({
             sms: { type: Boolean, default: DEFAULTS.NOTIFICATIONS.SMS },
             push: { type: Boolean, default: DEFAULTS.NOTIFICATIONS.PUSH },
             whatsapp: { type: Boolean, default: DEFAULTS.NOTIFICATIONS.WHATSAPP }
-        }
+        },
+        tempRole: { type: String },
+        tempExtraData: { type: mongoose.Schema.Types.Mixed }
     },
 
     rating: {

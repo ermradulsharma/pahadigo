@@ -8,12 +8,7 @@ import { jest } from '@jest/globals';
 import googleAuthLib from 'google-auth-library';
 const { OAuth2Client } = googleAuthLib;
 
-jest.mock('google-auth-library', () => ({
-    OAuth2Client: jest.fn().mockImplementation(() => ({
-        verifyIdToken: jest.fn()
-    }))
-}));
-
+// Removed jest.mock for google-auth-library in ESM
 
 
 describe('AuthService', () => {
@@ -28,7 +23,7 @@ describe('AuthService', () => {
 
         it('should create a new user and return a token for valid OTP', async () => {
             const email = 'newuser@example.com';
-            const otp = OTPService.generateOTP(email, 'traveller');
+            const otp = await OTPService.generateOTP(email, 'traveller');
 
             const result = await AuthService.verifyAndLogin({
                 identifier: email,
@@ -49,7 +44,7 @@ describe('AuthService', () => {
             const email = 'existing@example.com';
             await User.create({ email, role: 'traveller', isVerified: true });
 
-            const otp = OTPService.generateOTP(email, 'vendor'); // Attempting to login as vendor
+            const otp = await OTPService.generateOTP(email, 'vendor'); // Attempting to login as vendor
             const result = await AuthService.verifyAndLogin({
                 identifier: email,
                 otp,
@@ -69,7 +64,7 @@ describe('AuthService', () => {
             const email = 'suspended@example.com';
             await User.create({ email, role: 'traveller', isVerified: true, status: USER_STATUS.SUSPENDED });
 
-            const otp = OTPService.generateOTP(email, 'traveller');
+            const otp = await OTPService.generateOTP(email, 'traveller');
             await expect(AuthService.verifyAndLogin({
                 identifier: email,
                 otp,
@@ -86,13 +81,12 @@ describe('AuthService', () => {
                 sub: 'google_id_123'
             };
 
-            const clientInstance = new OAuth2Client();
-            clientInstance.verifyIdToken.mockResolvedValue({
+            jest.spyOn(OAuth2Client.prototype, 'verifyIdToken').mockResolvedValue({
                 getPayload: () => mockPayload
             });
 
             process.env.GOOGLE_CLIENT_ID = 'test-client-id';
-            const result = await AuthService.googleAuth('valid_token', 'user');
+            const result = await AuthService.googleAuth('valid_token', 'traveller');
 
             expect(result.token).toBeDefined();
             expect(result.user.email).toBe('google@example.com');
@@ -102,8 +96,87 @@ describe('AuthService', () => {
         it('should throw config error for real token without client id', async () => {
             const oldId = process.env.GOOGLE_CLIENT_ID;
             delete process.env.GOOGLE_CLIENT_ID;
-            await expect(AuthService.googleAuth('real_token', 'user')).rejects.toThrow(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
+            await expect(AuthService.googleAuth('real_token', 'traveller')).rejects.toThrow(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
             process.env.GOOGLE_CLIENT_ID = oldId;
+        });
+    });
+    describe('Password Authentication', () => {
+        it('should login admin with valid password', async () => {
+            const email = 'admin@example.com';
+            const user = await User.create({ email, role: 'admin', isVerified: true });
+            user.password = 'StrongPass123!';
+            await user.save();
+            
+            const result = await AuthService.loginWithPassword({ email, password: 'StrongPass123!' });
+            expect(result.token).toBeDefined();
+            expect(result.role).toBe('admin');
+        });
+
+        it('should reject non-admin users for password login', async () => {
+            const email = 'user_pass@example.com';
+            const user = await User.create({ email, role: 'traveller', isVerified: true, password: 'StrongPass123!' });
+
+            await expect(AuthService.loginWithPassword({ email, password: 'StrongPass123!' })).rejects.toThrow(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
+        });
+
+        it('should reject invalid password', async () => {
+            const email = 'admin_bad@example.com';
+            const user = await User.create({ email, role: 'admin', isVerified: true, password: 'StrongPass123!' });
+
+            await expect(AuthService.loginWithPassword({ email, password: 'WrongPassword' })).rejects.toThrow(RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
+        });
+    });
+
+    describe('Profile Management', () => {
+        it('should fetch profile by id', async () => {
+            const email = 'profile@example.com';
+            const user = await User.create({ email, role: 'traveller', isVerified: true });
+
+            const profile = await AuthService.getProfileById(user._id);
+            expect(profile).toBeDefined();
+            expect(profile.email).toBe(email);
+        });
+
+        it('should delete a profile (cascade deletion logic)', async () => {
+            const email = 'delete@example.com';
+            const user = await User.create({ email, role: 'traveller', isVerified: true });
+
+            await AuthService.deleteProfile(email);
+            const foundUser = await User.findOne({ email });
+            expect(foundUser).toBeNull();
+        });
+
+        it('should soft delete profile by id', async () => {
+             const email = 'softdelete@example.com';
+             const user = await User.create({ email, role: 'traveller', isVerified: true });
+
+             const success = await AuthService.deleteProfileById(user._id, 'User request');
+             expect(success).toBe(true);
+             const softDeleted = await User.findById(user._id);
+             expect(softDeleted.deletedAt).toBeDefined();
+             expect(softDeleted.status).toBe(USER_STATUS.DELETED);
+        });
+    });
+
+    describe('Password Reset', () => {
+        it('should trigger forget password email', async () => {
+            const email = 'reset@example.com';
+            await User.create({ email, role: 'admin', isVerified: true });
+
+            const result = await AuthService.forgetPassword(email);
+            expect(result.message).toBe(RESPONSE_MESSAGES.AUTH.PASSWORD_RESET_LINK_SENT);
+        });
+
+        it('should successfully reset password', async () => {
+            const email = 'newpass@example.com';
+            const user = await User.create({ email, role: 'admin', isVerified: true, password: 'OldPass' });
+
+            const success = await AuthService.resetPassword(email, 'NewPass123');
+            expect(success).toBe(true);
+
+            const updated = await User.findOne({ email }).select('+password');
+            const isMatch = await updated.comparePassword('NewPass123');
+            expect(isMatch).toBe(true);
         });
     });
 });

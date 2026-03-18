@@ -1,69 +1,114 @@
 import { jest } from '@jest/globals';
-
-// For ESM, we need to mock BEFORE importing the target service.
-// But since we can't easily use unstable_mockModule without complex setup, 
-// we will use another trick: mock RazorpayService's internal getAppConfig if it's imported that way.
-// Actually, RazorpayService imports { getAppConfig } from '@/lib/appConfig'.
-// We'll mock it at the top level and see if it works with the correct syntax.
-
-import RazorpayService from '../../src/core/Services/RazorpayService.js';
 import crypto from 'crypto';
 
-describe('RazorpayService Test Suite', () => {
-    let mockOrdersCreate;
+let mockOrdersCreate = jest.fn().mockResolvedValue({ id: 'order_123', amount: 50000 });
 
-    beforeEach(() => {
-        mockOrdersCreate = jest.fn().mockResolvedValue({ id: 'order_123', amount: 50000 });
-        jest.spyOn(RazorpayService, '_getInstance').mockResolvedValue({
+jest.unstable_mockModule('razorpay', () => {
+    return {
+        default: jest.fn().mockImplementation(() => ({
             orders: { create: mockOrdersCreate }
-        });
-        
-        // Mock verifySignature internally by spying on the service method if needed,
-        // or just by making sure we don't call the actual getAppConfig.
-        // Since we can't easily mock the import, we'll spy on the internal behavior.
-        
-        jest.spyOn(RazorpayService, 'verifySignature').mockImplementation(async (orderId, paymentId, signature) => {
-            // Manual implementation for test
-            const secret = 'test_secret';
-            const hmac = crypto.createHmac('sha256', secret);
-            hmac.update(orderId + "|" + paymentId);
-            const expectedSignature = hmac.digest('hex');
-            return signature === expectedSignature;
-        });
+        }))
+    };
+});
+
+let mockConfig = { razorpay: { key_id: 'test_id', key_secret: 'test_sec', webhook_secret: 'wh_sec' } };
+jest.unstable_mockModule('../../src/core/Lib/appConfig.js', () => ({
+    getAppConfig: jest.fn().mockImplementation(async () => mockConfig)
+}));
+
+const RazorpayService = (await import('../../src/core/Services/RazorpayService.js')).default;
+
+describe('RazorpayService Test Suite', () => {
+    
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockConfig = { razorpay: { key_id: 'test_id', key_secret: 'test_sec', webhook_secret: 'wh_sec' } };
+        mockOrdersCreate = jest.fn().mockResolvedValue({ id: 'order_123', amount: 50000 });
     });
 
     afterEach(() => {
         jest.restoreAllMocks();
     });
 
-    it('should create an order by passing the amount in paise', async () => {
-        const order = await RazorpayService.createOrder(500, 'receipt_1');
-        
-        expect(RazorpayService._getInstance).toHaveBeenCalled();
-        expect(mockOrdersCreate).toHaveBeenCalledWith({
-            amount: 50000,
-            currency: 'INR',
-            receipt: 'receipt_1'
+    describe('_getInstance', () => {
+        it('should return instance if keys exist', async () => {
+            const instance = await RazorpayService._getInstance();
+            expect(instance).not.toBeNull();
         });
-        expect(order.id).toBe('order_123');
+
+        it('should return null if keys are missing', async () => {
+            mockConfig = { razorpay: {} };
+            const instance = await RazorpayService._getInstance();
+            expect(instance).toBeNull();
+        });
     });
 
-    it('should correctly verify a valid webhook/payment signature', async () => {
-        const orderId = 'order_valid';
-        const paymentId = 'pay_valid';
-        const secret = 'test_secret';
+    describe('createOrder', () => {
+        it('should throw error if config missing', async () => {
+            mockConfig = { razorpay: {} };
+            await expect(RazorpayService.createOrder(500, 'rec_1')).rejects.toThrow();
+        });
 
-        // Generate the valid signature manually
-        const hmac = crypto.createHmac('sha256', secret);
-        hmac.update(orderId + "|" + paymentId);
-        const expectedSignature = hmac.digest('hex');
+        it('should create order successfully', async () => {
+            const order = await RazorpayService.createOrder(500, 'rec_1');
+            expect(order.id).toBe('order_123');
+            expect(mockOrdersCreate).toHaveBeenCalledWith({
+                amount: 50000,
+                currency: "INR",
+                receipt: 'rec_1'
+            });
+        });
 
-        const isValid = await RazorpayService.verifySignature(orderId, paymentId, expectedSignature);
-        expect(isValid).toBe(true);
+        it('should throw error if creation fails', async () => {
+            mockOrdersCreate.mockRejectedValue(new Error('Razorpay Error'));
+            await expect(RazorpayService.createOrder(500, 'rec_1')).rejects.toThrow('Razorpay Error');
+        });
     });
 
-    it('should reject an invalid signature', async () => {
-        const isValid = await RazorpayService.verifySignature('order_invalid', 'pay_invalid', 'bad_signature_string');
-        expect(isValid).toBe(false);
+    describe('verifySignature', () => {
+        it('should return false if secret is missing', async () => {
+            mockConfig = { razorpay: { key_secret: null } };
+            const isValid = await RazorpayService.verifySignature('order_1', 'pay_1', 'sig');
+            expect(isValid).toBe(false);
+        });
+
+        it('should return false for invalid signature', async () => {
+            const isValid = await RazorpayService.verifySignature('order_1', 'pay_1', 'a'.repeat(64));
+            expect(isValid).toBe(false);
+        });
+
+        it('should return true for valid signature', async () => {
+            const secret = 'test_sec';
+            const orderId = 'order_1';
+            const paymentId = 'pay_1';
+            const hmac = crypto.createHmac('sha256', secret);
+            hmac.update(orderId + "|" + paymentId);
+            const validSig = hmac.digest('hex');
+
+            const isValid = await RazorpayService.verifySignature(orderId, paymentId, validSig);
+            expect(isValid).toBe(true);
+        });
+    });
+
+    describe('verifyWebhookSignature', () => {
+        it('should return false if webhook secret is missing', async () => {
+            mockConfig = { razorpay: { webhook_secret: null } };
+            const isValid = await RazorpayService.verifyWebhookSignature({ event: 'test' }, 'sig');
+            expect(isValid).toBe(false);
+        });
+
+        it('should return false for invalid webhook signature', async () => {
+            const isValid = await RazorpayService.verifyWebhookSignature({ event: 'test' }, 'b'.repeat(64));
+            expect(isValid).toBe(false);
+        });
+
+        it('should return true for valid webhook signature', async () => {
+            const secret = 'wh_sec';
+            const body = { event: 'payment.captured' };
+            const expectedSig = crypto.createHmac('sha256', secret).update(JSON.stringify(body)).digest('hex');
+
+            const isValid = await RazorpayService.verifyWebhookSignature(body, expectedSig);
+            expect(isValid).toBe(true);
+        });
     });
 });

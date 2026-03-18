@@ -156,17 +156,7 @@ class PackageService {
             { $unwind: '$vendorDetails' }
         ];
 
-        // Add matching logic if query exists
-        if (query) {
-            // First attempt: Text Search (Uses Index)
-            // Note: $text search is best for whole words. Regex is better for partials but slower.
-            const orConditions = [
-                { $text: { $search: query } },
-                { 'vendorDetails.businessName': regex }
-            ];
-            // If text search doesn't find anything, we still include regex for partial title matches
-            pipeline.push({ $match: { $or: orConditions } });
-        }
+        // We will perform the matching in JS below to avoid complex $text and $lookup issues.
 
         const catalogs = await Package.aggregate(pipeline);
         

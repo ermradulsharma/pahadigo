@@ -128,15 +128,15 @@ class OTPService {
         if (user.otp.toString() === code.toString()) {
             const role = user.preferences?.tempRole;
             const extraData = user.preferences?.tempExtraData || {};
-            
-            // Clear OTP after successful verification
-            user.otp = undefined;
-            user.otpExpires = undefined;
-            if (user.preferences) {
-                user.preferences.tempRole = undefined;
-                user.preferences.tempExtraData = undefined;
-            }
-            await user.save();
+
+            await User.updateOne({ _id: user._id }, {
+                $unset: {
+                    otp: 1,
+                    otpExpires: 1,
+                    'preferences.tempRole': 1,
+                    'preferences.tempExtraData': 1
+                }
+            });
 
             return { otp: code, role, ...extraData };
         }

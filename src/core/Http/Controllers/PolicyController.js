@@ -6,6 +6,9 @@ class PolicyController {
     // GET /admin/policies
     async getPolicies(req) {
         try {
+            if (!req.user || (req.user.role !== 'admin' && req.user.role !== 'superadmin')) {
+                return errorResponse(HTTP_STATUS.FORBIDDEN, 'Unauthorized error', {});
+            }
 
             const { searchParams } = new URL(req.url);
             const target = searchParams.get('target');

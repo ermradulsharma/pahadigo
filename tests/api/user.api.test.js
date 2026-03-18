@@ -8,6 +8,24 @@ describe('User API Integration', () => {
     let pkgId;
     let userId;
 
+    let itemId;
+    let originalStartSession;
+
+    beforeAll(() => {
+        originalStartSession = mongoose.startSession;
+        mongoose.startSession = async function() {
+            const session = await originalStartSession.apply(this, arguments);
+            session.startTransaction = () => {};
+            session.commitTransaction = async () => {};
+            session.abortTransaction = async () => {};
+            return session;
+        };
+    });
+
+    afterAll(() => {
+        mongoose.startSession = originalStartSession;
+    });
+
     beforeEach(async () => {
         userId = new mongoose.Types.ObjectId();
         const vendor = await Vendor.create({
@@ -40,17 +58,21 @@ describe('User API Integration', () => {
                     trekType: 'Day Trek',
                     duration: '4 Days'
                 },
-                location: { address: 'Himalayas' }
+                location: { address: 'Himalayas' },
+                availability: { availableSlots: 10 }
             }]
         });
         pkgId = pkg._id;
+        itemId = pkg.trekking[0]._id;
     });
 
     it('should book a package when authenticated', async () => {
         const req = {
             user: { id: userId, role: USER_ROLES.TRAVELLER },
             jsonBody: {
-                packageId: pkgId,
+                catalogId: pkgId.toString(),
+                category: 'trekking',
+                itemId: itemId.toString(),
                 travelDate: '2025-06-01'
             }
         };
@@ -75,8 +97,8 @@ describe('User API Integration', () => {
 
     it('should fetch and search packages successfully', async () => {
         const req = {
-            // Mocking Next.js request URL params
-            url: new URL('http://localhost:3000/api/user/packages?q=Himalayan&type=trekking')
+            // Mocking Next.js request URL string
+            url: 'http://localhost:3000/api/user/packages?q=Himalayan&type=trekking'
         };
 
         const response = await UserController.browsePackages(req);

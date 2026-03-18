@@ -12,6 +12,9 @@ class AdminController {
     // GET /admin/stats
     async getStats(req) {
         try {
+            if (!req.user || req.user.role !== 'admin') {
+                return errorResponse(HTTP_STATUS.FORBIDDEN, 'This action is restricted to administrators only', {});
+            }
 
             const stats = await AdminService.getDashboardStats();
 

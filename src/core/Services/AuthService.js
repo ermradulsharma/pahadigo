@@ -118,7 +118,7 @@ class AuthService {
             throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
         }
 
-        let isNewUser = false;
+        let isNewUser = (!user || !user.isVerified);
         if (!user) {
             const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
             const userRole = (role && validRoles.includes(role)) ? role : USER_ROLES.TRAVELLER;
@@ -132,8 +132,13 @@ class AuthService {
             if (email) payload.email = email;
             if (phone) payload.phone = phone;
             user = await User.create(payload);
-            isNewUser = true;
         } else {
+            if (isNewUser) {
+                user.isVerified = true;
+                if (!user.authProvider || user.authProvider === 'none') {
+                    user.authProvider = email ? AUTH_PROVIDERS.LOCAL : AUTH_PROVIDERS.PHONE;
+                }
+            }
             if (role === USER_ROLES.VENDOR && user.role === USER_ROLES.TRAVELLER) {
                 user.role = 'vendor';
             }
@@ -178,8 +183,8 @@ class AuthService {
         let isNewUser = false;
         if (!user) {
             const phonePlaceholder = `+00${Date.now()}`;
-            const validRoles = ['user', 'vendor'];
-            const userRole = (targetRole && validRoles.includes(targetRole)) ? targetRole : 'user';
+            const validRoles = ['traveller', 'vendor'];
+            const userRole = (targetRole && validRoles.includes(targetRole)) ? targetRole : 'traveller';
             user = await User.create({
                 email,
                 name,

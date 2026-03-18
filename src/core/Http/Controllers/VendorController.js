@@ -22,6 +22,9 @@ class VendorController {
     async getBusinessProfile(req) {
         try {
             const user = req.user;
+            if (!user || user.role !== 'vendor') {
+                return errorResponse(HTTP_STATUS.FORBIDDEN, 'Only vendors can access this profile', {});
+            }
             const vendor = await VendorService.getFullProfile(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, vendor);

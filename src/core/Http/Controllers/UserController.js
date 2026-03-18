@@ -41,6 +41,7 @@ class UserController {
 
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.CREATED, { booking });
         } catch (error) {
+            console.error("UserController.bookPackage error:", error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
@@ -73,6 +74,7 @@ class UserController {
 
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, { packages });
         } catch (error) {
+            console.error("UserController.browsePackages error:", error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }

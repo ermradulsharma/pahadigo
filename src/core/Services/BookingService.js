@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import Booking from '@/models/Booking.js';
+import Package from '@/models/Package.js';
 import AdminService from '@/services/AdminService.js';
 import { RESPONSE_MESSAGES } from '@/constants/index.js';
 

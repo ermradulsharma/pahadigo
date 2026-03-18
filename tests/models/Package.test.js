@@ -26,7 +26,7 @@ describe('PackageModel Test Suite', () => {
                 pricing: { pricePerPerson: 15000 },
                 details: {
                     trekType: 'Day Trek',
-                    difficultyLevel: 'Moderate',
+                    difficultyLevel: 'moderate',
                     duration: '5 Days'
                 },
                 location: { address: 'Manali' }

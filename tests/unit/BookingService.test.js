@@ -4,6 +4,22 @@ import mongoose from 'mongoose';
 
 describe('BookingService Test Suite', () => {
     let mockBookingId;
+    let originalStartSession;
+
+    beforeAll(() => {
+        originalStartSession = mongoose.startSession;
+        mongoose.startSession = async function() {
+            const session = await originalStartSession.apply(this, arguments);
+            session.startTransaction = () => {};
+            session.commitTransaction = async () => {};
+            session.abortTransaction = async () => {};
+            return session;
+        };
+    });
+
+    afterAll(() => {
+        mongoose.startSession = originalStartSession;
+    });
 
     beforeEach(async () => {
         const booking = await Booking.create({
