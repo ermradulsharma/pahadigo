@@ -231,8 +231,8 @@ class AuthService {
         let isNewUser = false;
 
         if (!user) {
-            const validRoles = ['user', 'vendor'];
-            const userRole = (targetRole && validRoles.includes(targetRole)) ? targetRole : 'user';
+            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
+            const userRole = (targetRole && validRoles.includes(targetRole)) ? targetRole : USER_ROLES.TRAVELLER;
             user = await User.create({
                 email: userEmail,
                 name,
@@ -277,8 +277,8 @@ class AuthService {
         let isNewUser = false;
 
         if (!user) {
-            const validRoles = ['user', 'vendor'];
-            const userRole = (targetRole && validRoles.includes(targetRole)) ? targetRole : 'user';
+            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
+            const userRole = (targetRole && validRoles.includes(targetRole)) ? targetRole : USER_ROLES.TRAVELLER;
 
             const name = (userFn) ? `${userFn.firstName || ''} ${userFn.lastName || ''}`.trim() : 'Apple User';
 
