@@ -40,7 +40,6 @@ const authMiddleware = async (req) => {
         return { authorized: true, user: decoded };
 
     } catch (error) {
-        console.error("Auth Middleware Error:", error);
         return { authorized: false, message: RESPONSE_MESSAGES.AUTH.AUTH_SERVICE_ERROR };
     }
 };

@@ -7,10 +7,8 @@ async function main() {
     const client = new MongoClient(uri);
     try {
         await client.connect();
-        console.log("Connected to MongoDB.");
         const db = client.db(dbName);
         await db.collection("packages").deleteMany({});
-        console.log("Successfully wiped all old packages.");
     } catch (e) {
         console.error(e);
     } finally {

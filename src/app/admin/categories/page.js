@@ -127,7 +127,6 @@ export default function CategoriesPage() {
                 setDocumentsList(data.data.docs || data.data || []);
             }
         } catch (error) {
-            console.error("Failed to fetch documents", error);
         } finally {
             setDocsLoading(false);
         }
@@ -192,7 +191,6 @@ export default function CategoriesPage() {
                 setDocumentsList(prev => prev.map(d => d._id === doc._id ? { ...d, isActive: !d.isActive } : d));
             }
         } catch (error) {
-            console.error('Error updating status', error);
         }
     };
 
@@ -212,7 +210,6 @@ export default function CategoriesPage() {
                 setDocumentsList(prev => prev.map(d => d._id === doc._id ? { ...d, isMandatory: !d.isMandatory } : d));
             }
         } catch (error) {
-            console.error('Error updating mandatory status', error);
         }
     };
 

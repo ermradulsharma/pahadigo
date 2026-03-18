@@ -11,7 +11,6 @@ export const sanitizeNoSQL = (obj) => {
     } else if (obj !== null && typeof obj === 'object') {
         Object.keys(obj).forEach(key => {
             if (key.startsWith('$')) {
-                console.warn(`[Security] Stripping NoSQL operator: ${key}`);
                 delete obj[key];
             } else {
                 obj[key] = sanitizeNoSQL(obj[key]);
@@ -29,7 +28,7 @@ export const sanitizeNoSQL = (obj) => {
  */
 export const sanitizeHTML = (html) => {
     if (typeof html !== 'string') return html;
-    
+
     // Safely escape HTML entities to prevent XSS instead of using fragile regex parsing
     return html
         .replace(/&/g, '&amp;')

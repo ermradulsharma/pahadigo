@@ -113,7 +113,6 @@ class AdminController {
             const vendor = await AdminService.updateVendor(id, body, req);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.UPDATED, { vendor });
         } catch (error) {
-            console.error("AdminController.updateVendor Error:", error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, { debugObj: error.message });
         }
     }
@@ -215,7 +214,6 @@ class AdminController {
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ADMIN.OCR_SUCCESS, { identity: identityData });
 
         } catch (error) {
-            console.error("Admin OCR Error:", error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }

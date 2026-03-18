@@ -36,7 +36,6 @@ export default function ServicesPage() {
                     } else if (Array.isArray(data.data)) {
                         setServices(data.data);
                     } else {
-                        console.warn('Unexpected data structure:', data.data);
                         setServices([]);
                     }
                 } else {

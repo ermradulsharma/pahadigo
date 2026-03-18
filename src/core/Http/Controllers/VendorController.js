@@ -114,7 +114,6 @@ class VendorController {
 
             return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, responsePayload);
         } catch (error) {
-            console.error("Create Profile Error:", error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
@@ -141,7 +140,6 @@ class VendorController {
             const vendor = await VendorService.upsertProfile(user.id, data);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PROFILE_UPDATED, vendor);
         } catch (error) {
-            console.error("Update Profile Error:", error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
@@ -233,7 +231,6 @@ class VendorController {
             const duration = Date.now() - startTime;
             return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.DOCUMENTS_UPLOADED, updatedVendor);
         } catch (error) {
-            console.error(`[DocumentUpload] [${user?.id || 'unknown'}] Error:`, error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
@@ -275,7 +272,6 @@ class VendorController {
 
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, updatedVendor);
         } catch (error) {
-            console.error("Update Document Error:", error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
@@ -481,7 +477,6 @@ class VendorController {
             const catalog = await PackageService.getFormattedVendorCatalog(vendor._id);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, catalog);
         } catch (error) {
-            console.error("Update Item Error:", error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }

@@ -136,7 +136,6 @@ class OCRService {
                 dob: finalDob
             };
         } catch (error) {
-            console.error("OCR Processing Error:", error);
             return { error: RESPONSE_MESSAGES.ERROR.SERVER_ERROR };
         }
     }

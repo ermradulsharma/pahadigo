@@ -19,7 +19,6 @@ export const buildPaginationQuery = (req, defaultLimit = 10, defaultPage = 1) =>
             if (url.searchParams.has('page')) page = parseInt(url.searchParams.get('page')) || defaultPage;
             if (url.searchParams.has('limit')) limit = parseInt(url.searchParams.get('limit')) || defaultLimit;
         } catch (error) {
-            console.error("Query string parse error:", error);
         }
     }
 

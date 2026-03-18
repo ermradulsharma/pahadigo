@@ -13,7 +13,6 @@ export default async function PrivacyPolicy() {
         await connectDB();
         policy = await Policy.findOne({ target: 'admin', type: 'privacy_policy' });
     } catch (error) {
-        console.error("Failed to fetch privacy policy:", error);
     }
 
     return (

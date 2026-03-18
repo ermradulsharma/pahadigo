@@ -660,7 +660,6 @@ class AdminService {
             });
             await log.save({ session });
         } catch (error) {
-            console.error("Failed to write audit log:", error);
             // Non-blocking: Don't throw, just log the error.
         }
     }

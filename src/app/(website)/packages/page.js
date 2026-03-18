@@ -60,7 +60,6 @@ async function getServices(category) {
         const packages = await Package.find().populate('vendor', 'businessName').lean();
         return flattenServices(packages, category);
     } catch (error) {
-        console.error("Error fetching packages:", error);
         return [];
     }
 }

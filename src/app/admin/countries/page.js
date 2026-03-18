@@ -23,7 +23,6 @@ export default function CountriesPage() {
                 }
             }
         } catch (error) {
-            console.error("Error fetching countries", error);
         } finally {
             setLoading(false);
         }

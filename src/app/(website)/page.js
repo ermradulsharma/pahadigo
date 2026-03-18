@@ -18,7 +18,6 @@ async function getCategories() {
             _id: cat._id.toString()
         }));
     } catch (error) {
-        console.error("Failed to fetch categories:", error);
         return [];
     }
 }

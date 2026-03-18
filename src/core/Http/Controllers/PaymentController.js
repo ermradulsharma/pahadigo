@@ -59,7 +59,6 @@ class PaymentController {
 
          const isValid = await RazorpayService.verifyWebhookSignature(body, signature);
          if (!isValid) {
-            console.error('[Webhook] Invalid signature');
             return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Invalid signature', {});
          }
 
@@ -69,18 +68,15 @@ class PaymentController {
          if (event === 'order.paid') {
             const orderId = payload.order.entity.id;
             const paymentId = payload.payment.entity.id;
-            
+
             // Re-use logic to update status
             await BookingService.updatePaymentStatus(orderId, paymentId, 'WEBHOOK_VERIFIED');
-            console.info(`[Webhook] Order ${orderId} successfully paid.`);
          } else if (event === 'payment.failed') {
             const orderId = payload.payment.entity.order_id;
-            console.warn(`[Webhook] Payment for order ${orderId} failed.`);
          }
 
          return successResponse(HTTP_STATUS.OK, 'Webhook processed', { received: true });
       } catch (error) {
-         console.error('[Webhook] Error:', error);
          return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Webhook processing failed', {});
       }
    }

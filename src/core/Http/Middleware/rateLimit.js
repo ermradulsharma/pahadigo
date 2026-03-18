@@ -32,7 +32,6 @@ export const rateLimit = ({ limit = 5, windowMs = 60000, message = 'Too many req
         }
 
         if (rateLimitData.count > limit) {
-            console.warn(`[RateLimit] Blocked request from ${ip} to ${routePath}`);
             return new Response(JSON.stringify({
                 success: false,
                 message: message

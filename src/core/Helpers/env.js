@@ -18,6 +18,5 @@ export const loadEnv = () => {
             });
         }
     } catch (e) {
-        console.error("Error loading .env file", e);
     }
 };

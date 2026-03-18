@@ -47,7 +47,6 @@ async function getServiceDetails(id) {
             vendor: pkg.vendor
         };
     } catch (error) {
-        console.error("Error fetching service details:", error);
         return null;
     }
 }

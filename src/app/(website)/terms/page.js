@@ -13,7 +13,6 @@ export default async function TermsOfService() {
         await connectDB();
         policy = await Policy.findOne({ target: 'admin', type: 'terms_conditions' });
     } catch (error) {
-        console.error("Failed to fetch terms of service:", error);
     }
 
     return (
