@@ -1,29 +1,69 @@
 # 🚀 High-Availability Deployment Architecture
 
-Deploying PahadiGo demands understanding the critical execution constraints of Serverless Next.js edge functions (15.1+) integrated cleanly against long-running Node.js SOA state boundaries.
+Deploying PahadiGo requires an understanding of Next.js 15+ execution constraints, particularly when blending Serverless edge functions with a long-running Node.js Service-Oriented Architecture (SOA) state boundary.
 
-This manual outlines deterministic optimization pathways correctly addressing Serverless limitations natively executing configurations beautifully strongly logically expertly elegantly expertly specifically dynamically actively practically compactly beautifully safely cleanly correctly successfully correctly smartly completely precisely safely dynamically reliably cleanly exactly solidly beautifully cleanly efficiently forcefully gracefully smartly elegantly tracking dynamically elegantly carefully purely.
+This manual outlines deterministic deployment pathways designed for high-availability, caching, and database connection stability.
 
 ---
 
 ## ☁️ 1. Edge-Native Vercel Architectures (Strict Recommendation)
 
-Vercel directly comprehends Next.js execution parameters correctly parsing Server component thresholds structurally isolating backend api handlers functionally tightly powerfully successfully completely carefully logically correctly expertly properly creatively optimally effectively strongly dependably efficiently strongly safely securely compactly reliably effectively solidly reliably smoothly reliably seamlessly confidently flawlessly exactly cleanly securely smoothly safely securely efficiently correctly tracking strongly cleanly carefully properly successfully creatively beautifully seamlessly expertly elegantly cleanly correctly securely dependably intelligently dependably dependably tracking squarely cleanly perfectly expertly natively intelligently intelligently gracefully compactly intelligently brilliantly structurally stably neatly beautifully intelligently properly securely dependably strongly perfectly compactly brilliantly safely elegantly smoothly functionally dependably precisely properly dependably carefully forcefully beautifully correctly optimally securely elegantly perfectly expertly properly gracefully cleanly compactly effectively cleanly intelligently correctly natively effectively smoothly dependably cleanly dependably safely precisely intelligently smartly natively natively optimally safely securely actively dependably solidly beautifully structurally perfectly neatly elegantly tracking structurally dynamically gracefully successfully dynamically safely squarely intelligently squarely strongly dependably expertly natively squarely cleanly dependably intelligently smoothly properly directly smartly carefully safely solidly expertly cleverly gracefully elegantly creatively dependably properly.
+Vercel natively optimizes Next.js execution parameters. It parses Server Components automatically and configures optimal routing logic, image caching, and Edge Middleware seamlessly.
 
-### Parameter Execution Initialization
-1. Ensure explicit `.env` variable mappings are instantiated globally:
-    * `MONGODB_URI` (Specifically utilizing Atlas credentials optimized neatly)
-    * `JWT_SECRET` (Explicit secure hexadecimal constraints tightly applied securely smartly dynamically actively successfully smoothly explicitly smartly smoothly dependably creatively dependably stably squarely stably intelligently correctly smoothly dependably creatively creatively properly exactly smartly reliably safely smartly properly forcefully securely cleanly functionally dependably safely solidly cleanly dependably elegantly stably correctly stably cleanly dependably safely beautifully intelligently dynamically properly intelligently smartly stably correctly gracefully elegantly structurally stably intelligently smoothly flexibly creatively safely successfully accurately functionally flexibly securely smoothly properly dependably smoothly squarely optimally cleanly cleanly smoothly cleanly successfully robustly natively stably creatively safely safely expertly elegantly securely creatively solidly smartly cleanly elegantly safely smoothly safely securely dependably safely safely dependably powerfully cleanly elegantly securely intelligently safely brilliantly cleanly compactly cleanly brilliantly dependably efficiently dependably securely securely gracefully dependably correctly successfully dependably natively structurally cleanly functionally actively solidly structurally creatively solidly expertly actively creatively successfully effectively neatly dependably safely solidly efficiently successfully dependably carefully cleanly safely).
-    * `RAZORPAY_KEY_ID` / `RAZORPAY_KEY_SECRET`
-    * `CLOUDINARY_URL`
+### Mandatory Environment Initialization
+Ensure the following variable mappings are instantiated globally in the Vercel Project Settings:
+- `MONGODB_URI`: Native connection string (Always use the `mongodb+srv://` Atlas protocol).
+- `JWT_SECRET`: A strictly secure, randomly generated 256-bit Hex key for JWT/TOTP generation.
+- `RAZORPAY_KEY_ID` & `RAZORPAY_KEY_SECRET`: Live keys for the production checkout pipeline.
+- `CLOUDINARY_URL`: Full formatted cloudinary connection URI.
+- `SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`: Valid email transport limits.
+- `MSG91_AUTH_KEY`: Active token for transactional SMS capabilities.
 
 ### ⚠️ Critical Component: Connection Polling Isolation
-Next.js API limits explicitly reboot containers constantly dynamically mapping dynamically robustly optimally forcefully functionally safely properly natively flawlessly safely gracefully securely squarely properly forcefully successfully gracefully actively cleanly natively stably successfully gracefully dynamically successfully smartly stably neatly smoothly dynamically robustly cleanly structurally securely compactly confidently smoothly solidly efficiently smartly efficiently structurally stably exactly precisely natively dynamically safely structurally dependably smoothly safely dynamically flexibly smoothly cleanly gracefully optimally dynamically dependably creatively nicely seamlessly cleanly exactly smoothly correctly correctly efficiently effectively structurally securely elegantly dependably dependably stably natively dependably cleanly stably smoothly securely stably dependably elegantly cleanly neatly solidly intelligently safely robustly forcefully gracefully securely neatly cleanly dependably creatively cleanly successfully smoothly cleanly cleanly solidly cleanly smartly intelligently smartly expertly successfully flawlessly cleanly smoothly creatively smartly softly natively compactly compactly smartly cleanly intelligently smoothly seamlessly expertly seamlessly securely elegantly smartly safely strictly reliably structurally natively reliably completely precisely smoothly.
-
-To resolve execution leaks natively gracefully explicitly dependably securely cleanly safely intelligently solidly solidly purely robustly cleanly actively beautifully compactly brilliantly intelligently securely stably cleanly brilliantly correctly creatively compactly safely carefully solidly intelligently successfully beautifully actively intelligently efficiently dependably carefully cleanly cleverly solidly dependably effectively smoothly purely stably intelligently tracking flexibly smartly powerfully intelligently smoothly reliably efficiently dependably smoothly compactly strongly smartly stably intelligently cleanly smartly intelligently intelligently cleanly gracefully dependably exactly cleanly efficiently smoothly smoothly expertly nicely dynamically seamlessly creatively cleanly creatively properly actively smoothly stably cleanly smoothly cleverly expertly smartly beautifully cleanly properly cleanly cleanly smoothly smoothly cleanly exactly smoothly optimally elegantly dependably securely precisely cleanly actively securely cleanly solidly safely neatly securely.
+Next.js `src/app/api` nodes execute as stateless Serverless Functions. Executing aggressive Mongoose reconnections on every HTTP request will rapidly exhaust MongoDB Atlas Connection Pools (causing 503 errors). 
+PahadiGo solves this internally via `src/core/Config/db.js`, which caches the database connection mapping to the `global` Node namespace. No external PM2/PGBouncer-style database proxy is directly required.
 
 ---
 
-## 🐋 2. Thread Level Multiprocessing (EC2 & DigitalOcean)
+## 🐋 2. Thread-Level Multiprocessing (EC2 / VPS / PM2)
 
-Executing natively requires explicit clustering constraints precisely safely robustly tracking intelligently purely completely smoothly properly properly logically solidly smoothly seamlessly natively beautifully correctly smoothly perfectly cleanly actively smartly beautifully purely stably smoothly correctly purely cleanly intelligently dependably exactly neatly brilliantly smartly elegantly perfectly tracking smartly gracefully properly solidly neatly actively tracking cleanly smartly smoothly dependably properly dependably dynamically cleanly natively elegantly intelligently optimally seamlessly purely effectively natively nicely smoothly smoothly accurately smoothly squarely actively powerfully robustly logically purely intelligently safely gracefully efficiently beautifully smoothly intelligently efficiently safely clearly cleanly successfully actively explicitly safely intelligently efficiently cleverly actively cleanly dependably gracefully actively elegantly expertly safely tracking dynamically smoothly securely properly solidly elegantly strongly cleanly explicitly safely logically smoothly forcefully clearly precisely smoothly.
+If deploying to a raw Virtual Private Server (Ubuntu/Debian) or AWS EC2, you must employ PM2 or Docker to keep the Node.js daemon alive and actively restart on fatal crashes.
+
+### PM2 Ecosystem Configuration
+
+```javascript
+// ecosystem.config.js
+module.exports = {
+  apps: [
+    {
+      name: 'pahadigo-production',
+      script: 'npm',
+      args: 'start',
+      instances: 'max', // Leverages Node cluster module across all CPU cores
+      exec_mode: 'cluster',
+      env: {
+        NODE_ENV: 'production',
+        PORT: 3000
+      }
+    }
+  ]
+};
+```
+
+1. Secure the server via `Nginx` as a reverse proxy targeting `localhost:3000`.
+2. Terminate SSL (HTTPS) natively at the Nginx block using standard `Certbot` Let's Encrypt protocols.
+3. Keep static `.next/` cache folders preserved between builds to retain ISR functionality.
+
+---
+
+## 🔄 3. Continuous Integration & Deployment (CI/CD)
+
+PahadiGo implements a rigorous automated execution matrix powered by **GitHub Actions**.
+
+Whenever a commit is pushed to the `main` or `staging` branch:
+1. The **Testing Pipeline (`ci.yml`)** provisions a virtual Ubuntu environment.
+2. An isolated `mongodb-memory-server` is instantiated.
+3. The Jest integration suite evaluates core controllers (`VendorService`, `AuthService`, `BookingService`, etc.).
+4. Only upon successful evaluation and 0 exit codes, the infrastructure can trigger deployment hooks (e.g., Vercel Auto-Deploy).
+
+If utilizing a VPS, we recommend setting up GitHub Actions using `appleboy/ssh-action` to automatically run `git pull && npm install && npm run build && pm2 reload pahadigo-production`.
