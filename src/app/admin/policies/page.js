@@ -3,9 +3,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
 import { getToken } from '@/helpers/authUtils';
-import 'react-quill-new/dist/quill.snow.css'; // Optimized for React 19
-// Actually, let's use dynamic import for ReactQuill to avoid SSR issues
-const ReactQuill = dynamic(() => import('react-quill-new'), { ssr: false });
+import { DefaultEditor } from 'react-simple-wysiwyg';
 
 const POLICY_TYPES = {
     vendor: [
@@ -91,14 +89,6 @@ export default function PoliciesPage() {
 
     if (!isMounted) return null;
 
-    const modules = {
-        toolbar: [
-            [{ 'header': [1, 2, 3, false] }],
-            ['bold', 'italic', 'underline', 'strike', 'blockquote'],
-            [{ 'list': 'ordered' }, { 'list': 'bullet' }],
-            ['link', 'clean']
-        ],
-    };
     const currentTypeLabel = POLICY_TYPES[target]?.find(p => p.id === type)?.label || 'Policy';
     return (
         <div className="p-8 max-w-full">
@@ -146,37 +136,11 @@ export default function PoliciesPage() {
                                 </div>
                             </div>
                         )}
-                        <ReactQuill theme="snow" value={content} onChange={setContent} modules={modules} className="h-full flex flex-col" style={{ border: 'none' }} />
+                        <DefaultEditor value={content} onChange={(e) => setContent(e.target.value)} style={{ height: '100%', minHeight: '350px', border: 'none' }} />
                     </div>
                 </main>
             </div>
             <style jsx global>{`
-                .quill {
-                    height: 100%;
-                    display: flex;
-                    flex-direction: column;
-                }
-                .ql-container {
-                    flex: 1;
-                    font-size: 16px;
-                    font-family: inherit;
-                    border: none !important;
-                    min-height: 350px;
-                }
-                .ql-toolbar {
-                    border: none !important;
-                    border-bottom: 1px solid #e2e8f0 !important;
-                    background: #f8fafc;
-                    padding: 12px !important;
-                }
-                .ql-editor {
-                    padding: 24px !important;
-                    background: white;
-                    min-height: 350px;
-                }
-                .ql-editor p {
-                    margin-bottom: 1rem;
-                }
             `}</style>
         </div>
     );
