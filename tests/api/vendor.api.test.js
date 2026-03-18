@@ -21,7 +21,7 @@ describe('Vendor API Integration (Controller Layer)', () => {
             json: async function() { return this.jsonBody; },
             formDataBody: {
                 get: () => null,
-                entries: function* () { yield ['key', 'value']; }
+                entries: () => [['key', 'value']]
             }
         };
         mockReq.headers.get = (key) => { return null; };
@@ -60,7 +60,7 @@ describe('Vendor API Integration (Controller Layer)', () => {
         });
 
         it('createBusinessProfile handles required fields', async () => {
-             mockReq.formDataBody = { get: () => null }; // mock basic map
+             mockReq.formDataBody = { get: () => null, entries: () => [] }; // mock basic map
              const res = await VendorController.createBusinessProfile(mockReq);
              expect(res.status).toBe(500); // fails down the line
         });
@@ -127,7 +127,10 @@ describe('Vendor API Integration (Controller Layer)', () => {
         });
 
         it('updateBusinessDocument error', async () => {
-             mockReq.formDataBody = { get: () => null };
+             mockReq.formDataBody = { 
+                  get: () => 'fake_file', 
+                  entries: () => [['type', 'panCard']] 
+             };
              const res = await VendorController.updateBusinessDocument(mockReq);
              expect(res.status).toBe(500);
         });
