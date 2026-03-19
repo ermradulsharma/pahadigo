@@ -107,6 +107,9 @@ const routes = [
         { method: 'GET', path: '/audit-logs', handler: wrap(AdminController.getAuditLogs.bind(AdminController)) },
 
         { method: 'POST', path: '/travellers', handler: wrap(AdminController.createTraveller.bind(AdminController)) },
+        { method: 'PATCH', path: '/travellers/:id', handler: wrap(AdminController.updateTraveller.bind(AdminController)) },
+        { method: 'POST', path: '/vendors', handler: wrap(AdminController.createVendor.bind(AdminController)) },
+        { method: 'POST', path: '/change-password', handler: wrap(AdminController.changePassword.bind(AdminController)) },
         { method: 'POST', path: '/approve-vendor', handler: wrap(AdminController.approveVendor.bind(AdminController)) },
         { method: 'PATCH', path: '/vendors/:id', handler: wrap(AdminController.updateVendor.bind(AdminController)) },
         { method: 'POST', path: '/add-package', handler: wrap(AdminController.addPackageOnBehalf.bind(AdminController)) },

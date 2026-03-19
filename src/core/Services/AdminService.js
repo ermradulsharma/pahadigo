@@ -223,6 +223,82 @@ class AdminService {
         return user;
     }
 
+    async updateTraveller(id, data, req = null) {
+        const user = await User.findById(id);
+        if (!user || user.role !== 'traveller') {
+            throw new Error("Traveller not found");
+        }
+
+        const allowedUpdates = ['name', 'phone', 'status', 'email'];
+        allowedUpdates.forEach(field => {
+            if (data[field] !== undefined) {
+                user[field] = data[field];
+            }
+        });
+
+        if (data.password) {
+            user.password = data.password;
+        }
+
+        await user.save();
+
+        if (req && req.user) {
+            const adminId = req.user.id || req.user._id;
+            this.logAction(adminId, 'UPDATE', 'USER', user._id, { fields_changed: Object.keys(data) }, req);
+        }
+        return user;
+    }
+
+    async createVendor(data, req = null) {
+        let existingUser = await User.findOne({ email: data.email });
+        if (existingUser) {
+            if (existingUser.role !== 'vendor') throw new Error("Email already registered with a different role.");
+        } else {
+            // Generate a random generic password since admin is creating without one, or use provided
+            const password = data.password || Math.random().toString(36).slice(-10) + "A1!";
+            existingUser = await User.create({
+                email: data.email,
+                phone: data.phone,
+                name: data.ownerName || data.businessName,
+                password: password,
+                role: 'vendor',
+                isVerified: true,
+                status: 'active'
+            });
+        }
+
+        const existingVendor = await Vendor.findOne({ user: existingUser._id });
+        if (existingVendor) throw new Error("Vendor profile already exists for this user.");
+
+        const vendor = await Vendor.create({
+            user: existingUser._id,
+            ownerName: data.ownerName || existingUser.name,
+            businessName: data.businessName,
+            businessNumber: data.phone || data.businessNumber,
+            isApproved: true // Admin created vendors get auto-approved
+        });
+
+        if (req && req.user) {
+            const adminId = req.user.id || req.user._id;
+            this.logAction(adminId, 'CREATE', 'VENDOR', vendor._id, { businessName: vendor.businessName }, req);
+        }
+        return { user: existingUser, vendor };
+    }
+
+    async changeAdminPassword(adminId, oldPassword, newPassword) {
+        const admin = await User.findById(adminId).select('+password');
+        if (!admin) throw new Error(RESPONSE_MESSAGES.ERROR.UNAUTHORIZED);
+
+        const isMatch = await admin.comparePassword(oldPassword);
+        if (!isMatch) throw new Error("Incorrect current password");
+
+        admin.password = newPassword;
+        await admin.save();
+        
+        this.logAction(adminId, 'UPDATE', 'USER', adminId, { field: 'password' });
+        return true;
+    }
+
     async approveVendor(vendorId) {
         return await Vendor.findByIdAndUpdate(vendorId, { isApproved: true }, { returnDocument: 'after' });
     }
@@ -335,49 +411,12 @@ class AdminService {
     }
 
     async getPaymentHistory() {
-        const bookings = await Booking.find({
+        return await Booking.find({
             $or: [{ paymentStatus: 'paid' }, { refundStatus: 'refunded' }]
         })
-            .populate('user', 'name')
-            .populate({ path: 'package', select: 'title vendor', populate: { path: 'vendor', select: 'businessName' } })
+            .populate('user', 'name email')
+            .populate({ path: 'package', select: 'title vendor', populate: { path: 'vendor', select: 'businessName phone email' } })
             .sort({ bookingDate: -1 });
-
-        return bookings.map(b => {
-            const events = [];
-            if (b.paymentStatus === 'paid') {
-                events.push({
-                    id: b._id + '_in',
-                    type: 'inflow',
-                    amount: b.totalPrice,
-                    date: b.bookingDate,
-                    description: `Payment from ${b.user?.name || 'User'} for ${b.package?.title || 'Package'}`,
-                    status: 'completed'
-                });
-            }
-
-            if (b.refundStatus === 'refunded') {
-                events.push({
-                    id: b._id + '_refund',
-                    type: 'outflow',
-                    amount: b.totalPrice,
-                    date: new Date(),
-                    description: `Refund to ${b.user?.name || 'User'}`,
-                    status: 'refunded'
-                });
-            }
-
-            if (b.payoutStatus === 'paid' && b.refundStatus !== 'refunded') {
-                events.push({
-                    id: b._id + '_payout',
-                    type: 'outflow',
-                    amount: b.totalPrice,
-                    date: new Date(),
-                    description: `Payout to ${b.package?.vendor?.businessName || 'Vendor'}`,
-                    status: 'paid_out'
-                });
-            }
-            return events;
-        }).flat();
     }
 
     async getPolicies(target = null) {

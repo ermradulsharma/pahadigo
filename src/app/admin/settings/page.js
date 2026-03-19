@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { getToken } from '@/helpers/authUtils';
 
 // Helper components defined outside to avoid re-creation on render
 const Card = ({ title, children }) => (
@@ -81,6 +82,47 @@ export default function SettingsPage() {
     const [showCurrentPassword, setShowCurrentPassword] = useState(false);
     const [showNewPassword, setShowNewPassword] = useState(false);
     const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+    const [passwordData, setPasswordData] = useState({
+        old_password: '',
+        password: '',
+        password_confirmation: ''
+    });
+    const [passwordLoading, setPasswordLoading] = useState(false);
+
+    const handlePasswordInputChange = (e) => {
+        setPasswordData({ ...passwordData, [e.target.name]: e.target.value });
+    };
+
+    const handlePasswordSubmit = async (e) => {
+        e.preventDefault();
+        if (passwordData.password !== passwordData.password_confirmation) {
+            return alert("New passwords do not match!");
+        }
+        setPasswordLoading(true);
+        try {
+            const token = getToken();
+            const res = await fetch('/api/admin/change-password', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                    'Authorization': `Bearer ${token}`
+                },
+                body: JSON.stringify(passwordData)
+            });
+            const data = await res.json();
+            if (data.success) {
+                alert('Password changed successfully!');
+                setPasswordData({ old_password: '', password: '', password_confirmation: '' });
+            } else {
+                alert('Failed: ' + (data.error || data.message || "Unknown error"));
+            }
+        } catch (error) {
+            alert('An error occurred while changing password.');
+        } finally {
+            setPasswordLoading(false);
+        }
+    };
 
 
     useEffect(() => {
@@ -207,13 +249,16 @@ export default function SettingsPage() {
                 <div className="space-y-6">
                     {/* Change Password - Keeping strictly visual or separate logic as it's user specific, not global setting */}
                     <Card title="Change Password">
-                        <form onSubmit={(e) => { e.preventDefault(); alert("Password change functionality to be implemented separately."); }}>
+                        <form onSubmit={handlePasswordSubmit}>
                             <FormGroup label="Current Password:">
                                 <div className="space-y-2">
                                     <Input
                                         type={showCurrentPassword ? "text" : "password"}
                                         placeholder="Current Password"
                                         name="old_password"
+                                        value={passwordData.old_password}
+                                        onChange={handlePasswordInputChange}
+                                        required
                                     />
                                     <div className="flex items-center gap-2">
                                         <input
@@ -233,6 +278,9 @@ export default function SettingsPage() {
                                         type={showNewPassword ? "text" : "password"}
                                         placeholder="New Password"
                                         name="password"
+                                        value={passwordData.password}
+                                        onChange={handlePasswordInputChange}
+                                        required
                                     />
                                     <div className="flex items-center gap-2">
                                         <input
@@ -252,6 +300,9 @@ export default function SettingsPage() {
                                         type={showConfirmPassword ? "text" : "password"}
                                         placeholder="Confirm Password"
                                         name="password_confirmation"
+                                        value={passwordData.password_confirmation}
+                                        onChange={handlePasswordInputChange}
+                                        required
                                     />
                                     <div className="flex items-center gap-2">
                                         <input
@@ -265,7 +316,7 @@ export default function SettingsPage() {
                                     </div>
                                 </div>
                             </FormGroup>
-                            <Button>Submit</Button>
+                            <Button loading={passwordLoading}>Submit</Button>
                         </form>
                     </Card>
 

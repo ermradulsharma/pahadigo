@@ -73,6 +73,60 @@ class AdminController {
         }
     }
 
+    // PATCH /admin/travellers/:id
+    async updateTraveller(req, { params }) {
+        try {
+            const { id } = params;
+            const body = req.jsonBody || await req.json();
+
+            if (!id) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED, {});
+
+            const traveller = await AdminService.updateTraveller(id, body, req);
+            return successResponse(HTTP_STATUS.OK, "Traveller updated successfully", { traveller });
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+        }
+    }
+
+    // POST /admin/vendors
+    async createVendor(req) {
+        try {
+            const body = req.jsonBody || await req.json();
+            if (!body.businessName || !body.email || !body.phone) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+            }
+            
+            const vendor = await AdminService.createVendor(body, req);
+            return successResponse(HTTP_STATUS.CREATED, "Vendor created successfully", { vendor });
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+        }
+    }
+
+    // POST /admin/change-password
+    async changePassword(req) {
+        try {
+            const body = req.jsonBody || await req.json();
+            if (!body.old_password || !body.password || !body.password_confirmation) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+            }
+            if (body.password !== body.password_confirmation) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, "Passwords do not match", {});
+            }
+
+            if (!req.user || !req.user.id) {
+                return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.ERROR.UNAUTHORIZED, {});
+            }
+
+            await AdminService.changeAdminPassword(req.user.id, body.old_password, body.password);
+            
+            return successResponse(HTTP_STATUS.OK, "Password changed successfully", {});
+        } catch (error) {
+            const status = error.message.includes('password') ? HTTP_STATUS.BAD_REQUEST : HTTP_STATUS.INTERNAL_SERVER_ERROR;
+            return errorResponse(status, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+        }
+    }
+
     // POST /admin/approve-vendor
     async approveVendor(req) {
         try {
