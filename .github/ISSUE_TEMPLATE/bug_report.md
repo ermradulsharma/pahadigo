@@ -1,9 +1,9 @@
 ---
 name: Bug report
 about: Create a strict report to help us improve PahadiGo
-title: '[BUG] '
+title: "[BUG] "
 labels: bug
-assignees: ''
+assignees: ""
 ---
 
 ## 🐛 Bug Description
@@ -13,6 +13,7 @@ assignees: ''
 ## 👣 Steps to Reproduce
 
 <!-- Please provide exact steps to reproduce the behavior so our maintainers can triage the issue rapidly -->
+
 1. Navigate to the API Endpoint or UI Route: `...`
 2. Execute the following action: `...`
 3. Observe the generated error or payload rejection: `...`
@@ -24,6 +25,7 @@ assignees: ''
 ## 🖼️ Contextual Payload / Stack Traces
 
 <!-- If this is an API Controller error or Mongoose exception, provide the exact sanitized JSON trace. -->
+
 ```json
 // Paste exact JSON failing payload or Node.js Error Stack here
 ```

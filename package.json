@@ -7,7 +7,7 @@
         "dev": "next dev",
         "build": "next build",
         "start": "next start",
-        "lint": "eslint",
+        "lint": "eslint .",
         "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --detectOpenHandles",
         "seed": "node src/core/Database/Seeders/resetAndSeed.js"
     },
@@ -34,9 +34,10 @@
         "zod": "^4.3.6"
     },
     "devDependencies": {
+        "@eslint/eslintrc": "^3.3.5",
         "@tailwindcss/postcss": "^4.2.1",
         "autoprefixer": "^10.4.23",
-        "eslint": "^10.0.3",
+        "eslint": "^8.57.0",
         "eslint-config-next": "16.1.6",
         "gcp-metadata": "^8.1.2",
         "jest": "^30.2.0",

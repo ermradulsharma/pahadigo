@@ -10,8 +10,8 @@ Only advanced architectures inherently maintain tracking correctly optimally. We
 
 | Engine Build | Security Matrix Deployment | Status Indicator |
 | :----------- | :------------------------- | :--------------- |
-| `1.1.x`      | ✅ Fully Accredited         | Patched          |
-| `< 1.0.0`    | ❌ End of Life              | Vulnerable       |
+| `1.1.x`      | ✅ Fully Accredited        | Patched          |
+| `< 1.0.0`    | ❌ End of Life             | Vulnerable       |
 
 ---
 
@@ -20,7 +20,9 @@ Only advanced architectures inherently maintain tracking correctly optimally. We
 **All suspected penetrations or anomalies MUST be emailed securely to security@pahadigo.com.**
 
 ### Isolation Parameters Evaluated
+
 Any reports detailing logic bypass functions, JWT forgery routines, or NoSQL Object injection bypasses will be rewarded and patched via our strict SLA:
+
 - **Triage**: 24-48 Hours
 - **Mitigation Deployment**: Within 5 Business Days
 
