@@ -81,18 +81,23 @@ async function handler(req, { params }) {
         const contentType = req.headers.get('content-type') || '';
         try {
             let bodyToValidate = null;
-            if (contentType.includes('multipart/form-data')) {
-                req.formDataBody = await req.formData();
-                bodyToValidate = parseNestedFormData(req.formDataBody);
-            } else if (contentType.includes('application/json')) {
-                const body = await req.json();
-                const sanitizedBody = sanitizeNoSQL(body);
-                req.jsonBody = sanitizedBody;
-                bodyToValidate = sanitizedBody;
-            } else if (contentType.includes('application/x-www-form-urlencoded')) {
-                const formData = await req.formData();
-                bodyToValidate = parseNestedFormData(formData);
-                req.formDataBody = formData;
+            if (method !== 'GET' && method !== 'HEAD') {
+                if (contentType.includes('multipart/form-data')) {
+                    req.formDataBody = await req.formData();
+                    bodyToValidate = parseNestedFormData(req.formDataBody);
+                } else if (contentType.includes('application/json')) {
+                    const text = await req.text();
+                    if (text && text.trim().length > 0) {
+                        const body = JSON.parse(text);
+                        const sanitizedBody = sanitizeNoSQL(body);
+                        req.jsonBody = sanitizedBody;
+                        bodyToValidate = sanitizedBody;
+                    }
+                } else if (contentType.includes('application/x-www-form-urlencoded')) {
+                    const formData = await req.formData();
+                    bodyToValidate = parseNestedFormData(formData);
+                    req.formDataBody = formData;
+                }
             }
 
             // [VALIDATION] Unified Schema Validation
@@ -105,6 +110,7 @@ async function handler(req, { params }) {
                 req.validData = validationResult.data;
             }
         } catch (parseError) {
+            console.error("Body Parse Error:", parseError);
             return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.BAD_REQUEST, {});
         }
 
