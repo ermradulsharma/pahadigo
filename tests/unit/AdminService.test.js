@@ -153,9 +153,9 @@ describe('AdminService Robust Tests', () => {
 
              const result = await AdminService.getPaymentHistory();
              expect(result).toEqual(expect.arrayContaining([
-                 expect.objectContaining({ type: 'inflow' }),
-                 expect.objectContaining({ type: 'outflow', status: 'refunded' }),
-                 expect.objectContaining({ type: 'outflow', status: 'paid_out' })
+                 expect.objectContaining({ paymentStatus: 'paid' }),
+                 expect.objectContaining({ refundStatus: 'refunded' }),
+                 expect.objectContaining({ paymentStatus: 'paid', payoutStatus: 'paid' })
              ]));
         });
     });

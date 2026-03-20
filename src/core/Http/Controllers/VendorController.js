@@ -384,11 +384,8 @@ class VendorController {
   // GET /vendor/packages -> Returns the Single Catalog
   async getPackages(req) {
     try {
-      console.log("getPackages", req);
       const user = req.user;
-      console.log('user', user);
       const packages = await VendorService.findByUserId(user.id);
-      console.log('packages', packages);
       if (!packages) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
       const catalog = await PackageService.getFormattedVendorCatalog(packages._id);
