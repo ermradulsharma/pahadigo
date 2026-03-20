@@ -312,6 +312,34 @@ class AdminController {
         }
     }
 
+    // POST /admin/verify-category-document
+    async verifyCategoryDocument(req) {
+        try {
+            const body = req.jsonBody || await req.json();
+            const { documentId, status, reason } = body;
+
+            if (!documentId || !status) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+            }
+
+            const VendorDocument = (await import('@/models/VendorDocument.js')).default;
+            const doc = await VendorDocument.findById(documentId);
+            if (!doc) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.DOCUMENT_NOT_FOUND, {});
+
+            doc.status = status; // 'approved' or 'rejected'
+            if (status === 'rejected') {
+                doc.rejection_reason = reason;
+            } else {
+                doc.rejection_reason = null;
+            }
+
+            await doc.save();
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.DOCUMENT_STATUS_UPDATED || "Document status updated", { doc });
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+        }
+    }
+
     // POST /admin/add-package
     async addPackageOnBehalf(req) {
         try {

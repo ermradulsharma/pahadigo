@@ -339,7 +339,7 @@ function DocumentSection({ title, docs: rawDocs, field, onVerify, onOCR, verifyi
                                     <span className="text-[9px] font-bold text-slate-400 uppercase tracking-widest leading-none">Reference</span>
                                     <span className="text-[11px] font-mono text-slate-600 mt-1">#{doc.url?.split('/').pop().slice(-8) || 'N/A'}</span>
                                 </div>
-                                {doc.status !== 'verified' && ocr && (
+                                {doc.status !== 'verified' && doc.status !== 'approved' && ocr && (
                                     <button disabled={verifying === `${field}-${idx}`} onClick={() => onOCR(field, idx)} className="h-8 px-3 rounded-lg bg-indigo-50 text-indigo-600 text-[10px] font-bold uppercase tracking-wider hover:bg-indigo-600 hover:text-white transition-all flex items-center gap-2">
                                         {verifying === `${field}-${idx}` ? (
                                             <div className="w-3 h-3 border-2 border-indigo-400 border-t-transparent rounded-full animate-spin"></div>
@@ -371,7 +371,7 @@ function DocumentSection({ title, docs: rawDocs, field, onVerify, onOCR, verifyi
                             )}
 
                             <div className="grid grid-cols-2 gap-2 pt-2 border-t border-slate-100">
-                                {doc.status !== 'verified' && (
+                                {doc.status !== 'verified' && doc.status !== 'approved' && (
                                     <button onClick={() => onVerify(field, 'verified', null, idx)} className="h-10 rounded-xl bg-slate-900 text-white text-[10px] font-bold uppercase tracking-widest hover:bg-black transition-all shadow-lg shadow-slate-200">Approve</button>
                                 )}
                                 {doc.status !== 'rejected' && (
@@ -388,3 +388,4 @@ function DocumentSection({ title, docs: rawDocs, field, onVerify, onOCR, verifyi
 
 // --- Icons ---
 const CheckIcon = ({ className }) => <svg className={className} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={3} d="M5 13l4 4L19 7" /></svg>;
+

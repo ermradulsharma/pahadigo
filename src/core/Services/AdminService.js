@@ -183,12 +183,31 @@ class AdminService {
     async getAllVendors() {
         const users = await User.find({ role: 'vendor' }).lean();
         const profiles = await Vendor.find().lean();
+
+        // 1. Fetch vendor category documents
+        const VendorDocument = (await import('@/models/VendorDocument.js')).default;
+        const vendorDocs = await VendorDocument.find().lean();
+        
+        // 2. Map documents by vendor _id
+        const vendorDocsMap = new Map();
+        vendorDocs.forEach(doc => {
+            const vendorIdStr = doc.vendor_id.toString();
+            if (!vendorDocsMap.has(vendorIdStr)) {
+                vendorDocsMap.set(vendorIdStr, []);
+            }
+            vendorDocsMap.get(vendorIdStr).push(doc);
+        });
+
         const profileMap = new Map(profiles.map(p => [p.user?.toString(), p]));
         return users.map(u => {
             const profile = profileMap.get(u._id.toString());
+            let categoryDocuments = [];
+            
             if (profile) {
-                return { ...profile, user: u, hasProfile: true };
+                categoryDocuments = vendorDocsMap.get(profile._id.toString()) || [];
+                return { ...profile, user: u, hasProfile: true, categoryDocuments };
             }
+            
             return {
                 _id: u._id,
                 user: u,
@@ -196,6 +215,7 @@ class AdminService {
                 isApproved: false,
                 category: [],
                 hasProfile: false,
+                categoryDocuments: [],
                 createdAt: u.createdAt
             };
         });

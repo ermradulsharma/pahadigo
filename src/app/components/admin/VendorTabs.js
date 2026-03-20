@@ -11,6 +11,7 @@ export default function VendorTabs({ id }) {
         { name: 'Personal Profile', href: `/admin/vendors/${id}/personal` },
         { name: 'Business Profile', href: `/admin/vendors/${id}/business` },
         { name: 'Packages', href: `/admin/packages/${id}` },
+        { name: 'Category Docs', href: `/admin/vendors/${id}/documents` },
     ];
 
     return (
