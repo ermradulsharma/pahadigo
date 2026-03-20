@@ -659,28 +659,106 @@ class VendorController {
             const formDataBody = req.formDataBody;
             if (!formDataBody) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.FORM_DATA_REQUIRED, {});
 
-            const category_slug = formDataBody.get('category_slug') || formDataBody.get('slug');
-            const document_slug = formDataBody.get('document_slug');
-            const file = formDataBody.get('file') || formDataBody.get('image');
-
-            if (!category_slug || !document_slug || !file) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
-            }
-
-            if (!(file instanceof File) && !(file instanceof Blob && file.name)) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, "Invalid file provided.", {});
-            }
-
-            const result = await uploadToCloudinary(file, `vendor-documents/${vendor._id}/${category_slug}`);
             const VendorDocument = (await import('@/models/VendorDocument.js')).default;
-            const filter = { vendor_id: vendor._id, document_slug: document_slug };
-            const update = {
-                category_slug: category_slug,
-                url: result.url,
-                status: 'pending' // Reset status on re-upload
-            };
-            const updatedDoc = await VendorDocument.findOneAndUpdate(filter, update, { returnDocument: 'after', upsert: true });
-            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.CREATED, updatedDoc);
+            const CategoryDocument = (await import('@/models/CategoryDocument.js')).default;
+            const uploadPromises = [];
+            
+            const parsedData = parseNestedFormData(formDataBody);
+            
+            // 1. Support user's exact requested array format: document_slug[0], image[0]
+            if (parsedData.document_slug && (parsedData.image || parsedData.file)) {
+                // Ensure they are arrays
+                const docSlugs = Array.isArray(parsedData.document_slug) ? parsedData.document_slug : [parsedData.document_slug];
+                const rawFiles = parsedData.image || parsedData.file;
+                const files = Array.isArray(rawFiles) ? rawFiles : [rawFiles];
+
+                // The category the user explicitly provided for this batch
+                const explicitCatSlug = parsedData.category_slug || parsedData.slug;
+                
+                if (!explicitCatSlug) return errorResponse(HTTP_STATUS.BAD_REQUEST, "category_slug is required.", {});
+
+                for (let i = 0; i < docSlugs.length; i++) {
+                    const docSlug = docSlugs[i];
+                    const fileObj = files[i];
+                    
+                    if (fileObj && ((fileObj instanceof File) || (fileObj instanceof Blob && fileObj.name))) {
+                        uploadPromises.push(
+                            uploadToCloudinary(fileObj, `vendor-documents/${vendor._id}/${explicitCatSlug}`).then(result => {
+                                const filter = { vendor_id: vendor._id, document_slug: docSlug, category_slug: explicitCatSlug };
+                                const update = { url: result.url, status: 'pending' };
+                                return VendorDocument.findOneAndUpdate(filter, update, { returnDocument: 'after', upsert: true });
+                            })
+                        );
+                    }
+                }
+            } else if (parsedData.documents && typeof parsedData.documents === 'object') {
+                // 2. Try nested structure: documents[category_slug][document_slug] = File
+                for (const [catSlug, docsObj] of Object.entries(parsedData.documents)) {
+                    for (const [docSlug, fileOrFiles] of Object.entries(docsObj)) {
+                        const files = Array.isArray(fileOrFiles) ? fileOrFiles : [fileOrFiles];
+                        for (const f of files) {
+                            if ((f instanceof File) || (f instanceof Blob && f.name)) {
+                                uploadPromises.push(
+                                    uploadToCloudinary(f, `vendor-documents/${vendor._id}/${catSlug}`).then(result => {
+                                        const filter = { vendor_id: vendor._id, document_slug: docSlug, category_slug: catSlug };
+                                        const update = { url: result.url, status: 'pending' };
+                                        return VendorDocument.findOneAndUpdate(filter, update, { returnDocument: 'after', upsert: true });
+                                    })
+                                );
+                            }
+                        }
+                    }
+                }
+            } else {
+                // Fallback to ultimate flat simple category logic
+                const entries = Array.from(formDataBody.entries());
+
+                // 1. Backward compatibility for single upload where document_slug and category_slug are explicit
+                const explicitDocSlug = formDataBody.get('document_slug');
+                const explicitCatSlug = formDataBody.get('category_slug') || formDataBody.get('slug');
+                
+                if (explicitDocSlug && typeof explicitDocSlug === 'string' && explicitCatSlug) {
+                    const singleFile = formDataBody.get('file') || formDataBody.get('image');
+                    if ((singleFile instanceof File) || (singleFile instanceof Blob && singleFile.name)) {
+                        uploadPromises.push(
+                            uploadToCloudinary(singleFile, `vendor-documents/${vendor._id}/${explicitCatSlug}`).then(result => {
+                                const filter = { vendor_id: vendor._id, document_slug: explicitDocSlug, category_slug: explicitCatSlug };
+                                const update = { url: result.url, status: 'pending' };
+                                return VendorDocument.findOneAndUpdate(filter, update, { returnDocument: 'after', upsert: true });
+                            })
+                        );
+                    }
+                }
+
+                // 2. Map all files dynamically where key = document_slug. We automatically find its category!
+                for (const [key, value] of entries) {
+                    if (key === 'file' || key === 'image' || key === 'document_slug' || key === 'category_slug' || key === 'slug') continue;
+                    
+                    if ((value instanceof File) || (value instanceof Blob && value.name)) {
+                        // Look up the category this document array belongs to
+                        const docDef = await CategoryDocument.findOne({ slug: key });
+                        // fallback to explicitCatSlug if it's missing in DB (unlikely unless deleted)
+                        const finalCatSlug = docDef ? docDef.category_slug : explicitCatSlug;
+                        
+                        if (finalCatSlug) {
+                            uploadPromises.push(
+                                uploadToCloudinary(value, `vendor-documents/${vendor._id}/${finalCatSlug}`).then(result => {
+                                    const filter = { vendor_id: vendor._id, document_slug: key, category_slug: finalCatSlug };
+                                    const update = { url: result.url, status: 'pending' };
+                                    return VendorDocument.findOneAndUpdate(filter, update, { returnDocument: 'after', upsert: true });
+                                })
+                            );
+                        }
+                    }
+                }
+            }
+
+            if (uploadPromises.length === 0) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, "No valid files provided.", {});
+            }
+
+            const uploadedDocs = await Promise.all(uploadPromises);
+            return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.CREATED, uploadedDocs);
         } catch (error) {
             console.error("Upload Category Document Error:", error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
