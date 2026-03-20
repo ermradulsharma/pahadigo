@@ -463,12 +463,14 @@ class VendorController {
                 const parsed = parseNestedFormData(req.formDataBody);
                 category = this._normalizeCategory(parsed.category);
                 itemId = parsed.itemId;
-                updates = await this._processItemData(user, category, parsed.updates);
+                const rawItem = parsed.updates || (Array.isArray(parsed.item) ? parsed.item[0] : parsed.item);
+                updates = await this._processItemData(user, category, rawItem);
             } else {
                 const body = req.jsonBody || await req.json();
                 category = this._normalizeCategory(body.category);
                 itemId = body.itemId;
-                updates = await this._processItemData(user, category, body.updates);
+                const rawItem = body.updates || (Array.isArray(body.item) ? body.item[0] : body.item);
+                updates = await this._processItemData(user, category, rawItem);
             }
 
             if (!category || !itemId || !updates) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
@@ -488,8 +490,16 @@ class VendorController {
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
-            const body = req.jsonBody || await req.json();
-            let { category, itemId } = body;
+            let category, itemId;
+            if (req.formDataBody) {
+                category = req.formDataBody.get('category');
+                itemId = req.formDataBody.get('itemId');
+            } else {
+                const body = req.jsonBody || await req.json();
+                category = body.category;
+                itemId = body.itemId;
+            }
+
             category = this._normalizeCategory(category);
             if (!category || !itemId) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
@@ -508,8 +518,24 @@ class VendorController {
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
-            const body = req.jsonBody || await req.json();
-            let { category, itemId, isActive } = body;
+            let category, itemId, isActive;
+            
+            if (req.formDataBody) {
+                category = req.formDataBody.get('category');
+                itemId = req.formDataBody.get('itemId');
+                if (req.formDataBody.has('isActive')) {
+                    const activeVal = req.formDataBody.get('isActive');
+                    isActive = typeof activeVal === 'string' ? activeVal.trim().toLowerCase() === 'true' : !!activeVal;
+                }
+            } else {
+                const body = req.jsonBody || await req.json();
+                category = body.category;
+                itemId = body.itemId;
+                if (body.isActive !== undefined) {
+                    isActive = typeof body.isActive === 'string' ? body.isActive.trim().toLowerCase() === 'true' : !!body.isActive;
+                }
+            }
+
             category = this._normalizeCategory(category);
             if (!category || !itemId || typeof isActive !== 'boolean') return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
@@ -528,8 +554,22 @@ class VendorController {
             const vendor = await VendorService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
-            const body = req.jsonBody || await req.json();
-            let { category, isActive } = body;
+            let category, isActive;
+
+            if (req.formDataBody) {
+                category = req.formDataBody.get('category');
+                if (req.formDataBody.has('isActive')) {
+                    const activeVal = req.formDataBody.get('isActive');
+                    isActive = typeof activeVal === 'string' ? activeVal.trim().toLowerCase() === 'true' : !!activeVal;
+                }
+            } else {
+                const body = req.jsonBody || await req.json();
+                category = body.category;
+                if (body.isActive !== undefined) {
+                    isActive = typeof body.isActive === 'string' ? body.isActive.trim().toLowerCase() === 'true' : !!body.isActive;
+                }
+            }
+
             category = this._normalizeCategory(category);
             if (!category || typeof isActive !== 'boolean') return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 

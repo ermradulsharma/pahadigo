@@ -84,7 +84,9 @@ const routes = [
             { method: 'POST', path: '/toggle-item', handler: wrap(VendorController.toggleItemStatus.bind(VendorController)) },
             { method: 'POST', path: '/toggle-category', handler: wrap(VendorController.toggleCategoryStatus.bind(VendorController)) },
             { method: 'PATCH', path: '/update-item', handler: wrap(VendorController.updateItem.bind(VendorController)) },
+            { method: 'POST', path: '/update-item', handler: wrap(VendorController.updateItem.bind(VendorController)) },
             { method: 'DELETE', path: '/delete-item', handler: wrap(VendorController.deleteItem.bind(VendorController)) },
+            { method: 'POST', path: '/delete-item', handler: wrap(VendorController.deleteItem.bind(VendorController)) },
         ]),
     ]),
 

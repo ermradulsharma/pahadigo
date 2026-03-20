@@ -108,7 +108,7 @@ class PackageService {
         const item = pkg[category].id(itemId);
         if (!item) throw new Error(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
 
-        Object.assign(item, updates);
+        item.set(updates);
         return await pkg.save();
     }
 
