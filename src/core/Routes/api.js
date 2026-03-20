@@ -69,6 +69,13 @@ const routes = [
             { method: 'DELETE', path: '/delete', handler: wrap(VendorController.deleteBankDetails.bind(VendorController)) },
         ]),
 
+        // Vendor Categories
+        ...Router.group({ prefix: '/category', middleware: ['auth'] }, [
+            { method: 'GET', path: '/', handler: wrap(VendorController.getVendorCategories.bind(VendorController)) },
+            { method: 'POST', path: '/documents', handler: wrap(VendorController.getCategoryDocumentsBySlug.bind(VendorController)) },
+            { method: 'POST', path: '/documents/upload', handler: wrap(VendorController.uploadCategoryDocument.bind(VendorController)) },
+        ]),
+
         // Vendor Packages
         { method: 'GET', path: '/packages', handler: wrap(VendorController.getPackages.bind(VendorController)), middleware: ['auth'] },
         { method: 'POST', path: '/create-package', handler: wrap(VendorController.createPackage.bind(VendorController)), middleware: ['auth'] },

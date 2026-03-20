@@ -32,7 +32,5 @@ VendorDocumentSchema.index(
     { unique: true }
 );
 
-export default mongoose.model(
-    "VendorDocument",
-    VendorDocumentSchema
-);
+const VendorDocument = mongoose.models.VendorDocument || mongoose.model("VendorDocument", VendorDocumentSchema);
+export default VendorDocument;

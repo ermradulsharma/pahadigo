@@ -27,18 +27,23 @@ class PackageService {
         const vendor = await Vendor.findById(vendorId);
 
         const result = catalog.toObject();
-        result.services = [];
+        result.items = [];
 
         if (vendor && vendor.category && Array.isArray(vendor.category)) {
-            result.services = vendor.category.map(c => {
+            vendor.category.forEach(c => {
                 const slug = (c.slug || '').trim().toLowerCase();
                 const schemaKey = CATEGORY_MAP[slug] || slug;
-                return {
-                    id: c._id || "",
-                    title: c.name || "",
-                    slug: c.slug || "",
-                    items: catalog[schemaKey] || []
-                };
+                const categoryItems = catalog[schemaKey] || [];
+
+                categoryItems.forEach(item => {
+                    const itemObj = item.toObject ? item.toObject() : item;
+                    result.items.push({
+                        ...itemObj,
+                        category_name: c.name || "",
+                        category_slug: slug,
+                        category_id: c._id || ""
+                    });
+                });
             });
         }
 
@@ -142,7 +147,7 @@ class PackageService {
 
     async getAvailablePackages(query = '') {
         const regex = new RegExp(query, 'i');
-        
+
         // Aggregation to flatten all service arrays into a single list of items
         const pipeline = [
             {
@@ -159,7 +164,7 @@ class PackageService {
         // We will perform the matching in JS below to avoid complex $text and $lookup issues.
 
         const catalogs = await Package.aggregate(pipeline);
-        
+
         const flattened = [];
         catalogs.forEach(cat => {
             SCHEMA_KEYS.forEach(key => {
