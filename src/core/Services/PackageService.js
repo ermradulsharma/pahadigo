@@ -43,7 +43,7 @@ class PackageService {
             isActive: itemObj.isActive,
             pricing: itemObj.pricing || {},
             location: itemObj.location || {},
-            photos: itemObj.photos || [],
+            photos: itemObj.photos[0] || "",
             category_name: c.name || "",
             category_slug: slug,
             category_id: c._id || ""
