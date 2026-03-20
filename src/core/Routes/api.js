@@ -80,6 +80,7 @@ const routes = [
         { method: 'GET', path: '/packages', handler: wrap(VendorController.getPackages.bind(VendorController)), middleware: ['auth'] },
         { method: 'POST', path: '/create-package', handler: wrap(VendorController.createPackage.bind(VendorController)), middleware: ['auth'] },
         ...Router.group({ prefix: '/package', middleware: ['auth'] }, [
+            { method: 'GET', path: '/item/:category/:itemId', handler: wrap(VendorController.getItem.bind(VendorController)) },
             { method: 'POST', path: '/add-item', handler: wrap(VendorController.addItem.bind(VendorController)) },
             { method: 'POST', path: '/toggle-item', handler: wrap(VendorController.toggleItemStatus.bind(VendorController)) },
             { method: 'POST', path: '/toggle-category', handler: wrap(VendorController.toggleCategoryStatus.bind(VendorController)) },

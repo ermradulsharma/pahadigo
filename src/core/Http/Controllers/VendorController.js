@@ -451,6 +451,36 @@ class VendorController {
         }
     }
 
+    // GET /vendor/package/item/:category/:itemId
+    async getItem(req, { params }) {
+        try {
+            const user = req.user;
+            const vendor = await VendorService.findByUserId(user.id);
+            if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
+
+            const p = await params;
+            let category = p.category;
+            const itemId = p.itemId;
+
+            category = this._normalizeCategory(category);
+            if (!category || !itemId) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+
+            const PackageService = (await import('@/services/PackageService.js')).default;
+            const catalog = await PackageService.ensureCatalog(vendor._id);
+            
+            if (!catalog || !catalog[category]) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, "Invalid category", {});
+            }
+
+            const item = catalog[category].id(itemId);
+            if (!item) return errorResponse(HTTP_STATUS.NOT_FOUND, "Item not found", {});
+
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, item);
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+        }
+    }
+
     // PATCH /vendor/package/update-item
     async updateItem(req) {
         try {
