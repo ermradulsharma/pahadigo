@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import crypto from 'crypto';
 import { sanitizeHTML, redactSensitiveData } from '@/helpers/security.js';
 import { getStartDateByPeriod } from '@/helpers/dateUtils.js';
 import { getRequestMetadata } from '@/helpers/requestUtils.js';
@@ -350,8 +351,8 @@ class AdminService {
         if (existingUser) {
             if (existingUser.role !== 'vendor') throw new Error("Email already registered with a different role.");
         } else {
-            // Generate a random generic password since admin is creating without one, or use provided
-            const password = data.password || Math.random().toString(36).slice(-10) + "A1!";
+            // Generate a secure random generic password since admin is creating without one, or use provided
+            const password = data.password || crypto.randomBytes(8).toString('hex') + "A1!";
             existingUser = await User.create({
                 email: data.email,
                 phone: data.phone,
