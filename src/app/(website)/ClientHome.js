@@ -52,6 +52,7 @@ export default function ClientHome({ categories }) {
                         src="https://images.unsplash.com/photo-1506869640319-fe1a24fd76dc?q=80&w=2070&auto=format&fit=crop"
                         alt="Himalayas Hero Background"
                         fill
+                        sizes="100vw"
                         className="object-cover object-top scale-105"
                         priority
                     />
@@ -182,6 +183,7 @@ export default function ClientHome({ categories }) {
                                         src={getCategoryImage(cat.slug)}
                                         alt={cat.name}
                                         fill
+                                        sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw"
                                         className="object-cover transition-transform duration-[2s] group-hover:scale-110"
                                     />
                                     <div className="absolute inset-0 bg-gradient-to-t from-gray-900/90 via-gray-900/20 to-transparent transition-opacity duration-300 group-hover:from-gray-900/95" />
@@ -265,6 +267,7 @@ export default function ClientHome({ categories }) {
                                 src="https://images.unsplash.com/photo-1519681393784-d120267933ba?q=80&w=1000&auto=format&fit=crop" 
                                 alt="Himalayas" 
                                 fill 
+                                sizes="(max-width: 768px) 100vw, 50vw"
                                 className="object-cover" 
                             />
                             <div className="absolute inset-0 bg-indigo-900/20 mix-blend-multiply"></div>
@@ -312,7 +315,7 @@ export default function ClientHome({ categories }) {
                         >
                             <div className="relative w-72 h-[550px] bg-white rounded-[3rem] border-[10px] border-gray-900 shadow-2xl overflow-hidden ring-4 ring-gray-900/10 rotate-3 hover:rotate-0 transition-transform duration-500">
                                 <div className="absolute top-0 left-1/2 transform -translate-x-1/2 w-32 h-6 bg-gray-900 rounded-b-[1rem] z-20"></div>
-                                <Image src="https://images.unsplash.com/photo-1551650975-87deedd944c3?q=80&w=1000&auto=format&fit=crop" alt="App Screen" fill className="object-cover z-0" />
+                                <Image src="https://images.unsplash.com/photo-1551650975-87deedd944c3?q=80&w=1000&auto=format&fit=crop" alt="App Screen" fill sizes="(max-width: 768px) 100vw, 33vw" className="object-cover z-0" />
                                 
                                 <div className="absolute bottom-0 inset-x-0 p-6 bg-gradient-to-t from-gray-900 via-gray-900/80 to-transparent z-10 pt-20">
                                     <div className="bg-white/20 backdrop-blur-xl border border-white/30 rounded-2xl p-4 shadow-xl">
