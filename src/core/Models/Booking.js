@@ -19,7 +19,14 @@ const BookingSchema = new mongoose.Schema({
     preferences: {
         category: { type: String },
         itemId: { type: mongoose.Schema.Types.ObjectId }
-    }
+    },
+    timeline: [{
+        title: { type: String, required: true },
+        description: { type: String },
+        timestamp: { type: Date, default: Date.now },
+        updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    }],
+    isDisputed: { type: Boolean, default: false }
 }, { timestamps: true });
 
 BookingSchema.index({ user: 1 });

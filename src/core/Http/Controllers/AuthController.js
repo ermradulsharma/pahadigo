@@ -4,6 +4,8 @@ import { successResponse, errorResponse } from '@/helpers/response.js';
 import { parseBody } from '@/helpers/parseBody.js';
 import { parseNestedFormData } from '@/helpers/parseNestedFormData.js';
 import { uploadToCloudinary } from '@/helpers/cloudinary.js';
+import { schemas, validate } from '@/helpers/validation.js';
+import User from '@/models/User.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 
 class AuthController {
@@ -12,37 +14,25 @@ class AuthController {
     async sendOtp(req) {
         try {
             const body = await parseBody(req);
-            let { email, phone, role } = body;
-            if (body.hasOwnProperty('email') && !body.email) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.EMAIL_REQUIRED, {});
-            }
-            if (body.hasOwnProperty('phone') && !body.phone) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.PHONE_REQUIRED, {});
-            }
-
-            if (email) email = email.toLowerCase().trim();
-            if (phone) phone = phone.trim();
-            if (role) role = role.toLowerCase().trim();
-            if (role && !['traveller', 'vendor'].includes(role)) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.INVALID_ROLE, {});
-            }
-
-            if (!email && !phone) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.EMAIL_OR_PHONE_REQUIRED, {});
-            }
-            if (email && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.INVALID_EMAIL, {});
-            }
-            const identifier = email || phone;
             
-            // SECURITY: Prevent Admins from requesting OTPs
-            const { default: User } = await import('@/models/User.js');
-            const existingUser = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
-            if (existingUser && existingUser.role === 'admin') {
-                return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD, {});
+            // 1. Validate Input using Zod Schema
+            const validationResult = validate(schemas.otpSend, body);
+            if (!validationResult.success) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, validationResult.error, {});
             }
 
-            const otp = await OTPService.generateOTP(identifier, role, { termsAccepted: body.termsAccepted });
+            const { email, phone, role } = validationResult.data;
+            const identifier = email ? email.toLowerCase().trim() : phone.trim();
+            const normalizedRole = role ? role.toLowerCase().trim() : undefined;
+
+            // 2. Delegate Business Logic to Data/Service Layer
+            const otp = await AuthService.requestOtp({ 
+                identifier, 
+                role: normalizedRole, 
+                termsAccepted: body.termsAccepted 
+            });
+
+            // 3. Return Clean Response
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.OTP_SENT, { otp, email, phone });
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.AUTH.OTP_SEND_FAILED, {});
@@ -65,9 +55,18 @@ class AuthController {
     // POST /auth/verify (Verify OTP and Login/Signup)
     async verifyOtp(req) {
         try {
-            const body = req.validData || req.jsonBody || await parseBody(req);
-            let { identifier, otp, targetRole } = body;
+            const body = await parseBody(req);
+            
+            // 1. Zod Validation & Transformation
+            const validationResult = validate(schemas.otpLogin, body);
+            if (!validationResult.success) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, validationResult.error, {});
+            }
 
+            // `identifier` and `targetRole` are normalized by the schema transformer
+            const { identifier, otp, targetRole } = validationResult.data;
+
+            // 2. Delegate to Service Layer
             const result = await AuthService.verifyAndLogin({ identifier, otp, targetRole });
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, {
                 ...(result.user.toObject ? result.user.toObject() : result.user),
@@ -92,9 +91,17 @@ class AuthController {
     async googleLogin(req) {
         try {
             const body = await parseBody(req);
-            const { idToken, role } = body;
-            if (!idToken) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
-            const result = await AuthService.googleAuth(idToken, role);
+            
+            // Validation
+            const validationResult = validate(schemas.socialLogin, { token: body.idToken, role: body.role });
+            if (!validationResult.success) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, validationResult.error, {});
+            }
+
+            const { token, role } = validationResult.data;
+            
+            // Delegate to Service
+            const result = await AuthService.googleAuth(token, role);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, result);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS, {});
@@ -105,9 +112,14 @@ class AuthController {
     async facebookLogin(req) {
         try {
             const body = await parseBody(req);
-            const { accessToken, role } = body;
-            if (!accessToken) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
-            const result = await AuthService.facebookAuth(accessToken, role);
+            
+            const validationResult = validate(schemas.socialLogin, { token: body.accessToken, role: body.role });
+            if (!validationResult.success) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, validationResult.error, {});
+            }
+
+            const { token, role } = validationResult.data;
+            const result = await AuthService.facebookAuth(token, role);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, result);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS, {});
@@ -207,7 +219,6 @@ class AuthController {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             }
 
-            const { default: User } = await import('@/models/User.js');
             const user = await User.findOne({ email }).select('+password');
             if (!user) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.NOT_FOUND, {});
 

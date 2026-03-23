@@ -3,24 +3,22 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 
-export default function VendorTabs({ id }) {
-    const pathname = usePathname();
-
+export default function VendorTabs({ activeTab, setActiveTab }) {
     const tabs = [
-        { name: 'Overview', href: `/admin/vendors/${id}` },
-        { name: 'Personal Profile', href: `/admin/vendors/${id}/personal` },
-        { name: 'Business Profile', href: `/admin/vendors/${id}/business` },
-        { name: 'Packages', href: `/admin/packages/${id}` },
-        { name: 'Category Docs', href: `/admin/vendors/${id}/documents` },
+        { id: 'overview', name: 'Overview' },
+        { id: 'personal', name: 'Personal Profile' },
+        { id: 'business', name: 'Business Profile' },
+        { id: 'package', name: 'Category List' },
+        { id: 'documents', name: 'Category Docs' },
     ];
 
     return (
-        <div className="border-b border-slate-200 bg-white px-8 sticky top-[72px] z-30 shadow-sm">
-            <nav className="flex gap-8 max-w-[1600px] mx-auto">
+        <div className="border-b border-white/10 bg-[#0a0a0f] px-8 sticky top-[72px] z-30 shadow-[0_4px_30px_rgba(0,0,0,0.5)]">
+            <nav className="flex gap-8 max-w-[1600px] mx-auto overflow-x-auto overflow-y-hidden cyber-scrollbar">
                 {tabs.map((tab) => {
-                    const isActive = pathname === tab.href;
+                    const isActive = activeTab === tab.id;
                     return (
-                        <Link key={tab.name} href={tab.href} className={`py-4 text-sm font-bold border-b-2 transition-all duration-200 ${isActive ? 'border-indigo-600 text-indigo-600' : 'border-transparent text-slate-400 hover:text-slate-600 hover:border-slate-300'}`}> {tab.name} </Link>
+                        <button key={tab.id} onClick={() => setActiveTab(tab.id)} className={`py-4 text-xs font-mono tracking-widest uppercase border-b-2 transition-all duration-300 whitespace-nowrap ${isActive ? 'border-indigo-500 text-cyan-400 drop-shadow-[0_0_8px_rgba(34,211,238,0.5)]' : 'border-transparent text-slate-500 hover:text-cyan-200 hover:border-white/20'}`}> {tab.name} </button>
                     );
                 })}
             </nav>

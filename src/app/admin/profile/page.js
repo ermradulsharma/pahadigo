@@ -1,422 +1,516 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { getToken } from '@/helpers/authUtils';
+import { User, Shield, HardDrive, Cpu, Terminal, MapPin, Settings, Globe, Navigation, CheckCircle, AlertTriangle } from 'lucide-react';
 
 export default function AdminProfilePage() {
-    const [loading, setLoading] = useState(true);
-    const [saving, setSaving] = useState(false);
-    const [message, setMessage] = useState({ type: '', text: '' });
-    const [formData, setFormData] = useState({
-        name: '',
-        email: '',
-        phone: '',
-        gender: '',
-        dateOfBirth: '',
-        designation: '',
-        bio: '',
-        website: '',
-        socialLinks: {
-            linkedin: '',
-            twitter: '',
-            instagram: '',
-            github: ''
-        },
-        expertise: '', // Will handle as comma-separated string in UI
-        emergencyContact: {
-            name: '',
-            phone: '',
-            relationship: ''
-        },
-        address: {
-            line1: '',
-            city: '',
-            state: '',
-            country: '',
-            pincode: ''
-        },
-        preferences: {
-            language: 'en',
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [message, setMessage] = useState({ type: '', text: '' });
+  const [formData, setFormData] = useState({
+    name: '',
+    email: '',
+    phone: '',
+    gender: '',
+    dateOfBirth: '',
+    designation: '',
+    bio: '',
+    website: '',
+    socialLinks: {
+      linkedin: '',
+      twitter: '',
+      instagram: '',
+      github: ''
+    },
+    expertise: '', // Will handle as comma-separated string in UI
+    emergencyContact: {
+      name: '',
+      phone: '',
+      relationship: ''
+    },
+    address: {
+      line1: '',
+      city: '',
+      state: '',
+      country: '',
+      pincode: ''
+    },
+    preferences: {
+      language: 'en',
+      notifications: {
+        email: true,
+        sms: true,
+        push: true
+      }
+    }
+  });
+
+  const [countries, setCountries] = useState([]);
+  const [states, setStates] = useState([]);
+
+  useEffect(() => {
+    fetchProfile();
+    fetchCountries();
+  }, []);
+
+  useEffect(() => {
+    if (formData.address.country && countries.length > 0) {
+      const country = countries.find(c => c.name === formData.address.country);
+      if (country) {
+        fetchStates(country._id);
+      }
+    }
+  }, [formData.address.country, countries]);
+
+  const fetchCountries = async () => {
+    try {
+      const res = await fetch('/api/countries?limit=all');
+      const data = await res.json();
+      if (data.success) {
+        setCountries(data.data.countries || []);
+      }
+    } catch (error) {
+      console.error("Error fetching countries", error);
+    }
+  };
+
+  const fetchStates = async (countryId) => {
+    try {
+      const res = await fetch(`/api/countries/${countryId}/states?limit=all`);
+      const data = await res.json();
+      if (data.success) {
+        setStates(data.data.states || []);
+      }
+    } catch (error) {
+      console.error("Error fetching states", error);
+    }
+  };
+
+  const handleCountryChange = (e) => {
+    const countryName = e.target.value;
+    setFormData(prev => ({
+      ...prev,
+      address: { ...prev.address, country: countryName, state: '' }
+    }));
+
+    const country = countries.find(c => c.name === countryName);
+    if (country) {
+      fetchStates(country._id);
+    } else {
+      setStates([]);
+    }
+  };
+
+  const fetchProfile = async () => {
+    try {
+      const token = getToken();
+      const res = await fetch('/api/auth/me', {
+        headers: { 'Authorization': 'Bearer ' + token }
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        const user = data.data;
+        setFormData({
+          name: user.name || '',
+          email: user.email || '',
+          phone: user.phone || '',
+          gender: user.gender || '',
+          dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '',
+          designation: user.designation || '',
+          bio: user.bio || '',
+          website: user.website || '',
+          socialLinks: {
+            linkedin: user.socialLinks?.linkedin || '',
+            twitter: user.socialLinks?.twitter || '',
+            instagram: user.socialLinks?.instagram || '',
+            github: user.socialLinks?.github || ''
+          },
+          expertise: Array.isArray(user.expertise) ? user.expertise.join(', ') : '',
+          emergencyContact: {
+            name: user.emergencyContact?.name || '',
+            phone: user.emergencyContact?.phone || '',
+            relationship: user.emergencyContact?.relationship || ''
+          },
+          address: {
+            line1: user.address?.line1 || '',
+            city: user.address?.city || '',
+            state: user.address?.state || '',
+            country: user.address?.country || '',
+            pincode: user.address?.pincode || ''
+          },
+          preferences: {
+            language: user.preferences?.language || 'en',
             notifications: {
-                email: true,
-                sms: true,
-                push: true
+              email: user.preferences?.notifications?.email ?? true,
+              sms: user.preferences?.notifications?.sms ?? true,
+              push: user.preferences?.notifications?.push ?? true
             }
-        }
-    });
-
-    const [countries, setCountries] = useState([]);
-    const [states, setStates] = useState([]);
-
-    useEffect(() => {
-        fetchProfile();
-        fetchCountries();
-    }, []);
-
-    // Effect to load states when profile is loaded and country is set
-    useEffect(() => {
-        if (formData.address.country && countries.length > 0) {
-            const country = countries.find(c => c.name === formData.address.country);
-            if (country) {
-                fetchStates(country._id);
-            }
-        }
-    }, [formData.address.country, countries]); // Be careful with dependency loop if formData updates causes re-fetch. 
-    // Actually, formData updates on type. If we select country, it updates. Then this runs. 
-    // Ideally we want to run this ONLY on initial load or explicit change logic is better handled in handler.
-    // But initial load needs to hydrate states.
-    // Let's use a separate effect for hydration or just call it in fetchProfile?
-    // Profile fetch completes -> sets formData. countries fetch completes -> sets countries.
-    // We can do it in a `useEffect` on `[formData.address.country]` but guard it?
-    // Better: manual logic.
-
-    const fetchCountries = async () => {
-        try {
-            const res = await fetch('/api/countries?limit=all');
-            const data = await res.json();
-            if (data.success) {
-                setCountries(data.data.countries || []);
-            }
-        } catch (error) {
-            console.error("Error fetching countries", error);
-        }
-    };
-
-    const fetchStates = async (countryId) => {
-        try {
-            const res = await fetch(`/api/countries/${countryId}/states?limit=all`);
-            const data = await res.json();
-            if (data.success) {
-                setStates(data.data.states || []);
-            }
-        } catch (error) {
-            console.error("Error fetching states", error);
-        }
-    };
-
-    const handleCountryChange = (e) => {
-        const countryName = e.target.value;
-        setFormData(prev => ({
-            ...prev,
-            address: { ...prev.address, country: countryName, state: '' }
-        }));
-
-        const country = countries.find(c => c.name === countryName);
-        if (country) {
-            fetchStates(country._id);
-        } else {
-            setStates([]);
-        }
-    };
-
-    const fetchProfile = async () => {
-        try {
-            const token = getToken();
-            const res = await fetch('/api/auth/me', {
-                headers: { 'Authorization': 'Bearer ' + token }
-            });
-            const data = await res.json();
-            if (res.ok && data.success) {
-                const user = data.data;
-                setFormData({
-                    name: user.name || '',
-                    email: user.email || '',
-                    phone: user.phone || '',
-                    gender: user.gender || '',
-                    dateOfBirth: user.dateOfBirth ? new Date(user.dateOfBirth).toISOString().split('T')[0] : '',
-                    designation: user.designation || '',
-                    bio: user.bio || '',
-                    website: user.website || '',
-                    socialLinks: {
-                        linkedin: user.socialLinks?.linkedin || '',
-                        twitter: user.socialLinks?.twitter || '',
-                        instagram: user.socialLinks?.instagram || '',
-                        github: user.socialLinks?.github || ''
-                    },
-                    expertise: Array.isArray(user.expertise) ? user.expertise.join(', ') : '',
-                    emergencyContact: {
-                        name: user.emergencyContact?.name || '',
-                        phone: user.emergencyContact?.phone || '',
-                        relationship: user.emergencyContact?.relationship || ''
-                    },
-                    address: {
-                        line1: user.address?.line1 || '',
-                        city: user.address?.city || '',
-                        state: user.address?.state || '',
-                        country: user.address?.country || '',
-                        pincode: user.address?.pincode || ''
-                    },
-                    preferences: {
-                        language: user.preferences?.language || 'en',
-                        notifications: {
-                            email: user.preferences?.notifications?.email ?? true,
-                            sms: user.preferences?.notifications?.sms ?? true,
-                            push: user.preferences?.notifications?.push ?? true
-                        }
-                    }
-                });
-            } else {
-                setMessage({ type: 'error', text: 'Failed to fetch profile' });
-            }
-        } catch (error) {
-            setMessage({ type: 'error', text: 'An error occurred fetching profile' });
-        } finally {
-            setLoading(false);
-        }
-    };
-
-    const handleChange = (e) => {
-        const { name, value, type, checked } = e.target;
-        const val = type === 'checkbox' ? checked : value;
-
-        setFormData(prev => {
-            if (!name.includes('.')) {
-                return { ...prev, [name]: val };
-            }
-
-            const keys = name.split('.');
-            const newFormData = { ...prev };
-            let current = newFormData;
-
-            for (let i = 0; i < keys.length - 1; i++) {
-                current[keys[i]] = { ...current[keys[i]] };
-                current = current[keys[i]];
-            }
-
-            current[keys[keys.length - 1]] = val;
-            return newFormData;
+          }
         });
-    };
+      } else {
+        setMessage({ type: 'error', text: 'Failed to access profile core' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Connection vector failed' });
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    const handleSubmit = async (e) => {
-        e.preventDefault();
-        setSaving(true);
-        setMessage({ type: '', text: '' });
+  const handleChange = (e) => {
+    const { name, value, type, checked } = e.target;
+    const val = type === 'checkbox' ? checked : value;
 
-        try {
-            const token = getToken();
-            const payload = {
-                ...formData,
-                expertise: formData.expertise.split(',').map(item => item.trim()).filter(item => item !== '')
-            };
-            const res = await fetch('/api/auth/update-profile', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token
-                },
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
+    setFormData(prev => {
+      if (!name.includes('.')) {
+        return { ...prev, [name]: val };
+      }
 
-            if (res.ok && data.success) {
-                setMessage({ type: 'success', text: 'Profile updated successfully' });
-            } else {
-                setMessage({ type: 'error', text: data.error || 'Failed to update profile' });
-            }
-        } catch (error) {
-            setMessage({ type: 'error', text: 'An error occurred while saving' });
-        } finally {
-            setSaving(false);
-        }
-    };
+      const keys = name.split('.');
+      const newFormData = { ...prev };
+      let current = newFormData;
 
-    if (loading) return <div className="p-8 text-center">Loading profile...</div>;
+      for (let i = 0; i < keys.length - 1; i++) {
+        current[keys[i]] = { ...current[keys[i]] };
+        current = current[keys[i]];
+      }
 
+      current[keys[keys.length - 1]] = val;
+      return newFormData;
+    });
+  };
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    setMessage({ type: '', text: '' });
+
+    try {
+      const token = getToken();
+      const payload = {
+        ...formData,
+        expertise: formData.expertise ? formData.expertise.split(',').map(item => item.trim()).filter(item => item !== '') : []
+      };
+      const res = await fetch('/api/auth/update-profile', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer ' + token
+        },
+        body: JSON.stringify(payload)
+      });
+      const data = await res.json();
+
+      if (res.ok && data.success) {
+        setMessage({ type: 'success', text: 'Identity parameters merged and validated.' });
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+      } else {
+        setMessage({ type: 'error', text: data.error || 'Identity overwrite rejected.' });
+      }
+    } catch (error) {
+      setMessage({ type: 'error', text: 'Communication fault during save sequence.' });
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
     return (
-        <div className="p-8">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">Profile</h1>
-            </div>
-
-            {message.text && (
-                <div className={`p-4 mb-6 rounded ${message.type === 'success' ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'}`}>
-                    {message.text}
-                </div>
-            )}
-
-            <div className="bg-white rounded-lg shadow p-6">
-                <form onSubmit={handleSubmit}>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-2">
-                        {/* Personal Details */}
-                        <div className="md:col-span-3">
-                            <h2 className="text-lg font-semibold text-gray-700 border-b pb-2">Personal Details</h2>
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Full Name</label>
-                            <input type="text" name="name" value={formData.name} onChange={handleChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Email</label>
-                            <input type="email" value={formData.email} disabled className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-500 bg-gray-100 leading-tight cursor-not-allowed" />
-                            <p className="text-xs text-gray-500 mt-1">Email cannot be changed directly.</p>
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Phone</label>
-                            <input type="text" name="phone" value={formData.phone} onChange={handleChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Gender</label>
-                            <select name="gender" value={formData.gender} onChange={handleChange} className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                                <option value="">Select Gender</option>
-                                <option value="Male">Male</option>
-                                <option value="Female">Female</option>
-                                <option value="Other">Other</option>
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Date of Birth</label>
-                            <input type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Designation</label>
-                            <input type="text" name="designation" value={formData.designation} onChange={handleChange} placeholder="e.g. Administrator" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Website</label>
-                            <input type="url" name="website" value={formData.website} onChange={handleChange} placeholder="https://example.com" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                        </div>
-
-                        <div className="md:col-span-3">
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Bio</label>
-                            <textarea name="bio" value={formData.bio} onChange={handleChange} rows="3" placeholder="Tell us about yourself..." className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline"></textarea>
-                            <p className="text-xs text-gray-500 mt-1">{formData.bio.length}/500 characters</p>
-                        </div>
-
-                        {/* Professional & Social */}
-                        <div className="md:col-span-3 mt-4">
-                            <h2 className="text-lg font-semibold text-gray-700 border-b pb-2">Professional & Social</h2>
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Expertise</label>
-                            <input type="text" name="expertise" value={formData.expertise} onChange={handleChange} placeholder="e.g. Travel Planning, Customer Service (comma separated)" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">LinkedIn</label>
-                            <input type="url" name="socialLinks.linkedin" value={formData.socialLinks.linkedin} onChange={handleChange} placeholder="https://linkedin.com/in/username" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Twitter</label>
-                            <input type="url" name="socialLinks.twitter" value={formData.socialLinks.twitter} onChange={handleChange} placeholder="https://twitter.com/username" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Instagram</label>
-                            <input type="url" name="socialLinks.instagram" value={formData.socialLinks.instagram} onChange={handleChange} placeholder="https://instagram.com/username" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">GitHub</label>
-                            <input type="url" name="socialLinks.github" value={formData.socialLinks.github} onChange={handleChange} placeholder="https://github.com/username" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                        </div>
-
-                        {/* Emergency Contact */}
-                        <div className="md:col-span-3 mt-4">
-                            <h2 className="text-lg font-semibold text-gray-700 border-b pb-2">Emergency Contact</h2>
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Contact Name</label>
-                            <input type="text" name="emergencyContact.name" value={formData.emergencyContact.name} onChange={handleChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Contact Phone</label>
-                            <input type="text" name="emergencyContact.phone" value={formData.emergencyContact.phone} onChange={handleChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Relationship</label>
-                            <input type="text" name="emergencyContact.relationship" value={formData.emergencyContact.relationship} onChange={handleChange} placeholder="e.g. Spouse, Parent" className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                        </div>
-
-                        {/* Address Details */}
-                        <div className="md:col-span-3 mt-4">
-                            <h2 className="text-lg font-semibold text-gray-700 border-b pb-2">Address</h2>
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Address Line 1</label>
-                            <input type="text" name="address.line1" value={formData.address.line1} onChange={handleChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">City</label>
-                            <input type="text" name="address.city" value={formData.address.city} onChange={handleChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Country</label>
-                            <select name="address.country" value={formData.address.country} onChange={handleCountryChange} className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                                <option value="">Select Country</option>
-                                {countries.map(c => (
-                                    <option key={c._id} value={c.name}>{c.name}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">State</label>
-                            <select name="address.state" value={formData.address.state} onChange={handleChange} className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                                <option value="">Select State</option>
-                                {states.map(s => (
-                                    <option key={s._id} value={s.name}>{s.name}</option>
-                                ))}
-                            </select>
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Pincode</label>
-                            <input type="text" name="address.pincode" value={formData.address.pincode} onChange={handleChange} className="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" />
-                        </div>
-
-                        {/* Preferences */}
-                        <div className="md:col-span-3 mt-4">
-                            <h2 className="text-lg font-semibold text-gray-700 border-b pb-2">Preferences</h2>
-                        </div>
-
-                        <div>
-                            <label className="block text-gray-700 text-sm font-bold mb-2">Language</label>
-                            <select name="preferences.language" value={formData.preferences.language} onChange={handleChange} className="shadow border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline">
-                                <option value="en">English</option>
-                                <option value="hi">Hindi</option>
-                                <option value="fr">French</option>
-                                <option value="de">German</option>
-                            </select>
-                        </div>
-
-                        <div className="md:col-span-2 flex flex-wrap gap-6 items-center pt-6">
-                            <label className="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" name="preferences.notifications.email" checked={formData.preferences.notifications.email} onChange={handleChange} className="form-checkbox h-5 w-5 text-indigo-600" />
-                                <span className="text-gray-700 font-medium">Email Notifications</span>
-                            </label>
-
-                            <label className="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" name="preferences.notifications.sms" checked={formData.preferences.notifications.sms} onChange={handleChange} className="form-checkbox h-5 w-5 text-indigo-600" />
-                                <span className="text-gray-700 font-medium">SMS Notifications</span>
-                            </label>
-
-                            <label className="flex items-center space-x-2 cursor-pointer">
-                                <input type="checkbox" name="preferences.notifications.push" checked={formData.preferences.notifications.push} onChange={handleChange} className="form-checkbox h-5 w-5 text-indigo-600" />
-                                <span className="text-gray-700 font-medium">Push Notifications</span>
-                            </label>
-                        </div>
-                    </div>
-
-                    <div className="mt-8 flex justify-end">
-                        <button type="submit" disabled={saving} className={`bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-6 rounded focus:outline-none focus:shadow-outline transition duration-150 ${saving ? 'opacity-50 cursor-not-allowed' : ''}`}> {saving ? 'Saving...' : 'Save Changes'} </button>
-                    </div>
-                </form>
-            </div>
+      <div className="p-8 h-[calc(100vh-80px)] flex flex-col items-center justify-center space-y-4">
+        <div className="relative w-16 h-16 flex items-center justify-center">
+          <div className="absolute inset-0 rounded-full border-t-2 border-indigo-500 animate-spin"></div>
+          <div className="absolute inset-2 rounded-full border-r-2 border-cyan-500 animate-spin-reverse opacity-70"></div>
+          <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.8)]"></div>
         </div>
+        <div className="text-xs font-mono text-indigo-400 tracking-[0.3em] uppercase animate-pulse">Establishing Neural Link...</div>
+      </div>
     );
+  }
+
+  const InputLabel = ({ children }) => (
+    <label className="block text-[10px] font-mono tracking-widest text-cyan-500/80 uppercase mb-2">
+      {children}
+    </label>
+  );
+
+  const TextInput = ({ name, value, type = 'text', placeholder, disabled, onChange }) => (
+    <input
+      type={type}
+      name={name}
+      value={value}
+      onChange={onChange}
+      disabled={disabled}
+      placeholder={placeholder}
+      className={`w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm outline-none transition-all placeholder:text-slate-600 font-mono tracking-wide
+                ${disabled ? 'text-slate-500 cursor-not-allowed border-white/5 opacity-70' : 'text-cyan-50 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 focus:bg-white/5'}`}
+    />
+  );
+
+  const SelectInput = ({ name, value, onChange, options, defaultOption }) => (
+    <select
+      name={name}
+      value={value}
+      onChange={onChange}
+      className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm outline-none transition-all text-cyan-50 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 focus:bg-white/5 font-mono tracking-wide appearance-none cursor-pointer"
+    >
+      <option value="" className="bg-[#111116]">{defaultOption}</option>
+      {options.map((opt, i) => (
+        <option key={i} value={opt.value} className="bg-[#111116]">{opt.label}</option>
+      ))}
+    </select>
+  );
+
+  const FormSection = ({ title, icon: Icon, children }) => (
+    <div className="mb-10 relative">
+      <div className="flex items-center gap-3 mb-6 pb-3 border-b border-white/10">
+        <div className="p-2 bg-white/5 rounded-lg border border-white/5 shadow-[inset_0_0_10px_rgba(255,255,255,0.02)]">
+          <Icon className="w-4 h-4 text-cyan-400" />
+        </div>
+        <h2 className="text-md font-bold text-white tracking-widest uppercase">{title}</h2>
+      </div>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+        {children}
+      </div>
+    </div>
+  );
+
+  return (
+    <div className="p-6 mx-auto">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4 border-b border-white/10 pb-6 shrink-0">
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
+            <User className="w-7 h-7 text-indigo-400 opacity-80" /> Operator Identity
+          </h1>
+          <p className="text-xs font-mono text-slate-500 tracking-widest uppercase mt-2">Manage System Authorization Credentials & Metadata</p>
+        </div>
+      </div>
+
+      {message.text && (
+        <div className={`p-4 mb-8 rounded-lg border flex items-center gap-3 text-sm font-mono tracking-wide shadow-lg
+                    ${message.type === 'success'
+            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/10'
+            : 'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-rose-500/10'}`}>
+          {message.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5 animate-pulse" />}
+          {message.text}
+        </div>
+      )}
+
+      <div className="bg-[#111116] rounded-2xl shadow-[0_0_40px_rgba(0,0,0,0.5)] border border-white/10 relative overflow-hidden">
+        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] bg-[length:20px_20px] bg-fixed opacity-20 pointer-events-none"></div>
+        <div className="absolute top-0 inset-x-0 h-1 bg-gradient-to-r from-transparent via-indigo-500 to-transparent opacity-30"></div>
+
+        <form onSubmit={handleSubmit} className="p-8 md:p-10 relative z-10 w-full">
+
+          <FormSection title="Core Subroutine Information" icon={Terminal}>
+            <div>
+              <InputLabel>Designated Alias</InputLabel>
+              <TextInput name="name" value={formData.name} onChange={handleChange} />
+            </div>
+            <div>
+              <InputLabel>System Comm Link (Email)</InputLabel>
+              <TextInput value={formData.email} disabled={true} />
+              <p className="text-[9px] text-slate-500 mt-2 font-mono uppercase tracking-widest">Core identifier locked by system architect.</p>
+            </div>
+            <div>
+              <InputLabel>Carrier Frequency (Phone)</InputLabel>
+              <TextInput name="phone" value={formData.phone} onChange={handleChange} />
+            </div>
+            <div>
+              <InputLabel>Biological Specifier</InputLabel>
+              <SelectInput
+                name="gender"
+                value={formData.gender}
+                onChange={handleChange}
+                defaultOption="Select Class"
+                options={[{ value: 'Male', label: 'Male' }, { value: 'Female', label: 'Female' }, { value: 'Other', label: 'Other' }]}
+              />
+            </div>
+            <div>
+              <InputLabel>Initialization Date</InputLabel>
+              <TextInput type="date" name="dateOfBirth" value={formData.dateOfBirth} onChange={handleChange} />
+            </div>
+            <div>
+              <InputLabel>Access Level Designation</InputLabel>
+              <TextInput name="designation" placeholder="e.g. System Overlord" value={formData.designation} onChange={handleChange} />
+            </div>
+            <div className="md:col-span-2">
+              <InputLabel>Identity Log / Bio</InputLabel>
+              <textarea
+                name="bio"
+                value={formData.bio}
+                onChange={handleChange}
+                rows="3"
+                placeholder="Describe operator history..."
+                className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm outline-none transition-all placeholder:text-slate-600 font-mono tracking-wide text-cyan-50 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 focus:bg-white/5 resize-none cyber-scrollbar"
+              ></textarea>
+              <p className="text-[10px] text-cyan-500/50 mt-1.5 font-mono text-right">{formData.bio.length}/500 bytes</p>
+            </div>
+          </FormSection>
+
+          <FormSection title="Network Vectors & External Links" icon={Globe}>
+            <div>
+              <InputLabel>Specialized Vectors (Expertise)</InputLabel>
+              <TextInput name="expertise" value={formData.expertise} onChange={handleChange} placeholder="Comma delimited array..." />
+            </div>
+            <div>
+              <InputLabel>Domain Name (Website)</InputLabel>
+              <TextInput name="website" type="url" value={formData.website} onChange={handleChange} placeholder="https://..." />
+            </div>
+            <div>
+              <InputLabel>Node: LinkedIn</InputLabel>
+              <TextInput name="socialLinks.linkedin" type="url" value={formData.socialLinks.linkedin} onChange={handleChange} placeholder="URI reference" />
+            </div>
+            <div>
+              <InputLabel>Node: Twitter</InputLabel>
+              <TextInput name="socialLinks.twitter" type="url" value={formData.socialLinks.twitter} onChange={handleChange} placeholder="URI reference" />
+            </div>
+            <div>
+              <InputLabel>Node: Instagram</InputLabel>
+              <TextInput name="socialLinks.instagram" type="url" value={formData.socialLinks.instagram} onChange={handleChange} placeholder="URI reference" />
+            </div>
+            <div>
+              <InputLabel>Node: GitHub</InputLabel>
+              <TextInput name="socialLinks.github" type="url" value={formData.socialLinks.github} onChange={handleChange} placeholder="URI reference" />
+            </div>
+          </FormSection>
+
+          <FormSection title="Emergency Protocol Routing" icon={Shield}>
+            <div>
+              <InputLabel>Directive Target (Name)</InputLabel>
+              <TextInput name="emergencyContact.name" value={formData.emergencyContact.name} onChange={handleChange} />
+            </div>
+            <div>
+              <InputLabel>Target Comms (Phone)</InputLabel>
+              <TextInput name="emergencyContact.phone" value={formData.emergencyContact.phone} onChange={handleChange} />
+            </div>
+            <div>
+              <InputLabel>Target Relational Mesh (Relationship)</InputLabel>
+              <TextInput name="emergencyContact.relationship" value={formData.emergencyContact.relationship} onChange={handleChange} placeholder="e.g. Commander, Sibling" />
+            </div>
+          </FormSection>
+
+          <FormSection title="Geographical Coordinates" icon={MapPin}>
+            <div>
+              <InputLabel>Coordinate Line 1</InputLabel>
+              <TextInput name="address.line1" value={formData.address.line1} onChange={handleChange} />
+            </div>
+            <div>
+              <InputLabel>Sector (City)</InputLabel>
+              <TextInput name="address.city" value={formData.address.city} onChange={handleChange} />
+            </div>
+            <div>
+              <InputLabel>Macro-region (Country)</InputLabel>
+              <SelectInput
+                name="address.country"
+                value={formData.address.country}
+                onChange={handleCountryChange}
+                defaultOption="Query Available Regions"
+                options={countries.map(c => ({ value: c.name, label: c.name }))}
+              />
+            </div>
+            <div>
+              <InputLabel>Sub-region (State)</InputLabel>
+              <SelectInput
+                name="address.state"
+                value={formData.address.state}
+                onChange={handleChange}
+                defaultOption="Query Sub-Regions"
+                options={states.map(s => ({ value: s.name, label: s.name }))}
+              />
+            </div>
+            <div>
+              <InputLabel>Area Hash (Pincode)</InputLabel>
+              <TextInput name="address.pincode" value={formData.address.pincode} onChange={handleChange} />
+            </div>
+          </FormSection>
+
+          <FormSection title="System Overrides & Preferences" icon={Settings}>
+            <div>
+              <InputLabel>Syntax Parser (Language)</InputLabel>
+              <SelectInput
+                name="preferences.language"
+                value={formData.preferences.language}
+                onChange={handleChange}
+                defaultOption=""
+                options={[
+                  { value: 'en', label: 'English (EN-US)' },
+                  { value: 'hi', label: 'Hindi (HI-IN)' },
+                  { value: 'fr', label: 'French (FR-EU)' },
+                  { value: 'de', label: 'German (DE-EU)' }
+                ]}
+              />
+            </div>
+
+            <div className="md:col-span-2 pt-4 border-t border-white/5 mt-2">
+              <InputLabel>Alert Vector Channels</InputLabel>
+              <div className="flex flex-wrap gap-8 mt-4">
+                {['email', 'sms', 'push'].map((type) => (
+                  <label key={type} className="flex items-center space-x-3 cursor-pointer group">
+                    <div className="relative flex items-center justify-center w-5 h-5 rounded border border-white/20 bg-black/50 group-hover:border-indigo-400 transition-colors">
+                      <input
+                        type="checkbox"
+                        name={`preferences.notifications.${type}`}
+                        checked={formData.preferences.notifications[type]}
+                        onChange={handleChange}
+                        className="absolute inset-0 opacity-0 cursor-pointer w-full h-full"
+                      />
+                      {formData.preferences.notifications[type] && (
+                        <div className="w-2.5 h-2.5 bg-indigo-400 rounded-sm shadow-[0_0_8px_rgba(99,102,241,0.8)]"></div>
+                      )}
+                    </div>
+                    <span className="text-xs font-mono uppercase tracking-widest text-slate-400 group-hover:text-indigo-300 transition-colors">
+                      {type} Transmissions
+                    </span>
+                  </label>
+                ))}
+              </div>
+            </div>
+          </FormSection>
+
+          <div className="mt-12 flex justify-end shrink-0">
+            <button
+              type="submit"
+              disabled={saving}
+              className={`px-8 py-3 rounded-xl text-xs font-mono font-bold tracking-widest uppercase flex items-center justify-center gap-3 transition-all border
+                                ${saving
+                  ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed'
+                  : 'bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300 border-indigo-500/30 hover:border-indigo-400/50 shadow-[0_0_15px_rgba(99,102,241,0.15)] hover:shadow-[0_0_25px_rgba(99,102,241,0.3)]'
+                }`}
+            >
+              {saving ? (
+                <>
+                  <div className="w-4 h-4 rounded-full border-2 border-indigo-500/30 border-t-indigo-500 animate-spin"></div>
+                  Merging...
+                </>
+              ) : (
+                <>
+                  <HardDrive className="w-4 h-4" /> Save Identity Configuration
+                </>
+              )}
+            </button>
+          </div>
+        </form>
+      </div>
+      <style dangerouslySetInnerHTML={{
+        __html: `
+                .cyber-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .cyber-scrollbar::-webkit-scrollbar-track {
+                    background: rgba(0, 0, 0, 0.2);
+                }
+                .cyber-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(34, 211, 238, 0.2);
+                    border-radius: 10px;
+                }
+                .cyber-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(34, 211, 238, 0.4);
+                }
+                input[type="date"]::-webkit-calendar-picker-indicator {
+                    filter: invert(0.8) sepia(1) saturate(5) hue-rotate(180deg);
+                    cursor: pointer;
+                }
+            `}} />
+    </div>
+  );
 }

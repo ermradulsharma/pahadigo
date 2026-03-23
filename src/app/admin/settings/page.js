@@ -2,14 +2,20 @@
 
 import { useState, useEffect } from 'react';
 import { getToken } from '@/helpers/authUtils';
+import { Settings as SettingsIcon, Mail, BellRing, Smartphone, Key, CreditCard, Bug, Database, ShieldCheck, Fingerprint, AppWindow, Save, CheckCircle, AlertTriangle, Eye, EyeOff } from 'lucide-react';
 
-// Helper components defined outside to avoid re-creation on render
-const Card = ({ title, children }) => (
-    <div className="bg-white rounded-lg shadow-sm border border-gray-200 mb-6 last:mb-0">
-        <div className="px-6 py-4 border-b border-gray-100">
-            <h6 className="text-lg font-semibold text-gray-800">{title}</h6>
+const Card = ({ title, icon: Icon, children }) => (
+    <div className="bg-[#111116] rounded-xl border border-white/10 relative overflow-hidden group hover:border-indigo-500/50 transition-all shadow-[0_0_20px_rgba(0,0,0,0.5)] flex flex-col">
+        <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] bg-[length:20px_20px] bg-fixed opacity-10 pointer-events-none transition-opacity group-hover:opacity-20"></div>
+        <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-500/50 group-hover:via-cyan-400 to-transparent transition-all"></div>
+
+        <div className="px-5 py-4 border-b border-white/10 bg-black/40 flex items-center gap-3 relative z-10 shrink-0">
+            <div className="p-1.5 bg-white/5 rounded border border-white/5 shadow-[inset_0_0_10px_rgba(255,255,255,0.02)]">
+                <Icon className="w-4 h-4 text-cyan-400" />
+            </div>
+            <h6 className="text-[11px] font-mono font-bold text-white tracking-widest uppercase">{title}</h6>
         </div>
-        <div className="p-6">
+        <div className="p-5 relative z-10 flex-1 flex flex-col">
             {children}
         </div>
     </div>
@@ -17,7 +23,7 @@ const Card = ({ title, children }) => (
 
 const FormGroup = ({ label, children }) => (
     <div className="mb-4 last:mb-0">
-        <label className="block text-sm font-medium text-gray-700 mb-1">{label}</label>
+        <label className="block text-[10px] font-mono tracking-widest text-indigo-300 uppercase mb-2">{label}</label>
         {children}
     </div>
 );
@@ -25,7 +31,7 @@ const FormGroup = ({ label, children }) => (
 const Input = ({ type = "text", placeholder, className = "", ...props }) => (
     <input
         type={type}
-        className={`w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 transition-all text-sm ${className}`}
+        className={`w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm outline-none transition-all placeholder:text-slate-600 font-mono tracking-wide text-cyan-50 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 focus:bg-white/5 ${className}`}
         placeholder={placeholder}
         {...props}
     />
@@ -34,13 +40,22 @@ const Input = ({ type = "text", placeholder, className = "", ...props }) => (
 const Button = ({ children, loading }) => (
     <button
         disabled={loading}
-        className={`flex items-center justify-center px-4 py-2 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors font-medium text-sm ${loading ? 'opacity-70 cursor-not-allowed' : ''}`}
+        className={`mt-auto w-full flex items-center justify-center px-4 py-2.5 border rounded-lg text-xs font-mono font-bold tracking-widest uppercase transition-all
+            ${loading
+                ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed'
+                : 'bg-indigo-500/10 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300 border-indigo-500/30 hover:border-indigo-400/50 shadow-[0_0_10px_rgba(99,102,241,0.1)] hover:shadow-[0_0_15px_rgba(99,102,241,0.2)]'
+            }`}
     >
-        {loading ? 'Submitting...' : children}
-        {!loading && (
-            <svg className="ml-2 w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
-            </svg>
+        {loading ? (
+            <div className="flex items-center gap-2">
+                <div className="w-3 h-3 rounded-full border-2 border-indigo-500/30 border-t-indigo-500 animate-spin"></div>
+                Syncing...
+            </div>
+        ) : (
+            <div className="flex items-center gap-2">
+                <Save className="w-3.5 h-3.5" />
+                {children}
+            </div>
         )}
     </button>
 );
@@ -48,6 +63,13 @@ const Button = ({ children, loading }) => (
 export default function SettingsPage() {
     const [loading, setLoading] = useState(false);
     const [fetching, setFetching] = useState(true);
+    const [statusMessage, setStatusMessage] = useState(null);
+
+    const showMessage = (type, text) => {
+        setStatusMessage({ type, text });
+        setTimeout(() => setStatusMessage(null), 5000);
+    };
+
     const [formData, setFormData] = useState({
         smtp_email: '',
         smtp_password: '',
@@ -97,7 +119,7 @@ export default function SettingsPage() {
     const handlePasswordSubmit = async (e) => {
         e.preventDefault();
         if (passwordData.password !== passwordData.password_confirmation) {
-            return alert("New passwords do not match!");
+            return showMessage('error', "Authentication mismatch: New passwords do not match.");
         }
         setPasswordLoading(true);
         try {
@@ -112,13 +134,13 @@ export default function SettingsPage() {
             });
             const data = await res.json();
             if (data.success) {
-                alert('Password changed successfully!');
+                showMessage('success', 'Master access sequence updated successfully.');
                 setPasswordData({ old_password: '', password: '', password_confirmation: '' });
             } else {
-                alert('Failed: ' + (data.error || data.message || "Unknown error"));
+                showMessage('error', 'Sequence rejected: ' + (data.error || data.message || "Unknown error"));
             }
         } catch (error) {
-            alert('An error occurred while changing password.');
+            showMessage('error', 'Network failure during authentication update.');
         } finally {
             setPasswordLoading(false);
         }
@@ -131,10 +153,14 @@ export default function SettingsPage() {
 
     const fetchSettings = async () => {
         try {
-            const res = await fetch('/api/admin/settings');
+            const token = getToken();
+            const res = await fetch('/api/admin/settings', {
+                headers: {
+                    'Authorization': 'Bearer ' + token
+                }
+            });
             const data = await res.json();
             if (data.success && data.data) {
-                // Determine fields to update to avoid overwriting with undefined if API returns partial data (though it shouldn't for this model)
                 const newFormData = { ...formData };
                 Object.keys(newFormData).forEach(key => {
                     if (data.data[key] !== undefined) {
@@ -144,6 +170,7 @@ export default function SettingsPage() {
                 setFormData(newFormData);
             }
         } catch (error) {
+            console.error("Failed to load environment clusters:", error);
         } finally {
             setFetching(false);
         }
@@ -158,323 +185,276 @@ export default function SettingsPage() {
         e.preventDefault();
         setLoading(true);
         try {
+            const token = getToken();
             const res = await fetch('/api/admin/settings', {
                 method: 'POST',
                 headers: {
-                    'Content-Type': 'application/json'
+                    'Content-Type': 'application/json',
+                    'Authorization': 'Bearer ' + token
                 },
                 body: JSON.stringify(formData)
             });
             const data = await res.json();
             if (data.success) {
-                alert('Settings saved successfully!');
+                showMessage('success', 'Environment parameters synchronized with core matrix.');
             } else {
-                alert('Failed to save settings: ' + data.error);
+                showMessage('error', 'Failed to push configuration: ' + data.error);
             }
         } catch (error) {
-            alert('An error occurred while saving settings.');
+            showMessage('error', 'Critical failure during parameter sync.');
         } finally {
             setLoading(false);
         }
     };
 
     if (fetching) {
-        return <div className="p-6 flex justify-center items-center">Loading settings...</div>;
+        return (
+            <div className="p-8 h-[calc(100vh-80px)] flex flex-col items-center justify-center space-y-4">
+                <div className="relative w-16 h-16 flex items-center justify-center">
+                    <div className="absolute inset-0 rounded-full border-t-2 border-indigo-500 animate-spin"></div>
+                    <div className="absolute inset-2 rounded-full border-r-2 border-cyan-500 animate-spin-reverse opacity-70"></div>
+                    <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.8)]"></div>
+                </div>
+                <div className="text-xs font-mono text-indigo-400 tracking-[0.3em] uppercase animate-pulse">Initializing Setup Matrix...</div>
+            </div>
+        );
     }
 
     return (
-        <div className="p-8">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">Settings</h1>
-            </div>
-            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+        <div className="p-8 max-w-[1600px] mx-auto pb-24 relative">
 
-                {/* Column 1 */}
-                <div className="space-y-6">
-                    {/* SMTP */}
-                    <Card title="SMTP">
-                        <form onSubmit={handleSubmit}>
-                            <FormGroup label="Email:">
-                                <Input type="email" placeholder="Email" name="smtp_email" value={formData.smtp_email} onChange={handleChange} />
+            {statusMessage && (
+                <div className="fixed top-24 right-8 z-50 animate-in fade-in slide-in-from-top-5 duration-300">
+                    <div className={`p-4 rounded-lg border flex items-center gap-3 text-sm font-mono tracking-wide shadow-2xl backdrop-blur-md
+                        ${statusMessage.type === 'success'
+                            ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/10'
+                            : 'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-rose-500/10'}`}>
+                        {statusMessage.type === 'success' ? <CheckCircle className="w-5 h-5" /> : <AlertTriangle className="w-5 h-5 animate-pulse" />}
+                        {statusMessage.text}
+                    </div>
+                </div>
+            )}
+
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4 border-b border-white/10 pb-6">
+                <div>
+                    <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
+                        <SettingsIcon className="w-7 h-7 text-indigo-400 opacity-80" /> Global Environment
+                    </h1>
+                    <p className="text-xs font-mono text-slate-500 tracking-widest uppercase mt-2">Manage System Variables & API Integration Nodes</p>
+                </div>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+
+                {/* Column 1 - Comms */}
+                <div className="space-y-6 flex flex-col">
+                    <Card title="SMTP Protocol (Email)" icon={Mail}>
+                        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                            <FormGroup label="Auth Link (Email)">
+                                <Input type="email" placeholder="root@domain.com" name="smtp_email" value={formData.smtp_email} onChange={handleChange} />
                             </FormGroup>
-                            <FormGroup label="Password:">
-                                <div className="space-y-2">
-                                    <Input
-                                        type={showSmtpPassword ? "text" : "password"}
-                                        placeholder="Password"
-                                        name="smtp_password"
-                                        value={formData.smtp_password}
-                                        onChange={handleChange}
-                                    />
-                                    <div className="flex items-center gap-2">
-                                        <input type="checkbox" id="show-smtp" checked={showSmtpPassword} onChange={() => setShowSmtpPassword(!showSmtpPassword)} className="rounded text-indigo-600 focus:ring-indigo-500" />
-                                        <label htmlFor="show-smtp" className="text-xs text-gray-600 cursor-pointer select-none">Show Password</label>
-                                    </div>
+                            <FormGroup label="Auth Key (Password)">
+                                <div className="relative">
+                                    <Input type={showSmtpPassword ? "text" : "password"} placeholder="••••••••••••" name="smtp_password" value={formData.smtp_password} onChange={handleChange} className="pr-10" />
+                                    <button type="button" onClick={() => setShowSmtpPassword(!showSmtpPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400 transition-colors">
+                                        {showSmtpPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
                                 </div>
                             </FormGroup>
-                            <FormGroup label="Mail Host:"><Input placeholder="Mail Host" name="smtp_host" value={formData.smtp_host} onChange={handleChange} /></FormGroup>
-                            <FormGroup label="Mail Port:"><Input placeholder="Mail Port" name="smtp_port" value={formData.smtp_port} onChange={handleChange} /></FormGroup>
-                            <FormGroup label="From Address:"><Input placeholder="From Address" name="smtp_from_address" value={formData.smtp_from_address} onChange={handleChange} /></FormGroup>
-                            <FormGroup label="From Name:"><Input placeholder="From Name" name="smtp_from_name" value={formData.smtp_from_name} onChange={handleChange} /></FormGroup>
-                            <Button loading={loading}>Submit</Button>
+                            <FormGroup label="Node Host"><Input placeholder="smtp.domain.com" name="smtp_host" value={formData.smtp_host} onChange={handleChange} /></FormGroup>
+                            <FormGroup label="Node Port"><Input placeholder="587" name="smtp_port" value={formData.smtp_port} onChange={handleChange} /></FormGroup>
+                            <div className="grid grid-cols-2 gap-4">
+                                <FormGroup label="Origin Alias (Name)"><Input placeholder="System Core" name="smtp_from_name" value={formData.smtp_from_name} onChange={handleChange} /></FormGroup>
+                                <FormGroup label="Origin Routing"><Input placeholder="no-reply@domain.com" name="smtp_from_address" value={formData.smtp_from_address} onChange={handleChange} /></FormGroup>
+                            </div>
+                            <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
                         </form>
                     </Card>
 
-                    {/* Push Notification */}
-                    <Card title="Push Notification Server Key">
-                        <form onSubmit={handleSubmit}>
-                            <FormGroup label="Server Key:">
-                                <textarea
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm h-32 resize-none"
-                                    placeholder="Server Key"
-                                    name="push_notification_server_key"
-                                    value={formData.push_notification_server_key}
-                                    onChange={handleChange}
-                                ></textarea>
+                    <Card title="Notifications Cluster" icon={BellRing}>
+                        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                            <FormGroup label="PN Server Directive Key">
+                                <textarea className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm outline-none transition-all placeholder:text-slate-600 font-mono tracking-wide text-cyan-50 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 focus:bg-white/5 h-24 resize-none cyber-scrollbar" placeholder="Enter raw server key payload..." name="push_notification_server_key" value={formData.push_notification_server_key} onChange={handleChange}></textarea>
                             </FormGroup>
-                            <Button loading={loading}>Submit</Button>
+                            <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
                         </form>
                     </Card>
-                    {/* SMS Configuration */}
-                    <Card title="SMS Configuration (MSG91)">
-                        <form onSubmit={handleSubmit}>
-                            <FormGroup label="MSG91 Auth Key:"><Input placeholder="MSG91 Auth Key" name="msg91_auth_key" value={formData.msg91_auth_key} onChange={handleChange} /></FormGroup>
-                            <FormGroup label="MSG91 Template ID:"><Input placeholder="MSG91 Template ID" name="msg91_template_id" value={formData.msg91_template_id} onChange={handleChange} /></FormGroup>
-                            <Button loading={loading}>Submit</Button>
+
+                    <Card title="Telecom Router (MSG91)" icon={Smartphone}>
+                        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                            <FormGroup label="Access Token">
+                                <Input placeholder="Authentication Hash" name="msg91_auth_key" value={formData.msg91_auth_key} onChange={handleChange} />
+                            </FormGroup>
+                            <FormGroup label="Format Signature">
+                                <Input placeholder="Template ID String" name="msg91_template_id" value={formData.msg91_template_id} onChange={handleChange} />
+                            </FormGroup>
+                            <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
                         </form>
                     </Card>
                 </div>
 
-                {/* Column 2 */}
-                <div className="space-y-6">
-                    {/* Change Password - Keeping strictly visual or separate logic as it's user specific, not global setting */}
-                    <Card title="Change Password">
-                        <form onSubmit={handlePasswordSubmit}>
-                            <FormGroup label="Current Password:">
-                                <div className="space-y-2">
-                                    <Input
-                                        type={showCurrentPassword ? "text" : "password"}
-                                        placeholder="Current Password"
-                                        name="old_password"
-                                        value={passwordData.old_password}
-                                        onChange={handlePasswordInputChange}
-                                        required
-                                    />
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            id="show-current"
-                                            checked={showCurrentPassword}
-                                            onChange={() => setShowCurrentPassword(!showCurrentPassword)}
-                                            className="rounded text-indigo-600 focus:ring-indigo-500"
-                                        />
-                                        <label htmlFor="show-current" className="text-xs text-gray-600 cursor-pointer select-none">Show Password</label>
-                                    </div>
+                {/* Column 2 - Core Assets */}
+                <div className="space-y-6 flex flex-col">
+                    <Card title="System Overlord Credentials" icon={Key}>
+                        <form onSubmit={handlePasswordSubmit} className="flex flex-col h-full">
+                            <FormGroup label="Current Sequence">
+                                <div className="relative">
+                                    <Input type={showCurrentPassword ? "text" : "password"} placeholder="••••••••••••" name="old_password" value={passwordData.old_password} onChange={handlePasswordInputChange} required className="pr-10 border-rose-500/20 focus:border-rose-500/50 focus:ring-rose-500/20" />
+                                    <button type="button" onClick={() => setShowCurrentPassword(!showCurrentPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400">
+                                        {showCurrentPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
                                 </div>
                             </FormGroup>
-                            <FormGroup label="New Password:">
-                                <div className="space-y-2">
-                                    <Input
-                                        type={showNewPassword ? "text" : "password"}
-                                        placeholder="New Password"
-                                        name="password"
-                                        value={passwordData.password}
-                                        onChange={handlePasswordInputChange}
-                                        required
-                                    />
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            id="show-new"
-                                            checked={showNewPassword}
-                                            onChange={() => setShowNewPassword(!showNewPassword)}
-                                            className="rounded text-indigo-600 focus:ring-indigo-500"
-                                        />
-                                        <label htmlFor="show-new" className="text-xs text-gray-600 cursor-pointer select-none">Show Password</label>
-                                    </div>
+                            <FormGroup label="New Matrix Sequence">
+                                <div className="relative">
+                                    <Input type={showNewPassword ? "text" : "password"} placeholder="••••••••••••" name="password" value={passwordData.password} onChange={handlePasswordInputChange} required className="pr-10 border-emerald-500/20 focus:border-emerald-500/50 focus:ring-emerald-500/20" />
+                                    <button type="button" onClick={() => setShowNewPassword(!showNewPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400">
+                                        {showNewPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
                                 </div>
                             </FormGroup>
-                            <FormGroup label="Confirm Password:">
-                                <div className="space-y-2">
-                                    <Input
-                                        type={showConfirmPassword ? "text" : "password"}
-                                        placeholder="Confirm Password"
-                                        name="password_confirmation"
-                                        value={passwordData.password_confirmation}
-                                        onChange={handlePasswordInputChange}
-                                        required
-                                    />
-                                    <div className="flex items-center gap-2">
-                                        <input
-                                            type="checkbox"
-                                            id="show-confirm"
-                                            checked={showConfirmPassword}
-                                            onChange={() => setShowConfirmPassword(!showConfirmPassword)}
-                                            className="rounded text-indigo-600 focus:ring-indigo-500"
-                                        />
-                                        <label htmlFor="show-confirm" className="text-xs text-gray-600 cursor-pointer select-none">Show Password</label>
-                                    </div>
+                            <FormGroup label="Verify Sequence">
+                                <div className="relative">
+                                    <Input type={showConfirmPassword ? "text" : "password"} placeholder="••••••••••••" name="password_confirmation" value={passwordData.password_confirmation} onChange={handlePasswordInputChange} required className="pr-10 border-emerald-500/20 focus:border-emerald-500/50 focus:ring-emerald-500/20" />
+                                    <button type="button" onClick={() => setShowConfirmPassword(!showConfirmPassword)} className="absolute right-3 top-1/2 -translate-y-1/2 text-slate-500 hover:text-cyan-400">
+                                        {showConfirmPassword ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                                    </button>
                                 </div>
                             </FormGroup>
-                            <Button loading={passwordLoading}>Submit</Button>
+                            <div className="mt-4"><Button loading={passwordLoading}>Execute Password Override</Button></div>
                         </form>
                     </Card>
 
-                    {/* Razorpay Detail */}
-                    <Card title="Razorpay Detail">
-                        <form onSubmit={handleSubmit}>
-                            <FormGroup label="Razorpay Key ID:">
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
-                                    </span>
-                                    <Input className="pl-9" placeholder="Razorpay Key ID" name="razorpay_key_id" value={formData.razorpay_key_id} onChange={handleChange} />
-                                </div>
+                    <Card title="Financial Link (Razorpay)" icon={CreditCard}>
+                        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                            <FormGroup label="Public Identifier">
+                                <Input placeholder="rzp_live_..." name="razorpay_key_id" value={formData.razorpay_key_id} onChange={handleChange} />
                             </FormGroup>
-                            <FormGroup label="Razorpay Key Secret:">
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 7a2 2 0 012 2m4 0a6 6 0 01-7.743 5.743L11 17H9v2H7v2H4a1 1 0 01-1-1v-2.586a1 1 0 01.293-.707l5.964-5.964A6 6 0 1121 9z" /></svg>
-                                    </span>
-                                    <Input className="pl-9" placeholder="Razorpay Key Secret" name="razorpay_key_secret" value={formData.razorpay_key_secret} onChange={handleChange} />
-                                </div>
+                            <FormGroup label="Private Encrypt Key">
+                                <Input placeholder="Secret Hash..." name="razorpay_key_secret" type="password" value={formData.razorpay_key_secret} onChange={handleChange} />
                             </FormGroup>
-                            <Button loading={loading}>Submit</Button>
+                            <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
                         </form>
                     </Card>
 
-                    {/* Debug Mode */}
-                    <Card title="Debug Mode">
-                        <form onSubmit={(e) => { e.preventDefault(); alert("Debug mode toggle not yet linked to backend."); }}>
-                            <div className="flex items-center gap-3 mb-4">
-                                <div className="relative inline-block w-12 mr-2 align-middle select-none transition duration-200 ease-in">
-                                    <input type="checkbox" name="debug_mode" id="debug_mode" className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-white border-4 appearance-none cursor-pointer border-gray-300 checked:right-0 checked:border-indigo-600" />
-                                    <label htmlFor="debug_mode" className="toggle-label block overflow-hidden h-6 rounded-full bg-gray-300 cursor-pointer"></label>
+                    <Card title="Data Infrastructure" icon={Database}>
+                        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                            <FormGroup label="NoSQL Connection Vector">
+                                <Input placeholder="mongodb+srv://..." name="mongodb_uri" type="password" value={formData.mongodb_uri} onChange={handleChange} />
+                            </FormGroup>
+                            <FormGroup label="API Gateway Locator">
+                                <Input placeholder="https://api.domain.com" name="api_url" value={formData.api_url} onChange={handleChange} />
+                            </FormGroup>
+                            <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
+                        </form>
+                    </Card>
+
+                    <Card title="Authentication Tokens" icon={ShieldCheck}>
+                        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                            <FormGroup label="JWT Cipher Secret">
+                                <Input placeholder="Super Secret Hash" name="jwt_secret" type="password" value={formData.jwt_secret} onChange={handleChange} />
+                            </FormGroup>
+                            <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
+                        </form>
+                    </Card>
+
+                    <Card title="Developer Diagnostics" icon={Bug}>
+                        <form onSubmit={(e) => { e.preventDefault(); showMessage('error', 'Diagnostics toggle override locked.'); }} className="flex flex-col h-full">
+                            <div className="flex items-center gap-4 mb-4 bg-white/5 p-4 rounded-lg border border-white/5">
+                                <div className="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
+                                    <input type="checkbox" name="debug_mode" id="debug_mode" className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-[#111116] border-2 border-slate-600 appearance-none cursor-pointer transition-all" />
+                                    <label htmlFor="debug_mode" className="toggle-label block overflow-hidden h-6 rounded-full bg-slate-800 cursor-pointer transition-colors shadow-[inset_0_0_5px_rgba(0,0,0,0.5)]"></label>
                                 </div>
-                                <label htmlFor="debug_mode" className="text-sm font-medium text-gray-700">Debug Mode</label>
+                                <div>
+                                    <label htmlFor="debug_mode" className="text-sm font-mono tracking-wide text-white uppercase block">Verbose Output Logs</label>
+                                    <span className="text-[10px] font-mono text-slate-500">Route all traces to standard out.</span>
+                                </div>
                             </div>
-                            <Button>Submit</Button>
-                            <style jsx>{`
+                            <div className="mt-auto"><Button>Commit Config</Button></div>
+                            <style dangerouslySetInnerHTML={{ __html: `
                                 .toggle-checkbox:checked {
                                     right: 0;
-                                    border-color: #4f46e5;
+                                    border-color: #22d3ee;
+                                    background-color: #22d3ee;
+                                    box-shadow: 0 0 10px rgba(34,211,238,0.8);
                                 }
                                 .toggle-checkbox:checked + .toggle-label {
-                                    background-color: #4f46e5;
+                                    background-color: rgba(34,211,238,0.2);
+                                    border: 1px solid rgba(34,211,238,0.3);
                                 }
-                                /* basic positioning for toggle */
                                 .toggle-checkbox {
                                     top: 0;
                                     left: 0;
-                                    transition: all 0.2s cubic-bezier(0.5, 0.1, 0.2, 1);
                                 }
                                 .toggle-checkbox:checked {
-                                    left: 1.5rem; /* calc(100% - 1.5rem) */
+                                    left: 1.5rem;
                                 }
-                            `}</style>
-                        </form>
-                    </Card>
-                    {/* Database Configuration */}
-                    <Card title="Database Configuration">
-                        <form onSubmit={handleSubmit}>
-                            <FormGroup label="MongoDB URI:"><Input placeholder="mongodb://localhost:27017/..." name="mongodb_uri" value={formData.mongodb_uri} onChange={handleChange} /></FormGroup>
-                            <FormGroup label="API URL:"><Input placeholder="https://api.example.com" name="api_url" value={formData.api_url} onChange={handleChange} /></FormGroup>
-                            <Button loading={loading}>Submit</Button>
-                        </form>
-                    </Card>
-
-                    {/* JWT Configuration */}
-                    <Card title="JWT Configuration">
-                        <form onSubmit={handleSubmit}>
-                            <FormGroup label="JWT Secret:"><Input placeholder="JWT Secret" name="jwt_secret" value={formData.jwt_secret} onChange={handleChange} /></FormGroup>
-                            <Button loading={loading}>Submit</Button>
+                            `}} />
                         </form>
                     </Card>
                 </div>
 
-                {/* Column 3 */}
-                <div className="space-y-6">
-                    {/* Google Authentication */}
-                    <Card title="Google Authentication">
-                        <form onSubmit={handleSubmit}>
-                            <FormGroup label="Client ID:"><Input placeholder="Google Client ID" name="google_client_id" value={formData.google_client_id} onChange={handleChange} /></FormGroup>
-                            <FormGroup label="Client Secret:"><Input placeholder="Google Client Secret" name="google_client_secret" value={formData.google_client_secret} onChange={handleChange} /></FormGroup>
-                            <Button loading={loading}>Submit</Button>
+                {/* Column 3 - Integrations */}
+                <div className="space-y-6 flex flex-col">
+                    <Card title="Google Mesh Auth" icon={Fingerprint}>
+                        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                            <FormGroup label="Client Interface ID"><Input placeholder="Oauth Client ID" name="google_client_id" value={formData.google_client_id} onChange={handleChange} /></FormGroup>
+                            <FormGroup label="Client Encrypted Secret"><Input placeholder="Oauth Client Secret" type="password" name="google_client_secret" value={formData.google_client_secret} onChange={handleChange} /></FormGroup>
+                            <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
                         </form>
                     </Card>
 
-                    {/* Facebook Authentication */}
-                    <Card title="Facebook Authentication">
-                        <form onSubmit={handleSubmit}>
-                            <FormGroup label="App ID:"><Input placeholder="Facebook App ID" name="facebook_app_id" value={formData.facebook_app_id} onChange={handleChange} /></FormGroup>
-                            <FormGroup label="App Secret:"><Input placeholder="Facebook App Secret" name="facebook_app_secret" value={formData.facebook_app_secret} onChange={handleChange} /></FormGroup>
-                            <Button loading={loading}>Submit</Button>
+                    <Card title="Meta Graph Auth" icon={Fingerprint}>
+                        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                            <FormGroup label="Application Identifier"><Input placeholder="Graph App ID" name="facebook_app_id" value={formData.facebook_app_id} onChange={handleChange} /></FormGroup>
+                            <FormGroup label="Application Secret Hash"><Input placeholder="Graph App Secret" type="password" name="facebook_app_secret" value={formData.facebook_app_secret} onChange={handleChange} /></FormGroup>
+                            <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
                         </form>
                     </Card>
 
-                    {/* Apple Authentication */}
-                    <Card title="Apple Authentication">
-                        <form onSubmit={handleSubmit}>
-                            <FormGroup label="Client ID:"><Input placeholder="Apple Client ID" name="apple_client_id" value={formData.apple_client_id} onChange={handleChange} /></FormGroup>
-                            <FormGroup label="Team ID:"><Input placeholder="Apple Team ID" name="apple_team_id" value={formData.apple_team_id} onChange={handleChange} /></FormGroup>
-                            <FormGroup label="Key ID:"><Input placeholder="Apple Key ID" name="apple_key_id" value={formData.apple_key_id} onChange={handleChange} /></FormGroup>
-                            <FormGroup label="Private Key:">
-                                <textarea
-                                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 text-sm h-32 resize-none"
-                                    placeholder="Apple Private Key"
-                                    name="apple_private_key"
-                                    value={formData.apple_private_key}
-                                    onChange={handleChange}
-                                ></textarea>
+                    <Card title="Apple Secure Auth" icon={Fingerprint}>
+                        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                            <FormGroup label="Client Interface ID"><Input placeholder="Client ID" name="apple_client_id" value={formData.apple_client_id} onChange={handleChange} /></FormGroup>
+                            <FormGroup label="Developer Team Identifier"><Input placeholder="Team ID" name="apple_team_id" value={formData.apple_team_id} onChange={handleChange} /></FormGroup>
+                            <FormGroup label="Cryptographic Key Identifier"><Input placeholder="Key ID" name="apple_key_id" value={formData.apple_key_id} onChange={handleChange} /></FormGroup>
+                            <FormGroup label="Raw Private Signature">
+                                <textarea className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm outline-none transition-all placeholder:text-slate-600 font-mono tracking-wide text-cyan-50 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 focus:bg-white/5 h-20 resize-none cyber-scrollbar" placeholder="-----BEGIN PRIVATE KEY-----..." name="apple_private_key" value={formData.apple_private_key} onChange={handleChange}></textarea>
                             </FormGroup>
-                            <Button loading={loading}>Submit</Button>
+                            <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
                         </form>
                     </Card>
 
-
-                    {/* Application Details */}
-                    <Card title="Application Details">
-                        <form onSubmit={handleSubmit}>
-                            <FormGroup label="APP Name:">
-                                <Input placeholder="APP Name" name="app_name" value={formData.app_name} onChange={handleChange} />
-                            </FormGroup>
-                            <FormGroup label="Terms & Conditions:">
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-                                    </span>
-                                    <Input className="pl-9" placeholder="Please enter link for terms & conditions" name="terms_conditions" value={formData.terms_conditions} onChange={handleChange} />
-                                </div>
-                            </FormGroup>
-                            <FormGroup label="Privacy Policy:">
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-                                    </span>
-                                    <Input className="pl-9" placeholder="Please enter link for privacy policy" name="privacy_policy" value={formData.privacy_policy} onChange={handleChange} />
-                                </div>
-                            </FormGroup>
-                            <FormGroup label="Rate us on Apple Store:">
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-                                    </span>
-                                    <Input className="pl-9" placeholder="Please enter app link for apple store" name="rate_on_apple_store" value={formData.rate_on_apple_store} onChange={handleChange} />
-                                </div>
-                            </FormGroup>
-                            <FormGroup label="Rate us on Google Store:">
-                                <div className="relative">
-                                    <span className="absolute left-3 top-1/2 -translate-y-1/2 text-gray-500">
-                                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M13.828 10.172a4 4 0 00-5.656 0l-4 4a4 4 0 105.656 5.656l1.102-1.101m-.758-4.899a4 4 0 005.656 0l4-4a4 4 0 00-5.656-5.656l-1.1 1.1" /></svg>
-                                    </span>
-                                    <Input className="pl-9" placeholder="Please enter app link for google store" name="rate_on_google_store" value={formData.rate_on_google_store} onChange={handleChange} />
-                                </div>
-                            </FormGroup>
-                            <Button loading={loading}>Submit</Button>
+                    <Card title="Client Terminals & Resources" icon={AppWindow}>
+                        <form onSubmit={handleSubmit} className="flex flex-col h-full">
+                            <FormGroup label="System Designation (App Name)"><Input placeholder="Nexus Travel Console" name="app_name" value={formData.app_name} onChange={handleChange} /></FormGroup>
+                            <div className="grid grid-cols-1 gap-4">
+                                <FormGroup label="Legal Agreement Routing (T&C)"><Input placeholder="URI Link" name="terms_conditions" value={formData.terms_conditions} onChange={handleChange} /></FormGroup>
+                                <FormGroup label="Privacy Router"><Input placeholder="URI Link" name="privacy_policy" value={formData.privacy_policy} onChange={handleChange} /></FormGroup>
+                                <FormGroup label="Apple Distribution Link"><Input placeholder="Store URI" name="rate_on_apple_store" value={formData.rate_on_apple_store} onChange={handleChange} /></FormGroup>
+                                <FormGroup label="Google Distribution Link"><Input placeholder="Store URI" name="rate_on_google_store" value={formData.rate_on_google_store} onChange={handleChange} /></FormGroup>
+                            </div>
+                            <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
                         </form>
                     </Card>
                 </div>
             </div>
+
+            <style dangerouslySetInnerHTML={{
+                __html: `
+                .cyber-scrollbar::-webkit-scrollbar {
+                    width: 6px;
+                }
+                .cyber-scrollbar::-webkit-scrollbar-track {
+                    background: rgba(0, 0, 0, 0.2);
+                }
+                .cyber-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(34, 211, 238, 0.2);
+                    border-radius: 10px;
+                }
+                .cyber-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(34, 211, 238, 0.4);
+                }
+            `}} />
         </div>
     );
 }

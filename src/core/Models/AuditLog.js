@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 
 const AuditLogSchema = new mongoose.Schema({
-    adminId: {
+    userId: {
         type: mongoose.Schema.Types.ObjectId,
         ref: 'User',
         required: true
@@ -34,7 +34,7 @@ const AuditLogSchema = new mongoose.Schema({
 
 // Optimize for recent logs and filtering by admin/action
 AuditLogSchema.index({ createdAt: -1 });
-AuditLogSchema.index({ adminId: 1 });
+AuditLogSchema.index({ userId: 1 });
 AuditLogSchema.index({ action: 1 });
 
 export default mongoose.models.AuditLog || mongoose.model('AuditLog', AuditLogSchema);

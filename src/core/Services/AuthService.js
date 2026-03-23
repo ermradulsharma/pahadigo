@@ -8,6 +8,16 @@ import Vendor from '@/models/Vendor.js';
 import jwt from 'jsonwebtoken';
 
 class AuthService {
+    async requestOtp({ identifier, role, termsAccepted }) {
+        // SECURITY: Prevent Admins from requesting OTPs
+        const existingUser = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
+        if (existingUser && existingUser.role === 'admin') {
+            throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD); // Custom error throwing (will be caught by controller)
+        }
+
+        return await OTPService.generateOTP(identifier, role, { termsAccepted });
+    }
+
     async _getVendorStatus(user) {
         const businessProfile = await Vendor.findOne({ user: user._id });
         let status = "setBusinessProfile";

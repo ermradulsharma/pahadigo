@@ -2,6 +2,7 @@ import User from '@/models/User.js';
 import nodemailer from 'nodemailer';
 import { getAppConfig } from '@/lib/appConfig';
 import crypto from 'crypto';
+import msg91 from 'msg91-api';
 const { createTransport } = nodemailer;
 
 class OTPService {
@@ -79,9 +80,8 @@ class OTPService {
             return;
         }
         try {
-            const msg91Module = await import('msg91-api');
-            const msg91Func = msg91Module.default || msg91Module;
-            const msg91 = msg91Func(authKey);
+            const msg91Func = msg91.default || msg91;
+            const msg91Client = msg91Func(authKey);
 
             const args = {
                 "flow_id": templateId,
@@ -91,7 +91,7 @@ class OTPService {
             };
 
             await new Promise((resolve, reject) => {
-                msg91.send(args, (err, response) => {
+                msg91Client.send(args, (err, response) => {
                     if (err) return reject(err);
                     resolve(response);
                 });

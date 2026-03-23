@@ -2,10 +2,14 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
+import CyberTable from '@/components/admin/CyberTable';
+import { Search, Globe2, MapPin } from 'lucide-react';
+
 export default function CountriesPage() {
     const [countries, setCountries] = useState([]);
     const [loading, setLoading] = useState(true);
-    const [pagination, setPagination] = useState({ page: 1, limit: 10, totalPages: 1, total: 0 });
+    const [searchQuery, setSearchQuery] = useState('');
+    const [pagination, setPagination] = useState({ page: 1, limit: 100, totalPages: 1, total: 0 }); // Increased limit for vector scanning
 
     useEffect(() => {
         fetchCountries(pagination.page);
@@ -28,102 +32,98 @@ export default function CountriesPage() {
         }
     };
 
-    const handlePageChange = (newPage) => {
-        if (newPage >= 1 && newPage <= pagination.totalPages) {
-            setPagination(prev => ({ ...prev, page: newPage }));
+    const columns = [
+        {
+            header: 'S.No',
+            className: 'w-[5%]',
+            tdClassName: 'text-slate-500 font-mono text-[11px] text-center',
+            render: (_, index) => (pagination.page - 1) * pagination.limit + index + 1
+        },
+        {
+            header: 'Nation Name',
+            accessor: 'name',
+            render: (c) => (
+                <div className="font-bold text-slate-200 flex items-center gap-2">
+                    <Globe2 className="w-4 h-4 text-indigo-400" /> {c.name}
+                </div>
+            )
+        },
+        {
+            header: 'ISO Code',
+            accessor: 'isoCode',
+            tdClassName: 'text-sm text-indigo-400 font-mono font-bold',
+            render: (c) => c.isoCode || '-'
+        },
+        {
+            header: 'Phone Code',
+            accessor: 'phoneCode',
+            render: (c) => (
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-sm text-[10px] font-mono tracking-widest uppercase transition-all shadow-[0_0_10px_rgba(0,0,0,0.5)] ${c.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+                    {c.phoneCode ? `+${c.phoneCode}` : '-'}
+                </span>
+            )
+        },
+        {
+            header: 'Currency',
+            accessor: 'currency',
+            tdClassName: 'text-sm text-slate-400 font-mono font-bold',
+            render: (c) => c.currency || '-'
+        },
+        {
+            header: 'Status',
+            accessor: 'status',
+            render: (c) => (
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-sm text-[10px] font-mono tracking-widest uppercase transition-all shadow-[0_0_10px_rgba(0,0,0,0.5)] ${c.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+                    {c.status || 'Unknown'}
+                </span>
+            )
+        },
+        {
+            header: 'Regions',
+            className: 'text-right',
+            render: (c) => (
+                <Link href={`/admin/countries/${c._id}/states`} className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/20 rounded-lg text-xs font-mono transition-all shadow-[0_0_10px_rgba(99,102,241,0.1)]">
+                    <MapPin className="w-3 h-3" /> View Regions
+                </Link>
+            )
         }
-    };
+    ];
+
+    if (loading) return (
+        <div className="p-8 h-full flex flex-col items-center justify-center space-y-4">
+            <div className="relative w-16 h-16 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border-t-2 border-indigo-500 animate-spin"></div>
+                <div className="absolute inset-2 rounded-full border-r-2 border-emerald-500 animate-spin-reverse opacity-70"></div>
+                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.8)]"></div>
+            </div>
+            <div className="text-xs font-mono text-indigo-400 tracking-[0.3em] uppercase animate-pulse">Establishing Global Uplink...</div>
+        </div>
+    );
 
     return (
-        <div className="p-8">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-gray-800">Countries Management</h1>
-            </div>
-
-            <div className="bg-white rounded-lg shadow overflow-hidden text-slate-800">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sr. No</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">ISO Code</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone Code</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Currency</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                            <th className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {loading ? (
-                            <tr><td colSpan="7" className="text-center py-4">Loading...</td></tr>
-                        ) : countries.length === 0 ? (
-                            <tr><td colSpan="7" className="text-center py-4">No countries found. Run Seeder.</td></tr>
-                        ) : (
-                            countries.map((country, index) => (
-                                <tr key={country._id}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                        {(pagination.page - 1) * pagination.limit + index + 1}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{country.name}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{country.isoCode}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{country.phoneCode}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{country.currency}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${country.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                            {country.status}
-                                        </span>
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                        <Link href={`/admin/countries/${country._id}/states`} className="text-indigo-600 hover:text-indigo-900">
-                                            View States
-                                        </Link>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
-
-                {/* Pagination Controls */}
-                {!loading && countries.length > 0 && (
-                    <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-                        <div className="flex-1 flex justify-between sm:hidden">
-                            <button onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1} className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                Previous
-                            </button>
-                            <button onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.totalPages} className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                Next
-                            </button>
-                        </div>
-                        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                            <div>
-                                <p className="text-sm text-gray-700">
-                                    Showing <span className="font-medium">{(pagination.page - 1) * pagination.limit + 1}</span> to <span className="font-medium">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of <span className="font-medium">{pagination.total}</span> results
-                                </p>
-                            </div>
-                            <div>
-                                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                                    <button onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1} className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100">
-                                        <span className="sr-only">Previous</span>
-                                        <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                    </button>
-                                    <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                                        Page {pagination.page} of {pagination.totalPages}
-                                    </span>
-                                    <button onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.totalPages} className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100">
-                                        <span className="sr-only">Next</span>
-                                        <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                    </button>
-                                </nav>
-                            </div>
-                        </div>
+        <div className="p-8 max-w-7xl mx-auto">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-2 gap-4">
+                <div>
+                    <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3"><Globe2 className="w-7 h-7 text-indigo-400 opacity-80" /> Global Nations</h1>
+                    <p className="text-xs font-mono text-slate-500 tracking-widest uppercase mt-1">Geo-Spatial Territories Matrix ({pagination.total} Nodes)</p>
+                </div>
+                <div className="flex items-center gap-4">
+                    <div className="relative group hidden md:block">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                        <input type="text" placeholder="Scan territories..." className="bg-[#0a0a0c]/80 backdrop-blur-xl pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none text-sm text-slate-200 w-64 shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-all placeholder:text-slate-600" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
                     </div>
-                )}
+                </div>
             </div>
+
+            <CyberTable
+                data={countries}
+                columns={columns}
+                itemsPerPage={20}
+                searchTerm={searchQuery}
+                searchKeys={['name', 'isoCode', 'phoneCode', 'currency']}
+                emptyText="NULL OUTPUT: No territories found in vector."
+                exportFilename="global_nations"
+            />
         </div>
     );
 }

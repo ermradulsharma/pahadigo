@@ -34,11 +34,11 @@ const UserSchema = new mongoose.Schema({
 
     },
     expertise: [{ type: String, default: null }],
-    emergencyContact: {
-        name: { type: String, default: null },
-        phone: { type: String, default: null },
+    emergencyContacts: [{
+        name: { type: String, required: true },
+        phone: { type: String, required: true },
         relationship: { type: String, default: null }
-    },
+    }],
     address: {
         addressLine1: { type: String, default: null },
         addressLine2: { type: String, default: null },
@@ -69,6 +69,8 @@ const UserSchema = new mongoose.Schema({
         average: { type: Number, default: 0 },
         count: { type: Number, default: 0 }
     },
+
+    fcmTokens: [{ type: String }], // Cloud Messaging Tokens for Push Notifications
 
     otp: { type: String },
     otpExpires: { type: Date },

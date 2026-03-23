@@ -2,181 +2,203 @@
 
 import { useState, useEffect } from 'react';
 import { getToken } from '@/helpers/authUtils';
+import CyberTable from '@/app/components/admin/CyberTable';
+import { Wallet, Search, ArrowRightLeft, DollarSign, Building2, Phone } from 'lucide-react';
 
 export default function VendorPayoutsPage() {
-    const [payments, setPayments] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [filterVendor, setFilterVendor] = useState('');
-    const [processingPayout, setProcessingPayout] = useState(null);
+  const [payments, setPayments] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [searchQuery, setSearchQuery] = useState('');
+  const [processingPayout, setProcessingPayout] = useState(null);
 
-    useEffect(() => {
+  useEffect(() => {
+    fetchPaymentHistory();
+  }, []);
+
+  const fetchPaymentHistory = async () => {
+    try {
+      const token = getToken();
+      const res = await fetch('/api/admin/payment-history', {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      const data = await res.json();
+      if (data.success) {
+        setPayments(data.data.payments || data.data.history || []);
+      }
+    } catch (error) {
+      console.error("Error fetching payment history:", error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleMarkPayout = async (bookingId) => {
+    if (!confirm("Confirm you have transferred the funds to the vendor's bank account before marking this payout as complete. Proceed?")) return;
+
+    setProcessingPayout(bookingId);
+    try {
+      const token = getToken();
+      const res = await fetch('/api/admin/payout', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        },
+        body: JSON.stringify({ bookingId })
+      });
+      const data = await res.json();
+      if (data.success) {
+        alert("Vendor payout marked successfully!");
         fetchPaymentHistory();
-    }, []);
+      } else {
+        alert("Failed: " + (data.error || data.message || "Unknown error"));
+      }
+    } catch (error) {
+      alert("Error marking payout. Check server logs.");
+    } finally {
+      setProcessingPayout(null);
+    }
+  };
 
-    const fetchPaymentHistory = async () => {
-        try {
-            const token = getToken();
-            const res = await fetch('/api/admin/payment-history', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
-            if (data.success) {
-                // Determine structure based on how AdminController returns it
-                setPayments(data.data.payments || data.data.history || []);
-            }
-        } catch (error) {
-            console.error("Error fetching payment history:", error);
-        } finally {
-            setLoading(false);
-        }
-    };
+  const getStatusBadge = (status) => {
+    switch (status) {
+      case 'paid': return <span className="px-2.5 py-1 bg-indigo-500/10 text-indigo-400 border border-indigo-500/20 rounded-sm text-[10px] font-mono uppercase tracking-widest shadow-[0_0_10px_rgba(99,102,241,0.1)]">Settled</span>;
+      case 'pending': return <span className="px-2.5 py-1 bg-amber-500/10 text-amber-400 border border-amber-500/20 rounded-sm text-[10px] font-mono uppercase tracking-widest shadow-[0_0_10px_rgba(245,158,11,0.1)] animate-pulse">Wait for Payout</span>;
+      case 'cancelled': return <span className="px-2.5 py-1 bg-[#111116] text-slate-500 border border-white/10 rounded-sm text-[10px] font-mono uppercase tracking-widest">Cancelled</span>;
+      case 'refunded': return <span className="px-2.5 py-1 bg-rose-500/10 text-rose-400 border border-rose-500/20 rounded-sm text-[10px] font-mono uppercase tracking-widest shadow-[0_0_10px_rgba(244,63,94,0.1)]">Refunded to User</span>;
+      default: return <span className="px-2.5 py-1 bg-white/5 text-slate-400 border border-white/10 rounded-sm text-[10px] font-mono uppercase tracking-widest shadow-[0_0_10px_rgba(255,255,255,0.05)]">{status}</span>;
+    }
+  };
 
-    const handleMarkPayout = async (bookingId) => {
-        if (!confirm("Confirm you have transferred the funds to the vendor's bank account before marking this payout as complete. Proceed?")) return;
-        
-        setProcessingPayout(bookingId);
-        try {
-            const token = getToken();
-            const res = await fetch('/api/admin/payout', {
-                method: 'POST',
-                headers: { 
-                    'Content-Type': 'application/json',
-                    'Authorization': `Bearer ${token}` 
-                },
-                body: JSON.stringify({ bookingId })
-            });
-            const data = await res.json();
-            if (data.success) {
-                alert("Vendor payout marked successfully!");
-                // Update local state by removing or updating the entry
-                fetchPaymentHistory();
-            } else {
-                alert("Failed: " + (data.error || data.message || "Unknown error"));
-            }
-        } catch (error) {
-            alert("Error marking payout. Check server logs.");
-        } finally {
-            setProcessingPayout(null);
-        }
-    };
-
-    const filteredPayments = payments.filter(payment => {
-        if (!filterVendor) return true;
-        const vendorName = payment.vendorId?.name || payment.vendorId?.businessName || '';
-        return vendorName.toLowerCase().includes(filterVendor.toLowerCase());
-    });
-
-    const getStatusBadge = (status) => {
-        switch(status) {
-            case 'paid': return <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-md text-[10px] font-black uppercase tracking-wider">Settled</span>;
-            case 'pending': return <span className="px-2 py-1 bg-amber-100 text-amber-700 rounded-md text-[10px] font-black uppercase tracking-wider">Wait for Payout</span>;
-            case 'cancelled': return <span className="px-2 py-1 bg-gray-100 text-gray-500 rounded-md text-[10px] font-black uppercase tracking-wider">Cancelled</span>;
-            case 'refunded': return <span className="px-2 py-1 bg-rose-100 text-rose-700 rounded-md text-[10px] font-black uppercase tracking-wider">Refunded to User</span>;
-            default: return <span className="px-2 py-1 bg-gray-100 text-gray-700 rounded-md text-[10px] font-black uppercase tracking-wider">{status}</span>;
-        }
-    };
-
-    return (
-        <div className="p-8">
-            <div className="flex justify-between items-center mb-6">
-                <h1 className="text-2xl font-bold text-slate-800 tracking-tight">Vendor Payouts Console</h1>
-            </div>
-
-            <div className="bg-white rounded-2xl shadow-sm border border-slate-100 overflow-hidden">
-                <div className="p-5 border-b border-slate-50 flex justify-between items-center bg-slate-50/50">
-                    <div className="relative w-72">
-                        <span className="absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                        </span>
-                        <input 
-                            type="text" 
-                            placeholder="Filter by Vendor Name..." 
-                            className="w-full pl-9 pr-4 py-2 border border-slate-200 rounded-xl text-sm font-medium text-slate-700 outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
-                            value={filterVendor}
-                            onChange={(e) => setFilterVendor(e.target.value)}
-                        />
-                    </div>
-                </div>
-
-                <div className="overflow-x-auto">
-                    <table className="w-full text-left">
-                        <thead className="bg-slate-50/50 text-slate-500 uppercase text-[10px] font-black tracking-widest border-b border-slate-100">
-                            <tr>
-                                <th className="p-5">Txn / Booking ID</th>
-                                <th className="p-5">Vendor Info</th>
-                                <th className="p-5">Platform Fees</th>
-                                <th className="p-5">Net Payable</th>
-                                <th className="p-5">Status</th>
-                                <th className="p-5 text-right">Actions</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-slate-50/80">
-                            {loading ? (
-                                <tr>
-                                    <td colSpan="6" className="p-8 text-center text-slate-400 font-medium">Loading payout data...</td>
-                                </tr>
-                            ) : filteredPayments.length === 0 ? (
-                                <tr>
-                                    <td colSpan="6" className="p-16 text-center">
-                                        <div className="flex flex-col items-center justify-center text-slate-400">
-                                            <svg className="w-12 h-12 mb-3 text-slate-300" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="1.5" d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-                                            <span className="text-sm font-bold uppercase tracking-widest">No Payout Records Found</span>
-                                        </div>
-                                    </td>
-                                </tr>
-                            ) : (
-                                filteredPayments.map((payment) => {
-                                    // Calculating mockup commission if actual object does not hold pure payload schema right away
-                                    const totalAmount = payment.pricing?.totalPrice || payment.totalAmount || 0;
-                                    const platformFee = Math.round(totalAmount * 0.10); // Example 10%
-                                    const vendorReceives = totalAmount - platformFee;
-                                    
-                                    return (
-                                        <tr key={payment._id} className="hover:bg-slate-50/50 transition-colors group">
-                                            <td className="p-5">
-                                                <div className="font-mono text-xs font-bold text-indigo-600 mb-1">{payment._id.slice(-8).toUpperCase()}</div>
-                                                <div className="text-[11px] font-bold text-slate-400">{new Date(payment.createdAt).toLocaleDateString()}</div>
-                                            </td>
-                                            <td className="p-5">
-                                                <div className="font-bold text-slate-800 text-sm">{payment.vendor?.businessName || 'Business Name'}</div>
-                                                <div className="text-xs text-slate-500 font-medium">{payment.vendor?.phone || 'No Phone Number'}</div>
-                                            </td>
-                                            <td className="p-5">
-                                                <div className="font-semibold text-rose-500 line-through decoration-rose-200">₹{totalAmount.toLocaleString()}</div>
-                                                <div className="text-[11px] font-bold text-rose-600 mt-1">- 10% (₹{platformFee.toLocaleString()}) Fee</div>
-                                            </td>
-                                            <td className="p-5">
-                                                <div className="text-lg font-black text-emerald-600">₹{vendorReceives.toLocaleString()}</div>
-                                            </td>
-                                            <td className="p-5">
-                                                {getStatusBadge(payment.paymentStatus)}
-                                            </td>
-                                            <td className="p-5 text-right">
-                                                {payment.paymentStatus === 'pending' && payment.status !== 'cancelled' ? (
-                                                    <button 
-                                                        onClick={() => handleMarkPayout(payment._id)}
-                                                        disabled={processingPayout === payment._id}
-                                                        className={`px-4 py-2 text-[11px] uppercase tracking-widest font-black rounded-xl transition-all shadow-sm
-                                                            ${processingPayout === payment._id 
-                                                                ? 'bg-slate-100 text-slate-400 border border-slate-200 cursor-not-allowed' 
-                                                                : 'bg-indigo-600 border border-indigo-600 text-white hover:bg-indigo-700 hover:shadow-md'}`}
-                                                    >
-                                                        {processingPayout === payment._id ? 'Working...' : 'Mark as Paid'}
-                                                    </button>
-                                                ) : (
-                                                    <span className="text-[10px] font-bold text-slate-400 uppercase tracking-widest">
-                                                        Settled
-                                                    </span>
-                                                )}
-                                            </td>
-                                        </tr>
-                                    );
-                                })
-                            )}
-                        </tbody>
-                    </table>
-                </div>
-            </div>
+  const columns = [
+    {
+      header: 'Txn / Booking ID',
+      accessor: '_id',
+      render: (p) => (
+        <div className="flex flex-col gap-1">
+          <div className="font-mono text-xs font-bold text-emerald-400 flex items-center gap-1.5"><ArrowRightLeft className="w-3 h-3 text-emerald-500" /> {p._id.slice(-8).toUpperCase()}</div>
+          <div className="text-[10px] font-mono text-slate-500">{new Date(p.createdAt).toLocaleString()}</div>
         </div>
-    );
+      )
+    },
+    {
+      header: 'Vendor Info',
+      accessor: 'vendor',
+      render: (p) => (
+        <div className="flex flex-col gap-1">
+          <div className="font-bold text-slate-200 text-sm flex items-center gap-1.5"><Building2 className="w-3.5 h-3.5 text-slate-500" /> {p.vendor?.businessName || 'Business Name'}</div>
+          <div className="text-[10px] text-slate-400 font-mono flex items-center gap-1.5"><Phone className="w-3 h-3 text-slate-500" /> {p.vendor?.phone || 'No Phone Number'}</div>
+        </div>
+      )
+    },
+    {
+      header: 'Platform Fees',
+      accessor: 'totalAmount',
+      render: (p) => {
+        const totalAmount = p.pricing?.totalPrice || p.totalAmount || 0;
+        const platformFee = Math.round(totalAmount * 0.10); // Example 10%
+        return (
+          <div className="flex flex-col gap-1">
+            <div className="font-mono font-bold text-rose-400/50 line-through decoration-rose-500/30 text-xs">
+              ₹{totalAmount.toLocaleString()}
+            </div>
+            <div className="text-[10px] font-mono font-bold text-rose-400 mt-0.5 border border-rose-500/20 bg-rose-500/5 inline-block px-1.5 py-0.5 rounded-sm w-fit">
+              - 10% (₹{platformFee.toLocaleString()}) Fee
+            </div>
+          </div>
+        );
+      }
+    },
+    {
+      header: 'Net Payable',
+      accessor: 'netPayable',
+      render: (p) => {
+        const totalAmount = p.pricing?.totalPrice || p.totalAmount || 0;
+        const platformFee = Math.round(totalAmount * 0.10); // Example 10%
+        const vendorReceives = totalAmount - platformFee;
+        return (
+          <div className="font-mono text-sm font-black text-emerald-400 drop-shadow-[0_0_8px_rgba(16,185,129,0.3)] flex items-center gap-1">
+            ₹{vendorReceives.toLocaleString()}
+          </div>
+        );
+      }
+    },
+    {
+      header: 'Status',
+      accessor: 'paymentStatus',
+      render: (p) => getStatusBadge(p.paymentStatus)
+    },
+    {
+      header: 'Actions',
+      className: 'text-right',
+      tdClassName: 'text-right',
+      render: (p) => (
+        <div className="flex justify-end gap-2">
+          {p.paymentStatus === 'pending' && p.status !== 'cancelled' ? (
+            <button
+              onClick={() => handleMarkPayout(p._id)}
+              disabled={processingPayout === p._id}
+              className={`px-3 py-1.5 rounded-lg text-xs font-mono tracking-widest uppercase font-bold transition-all border
+                ${processingPayout === p._id
+                  ? 'bg-slate-800 text-slate-500 border-slate-700 cursor-not-allowed'
+                  : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/30 hover:bg-emerald-500/20 hover:text-emerald-300 shadow-[0_0_10px_rgba(16,185,129,0.1)] hover:shadow-[0_0_15px_rgba(16,185,129,0.2)]'
+                }`}
+            >
+              {processingPayout === p._id ? 'Working...' : 'Mark as Paid'}
+            </button>
+          ) : (
+            <span className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest border border-white/5 bg-[#111116] px-2 py-1.5 rounded-lg">
+              Settled
+            </span>
+          )}
+        </div>
+      )
+    }
+  ];
+
+  if (loading) return (
+    <div className="p-8 h-full flex flex-col items-center justify-center space-y-4">
+      <div className="relative w-16 h-16 flex items-center justify-center">
+        <div className="absolute inset-0 rounded-full border-t-2 border-emerald-500 animate-spin"></div>
+        <div className="absolute inset-2 rounded-full border-r-2 border-cyan-500 animate-spin-reverse opacity-70"></div>
+        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
+      </div>
+      <div className="text-xs font-mono text-emerald-400 tracking-[0.3em] uppercase animate-pulse">Decrypting Financial Vector...</div>
+    </div>
+  );
+
+  return (
+    <div className="p-8 max-w-7xl mx-auto">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4 border-b border-white/10 pb-6">
+        <div>
+          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
+            <Wallet className="w-7 h-7 text-emerald-400 opacity-80" /> Vendor Payouts Console
+          </h1>
+          <p className="text-xs font-mono text-slate-500 tracking-widest uppercase mt-2">Financial Settlements & Transactions</p>
+        </div>
+        <div className="flex items-center gap-4">
+          <div className="relative group">
+            <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-emerald-400 transition-colors" />
+            <input
+              type="text"
+              placeholder="Search by Vendor Name..."
+              className="bg-[#0a0a0c]/80 backdrop-blur-xl pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-1 focus:ring-emerald-500/50 focus:border-emerald-500/50 outline-none text-sm text-slate-200 w-64 md:w-72 shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-all placeholder:text-slate-600 font-mono"
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+            />
+          </div>
+        </div>
+      </div>
+
+      <CyberTable
+        data={payments}
+        columns={columns}
+        itemsPerPage={10}
+        searchTerm={searchQuery}
+        searchKeys={['vendor.businessName', 'vendor.phone', '_id']}
+        emptyText="NULL OUTPUT: No payout records found in the ledger."
+        exportFilename="vendor_payouts_ledger"
+      />
+    </div>
+  );
 }

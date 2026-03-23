@@ -29,7 +29,7 @@ export default function AddTravellerPage() {
 
         try {
             const token = getToken();
-            const res = await fetch('/api/admin/travellers', {
+            const res = await fetch('/api/admin/travellers/create', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json',

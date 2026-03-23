@@ -3,6 +3,9 @@ import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
 import { getToken } from '@/helpers/authUtils';
 
+import CyberTable from '@/components/admin/CyberTable';
+import { Search, MapPin, ArrowLeft } from 'lucide-react';
+
 export default function StatesPage({ params: paramsPromise }) {
     const params = use(paramsPromise);
     const { id } = params;
@@ -10,7 +13,8 @@ export default function StatesPage({ params: paramsPromise }) {
     const [states, setStates] = useState([]);
     const [country, setCountry] = useState(null);
     const [loading, setLoading] = useState(true);
-    const [pagination, setPagination] = useState({ page: 1, limit: 10, totalPages: 1, total: 0 });
+    const [searchQuery, setSearchQuery] = useState('');
+    const [pagination, setPagination] = useState({ page: 1, limit: 500, totalPages: 1, total: 0 }); // Increased for vector search
 
     useEffect(() => {
         if (id) {
@@ -54,98 +58,115 @@ export default function StatesPage({ params: paramsPromise }) {
         }
     };
 
-    const handlePageChange = (newPage) => {
-        if (newPage >= 1 && newPage <= pagination.totalPages) {
-            setPagination(prev => ({ ...prev, page: newPage }));
+    const columns = [
+        {
+            header: 'S.No',
+            className: 'w-[5%]',
+            tdClassName: 'text-slate-500 font-mono text-[11px] text-center',
+            render: (_, index) => (pagination.page - 1) * pagination.limit + index + 1
+        },
+        {
+            header: 'Region Name',
+            accessor: 'name',
+            render: (s) => (
+                <div className="font-bold text-slate-200">
+                    {s.name}
+                </div>
+            )
+        },
+        {
+            header: 'Region Code',
+            accessor: 'code',
+            tdClassName: 'text-sm text-indigo-400 font-mono font-bold',
+            render: (s) => s.code || '-'
+        },
+        {
+            header: 'Status',
+            accessor: 'status',
+            render: (s) => (
+                <span className={`inline-flex items-center px-2.5 py-1 rounded-sm text-[10px] font-mono tracking-widest uppercase transition-all shadow-[0_0_10px_rgba(0,0,0,0.5)] ${s.status === 'active' ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+                    {s.status || 'Unknown'}
+                </span>
+            )
         }
-    };
+    ];
+
+    if (loading) return (
+        <div className="p-8 h-full flex flex-col items-center justify-center space-y-4">
+            <div className="relative w-16 h-16 flex items-center justify-center">
+                <div className="absolute inset-0 rounded-full border-t-2 border-indigo-500 animate-spin"></div>
+                <div className="absolute inset-2 rounded-full border-r-2 border-emerald-500 animate-spin-reverse opacity-70"></div>
+                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.8)]"></div>
+            </div>
+            <div className="text-xs font-mono text-indigo-400 tracking-[0.3em] uppercase animate-pulse">Scanning Regions Data...</div>
+        </div>
+    );
 
     return (
-        <div className="p-8">
-            <div className="flex justify-between items-center mb-6">
+        <div className="p-6 max-w-7xl mx-auto">
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-2 gap-4 mt-2">
                 <div>
-                    <Link href="/admin/countries" className="text-gray-500 hover:text-gray-700 mb-2 inline-block">&larr; Back to Countries</Link>
-                    <h1 className="text-2xl font-bold text-gray-800">
-                        States of {country ? country.name : 'Loading...'}
-                    </h1>
+                    <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3"><MapPin className="w-7 h-7 text-indigo-400 opacity-80" /> Regions of {country ? country.name : 'Unknown Node'}</h1>
+                    <p className="text-xs font-mono text-slate-500 tracking-widest uppercase mt-1">Geo-Spatial Sub-Matrix ({pagination.total} Instances)</p>
+                </div>
+                <div className="flex items-center gap-4">
+                    <Link href="/admin/countries" className="inline-flex items-center gap-2 px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/20 rounded-lg text-xs font-mono transition-all shadow-[0_0_10px_rgba(99,102,241,0.1)]">
+                        <ArrowLeft className="w-3 h-3" /> Abort & Return
+                    </Link>
+                    <div className="relative group hidden md:block">
+                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
+                        <input type="text" placeholder="Scan sub-territories..." className="bg-[#0a0a0c]/80 backdrop-blur-xl pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none text-sm text-slate-200 w-64 shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-all placeholder:text-slate-600" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
+                    </div>
+
                 </div>
             </div>
 
-            <div className="bg-white rounded-lg shadow overflow-hidden text-slate-800">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
-                        <tr>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Sr. No</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
-                            <th className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        </tr>
-                    </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
-                        {loading ? (
-                            <tr><td colSpan="4" className="text-center py-4">Loading...</td></tr>
-                        ) : states.length === 0 ? (
-                            <tr><td colSpan="4" className="text-center py-4">No states found.</td></tr>
-                        ) : (
-                            states.map((state, index) => (
-                                <tr key={state._id}>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                                        {(pagination.page - 1) * pagination.limit + index + 1}
-                                    </td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">{state.name}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{state.code}</td>
-                                    <td className="px-6 py-4 whitespace-nowrap">
-                                        <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${state.status === 'active' ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'}`}>
-                                            {state.status}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))
-                        )}
-                    </tbody>
-                </table>
+            <CyberTable data={states} columns={columns} itemsPerPage={20} searchTerm={searchQuery} searchKeys={['name', 'code']} emptyText="NULL OUTPUT: No regions indexed in cluster."
+                exportFilename={`states_of_${country ? country.name : 'node'}`}
+            />
 
-                {/* Pagination Controls */}
-                {!loading && states.length > 0 && (
-                    <div className="bg-white px-4 py-3 flex items-center justify-between border-t border-gray-200 sm:px-6">
-                        <div className="flex-1 flex justify-between sm:hidden">
-                            <button onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1} className="relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                Previous
-                            </button>
-                            <button onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.totalPages} className="ml-3 relative inline-flex items-center px-4 py-2 border border-gray-300 text-sm font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50">
-                                Next
-                            </button>
-                        </div>
-                        <div className="hidden sm:flex-1 sm:flex sm:items-center sm:justify-between">
-                            <div>
-                                <p className="text-sm text-gray-700">
-                                    Showing <span className="font-medium">{(pagination.page - 1) * pagination.limit + 1}</span> to <span className="font-medium">{Math.min(pagination.page * pagination.limit, pagination.total)}</span> of <span className="font-medium">{pagination.total}</span> results
-                                </p>
-                            </div>
-                            <div>
-                                <nav className="relative z-0 inline-flex rounded-md shadow-sm -space-x-px" aria-label="Pagination">
-                                    <button onClick={() => handlePageChange(pagination.page - 1)} disabled={pagination.page === 1} className="relative inline-flex items-center px-2 py-2 rounded-l-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100">
-                                        <span className="sr-only">Previous</span>
-                                        <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path fillRule="evenodd" d="M12.707 5.293a1 1 0 010 1.414L9.414 10l3.293 3.293a1 1 0 01-1.414 1.414l-4-4a1 1 0 010-1.414l4-4a1 1 0 011.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                    </button>
-                                    <span className="relative inline-flex items-center px-4 py-2 border border-gray-300 bg-white text-sm font-medium text-gray-700">
-                                        Page {pagination.page} of {pagination.totalPages}
-                                    </span>
-                                    <button onClick={() => handlePageChange(pagination.page + 1)} disabled={pagination.page === pagination.totalPages} className="relative inline-flex items-center px-2 py-2 rounded-r-md border border-gray-300 bg-white text-sm font-medium text-gray-500 hover:bg-gray-50 disabled:bg-gray-100">
-                                        <span className="sr-only">Next</span>
-                                        <svg className="h-5 w-5" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" aria-hidden="true">
-                                            <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
-                                        </svg>
-                                    </button>
-                                </nav>
-                            </div>
-                        </div>
+            {/* Pagination Controls Wrapper for local control matching CyberTable */}
+            {!loading && states.length > 0 && pagination.totalPages > 1 && (
+                <div className="flex items-center justify-between mt-4 px-2">
+                    <div className="text-xs font-mono text-slate-500 uppercase tracking-widest flex items-center gap-4">
+                        <span className="text-indigo-400">Total System Nodes: {pagination.total}</span>
+                        <span className="opacity-50">|</span>
+                        <span>Showing Matrix {Math.min(((pagination.page - 1) * pagination.limit) + 1, pagination.total)} - {Math.min(pagination.page * pagination.limit, pagination.total)}</span>
                     </div>
-                )}
 
-            </div>
+                    <div className="flex items-center gap-2">
+                        <button
+                            onClick={() => {
+                                if (pagination.page > 1) {
+                                    setPagination(prev => ({ ...prev, page: prev.page - 1 }));
+                                }
+                            }}
+                            disabled={pagination.page === 1}
+                            className={`px-3 py-1.5 rounded-lg border text-[10px] font-mono tracking-widest uppercase transition-all shadow-[0_0_10px_rgba(0,0,0,0.5)] ${pagination.page === 1 ? 'bg-black/20 text-slate-600 border-white/5 cursor-not-allowed' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20 hover:shadow-[0_0_10px_rgba(99,102,241,0.1)]'}`}
+                        >
+                            PREV
+                        </button>
+
+                        <div className="flex items-center gap-1.5 px-3">
+                            <span className="w-8 h-8 flex items-center justify-center font-mono text-[10px] bg-indigo-500 text-white rounded-lg shadow-[0_0_15px_rgba(99,102,241,0.3)] border border-indigo-400">{pagination.page}</span>
+                            <span className="text-slate-500 font-mono text-xs mx-1">/</span>
+                            <span className="w-8 h-8 flex items-center justify-center font-mono text-[10px] bg-white/5 text-slate-400 rounded-lg">{pagination.totalPages}</span>
+                        </div>
+
+                        <button
+                            onClick={() => {
+                                if (pagination.page < pagination.totalPages) {
+                                    setPagination(prev => ({ ...prev, page: prev.page + 1 }));
+                                }
+                            }}
+                            disabled={pagination.page === pagination.totalPages}
+                            className={`px-3 py-1.5 rounded-lg border text-[10px] font-mono tracking-widest uppercase transition-all shadow-[0_0_10px_rgba(0,0,0,0.5)] ${pagination.page === pagination.totalPages ? 'bg-black/20 text-slate-600 border-white/5 cursor-not-allowed' : 'bg-indigo-500/10 text-indigo-400 border-indigo-500/20 hover:bg-indigo-500/20 hover:shadow-[0_0_10px_rgba(99,102,241,0.1)]'}`}
+                        >
+                            NEXT
+                        </button>
+                    </div>
+                </div>
+            )}
         </div>
     );
 }

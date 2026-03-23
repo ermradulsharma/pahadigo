@@ -12,6 +12,15 @@ export const schemas = {
         rememberMe: z.boolean().optional()
     }),
 
+    otpSend: z.object({
+        email: z.string().email(RESPONSE_MESSAGES.VALIDATION.INVALID_EMAIL).optional(),
+        phone: z.string().min(10, 'Phone must be at least 10 digits').optional(),
+        role: z.enum(['traveller', 'vendor']).optional()
+    }).refine(data => data.email || data.phone, {
+        message: RESPONSE_MESSAGES.VALIDATION.EITHER_IDENTIFIER_REQUIRED,
+        path: ['email'] // attach error to email field
+    }),
+
     otpLogin: z.object({
         identifier: z.string().optional(),
         email: z.string().email().optional(),
@@ -29,7 +38,12 @@ export const schemas = {
         if (!data.targetRole && data.role) {
             data.targetRole = data.role;
         }
-        return data;
+        return data; // RESTORED return statement
+    }),
+
+    socialLogin: z.object({
+        token: z.string().min(1, 'Token is required'),
+        role: z.enum(['traveller', 'vendor']).optional()
     }),
 
     // Booking Schemas

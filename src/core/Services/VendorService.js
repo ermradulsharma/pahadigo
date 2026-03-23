@@ -1,4 +1,8 @@
 import Vendor from '@/models/Vendor.js';
+import Review from '@/models/Review.js';
+import Booking from '@/models/Booking.js';
+import Dispute from '@/models/Dispute.js';
+import Package from '@/models/Package.js';
 import { CATEGORY_TITLES } from '@/constants/categories.js';
 
 class VendorService {
@@ -92,6 +96,60 @@ class VendorService {
 
     getCategories() {
         return Object.values(CATEGORY_TITLES);
+    }
+
+    async evaluateVendorTrustBadge(vendorId) {
+        const vendor = await Vendor.findById(vendorId);
+        if (!vendor) return null;
+
+        let newBadge = 'none';
+
+        // Base criteria for "verified": Must be approved and documents verified
+        const isAadharVerified = vendor.documents?.aadharCard?.[0]?.status === 'verified';
+        const isPanVerified = vendor.documents?.panCard?.status === 'verified';
+        // For business profile type, registration must also be verified
+        let isBusinessRegistrationVerified = true;
+        if (vendor.profileType === 'business') {
+            isBusinessRegistrationVerified = vendor.documents?.businessRegistration?.status === 'verified';
+        }
+
+        const isVerified = vendor.isApproved && isAadharVerified && isPanVerified && isBusinessRegistrationVerified;
+
+        if (isVerified) {
+            newBadge = 'verified';
+
+            // Now evaluate for "super_partner"
+            // Criteria: avgRating >= 4.5, totalBookings >= 10, dispute rate <= 5%
+
+            const catalog = await Package.findOne({ vendor: vendorId });
+            
+            if (catalog) {
+                const totalBookings = await Booking.countDocuments({ package: catalog._id, status: 'completed' });
+                
+                if (totalBookings >= 10) {
+                    const disputeCount = await Dispute.countDocuments({ vendorId: vendorId, status: 'resolved_refunded' });
+                    const disputeRate = disputeCount / totalBookings;
+
+                    const reviewStats = await Review.aggregate([
+                        { $match: { vendor: vendor._id } },
+                        { $group: { _id: null, avgRating: { $avg: '$rating' } } }
+                    ]);
+                    
+                    const avgRating = reviewStats.length > 0 ? reviewStats[0].avgRating : 0;
+
+                    if (avgRating >= 4.5 && disputeRate <= 0.05) {
+                        newBadge = 'super_partner';
+                    }
+                }
+            }
+        }
+
+        if (vendor.trustBadge !== newBadge) {
+            vendor.trustBadge = newBadge;
+            await vendor.save();
+        }
+
+        return newBadge;
     }
 }
 

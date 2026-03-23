@@ -4,387 +4,508 @@ import { getToken } from '@/helpers/authUtils';
 import Link from 'next/link';
 import { motion } from 'framer-motion';
 import {
-    Users, Briefcase, AlertTriangle, PackageSearch, FolderTree, IndianRupee,
-    TrendingUp, ExternalLink, Calendar, CheckCircle2, XCircle, ArrowRight
+  Users, Briefcase, AlertTriangle, PackageSearch, FolderTree, IndianRupee,
+  TrendingUp, ExternalLink, Calendar, CheckCircle2, XCircle, ArrowRight, Server, Activity,
+  Cpu, Database, Network, ShieldAlert, Navigation, Terminal, MessageSquare, Map, Flame, Zap
 } from 'lucide-react';
 import {
-    AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer,
-    BarChart, Bar, PieChart, Pie, Cell, Legend
+  AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
+  BarChart, Bar, PieChart, Pie, Cell, Legend
 } from 'recharts';
+import PackageCard from '@/components/admin/PackageCard';
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export default function AdminDashboard() {
-    const [stats, setStats] = useState({ users: 0, totalVendors: 0, pendingVendors: 0, packages: 0, categories: 0, revenue: 0, recentBookings: [], recentVendors: [] });
-    const [latestPackages, setLatestPackages] = useState([]);
-    const [loading, setLoading] = useState(true);
-    const [isMounted, setIsMounted] = useState(false);
+  const [stats, setStats] = useState({
+    users: 0, totalVendors: 0, pendingVendors: 0, packages: 0, categories: 0, revenue: 0,
+    recentBookings: [], recentVendors: [], systemActivity: [], activeDisputes: [], topTerritories: [], departures: [], systemHealth: {}
+  });
+  const [latestPackages, setLatestPackages] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isMounted, setIsMounted] = useState(false);
+  const [currentTime, setCurrentTime] = useState(new Date());
 
-    // Analytics State
-    const [period, setPeriod] = useState('monthly');
-    const [analyticsData, setAnalyticsData] = useState(null);
-    const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  useEffect(() => {
+    const timer = setInterval(() => setCurrentTime(new Date()), 1000);
+    return () => clearInterval(timer);
+  }, []);
 
-    useEffect(() => {
-        const fetchAnalytics = async () => {
-            setAnalyticsLoading(true);
-            try {
-                const token = getToken();
-                const res = await fetch(`/api/admin/analytics?period=${period}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const result = await res.json();
-                if (result.success) setAnalyticsData(result.data.analytics);
-            } catch (e) { console.error(e); }
-            finally { setAnalyticsLoading(false); }
-        };
+  // Analytics State
+  const [period, setPeriod] = useState('monthly');
+  const [analyticsData, setAnalyticsData] = useState(null);
+  const [analyticsLoading, setAnalyticsLoading] = useState(true);
 
-        if (isMounted) fetchAnalytics();
-    }, [period, isMounted]);
+  useEffect(() => {
+    const fetchAnalytics = async () => {
+      setAnalyticsLoading(true);
+      try {
+        const token = getToken();
+        const res = await fetch(`/api/admin/analytics?period=${period}`, {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const result = await res.json();
+        if (result.success) setAnalyticsData(result.data.analytics);
+      } catch (e) { console.error(e); }
+      finally { setAnalyticsLoading(false); }
+    };
 
-    useEffect(() => {
-        setIsMounted(true);
-        const fetchStats = async () => {
-            try {
-                const token = getToken();
-                const res = await fetch('/api/admin/stats', {
-                    headers: { 'Authorization': 'Bearer ' + token }
-                });
-                if (res.ok) {
-                    const resData = await res.json();
-                    if (resData.success && resData.data?.stats) {
-                        setStats(resData.data.stats);
-                    }
-                }
+    if (isMounted) fetchAnalytics();
+  }, [period, isMounted]);
 
-                // Fetch Latest Packages
-                const pkgRes = await fetch('/api/admin/packages', {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-                const pkgData = await pkgRes.json();
-                if (pkgData.success) {
-                    setLatestPackages(pkgData.data.packages.slice(0, 4));
-                }
-            } catch (e) {
-            } finally {
-                setLoading(false);
-            }
-        };
+  useEffect(() => {
+    setIsMounted(true);
+    const fetchStats = async () => {
+      try {
+        const token = getToken();
+        const res = await fetch('/api/admin/stats', {
+          headers: { 'Authorization': 'Bearer ' + token }
+        });
+        if (res.ok) {
+          const resData = await res.json();
+          if (resData.success && resData.data?.stats) {
+            setStats(resData.data.stats);
+          }
+        }
 
-        fetchStats();
-    }, []);
+        // Fetch Latest Packages
+        const pkgRes = await fetch('/api/admin/packages', {
+          headers: { 'Authorization': `Bearer ${token}` }
+        });
+        const pkgData = await pkgRes.json();
+        if (pkgData.success) {
+          setLatestPackages(pkgData.data.packages.slice(0, 4));
+        }
+      } catch (e) {
+      } finally {
+        setLoading(false);
+      }
+    };
 
-    if (!isMounted) return null;
+    fetchStats();
+  }, []);
 
-    return (
-        <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            className="p-8 max-w-[1600px] mx-auto space-y-8 bg-slate-50 min-h-screen"
-        >
-            <div className="flex justify-between items-end">
-                <div>
-                    <h1 className="text-3xl font-black text-slate-800 tracking-tight">Admin Overview</h1>
-                    <p className="text-slate-500 font-medium">Welcome back! Here's what's happening today.</p>
-                </div>
-                <div className="flex gap-2">
-                    <Link href="/admin/vendors" className="px-5 py-2.5 bg-indigo-600/10 text-indigo-700 hover:bg-indigo-600 hover:text-white rounded-xl transition-all font-bold flex items-center gap-2">
-                        <Briefcase className="w-4 h-4" /> Review Vendors
-                    </Link>
-                </div>
+  if (!isMounted) return null;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 20 }}
+      animate={{ opacity: 1, y: 0 }}
+      className="p-8 max-w-[1600px] mx-auto space-y-8 bg-[#0a0a0c] min-h-screen text-slate-300"
+    >
+      <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 border-b border-white/10 pb-4">
+        <div>
+          <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3">
+            <Server className="w-8 h-8 text-indigo-400 opacity-80" /> Dashboard
+          </h1>
+          <p className="text-xs font-mono text-slate-500 tracking-widest uppercase mt-2 flex items-center gap-2">
+            <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse shadow-[0_0_10px_#10b981]"></span> System Status: Online & Secured <span className="opacity-50">|</span> <span className="text-indigo-400">{currentTime.toLocaleTimeString()}</span>
+          </p>
+        </div>
+        <div className="flex gap-2">
+          <button className="px-5 py-2.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 rounded-lg transition-all shadow-[0_0_15px_rgba(244,63,94,0.1)] text-xs font-mono tracking-widest uppercase flex items-center gap-2">
+            <ShieldAlert className="w-4 h-4" /> Security Reports
+          </button>
+          <Link href="/admin/vendors" className="px-5 py-2.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300 rounded-lg transition-all shadow-[0_0_15px_rgba(99,102,241,0.1)] text-xs font-mono tracking-widest uppercase flex items-center gap-2">
+            <Briefcase className="w-4 h-4" /> Vendor Directory
+          </Link>
+        </div>
+      </div>
+
+      {/* Quick Actions Terminal - Above the fold */}
+      <div className="flex flex-wrap gap-4 items-center bg-[#111116] p-4 rounded-xl border border-white/5 shadow-[0_0_20px_rgba(0,0,0,0.5)]">
+        <div className="text-xs font-mono text-slate-500 tracking-widest uppercase flex items-center gap-2 mr-4">
+          <Terminal className="w-4 h-4 text-emerald-400" /> Quick Actions:
+        </div>
+        <button className="text-[10px] font-mono tracking-widest uppercase px-4 py-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded hover:bg-indigo-500/20 transition-all flex items-center gap-2 border-l-2 border-l-indigo-500">
+          <MessageSquare className="w-3 h-3" /> Message All Vendors
+        </button>
+        <button className="text-[10px] font-mono tracking-widest uppercase px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded hover:bg-emerald-500/20 transition-all flex items-center gap-2 border-l-2 border-l-emerald-500">
+          <Activity className="w-3 h-3" /> Check System Health
+        </button>
+        <button className="text-[10px] font-mono tracking-widest uppercase px-4 py-2 bg-pink-500/10 border border-pink-500/30 text-pink-400 rounded hover:bg-pink-500/20 transition-all flex items-center gap-2 border-l-2 border-l-pink-500">
+          <TrendingUp className="w-3 h-3" /> Generate Revenue Report
+        </button>
+        <button className="text-[10px] font-mono tracking-widest uppercase px-4 py-2 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded hover:bg-amber-500/20 transition-all flex items-center gap-2 border-l-2 border-l-amber-500">
+          <Zap className="w-3 h-3" /> Clear Application Cache
+        </button>
+      </div>
+
+      {loading ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 animate-pulse">
+          {[1, 2, 3, 4, 5, 6].map(i => (
+            <div key={i} className="h-36 bg-white/5 rounded-2xl border border-white/10"></div>
+          ))}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-4">
+          <StatCard title="Total Travellers" value={stats.users || 0} colorClass="text-blue-400" bgClass="bg-blue-500/10" borderClass="border-blue-500/20" glowClass="shadow-[0_0_20px_rgba(59,130,246,0.1)]" Icon={Users} href="/admin/travellers" delay={0.1} />
+          <StatCard title="Verified Vendors" value={stats.totalVendors || 0} colorClass="text-emerald-400" bgClass="bg-emerald-500/10" borderClass="border-emerald-500/20" glowClass="shadow-[0_0_20px_rgba(16,185,129,0.1)]" Icon={Briefcase} href="/admin/vendors" delay={0.2} />
+          <StatCard title="Pending Approvals" value={stats.pendingVendors || 0} colorClass="text-rose-400" bgClass="bg-rose-500/10" borderClass="border-rose-500/20" glowClass="shadow-[0_0_20px_rgba(244,63,94,0.15)] hover:border-rose-500/40" Icon={AlertTriangle} href="/admin/vendors" delay={0.3} pulse={stats.pendingVendors > 0} />
+          <StatCard title="Active Packages" value={stats.packages || 0} colorClass="text-pink-400" bgClass="bg-pink-500/10" borderClass="border-pink-500/20" glowClass="shadow-[0_0_20px_rgba(236,72,153,0.1)]" Icon={PackageSearch} href="/admin/packages" delay={0.4} />
+          <StatCard title="Service Categories" value={stats.categories || 0} colorClass="text-slate-300" bgClass="bg-white/5" borderClass="border-white/10" glowClass="shadow-[0_0_20px_rgba(255,255,255,0.05)]" Icon={FolderTree} href="/admin/categories" delay={0.5} />
+          <StatCard title="Total Revenue" value={`₹${(Number(stats.revenue) || 0).toLocaleString('en-IN')}`} colorClass="text-emerald-400" bgClass="bg-emerald-500/10" borderClass="border-emerald-500/20" glowClass="shadow-[0_0_20px_rgba(16,185,129,0.1)]" Icon={IndianRupee} href="/admin/payments" delay={0.6} />
+        </div>
+      )}
+
+      {/* NEW ADDITIONS: Infrastructure, Maps, Feeds */}
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
+
+        {/* System Health / Vitals */}
+        <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} className="bg-[#111116] border border-white/10 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col">
+          <h2 className="text-sm font-mono tracking-widest text-cyan-400 uppercase flex items-center gap-2 mb-6">
+            <Cpu className="w-4 h-4" /> System Resources
+          </h2>
+          <div className="flex-1 space-y-6 flex flex-col justify-center">
+            <div className="relative group cursor-pointer">
+              <div className="flex justify-between items-end mb-2">
+                <span className="text-[10px] font-mono tracking-widest uppercase text-slate-400 flex items-center gap-1.5"><Database className="w-3 h-3 text-indigo-400" /> Database Usage</span>
+                <span className="text-xs font-mono font-bold text-indigo-400">{stats.systemHealth?.dbLoad || 0}%</span>
+              </div>
+              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-full bg-indigo-500 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.8)] group-hover:bg-indigo-400 transition-colors" style={{ width: `${stats.systemHealth?.dbLoad || 24}%` }}></div>
+              </div>
             </div>
 
-            {loading ? (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6 animate-pulse">
-                    {[1, 2, 3, 4, 5, 6].map(i => (
-                        <div key={i} className="h-36 bg-slate-200 rounded-2xl"></div>
-                    ))}
-                </div>
-            ) : (
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-6 gap-6">
-                    <StatCard title="Travellers" value={stats.users || 0} gradient="from-indigo-500 to-blue-600" Icon={Users} href="/admin/travellers" delay={0.1} />
-                    <StatCard title="Vendors" value={stats.totalVendors || 0} gradient="from-teal-400 to-emerald-600" Icon={Briefcase} href="/admin/vendors" delay={0.2} />
-                    <StatCard title="Pending Auth" value={stats.pendingVendors || 0} gradient="from-orange-400 to-red-500" Icon={AlertTriangle} href="/admin/vendors" delay={0.3} pulse={stats.pendingVendors > 0} />
-                    <StatCard title="Packages" value={stats.packages || 0} gradient="from-pink-500 to-rose-600" Icon={PackageSearch} href="/admin/packages" delay={0.4} />
-                    <StatCard title="Categories" value={stats.categories || 0} gradient="from-slate-600 to-slate-800" Icon={FolderTree} href="/admin/categories" delay={0.5} />
-                    <StatCard title="Revenue" value={`₹${(Number(stats.revenue) || 0).toLocaleString('en-IN')}`} gradient="from-green-500 to-emerald-700" Icon={IndianRupee} href="/admin/payments" delay={0.6} />
-                </div>
-            )}
+            <div className="relative group cursor-pointer">
+              <div className="flex justify-between items-end mb-2">
+                <span className="text-[10px] font-mono tracking-widest uppercase text-slate-400 flex items-center gap-1.5"><Network className="w-3 h-3 text-emerald-400" /> Server Latency</span>
+                <span className="text-xs font-mono font-bold text-emerald-400">{stats.systemHealth?.latency || 0}ms</span>
+              </div>
+              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-full bg-emerald-500 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.8)] group-hover:bg-emerald-400 transition-colors" style={{ width: '15%' }}></div>
+              </div>
+            </div>
 
-            {/* Analytics Section */}
-            <motion.div 
-                initial={{ opacity: 0, scale: 0.95 }}
-                animate={{ opacity: 1, scale: 1 }}
-                transition={{ delay: 0.2, duration: 0.5 }}
-                className="pt-4"
-            >
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-2">
-                        <TrendingUp className="text-indigo-600 w-6 h-6" /> Growth Analytics
-                    </h2>
-                    <div className="bg-white p-1 rounded-xl shadow-sm border border-slate-200/60 inline-flex">
-                        {['weekly', 'monthly', 'yearly'].map(p => (
-                            <button key={p} onClick={() => setPeriod(p)} className={`px-5 py-2 text-sm font-bold rounded-lg capitalize transition-all duration-300 ${period === p ? 'bg-indigo-600 text-white shadow-md' : 'text-slate-500 hover:text-indigo-600 hover:bg-slate-50'}`}> {p} </button>
+            <div className="relative group cursor-pointer">
+              <div className="flex justify-between items-end mb-2">
+                <span className="text-[10px] font-mono tracking-widest uppercase text-slate-400 flex items-center gap-1.5"><Server className="w-3 h-3 text-rose-400" /> Disk Storage</span>
+                <span className="text-xs font-mono font-bold text-rose-400 animate-pulse">{stats.systemHealth?.storageLoad || 0}%</span>
+              </div>
+              <div className="w-full h-1.5 bg-white/5 rounded-full overflow-hidden">
+                <div className="h-full bg-rose-500 rounded-full shadow-[0_0_15px_rgba(244,63,94,1)] animate-pulse group-hover:bg-rose-400 transition-colors" style={{ width: `${stats.systemHealth?.storageLoad || 0}%` }}></div>
+              </div>
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Top Territories / Heatmap Mock */}
+        <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="bg-[#111116] border border-white/10 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col">
+          <h2 className="text-sm font-mono tracking-widest text-orange-400 uppercase flex items-center gap-2 mb-6">
+            <Flame className="w-4 h-4" /> Top Destinations
+          </h2>
+          <div className="space-y-4 flex-1">
+            {stats.topTerritories?.map((t, idx) => (
+              <div key={idx} className="flex items-center gap-4 hover:bg-white/5 p-1 rounded transition-colors cursor-pointer group">
+                <div className="w-20 text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 group-hover:text-slate-300 truncate">{t.name}</div>
+                <div className="flex-1 h-2.5 bg-white/5 border border-white/10 rounded overflow-hidden">
+                  <motion.div
+                    initial={{ width: 0 }}
+                    whileInView={{ width: `${t.load}%` }}
+                    transition={{ duration: 1, delay: 0.2 + idx * 0.1 }}
+                    className={`h-full ${t.color} opacity-80 group-hover:opacity-100 shadow-[0_0_10px_currentColor]`}
+                  />
+                </div>
+                <div className="text-[10px] font-mono text-slate-500 w-8 group-hover:text-white transition-colors">{t.load}%</div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Live System Activity Feed */}
+        <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="bg-[#111116] border border-white/10 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
+          <div className="flex justify-between items-center mb-6 relative z-10">
+            <h2 className="text-sm font-mono tracking-widest text-indigo-400 uppercase flex items-center gap-2">
+              <Activity className="w-4 h-4" /> System Logs
+            </h2>
+            <span className="flex h-2 w-2 relative">
+              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-indigo-400 opacity-75"></span>
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-indigo-500 shadow-[0_0_10px_#6366f1]"></span>
+            </span>
+          </div>
+          <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar relative z-10 font-mono">
+            {(stats.systemActivity || []).map((log, i) => (
+              <div key={i} className="flex items-start gap-3 border-b border-white/5 pb-2 last:border-0 last:pb-0 group cursor-pointer hover:bg-white/5 p-1 rounded transition-colors -mx-1">
+                <div className="text-[9px] text-slate-500 mt-0.5 whitespace-nowrap group-hover:text-slate-400">{log.time}</div>
+                <div className={`px-1.5 py-0.5 rounded text-[8px] tracking-widest font-bold uppercase shadow-sm ${log.status === 'error' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : log.status === 'warning' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : log.status === 'success' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
+                  {log.type}
+                </div>
+                <div className="text-[10px] text-slate-400 leading-snug flex-1 group-hover:text-slate-200 transition-colors">{log.message}</div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      </div>
+
+
+      {/* Analytics Section - Middle */}
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95 }}
+        animate={{ opacity: 1, scale: 1 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+        className="pt-4"
+      >
+        <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-6 gap-4 border-t border-white/5 pt-8">
+          <h2 className="text-xl font-bold text-white flex items-center gap-3">
+            <Activity className="text-indigo-400 w-6 h-6" /> Analytics Overview
+          </h2>
+          <div className="bg-white/5 p-1 rounded-lg border border-white/10 inline-flex shadow-[0_0_10px_rgba(0,0,0,0.5)]">
+            {['weekly', 'monthly', 'yearly'].map(p => (
+              <button key={p} onClick={() => setPeriod(p)} className={`px-4 py-1.5 text-xs font-mono tracking-widest uppercase transition-all duration-300 rounded ${period === p ? 'bg-indigo-500/20 text-indigo-400 font-bold border border-indigo-500/30 shadow-[0_0_10px_rgba(99,102,241,0.2)]' : 'text-slate-500 hover:text-indigo-300 hover:bg-white/5 border border-transparent'}`}> {p} </button>
+            ))}
+          </div>
+        </div>
+
+        {analyticsLoading ? (
+          <div className="h-64 bg-white/5 rounded-2xl border border-white/10 animate-pulse"></div>
+        ) : analyticsData ? (
+          <>
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+              {/* Revenue Trend */}
+              <div className="bg-[#111116] p-6 rounded-2xl border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] group/chart hover:border-indigo-500/20 transition-colors">
+                <h3 className="text-sm font-mono tracking-widest text-indigo-400 uppercase mb-6 flex items-center gap-2"><IndianRupee className="w-4 h-4" /> Revenue Trends</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <AreaChart data={analyticsData.revenueData}>
+                      <defs>
+                        <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
+                          <stop offset="5%" stopColor="#818cf8" stopOpacity={0.3} />
+                          <stop offset="95%" stopColor="#818cf8" stopOpacity={0} />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff1a" />
+                      <XAxis dataKey="_id" tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} />
+                      <YAxis tick={{ fontSize: 10, fill: '#64748b' }} tickLine={false} axisLine={false} />
+                      <RechartsTooltip contentStyle={{ borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: '#0a0a0c', color: '#cbd5e1' }} itemStyle={{ color: '#818cf8' }} cursor={{ stroke: 'rgba(255,255,255,0.1)', strokeWidth: 1 }} />
+                      <Area type="monotone" dataKey="revenue" stroke="#818cf8" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" name="Revenue (₹)" />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Booking Status */}
+              <div className="bg-[#111116] p-6 rounded-2xl border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] group/chart hover:border-emerald-500/20 transition-colors">
+                <h3 className="text-sm font-mono tracking-widest text-emerald-400 uppercase mb-6 flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Booking Status Distribution</h3>
+                <div className="h-64 flex items-center justify-center">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <PieChart>
+                      <Pie data={analyticsData.bookingStatus} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
+                        {analyticsData.bookingStatus.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
-                    </div>
+                      </Pie>
+                      <RechartsTooltip contentStyle={{ borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: '#0a0a0c', color: '#cbd5e1' }} />
+                      <Legend wrapperStyle={{ fontSize: '12px', color: '#cbd5e1' }} />
+                    </PieChart>
+                  </ResponsiveContainer>
                 </div>
-
-                {analyticsLoading ? (
-                    <div className="h-64 bg-gray-100 rounded-xl animate-pulse"></div>
-                ) : analyticsData ? (
-                    <>
-                        <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-                            {/* Revenue Trend */}
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                                <h3 className="text-lg font-bold text-gray-800 mb-6">Revenue Trend</h3>
-                                <div className="h-64">
-                                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                                        <AreaChart data={analyticsData.revenueData}>
-                                            <defs>
-                                                <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
-                                                    <stop offset="5%" stopColor="#6366f1" stopOpacity={0.1} />
-                                                    <stop offset="95%" stopColor="#6366f1" stopOpacity={0} />
-                                                </linearGradient>
-                                            </defs>
-                                            <CartesianGrid strokeDasharray="3 3" vertical={false} />
-                                            <XAxis dataKey="_id" tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-                                            <YAxis tick={{ fontSize: 10 }} tickLine={false} axisLine={false} />
-                                            <Tooltip contentStyle={{ borderRadius: '8px', border: 'none', boxShadow: '0 4px 6px -1px rgb(0 0 0 / 0.1)' }} />
-                                            <Area type="monotone" dataKey="revenue" stroke="#6366f1" strokeWidth={2} fillOpacity={1} fill="url(#colorRevenue)" name="Revenue (₹)" />
-                                        </AreaChart>
-                                    </ResponsiveContainer>
-                                </div>
-                            </div>
-
-                            {/* Booking Status */}
-                            <div className="bg-white p-6 rounded-xl shadow-sm border border-gray-100">
-                                <h3 className="text-lg font-bold text-gray-800 mb-6">Booking Distribution</h3>
-                                <div className="h-64 flex items-center justify-center">
-                                    <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                                        <PieChart>
-                                            <Pie data={analyticsData.bookingStatus} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" >
-                                                {analyticsData.bookingStatus.map((entry, index) => (
-                                                    <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
-                                                ))}
-                                            </Pie>
-                                            <Tooltip />
-                                            <Legend />
-                                        </PieChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-                </div>
-
-                <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-                    {/* User Growth */}
-                    <div className="bg-white/80 backdrop-blur border border-white p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] lg:col-span-2">
-                        <h3 className="text-lg font-bold text-slate-800 mb-6">User Acquisition</h3>
-                        <div className="h-64">
-                            <ResponsiveContainer width="100%" height="100%" minWidth={0}>
-                                <BarChart data={analyticsData.userGrowth}>
-                                    <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#e2e8f0" />
-                                    <XAxis dataKey="_id" tick={{ fill: '#64748b', fontSize: 12 }} tickLine={false} axisLine={false} />
-                                    <YAxis tick={{ fill: '#64748b', fontSize: 12 }} tickLine={false} axisLine={false} />
-                                    <Tooltip cursor={{ fill: '#f1f5f9' }} contentStyle={{ borderRadius: '12px', border: 'none', boxShadow: '0 10px 15px -3px rgb(0 0 0 / 0.1)' }} />
-                                    <Bar dataKey="users" fill="#10b981" radius={[6, 6, 0, 0]} name="New Users" barSize={40} />
-                                </BarChart>
-                            </ResponsiveContainer>
-                        </div>
-                    </div>
-
-                    {/* Top Vendors */}
-                    <div className="bg-white/80 backdrop-blur border border-white p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)]">
-                        <h3 className="text-lg font-bold text-slate-800 mb-4">Top Generators</h3>
-                        <div className="space-y-4">
-                            {analyticsData.topVendors.length === 0 ? <p className="text-sm text-slate-400 italic font-medium">No sales data yet.</p> :
-                                analyticsData.topVendors.map((vendor, i) => (
-                                    <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: i * 0.1 }} key={i} className="flex items-center gap-4 py-3 border-b border-slate-50 last:border-0 hover:bg-slate-50 rounded-xl px-2 transition-colors">
-                                        <div className="w-10 h-10 rounded-xl bg-indigo-50 flex items-center justify-center text-sm font-black text-indigo-600">#{i + 1}</div>
-                                        <div className="flex-1 min-w-0">
-                                            <div className="text-sm font-bold text-slate-800 truncate">{vendor.name}</div>
-                                            <div className="text-[11px] font-bold text-slate-400 mt-0.5">{vendor.bookings} Bookings</div>
-                                        </div>
-                                        <div className="text-sm font-black text-emerald-600 bg-emerald-50 px-2.5 py-1 rounded-lg">₹{(vendor.revenue/1000).toFixed(1)}k</div>
-                                    </motion.div>
-                                ))
-                            }
-                        </div>
-                    </div>
-                </div>
-            </>
-        ) : (
-            <div className="p-10 text-center text-slate-500 font-medium bg-white rounded-2xl border border-dashed border-slate-200">Failed to load analytics data</div>
-        )}
-        </motion.div>
-
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 pt-4">
-            {/* Recent Bookings */}
-            <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} className="bg-white border border-slate-100 p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-xl font-bold text-slate-800 flex items-center gap-3">
-                        <Calendar className="w-5 h-5 text-indigo-500" /> Recent Bookings
-                    </h2>
-                    <Link href="/admin/bookings" className="text-sm text-indigo-600 hover:text-indigo-800 font-bold transition-colors">View All &rarr;</Link>
-                </div>
-                    <div className="overflow-x-auto flex-1">
-                        <table className="w-full text-sm text-left">
-                            <thead className="text-gray-400 font-medium border-b border-gray-50">
-                                <tr>
-                                    <th className="pb-3 px-2">Traveller</th>
-                                    <th className="pb-4 font-bold uppercase tracking-wider text-[11px] text-slate-400">Package</th>
-                                    <th className="pb-4 font-bold uppercase tracking-wider text-[11px] text-slate-400 text-right">Status</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {(stats.recentBookings || []).map((b, i) => (
-                                    <tr key={b?._id || i} className="hover:bg-slate-50/50 transition-colors group">
-                                        <td className="py-4 font-bold text-slate-700">{b?.user?.name || 'Anonymous'}</td>
-                                        <td className="py-4 text-slate-500 font-medium truncate max-w-[150px]">
-                                            <Link href="/admin/bookings" className="group-hover:text-indigo-600 transition-colors">{b?.package?.title || 'Package'}</Link>
-                                        </td>
-                                        <td className="py-4 text-right">
-                                            <span className={`px-3 py-1 rounded-lg text-[10px] font-black uppercase tracking-wider ${b?.status === 'confirmed' ? 'bg-emerald-100 text-emerald-700' : 'bg-amber-100 text-amber-700'
-                                                }`}>
-                                                {b?.status === 'confirmed' ? <CheckCircle2 className="w-3 h-3 inline mr-1 -mt-0.5"/> : <AlertTriangle className="w-3 h-3 inline mr-1 -mt-0.5"/>}
-                                                {b?.status || 'pending'}
-                                            </span>
-                                        </td>
-                                    </tr>
-                                ))}
-                                {(!stats.recentBookings || stats.recentBookings.length === 0) && (
-                                    <tr><td colSpan="3" className="py-6 text-center text-slate-400 font-medium">No recent bookings</td></tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </motion.div>
-
-                {/* Recent Vendors */}
-                <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="bg-white border border-slate-100 p-7 rounded-3xl shadow-[0_8px_30px_rgb(0,0,0,0.04)] flex flex-col">
-                    <div className="flex justify-between items-center mb-6">
-                        <h2 className="text-xl font-bold text-slate-800 flex items-center gap-3">
-                            <Briefcase className="w-5 h-5 text-emerald-500" /> New Vendors
-                        </h2>
-                        <Link href="/admin/vendors" className="text-sm text-indigo-600 hover:text-indigo-800 font-bold transition-colors">View All &rarr;</Link>
-                    </div>
-                    <div className="overflow-x-auto flex-1">
-                        <table className="w-full text-sm text-left">
-                            <thead className="text-gray-400 font-medium border-b border-gray-50">
-                                <tr>
-                                    <th className="pb-4 font-bold uppercase tracking-wider text-[11px] text-slate-400">Buesiness Name</th>
-                                    <th className="pb-4 font-bold uppercase tracking-wider text-[11px] text-slate-400">Action</th>
-                                    <th className="pb-4 font-bold uppercase tracking-wider text-[11px] text-slate-400 text-right">Joined</th>
-                                </tr>
-                            </thead>
-                            <tbody className="divide-y divide-slate-50">
-                                {(stats.recentVendors || []).map((v, i) => (
-                                    <tr key={v?._id || i} className="hover:bg-slate-50/50 transition-colors">
-                                        <td className="py-4">
-                                            <div className="font-bold text-slate-800">{v?.businessName || 'New Business'}</div>
-                                            <div className="text-[11px] font-medium text-slate-400">{v?.user?.email || 'N/A'}</div>
-                                        </td>
-                                        <td className="py-4">
-                                            <Link
-                                                href={`/admin/vendors/${v?._id || '#'}`}
-                                                className="text-indigo-600 hover:text-white bg-indigo-50 hover:bg-indigo-600 px-4 py-1.5 rounded-lg text-xs font-bold transition-colors inline-block"
-                                            >
-                                                Review
-                                            </Link>
-                                        </td>
-                                        <td className="py-4 text-right text-slate-400 font-medium text-xs">
-                                            {v?.createdAt ? new Date(v.createdAt).toLocaleDateString() : 'N/A'}
-                                        </td>
-                                    </tr>
-                                ))}
-                                {(!stats.recentVendors || stats.recentVendors.length === 0) && (
-                                    <tr><td colSpan="3" className="py-6 text-center text-slate-400 font-medium">No new vendors</td></tr>
-                                )}
-                            </tbody>
-                        </table>
-                    </div>
-                </motion.div>
+              </div>
             </div>
 
-            {/* Latest Packages Widget */}
-            <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} className="pt-8">
-                <div className="flex justify-between items-center mb-6">
-                    <h2 className="text-2xl font-bold text-slate-800 flex items-center gap-3">
-                        <PackageSearch className="w-6 h-6 text-pink-500" /> Latest Experiences
-                    </h2>
-                    <Link href="/admin/packages" className="text-sm text-indigo-600 hover:text-indigo-800 font-bold transition-colors">Manage All &rarr;</Link>
+            <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+              {/* User Growth */}
+              <div className="bg-[#111116] p-6 rounded-2xl border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] lg:col-span-2 hover:border-blue-500/20 transition-colors">
+                <h3 className="text-sm font-mono tracking-widest text-blue-400 uppercase mb-6 flex items-center gap-2"><Users className="w-4 h-4" /> New User Registrations</h3>
+                <div className="h-64">
+                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                    <BarChart data={analyticsData.userGrowth}>
+                      <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff1a" />
+                      <XAxis dataKey="_id" tick={{ fill: '#64748b', fontSize: 10 }} tickLine={false} axisLine={false} />
+                      <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickLine={false} axisLine={false} />
+                      <RechartsTooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: '#0a0a0c', color: '#cbd5e1' }} itemStyle={{ color: '#60a5fa' }} />
+                      <Bar dataKey="users" fill="#60a5fa" radius={[4, 4, 0, 0]} name="New Users" barSize={30} />
+                    </BarChart>
+                  </ResponsiveContainer>
                 </div>
+              </div>
 
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-                    {loading ? (
-                        [1, 2, 3, 4].map(i => <div key={i} className="h-64 bg-slate-200 rounded-3xl animate-pulse delay-75"></div>)
-                    ) : latestPackages.map((pkg, idx) => (
-                        <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: idx * 0.1 }} key={pkg._id} className="group bg-white rounded-3xl overflow-hidden shadow-[0_8px_30px_rgb(0,0,0,0.06)] hover:shadow-2xl hover:-translate-y-1 border border-white transition-all duration-500 flex flex-col">
-                            <div className="relative h-48 bg-slate-100 overflow-hidden">
-                                {pkg.photos?.[0]?.url ? (
-                                    <img src={pkg.photos[0].url} alt={pkg.title} className="w-full h-full object-cover group-hover:scale-110 transition-transform duration-700" />
-                                ) : (
-                                    <div className="w-full h-full flex items-center justify-center text-slate-300">
-                                        <PackageSearch className="w-12 h-12 stroke-1" />
-                                    </div>
-                                )}
-                                <div className="absolute top-4 right-4">
-                                    <span className={`px-3 py-1.5 rounded-lg text-[10px] font-black uppercase tracking-widest backdrop-blur-md shadow-sm border border-white/20 ${pkg.isActive ? 'bg-emerald-500/90 text-white' : 'bg-red-500/90 text-white'}`}>
-                                        {pkg.isActive ? 'LIVE' : 'DRAFT'}
-                                    </span>
-                                </div>
-                                <div className="absolute bottom-0 inset-x-0 h-1/2 bg-gradient-to-t from-slate-900/40 to-transparent"></div>
-                            </div>
-                            <div className="p-6 flex-1 flex flex-col bg-white">
-                                <h3 className="font-bold text-slate-800 text-lg line-clamp-1 mb-1 group-hover:text-indigo-600 transition-colors">{pkg.title || pkg.tourDetails?.tourName || pkg.details?.jumpName || pkg.vehicleDetails?.model || 'Service Listing'}</h3>
-                                <div className="text-[11px] text-slate-400 font-bold uppercase tracking-widest mb-6 flex items-center gap-1.5"><Briefcase className="w-3 h-3"/> {pkg.vendor?.businessName || 'Anonymous'}</div>
-                                <div className="mt-auto flex items-end justify-between">
-                                    <div>
-                                        <p className="text-[10px] uppercase font-bold text-slate-400 tracking-wider mb-0.5">Price</p>
-                                        <div className="text-xl font-black text-slate-900">₹{(pkg.pricing?.pricePerPerson || pkg.pricing?.pricePerNight || pkg.pricing?.baseFare || 0).toLocaleString()}</div>
-                                    </div>
-                                    <Link href={`/admin/packages/${pkg.vendorId}`} className="w-10 h-10 flex items-center justify-center bg-slate-50 hover:bg-indigo-600 hover:text-white text-indigo-600 rounded-xl transition-all shadow-sm">
-                                        <ExternalLink className="w-4 h-4" />
-                                    </Link>
-                                </div>
-                            </div>
-                        </motion.div>
-                    ))}
-                    {!loading && latestPackages.length === 0 && <div className="col-span-full py-16 text-center text-slate-400 font-medium bg-slate-100/50 rounded-3xl border border-dashed border-slate-200">No active experiences available on the platform yet.</div>}
+              {/* Top Vendors */}
+              <div className="bg-[#111116] p-6 rounded-2xl border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col hover:border-orange-500/20 transition-colors">
+                <h3 className="text-sm font-mono tracking-widest text-orange-400 uppercase mb-4 flex items-center gap-2"><Briefcase className="w-4 h-4" /> Top Performing Vendors</h3>
+                <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
+                  {analyticsData.topVendors.length === 0 ? <p className="text-xs text-slate-500 font-mono tracking-widest uppercase">No Data Available.</p> :
+                    analyticsData.topVendors.map((vendor, i) => (
+                      <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: i * 0.1 }} key={i} className="flex items-center gap-4 p-3 border border-white/5 bg-white/5 hover:bg-white/10 rounded-xl transition-all cursor-pointer">
+                        <div className="text-xs font-mono font-bold text-slate-500">{(i + 1).toString().padStart(2, '0')}</div>
+                        <div className="flex-1 min-w-0">
+                          <div className="text-sm font-bold text-slate-200 truncate">{vendor.name}</div>
+                          <div className="text-[10px] font-mono tracking-widest uppercase text-slate-500 mt-1">{vendor.bookings} Bookings</div>
+                        </div>
+                        <div className="text-[11px] font-mono tracking-widest text-emerald-400 bg-emerald-500/10 px-2.5 py-1 rounded border border-emerald-500/20">₹{(vendor.revenue / 1000).toFixed(1)}k</div>
+                      </motion.div>
+                    ))
+                  }
                 </div>
-            </motion.div>
+              </div>
+            </div>
+          </>
+        ) : (
+          <div className="p-10 text-center text-xs font-mono tracking-widest uppercase text-slate-500 bg-[#111116] border border-white/10 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.5)]">Error loading analytics data</div>
+        )}
+      </motion.div>
+
+
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
+
+        {/* Open Disputes & Security anomalies */}
+        <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} className="bg-[#111116] border border-rose-500/20 p-6 rounded-2xl shadow-[0_0_30px_rgba(244,63,94,0.05)] flex flex-col relative overflow-hidden group">
+          <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-transparent via-rose-500 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+          <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-rose-500/10 rounded-full blur-3xl group-hover:bg-rose-500/20 transition-all"></div>
+
+          <div className="flex justify-between items-center mb-6 relative z-10">
+            <h2 className="text-sm font-mono tracking-widest text-rose-400 uppercase flex items-center gap-2">
+              <ShieldAlert className="w-4 h-4" /> Active Disputes
+            </h2>
+            <span className="text-[10px] font-mono uppercase bg-rose-500/10 text-rose-400 px-2 py-0.5 border border-rose-500/30 rounded animate-pulse shadow-[0_0_10px_rgba(244,63,94,0.3)]">{stats.activeDisputes?.length || 0} OPEN</span>
+          </div>
+          <div className="space-y-3 flex-1 relative z-10">
+            {(!stats.activeDisputes || stats.activeDisputes.length === 0) ? (
+              <div className="text-xs font-mono text-slate-500 mt-4">No active disputes.</div>
+            ) : stats.activeDisputes.map((dsp, i) => (
+              <div key={i} className={`p-3 border bg-black/40 hover:bg-black/80 rounded-xl transition-colors cursor-pointer group/item ${dsp.priority === 'Critical' ? 'border-rose-500/30 hover:border-rose-500/60' : 'border-amber-500/20 hover:border-amber-500/40'}`}>
+                <div className="flex justify-between items-start mb-2">
+                  <span className={`text-[10px] font-mono tracking-widest transition-colors uppercase ${dsp.priority === 'Critical' ? 'text-rose-400 group-hover/item:text-rose-300' : 'text-amber-400 group-hover/item:text-amber-300'}`}>{dsp.id}</span>
+                  <span className={`text-[8px] font-mono tracking-widest uppercase px-1.5 py-0.5 border rounded ${dsp.priority === 'Critical' ? 'border-rose-500 text-rose-500 bg-rose-500/10' : 'border-amber-500 text-amber-500 bg-amber-500/10'}`}>{dsp.priority}</span>
+                </div>
+                <div className="text-[11px] font-mono text-slate-300 font-bold mb-1 truncate">{dsp.issue}</div>
+                <div className="flex justify-between items-end mt-2">
+                  <span className="text-[9px] font-mono uppercase text-slate-500">Customer: {dsp.user}</span>
+                  <span className="text-[9px] font-mono uppercase text-indigo-400 hover:text-indigo-300 underline decoration-indigo-400/30 flex items-center gap-1">View Details <ArrowRight className="w-2.5 h-2.5" /></span>
+                </div>
+              </div>
+            ))}
+          </div>
         </motion.div>
-    );
+
+        {/* Upcoming Departures - Active Missions */}
+        <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="bg-[#111116] border border-white/10 hover:border-blue-500/30 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col transition-colors">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-sm font-mono tracking-widest text-blue-400 uppercase flex items-center gap-2">
+              <Navigation className="w-4 h-4" /> Upcoming Bookings
+            </h2>
+          </div>
+          <div className="space-y-4 flex-1">
+            {(!stats.departures || stats.departures.length === 0) ? (
+              <div className="text-xs font-mono text-slate-500 mt-4">No upcoming bookings.</div>
+            ) : stats.departures.map((dep, i) => (
+              <div key={i} className="flex items-center gap-4 relative group cursor-pointer">
+                <div className="absolute left-1.5 top-0 bottom-0 w-[1px] bg-white/10 group-hover:bg-blue-500/30 transition-colors"></div>
+                <div className={`relative z-10 w-3 h-3 rounded-full border border-[#111116] ${dep.status === 'Active' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-amber-500 shadow-[0_0_10px_#f59e0b]'}`}></div>
+                <div className={`flex-1 bg-white/5 border border-white/5 rounded-lg p-3 group-hover:bg-white/10 transition-colors ${dep.status === 'Active' ? 'group-hover:border-emerald-500/30' : 'group-hover:border-amber-500/30'}`}>
+                  <div className="flex justify-between mb-1">
+                    <span className="text-xs font-bold text-slate-200">{dep.user}</span>
+                    <span className={`text-[9px] font-mono tracking-widest uppercase ${dep.status === 'Active' ? 'text-emerald-400' : 'text-amber-400'}`}>{dep.time}</span>
+                  </div>
+                  <div className="text-[10px] font-mono text-slate-500 truncate group-hover:text-slate-400">{dep.destination}</div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+
+        {/* Recent Bookings (Moved & Compressed here) */}
+        <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="bg-[#111116] border border-white/10 hover:border-emerald-500/30 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col transition-colors">
+          <div className="flex justify-between items-center mb-6">
+            <h2 className="text-sm font-mono tracking-widest text-emerald-400 uppercase flex items-center gap-2">
+              <Calendar className="w-4 h-4" /> Recent Bookings
+            </h2>
+            <Link href="/admin/bookings" className="text-[9px] font-mono text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-widest bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/30">View All &rarr;</Link>
+          </div>
+          <div className="overflow-x-auto flex-1 custom-scrollbar">
+            <table className="w-full text-sm text-left">
+              <tbody className="divide-y divide-white/5">
+                {(stats.recentBookings || []).slice(0, 4).map((b, i) => (
+                  <tr key={b?._id || i} className="group hover:bg-white/5 cursor-pointer transition-colors">
+                    <td className="py-3 px-2 border-r border-white/5">
+                      <div className="text-[11px] font-bold text-slate-300 truncate max-w-[100px]">{b?.user?.name || 'Anonymous'}</div>
+                    </td>
+                    <td className="py-3 px-2">
+                      <div className="text-[10px] font-mono text-slate-500 truncate max-w-[120px] group-hover:text-slate-400">{b?.package?.title || 'Package Node'}</div>
+                    </td>
+                    <td className="py-3 px-2 text-right">
+                      <span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-mono tracking-widest uppercase border ${b?.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>
+                        {b?.status || 'pend'}
+                      </span>
+                    </td>
+                  </tr>
+                ))}
+                {(!stats.recentBookings || stats.recentBookings.length === 0) && (
+                  <tr><td colSpan="3" className="py-8 text-center text-xs font-mono tracking-widest uppercase text-slate-500">No Data Available</td></tr>
+                )}
+              </tbody>
+            </table>
+          </div>
+        </motion.div>
+      </div>
+
+      {/* Latest Packages Widget */}
+      <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} className="pt-8 border-t border-white/5">
+        <div className="flex justify-between items-center mb-6">
+          <h2 className="text-sm font-mono tracking-widest text-pink-400 uppercase flex items-center gap-2">
+            <PackageSearch className="w-4 h-4" /> Recently Added Packages
+          </h2>
+          <Link href="/admin/packages" className="text-xs font-mono text-pink-400 hover:text-pink-300 transition-colors uppercase tracking-widest bg-pink-500/10 hover:bg-pink-500/20 px-3 py-1.5 rounded-md border border-pink-500/20 shadow-[0_0_10px_rgba(236,72,153,0.1)]">View All Packages &rarr;</Link>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+          {loading ? (
+            [1, 2, 3, 4].map(i => <div key={i} className="h-64 bg-white/5 border border-white/10 rounded-2xl animate-pulse delay-75"></div>)
+          ) : latestPackages.map((pkg, idx) => (
+            <motion.div initial={{ scale: 0.95, opacity: 0 }} animate={{ scale: 1, opacity: 1 }} transition={{ delay: idx * 0.1 }} key={pkg._id} className="h-full">
+              <PackageCard pkg={pkg} showVendorInfo={true} inspectHref={`/admin/packages/item/${pkg._id}`} />
+            </motion.div>
+          ))}
+          {!loading && latestPackages.length === 0 && <div className="col-span-full py-16 text-center text-xs font-mono tracking-widest uppercase text-slate-500 bg-[#111116] rounded-2xl border border-white/5 border-dashed">No packages added yet.</div>}
+        </div>
+      </motion.div>
+
+      <style jsx global>{`
+                .custom-scrollbar::-webkit-scrollbar {
+                    width: 4px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-track {
+                    background: rgba(255, 255, 255, 0.02);
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb {
+                    background: rgba(255, 255, 255, 0.1);
+                    border-radius: 4px;
+                }
+                .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+                    background: rgba(255, 255, 255, 0.2);
+                }
+            `}</style>
+    </motion.div>
+  );
 }
 
-function StatCard({ title, value, gradient, Icon, href, delay = 0, pulse = false }) {
-    const CardContent = (
-        <motion.div 
-            initial={{ opacity: 0, y: 20 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ delay, duration: 0.5 }}
-            className={`p-6 bg-gradient-to-br ${gradient} rounded-3xl shadow-xl text-white relative overflow-hidden group h-full transition-transform hover:-translate-y-1`}
-        >
-            <div className="absolute top-0 right-0 p-4 opacity-20 transform group-hover:scale-125 transition-transform duration-500 ease-out">
-                <Icon className="w-24 h-24 -mt-4 -mr-4" />
-            </div>
-            <div className="relative z-10 flex flex-col h-full">
-                <div className="flex justify-between items-start mb-4">
-                    <div className="w-12 h-12 bg-white/20 rounded-2xl flex items-center justify-center backdrop-blur-md">
-                        <Icon className="w-6 h-6 text-white" />
-                    </div>
-                    {pulse && <span className="flex h-3 w-3 relative">
-                        <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-white opacity-75"></span>
-                        <span className="relative inline-flex rounded-full h-3 w-3 bg-white"></span>
-                    </span>}
-                </div>
-                <h3 className="text-4xl font-black tracking-tight mb-1">{value}</h3>
-                <p className="text-sm font-bold uppercase tracking-widest text-white/80">{title}</p>
-                <div className="mt-auto pt-4 flex items-center text-xs font-bold text-white/90 group-hover:text-white">
-                    Manage <ArrowRight className="w-3 h-3 ml-1 group-hover:translate-x-1 transition-transform" />
-                </div>
-            </div>
-        </motion.div>
-    );
+function StatCard({ title, value, colorClass, bgClass, borderClass, glowClass, Icon, href, delay = 0, pulse = false }) {
+  const CardContent = (
+    <motion.div
+      initial={{ opacity: 0, scale: 0.95 }}
+      animate={{ opacity: 1, scale: 1 }}
+      transition={{ delay, duration: 0.5 }}
+      className={`p-5 bg-[#111116] border border-white/10 rounded-2xl shadow-[0_0_20px_rgba(0,0,0,0.5)] relative overflow-hidden group h-full transition-all hover:border-white/20 hover:-translate-y-1 ${glowClass}`}
+    >
+      <div className={`absolute -bottom-8 -right-8 w-32 h-32 rounded-full blur-3xl opacity-20 group-hover:opacity-40 transition-opacity ${bgClass.replace('/10', '')}`}></div>
+      <div className="absolute top-4 right-4 opacity-5 group-hover:opacity-10 transform group-hover:scale-110 transition-all duration-500">
+        <Icon className={`w-16 h-16 ${colorClass}`} />
+      </div>
+      <div className="relative z-10 flex flex-col h-full">
+        <div className="flex justify-between items-start mb-4">
+          <div className={`w-10 h-10 ${bgClass} border ${borderClass} rounded-xl flex items-center justify-center backdrop-blur-md`}>
+            <Icon className={`w-5 h-5 ${colorClass}`} />
+          </div>
+          {pulse && <span className="flex h-2.5 w-2.5 relative">
+            <span className={`animate-ping absolute inline-flex h-full w-full rounded-full ${bgClass.replace('/10', '')} opacity-75`}></span>
+            <span className={`relative inline-flex rounded-full h-2.5 w-2.5 ${bgClass.replace('/10', '')}`}></span>
+          </span>}
+        </div>
+        <h3 className="text-3xl font-mono tracking-tight text-white mb-1 drop-shadow-[0_0_10px_rgba(255,255,255,0.2)]">{value}</h3>
+        <p className="text-[10px] font-mono uppercase tracking-widest text-slate-500 mt-auto group-hover:text-slate-400 transition-colors">{title}</p>
+      </div>
+    </motion.div>
+  );
 
-    return href ? <Link href={href} className="block h-full">{CardContent}</Link> : CardContent;
+  return href ? <Link href={href} className="block h-full">{CardContent}</Link> : CardContent;
 }

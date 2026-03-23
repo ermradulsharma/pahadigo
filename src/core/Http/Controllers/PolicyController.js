@@ -1,6 +1,7 @@
 import AdminService from '@/services/AdminService.js';
 import { errorResponse, successResponse } from '@/helpers/response.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
+import { seedPolicies } from '@/seeders/policySeeder.js';
 
 class PolicyController {
     // GET /admin/policies
@@ -92,7 +93,6 @@ class PolicyController {
     // POST /admin/policies/seed
     async seed(req) {
         try {
-            const { seedPolicies } = await import('@/seeders/policySeeder.js');
             const result = await seedPolicies();
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.SEED, { result });
         } catch (error) {

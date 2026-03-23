@@ -26,6 +26,9 @@ const VendorSchema = new mongoose.Schema({
     // approval status
     isApproved: { type: Boolean, default: DEFAULTS.VENDOR_IS_APPROVED },
 
+    // quality & trust
+    trustBadge: { type: String, enum: ['none', 'verified', 'super_partner'], default: 'none' },
+
     // category
     category: [{
         _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: true },
