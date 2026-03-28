@@ -268,7 +268,7 @@ export default function AdminDashboard() {
               <div className="bg-[#111116] p-6 rounded-2xl border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] group/chart hover:border-indigo-500/20 transition-colors">
                 <h3 className="text-sm font-mono tracking-widest text-indigo-400 uppercase mb-6 flex items-center gap-2"><IndianRupee className="w-4 h-4" /> Revenue Trends</h3>
                 <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <ResponsiveContainer width="100%" height={256}>
                     <AreaChart data={analyticsData.revenueData}>
                       <defs>
                         <linearGradient id="colorRevenue" x1="0" y1="0" x2="0" y2="1">
@@ -290,7 +290,7 @@ export default function AdminDashboard() {
               <div className="bg-[#111116] p-6 rounded-2xl border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] group/chart hover:border-emerald-500/20 transition-colors">
                 <h3 className="text-sm font-mono tracking-widest text-emerald-400 uppercase mb-6 flex items-center gap-2"><CheckCircle2 className="w-4 h-4" /> Booking Status Distribution</h3>
                 <div className="h-64 flex items-center justify-center">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <ResponsiveContainer width="100%" height={256}>
                     <PieChart>
                       <Pie data={analyticsData.bookingStatus} cx="50%" cy="50%" innerRadius={60} outerRadius={80} paddingAngle={5} dataKey="value" stroke="none">
                         {analyticsData.bookingStatus.map((entry, index) => (
@@ -310,7 +310,7 @@ export default function AdminDashboard() {
               <div className="bg-[#111116] p-6 rounded-2xl border border-white/10 shadow-[0_0_30px_rgba(0,0,0,0.5)] lg:col-span-2 hover:border-blue-500/20 transition-colors">
                 <h3 className="text-sm font-mono tracking-widest text-blue-400 uppercase mb-6 flex items-center gap-2"><Users className="w-4 h-4" /> New User Registrations</h3>
                 <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%" minWidth={0}>
+                  <ResponsiveContainer width="100%" height={256}>
                     <BarChart data={analyticsData.userGrowth}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff1a" />
                       <XAxis dataKey="_id" tick={{ fill: '#64748b', fontSize: 10 }} tickLine={false} axisLine={false} />
