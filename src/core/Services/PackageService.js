@@ -28,8 +28,11 @@ class PackageService {
         const catalog = await this.ensureCatalog(vendorId);
         const vendor = await Vendor.findById(vendorId);
 
-        const result = catalog.toObject();
-        result.items = [];
+        const result = { 
+            catalogId: catalog._id,
+            vendorId: catalog.vendor,
+            services: [] 
+        };
 
         if (vendor && vendor.category && Array.isArray(vendor.category)) {
             vendor.category.forEach(c => {
@@ -37,27 +40,28 @@ class PackageService {
                 const schemaKey = CATEGORY_MAP[slug] || slug;
                 const categoryItems = catalog[schemaKey] || [];
 
-                categoryItems.forEach(item => {
+                const items = categoryItems.map(item => {
                     const itemObj = item.toObject ? item.toObject() : item;
-                    result.items.push({
+                    return {
                         id: itemObj._id,
                         title: itemObj.title,
                         isActive: itemObj.isActive,
                         pricing: itemObj.pricing || {},
                         location: itemObj.location || {},
-                        photos: itemObj.photos[0] || "",
+                        photos: itemObj.photos?.[0] || "",
                         category_name: c.name || "",
                         category_slug: slug,
                         category_id: c._id || ""
-                    });
+                    };
+                });
+
+                result.services.push({
+                    name: c.name,
+                    slug: slug,
+                    items: items
                 });
             });
         }
-
-        // Clean up individual root-level category keys to provide a clean response
-        SCHEMA_KEYS.forEach(key => {
-            if (result[key]) delete result[key];
-        });
 
         return result;
     }
@@ -214,7 +218,8 @@ class PackageService {
                             flattened.push({
                                 ...item,
                                 category: key,
-                                catalogId: cat._id.toString()
+                                catalogId: cat._id.toString(),
+                                vendor: vendorInfo // Now includes vendor context
                             });
                         }
                     });

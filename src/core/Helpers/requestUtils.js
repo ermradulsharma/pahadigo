@@ -13,8 +13,13 @@ export const getRequestMetadata = (req) => {
         };
     }
 
-    const ipAddress = req.headers?.get('x-forwarded-for') || req.headers?.get('x-real-ip') || 'unknown';
-    const userAgent = req.headers?.get('user-agent') || 'unknown';
+    const getHeader = (name) => {
+        if (typeof req.headers?.get === 'function') return req.headers.get(name);
+        return req.headers?.[name] || req.headers?.[name.toLowerCase()];
+    };
+
+    const ipAddress = getHeader('x-forwarded-for') || getHeader('x-real-ip') || 'unknown';
+    const userAgent = getHeader('user-agent') || 'unknown';
 
     return { ipAddress, userAgent };
 };

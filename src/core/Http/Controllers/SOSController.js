@@ -33,7 +33,7 @@ class SOSController {
             const updatedUser = await User.findByIdAndUpdate(
                 user.id,
                 { $set: { emergencyContacts } },
-                { new: true, runValidators: true }
+                { returnDocument: 'after', runValidators: true }
             );
 
             return successResponse(HTTP_STATUS.OK, 'Emergency contacts updated successfully.', { emergencyContacts: updatedUser.emergencyContacts });

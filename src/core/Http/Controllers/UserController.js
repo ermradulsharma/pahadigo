@@ -28,7 +28,7 @@ class UserController {
                     { upsert: true }
                 );
             }
-        } catch (e) {}
+        } catch (e) { }
     }
 
     // GET /traveller/packages (or public)
@@ -126,7 +126,7 @@ class UserController {
                 .sort({ lastSearched: -1 })
                 .limit(20)
                 .lean();
-            
+
             return successResponse(HTTP_STATUS.OK, "Recent searches retrieved", searches);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message, {});
@@ -149,7 +149,7 @@ class UserController {
     async getWishlist(req) {
         try {
             const wishlistEntries = await Wishlist.find({ user: req.user.id }).lean();
-            
+
             // Populate the full package item details for each wishlist entry
             const items = [];
             for (const entry of wishlistEntries) {
@@ -190,10 +190,13 @@ class UserController {
                 return errorResponse(HTTP_STATUS.NOT_FOUND, "Package item not found", {});
             }
 
+            // Log the action for analytics
+            // (Wait: No need to log here unless desired)
+
             const wishlistEntry = await Wishlist.findOneAndUpdate(
                 { user: req.user.id, itemId },
                 { $set: { category: category || item.category } },
-                { upsert: true, new: true }
+                { upsert: true, returnDocument: 'after' }
             );
 
             return successResponse(HTTP_STATUS.CREATED, "Added to wishlist", wishlistEntry);

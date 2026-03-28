@@ -1,41 +1,41 @@
 name: CI/CD Testing Pipeline
 
 on:
-  push:
-    branches: [ "main", "master" ]
-  pull_request:
-    branches: [ "main", "master" ]
+    push:
+        branches: ["main", "master"]
+    pull_request:
+        branches: ["main", "master"]
 permissions:
-  contents: read
+    contents: read
 
 jobs:
-  unit-and-integration-tests:
-    name: Core Unit & Integration Tests
-    runs-on: ubuntu-latest
+    unit-and-integration-tests:
+        name: Core Unit & Integration Tests
+        runs-on: ubuntu-latest
 
-    steps:
-      - name: 🚀 Checkout Repository
-        uses: actions/checkout@v6
+        steps:
+            - name: 🚀 Checkout Repository
+              uses: actions/checkout@v6
 
-      - name: ⚙️ Setup Node.js Environment
-        uses: actions/setup-node@v6
-        with:
-          node-version: '22.x'
-          cache: 'npm'
+            - name: ⚙️ Setup Node.js Environment
+              uses: actions/setup-node@v6
+              with:
+                  node-version: "22.x"
+                  cache: "npm"
 
-      - name: 📦 Install Dependencies
-        run: npm install
+            - name: 📦 Install Dependencies
+              run: npm install
 
-      - name: 🧪 Run Jest Tests with Coverage
-        run: npm run test -- --coverage --forceExit
-        env:
-          NODE_ENV: test
-          MONGODB_URI: "mongodb://127.0.0.1:27017/test-ci"
-          JWT_SECRET: "workflow-secret-identity"
+            - name: 🧪 Run Jest Tests with Coverage
+              run: npm run test -- --coverage --forceExit
+              env:
+                  NODE_ENV: test
+                  MONGODB_URI: "mongodb://127.0.0.1:27017/test-ci"
+                  JWT_SECRET: "workflow-secret-identity"
 
-      - name: 📊 Upload Coverage Report
-        uses: actions/upload-artifact@v7
-        with:
-          name: Jest-Coverage-Report
-          path: coverage/
-          retention-days: 7
+            - name: 📊 Upload Coverage Report
+              uses: actions/upload-artifact@v7
+              with:
+                  name: Jest-Coverage-Report
+                  path: coverage/
+                  retention-days: 7
