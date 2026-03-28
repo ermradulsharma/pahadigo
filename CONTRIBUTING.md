@@ -1,6 +1,6 @@
-# 🏗️ Contributing to PahadiGo
+# 🏗️ Contributing to PahadiGo (Private Project)
 
-Welcome! **PahadiGo** is a large-scale enterprise travel ecosystem. This guide outlines the standardized operational protocols required to maintain the stability and scalability of the platform.
+Welcome! **PahadiGo** is a private enterprise travel ecosystem owned by **Er. Mradul Sharma**. This guide outlines the standardized operational protocols required for authorized developers to maintain the stability and scalability of the platform. Access to this repository is by invitation only.
 
 ---
 

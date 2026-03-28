@@ -1,8 +1,8 @@
-# Contributor Covenant Code of Conduct
+# Code of Conduct - Private Project
 
 ## Our Pledge
 
-In the interest of fostering an open and welcoming environment, we as contributors and maintainers pledge to making participation in our project and our community a harassment-free experience for everyone, regardless of age, body size, disability, ethnicity, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, religion, or sexual identity and orientation.
+This is a **Private Project** owned and managed by **Er. Mradul Sharma**. In the interest of fostering a professional and collaborative environment within the development team, we as contributors and maintainers pledge to make participation in this project a harassment-free experience for everyone on the team, regardless of age, body size, disability, ethnicity, gender identity and expression, level of experience, education, socio-economic status, nationality, personal appearance, race, religion, or sexual identity and orientation.
 
 ## Our Standards
 

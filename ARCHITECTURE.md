@@ -1,4 +1,6 @@
-# 🏗️ System Architecture & Data Orchestration
+# 🏗️ System Architecture & Data Orchestration (Private Project)
+
+**Owner & Lead Architect:** Er. Mradul Sharma
 
 ## 🏔️ 1. Domain Philosophical Core
 

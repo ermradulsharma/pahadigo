@@ -1,6 +1,6 @@
-# 🛡️ Enterprise Security Operations & Mitigations
+# 🛡️ Enterprise Security Operations & Mitigations (Private Project)
 
-PahadiGo proactively architects resilient structural algorithms targeting sensitive data domains—protecting complex Vendor KYC mechanisms, strictly tracking traveler profiles securely, and preventing financial manipulation via Razorpay webhooks.
+PahadiGo is a **Private Project** owned by **Er. Mradul Sharma**. We proactively architect resilient structural algorithms targeting sensitive data domains—protecting complex Vendor KYC mechanisms, strictly tracking traveler profiles securely, and preventing financial manipulation via Razorpay webhooks.
 
 ---
 

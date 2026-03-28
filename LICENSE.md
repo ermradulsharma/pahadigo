@@ -1,13 +1,13 @@
 # ⚖️ Proprietary Software License & Intellectual Property Rights
 
 **PahadiGo Enterprise Platform**
-**Copyright © 2024–2026 ermradulsharma. All Rights Reserved.**
+**Copyright © 2024–2026 Er. Mradul Sharma. All Rights Reserved.**
 
 ---
 
 ## 🛑 1. NOTICE TO ALL USERS
 
-This software is **CONFIDENTIAL** and **PROPRIETARY** to **ermradulsharma** (the "Owner"). Access to this source code, its documentation, and associated assets is restricted solely to authorized personnel or entities who have entered into a formal Non-Disclosure Agreement (NDA) or a Service Level Agreement (SLA) explicitly granting such access.
+This software is **CONFIDENTIAL** and **PROPRIETARY** to **Er. Mradul Sharma** (the "Owner"). Access to this source code, its documentation, and associated assets is restricted solely to authorized personnel or entities who have entered into a formal Non-Disclosure Agreement (NDA) or a Service Level Agreement (SLA) explicitly granting such access.
 
 ## 🏢 2. OWNERSHIP & INTELLECTUAL PROPERTY
 
