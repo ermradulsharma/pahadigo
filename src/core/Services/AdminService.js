@@ -151,10 +151,20 @@ class AdminService {
             Booking.find({ travelDate: { $gte: now, $lte: next48 }, status: 'confirmed' }).populate('user', 'name').populate('package', 'title').sort({ travelDate: 1 }).limit(5).lean()
         ]);
 
-        // Better Top Territories aggregation (Using user states)
-        const topTerritoriesAgg = await User.aggregate([
-            { $match: { role: 'traveller', "address.state": { $exists: true, $ne: "" }, "address.state": { $ne: null } } },
-            { $group: { _id: "$address.state", count: { $sum: 1 } } },
+        // Top Destinations aggregation (Using Verified Vendor operational locations)
+        const topTerritoriesAgg = await Vendor.aggregate([
+            { $match: { isApproved: true } },
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'user',
+                    foreignField: '_id',
+                    as: 'userData'
+                }
+            },
+            { $unwind: "$userData" },
+            { $match: { "userData.address.state": { $exists: true, $ne: null, $ne: "" } } },
+            { $group: { _id: "$userData.address.state", count: { $sum: 1 } } },
             { $sort: { count: -1 } },
             { $limit: 5 }
         ]);
@@ -163,7 +173,7 @@ class AdminService {
         const systemActivity = systemLogs.map(log => ({
             time: new Date(log.createdAt).toLocaleTimeString([], { hour12: false, hour: '2-digit', minute: '2-digit', second: '2-digit' }),
             type: log.action === 'ERROR' ? 'SEC' : log.action === 'CREATE' ? 'SYS' : 'DB',
-            message: log.details?.message || `Ref: ${log.resourceType} - ${log.action}`,
+            message: log.details?.message || (typeof log.details === 'string' ? log.details : `Target: ${log.target || 'SYSTEM'} [${log.action}]`),
             status: log.action === 'ERROR' ? 'error' : log.action === 'CREATE' ? 'success' : 'info'
         }));
 
@@ -176,12 +186,12 @@ class AdminService {
             status: d.status
         }));
 
-        // Process Territories
+        // Process Territories (Destinations)
         const colors = ['bg-indigo-500', 'bg-emerald-500', 'bg-blue-500', 'bg-pink-500', 'bg-orange-500'];
-        const totalUsers = userCount || 1; // avoid divide by zero
+        const totalVendorsForStats = verifiedVendorCount || 1; // Ensure math doesn't fail
         const topTerritories = topTerritoriesAgg.map((t, idx) => ({
             name: t._id,
-            load: Math.round((t.count / totalUsers) * 100) || 5, // at least 5% bar show
+            load: Math.round((t.count / totalVendorsForStats) * 100) || 5, // Calculate relative market share of the region
             color: colors[idx % colors.length]
         }));
 

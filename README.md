@@ -2,13 +2,13 @@
 
 # 🏔️ PahadiGo Enterprise Platform
 
-**Advanced Next.js 15 & Node.js Travel Infrastructure for the Himalayas**
+**Advanced Next.js 16 & Node.js Travel Infrastructure for the Himalayas**
 
-[![Next.js](https://img.shields.io/badge/Next.js-15.1.x-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
+[![Next.js](https://img.shields.io/badge/Next.js-16.2.x-black?style=for-the-badge&logo=next.js)](https://nextjs.org/)
 [![React](https://img.shields.io/badge/React-19.2.x-blue?style=for-the-badge&logo=react)](https://react.dev/)
 [![MongoDB](https://img.shields.io/badge/MongoDB-Atlas_9.x-green?style=for-the-badge&logo=mongodb)](https://www.mongodb.com/)
 [![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v4.1-teal?style=for-the-badge&logo=tailwind-css)](https://tailwindcss.com/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg?style=for-the-badge)](https://opensource.org/licenses/MIT)
+[![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg?style=for-the-badge)](LICENSE.md)
 
 </div>
 
@@ -47,7 +47,7 @@ The system guarantees transactional safety through distributed lock mechanisms, 
 
 ### Frameworks & Presentation UI
 
-- **Framework & Routing:** `Next.js 15.1.x` (Full App Router Adoption / Edge Runtime capabilities)
+- **Framework & Routing:** `Next.js 16.2.x` (Full App Router Adoption / Edge Runtime capabilities)
 - **UI & State Synthesis:** React 19.x utilizing highly optimized React Server Component (RSC) limits alongside `framer-motion` for complex physics-based orchestration.
 - **Styling Execution:** `Tailwind CSS 4.x` executing strictly alongside modernized PostCSS hooks and `lucide-react` dynamically scaling SVGs.
 - **Data Visualization Canvas:** `Recharts 3.x` mapping server-cached telemetry payloads visually.
@@ -138,6 +138,8 @@ npm run dev
 
 This repository possesses comprehensive sub-documentation manuals standardizing structural execution methodologies. It is imperative that contributing engineers consume these parameters entirely:
 
+- **[ARCHITECTURE.md](ARCHITECTURE.md)** — Detailed technical design, data modeling, and system orchestration.
+- **[CONTRIBUTING.md](CONTRIBUTING.md)** — Workflow standards, testing protocols, and dependency management.
 - **[SECURITY.md](SECURITY.md)** — Extensive evaluations representing Authentication matrices, strict NoSQL injection parameters, and Coordinated Disclosure protocols.
 
 ---

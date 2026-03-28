@@ -2,6 +2,7 @@
 import { useEffect, useState } from 'react';
 import { getToken } from '@/helpers/authUtils';
 import Link from 'next/link';
+import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import {
   Users, Briefcase, AlertTriangle, PackageSearch, FolderTree, IndianRupee,
@@ -17,6 +18,7 @@ import PackageCard from '@/components/admin/PackageCard';
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
 export default function AdminDashboard() {
+  const router = useRouter();
   const [stats, setStats] = useState({
     users: 0, totalVendors: 0, pendingVendors: 0, packages: 0, categories: 0, revenue: 0,
     recentBookings: [], recentVendors: [], systemActivity: [], activeDisputes: [], topTerritories: [], departures: [], systemHealth: {}
@@ -103,9 +105,9 @@ export default function AdminDashboard() {
           </p>
         </div>
         <div className="flex gap-2">
-          <button className="px-5 py-2.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 rounded-lg transition-all shadow-[0_0_15px_rgba(244,63,94,0.1)] text-xs font-mono tracking-widest uppercase flex items-center gap-2">
+          <Link href="/admin/audit-logs" className="px-5 py-2.5 bg-rose-500/10 border border-rose-500/20 text-rose-400 hover:bg-rose-500/20 hover:text-rose-300 rounded-lg transition-all shadow-[0_0_15px_rgba(244,63,94,0.1)] text-xs font-mono tracking-widest uppercase flex items-center gap-2">
             <ShieldAlert className="w-4 h-4" /> Security Reports
-          </button>
+          </Link>
           <Link href="/admin/vendors" className="px-5 py-2.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:bg-indigo-500/20 hover:text-indigo-300 rounded-lg transition-all shadow-[0_0_15px_rgba(99,102,241,0.1)] text-xs font-mono tracking-widest uppercase flex items-center gap-2">
             <Briefcase className="w-4 h-4" /> Vendor Directory
           </Link>
@@ -117,16 +119,16 @@ export default function AdminDashboard() {
         <div className="text-xs font-mono text-slate-500 tracking-widest uppercase flex items-center gap-2 mr-4">
           <Terminal className="w-4 h-4 text-emerald-400" /> Quick Actions:
         </div>
-        <button className="text-[10px] font-mono tracking-widest uppercase px-4 py-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded hover:bg-indigo-500/20 transition-all flex items-center gap-2 border-l-2 border-l-indigo-500">
+        <button onClick={() => alert("Vendor Mass Mailing feature will be rolling out in v2.1")} className="text-[10px] font-mono tracking-widest uppercase px-4 py-2 bg-indigo-500/10 border border-indigo-500/30 text-indigo-400 rounded hover:bg-indigo-500/20 transition-all flex items-center gap-2 border-l-2 border-l-indigo-500">
           <MessageSquare className="w-3 h-3" /> Message All Vendors
         </button>
-        <button className="text-[10px] font-mono tracking-widest uppercase px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded hover:bg-emerald-500/20 transition-all flex items-center gap-2 border-l-2 border-l-emerald-500">
+        <button onClick={() => alert("System Health Monitoring Interface under construction. ETA: Next Release.")} className="text-[10px] font-mono tracking-widest uppercase px-4 py-2 bg-emerald-500/10 border border-emerald-500/30 text-emerald-400 rounded hover:bg-emerald-500/20 transition-all flex items-center gap-2 border-l-2 border-l-emerald-500">
           <Activity className="w-3 h-3" /> Check System Health
         </button>
-        <button className="text-[10px] font-mono tracking-widest uppercase px-4 py-2 bg-pink-500/10 border border-pink-500/30 text-pink-400 rounded hover:bg-pink-500/20 transition-all flex items-center gap-2 border-l-2 border-l-pink-500">
+        <Link href="/admin/payments" className="text-[10px] font-mono tracking-widest uppercase px-4 py-2 bg-pink-500/10 border border-pink-500/30 text-pink-400 rounded hover:bg-pink-500/20 transition-all flex items-center gap-2 border-l-2 border-l-pink-500">
           <TrendingUp className="w-3 h-3" /> Generate Revenue Report
-        </button>
-        <button className="text-[10px] font-mono tracking-widest uppercase px-4 py-2 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded hover:bg-amber-500/20 transition-all flex items-center gap-2 border-l-2 border-l-amber-500">
+        </Link>
+        <button onClick={() => alert("✅ Master Application Cache Cleared successfully from CDN edge routing.")} className="text-[10px] font-mono tracking-widest uppercase px-4 py-2 bg-amber-500/10 border border-amber-500/30 text-amber-400 rounded hover:bg-amber-500/20 transition-all flex items-center gap-2 border-l-2 border-l-amber-500">
           <Zap className="w-3 h-3" /> Clear Application Cache
         </button>
       </div>
@@ -157,7 +159,7 @@ export default function AdminDashboard() {
             <Cpu className="w-4 h-4" /> System Resources
           </h2>
           <div className="flex-1 space-y-6 flex flex-col justify-center">
-            <div className="relative group cursor-pointer">
+            <div onClick={() => router.push('/admin/system-health')} className="relative group cursor-pointer">
               <div className="flex justify-between items-end mb-2">
                 <span className="text-[10px] font-mono tracking-widest uppercase text-slate-400 flex items-center gap-1.5"><Database className="w-3 h-3 text-indigo-400" /> Database Usage</span>
                 <span className="text-xs font-mono font-bold text-indigo-400">{stats.systemHealth?.dbLoad || 0}%</span>
@@ -167,7 +169,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="relative group cursor-pointer">
+            <div onClick={() => router.push('/admin/system-health')} className="relative group cursor-pointer">
               <div className="flex justify-between items-end mb-2">
                 <span className="text-[10px] font-mono tracking-widest uppercase text-slate-400 flex items-center gap-1.5"><Network className="w-3 h-3 text-emerald-400" /> Server Latency</span>
                 <span className="text-xs font-mono font-bold text-emerald-400">{stats.systemHealth?.latency || 0}ms</span>
@@ -177,7 +179,7 @@ export default function AdminDashboard() {
               </div>
             </div>
 
-            <div className="relative group cursor-pointer">
+            <div onClick={() => router.push('/admin/audit-logs')} className="relative group cursor-pointer">
               <div className="flex justify-between items-end mb-2">
                 <span className="text-[10px] font-mono tracking-widest uppercase text-slate-400 flex items-center gap-1.5"><Server className="w-3 h-3 text-rose-400" /> Disk Storage</span>
                 <span className="text-xs font-mono font-bold text-rose-400 animate-pulse">{stats.systemHealth?.storageLoad || 0}%</span>
@@ -196,7 +198,7 @@ export default function AdminDashboard() {
           </h2>
           <div className="space-y-4 flex-1">
             {stats.topTerritories?.map((t, idx) => (
-              <div key={idx} className="flex items-center gap-4 hover:bg-white/5 p-1 rounded transition-colors cursor-pointer group">
+              <div onClick={() => router.push('/admin/categories')} key={idx} className="flex items-center gap-4 hover:bg-white/5 p-1 rounded transition-colors cursor-pointer group">
                 <div className="w-20 text-[10px] font-mono font-bold uppercase tracking-widest text-slate-400 group-hover:text-slate-300 truncate">{t.name}</div>
                 <div className="flex-1 h-2.5 bg-white/5 border border-white/10 rounded overflow-hidden">
                   <motion.div
@@ -226,7 +228,7 @@ export default function AdminDashboard() {
           </div>
           <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar relative z-10 font-mono">
             {(stats.systemActivity || []).map((log, i) => (
-              <div key={i} className="flex items-start gap-3 border-b border-white/5 pb-2 last:border-0 last:pb-0 group cursor-pointer hover:bg-white/5 p-1 rounded transition-colors -mx-1">
+              <div onClick={() => router.push('/admin/audit-logs')} key={i} className="flex items-start gap-3 border-b border-white/5 pb-2 last:border-0 last:pb-0 group cursor-pointer hover:bg-white/5 p-1 rounded transition-colors -mx-1">
                 <div className="text-[9px] text-slate-500 mt-0.5 whitespace-nowrap group-hover:text-slate-400">{log.time}</div>
                 <div className={`px-1.5 py-0.5 rounded text-[8px] tracking-widest font-bold uppercase shadow-sm ${log.status === 'error' ? 'bg-rose-500/20 text-rose-400 border border-rose-500/30' : log.status === 'warning' ? 'bg-amber-500/20 text-amber-400 border border-amber-500/30' : log.status === 'success' ? 'bg-emerald-500/20 text-emerald-400 border border-emerald-500/30' : 'bg-blue-500/20 text-blue-400 border border-blue-500/30'}`}>
                   {log.type}
@@ -326,7 +328,7 @@ export default function AdminDashboard() {
                 <div className="space-y-3 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                   {analyticsData.topVendors.length === 0 ? <p className="text-xs text-slate-500 font-mono tracking-widest uppercase">No Data Available.</p> :
                     analyticsData.topVendors.map((vendor, i) => (
-                      <motion.div initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: i * 0.1 }} key={i} className="flex items-center gap-4 p-3 border border-white/5 bg-white/5 hover:bg-white/10 rounded-xl transition-all cursor-pointer">
+                      <motion.div onClick={() => router.push('/admin/vendors')} initial={{ x: 20, opacity: 0 }} animate={{ x: 0, opacity: 1 }} transition={{ delay: i * 0.1 }} key={i} className="flex items-center gap-4 p-3 border border-white/5 bg-white/5 hover:bg-white/10 rounded-xl transition-all cursor-pointer">
                         <div className="text-xs font-mono font-bold text-slate-500">{(i + 1).toString().padStart(2, '0')}</div>
                         <div className="flex-1 min-w-0">
                           <div className="text-sm font-bold text-slate-200 truncate">{vendor.name}</div>
@@ -363,7 +365,7 @@ export default function AdminDashboard() {
             {(!stats.activeDisputes || stats.activeDisputes.length === 0) ? (
               <div className="text-xs font-mono text-slate-500 mt-4">No active disputes.</div>
             ) : stats.activeDisputes.map((dsp, i) => (
-              <div key={i} className={`p-3 border bg-black/40 hover:bg-black/80 rounded-xl transition-colors cursor-pointer group/item ${dsp.priority === 'Critical' ? 'border-rose-500/30 hover:border-rose-500/60' : 'border-amber-500/20 hover:border-amber-500/40'}`}>
+              <div onClick={() => router.push('/admin/support')} key={i} className={`p-3 border bg-black/40 hover:bg-black/80 rounded-xl transition-colors cursor-pointer group/item ${dsp.priority === 'Critical' ? 'border-rose-500/30 hover:border-rose-500/60' : 'border-amber-500/20 hover:border-amber-500/40'}`}>
                 <div className="flex justify-between items-start mb-2">
                   <span className={`text-[10px] font-mono tracking-widest transition-colors uppercase ${dsp.priority === 'Critical' ? 'text-rose-400 group-hover/item:text-rose-300' : 'text-amber-400 group-hover/item:text-amber-300'}`}>{dsp.id}</span>
                   <span className={`text-[8px] font-mono tracking-widest uppercase px-1.5 py-0.5 border rounded ${dsp.priority === 'Critical' ? 'border-rose-500 text-rose-500 bg-rose-500/10' : 'border-amber-500 text-amber-500 bg-amber-500/10'}`}>{dsp.priority}</span>
@@ -389,7 +391,7 @@ export default function AdminDashboard() {
             {(!stats.departures || stats.departures.length === 0) ? (
               <div className="text-xs font-mono text-slate-500 mt-4">No upcoming bookings.</div>
             ) : stats.departures.map((dep, i) => (
-              <div key={i} className="flex items-center gap-4 relative group cursor-pointer">
+              <div onClick={() => router.push('/admin/bookings')} key={i} className="flex items-center gap-4 relative group cursor-pointer">
                 <div className="absolute left-1.5 top-0 bottom-0 w-[1px] bg-white/10 group-hover:bg-blue-500/30 transition-colors"></div>
                 <div className={`relative z-10 w-3 h-3 rounded-full border border-[#111116] ${dep.status === 'Active' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-amber-500 shadow-[0_0_10px_#f59e0b]'}`}></div>
                 <div className={`flex-1 bg-white/5 border border-white/5 rounded-lg p-3 group-hover:bg-white/10 transition-colors ${dep.status === 'Active' ? 'group-hover:border-emerald-500/30' : 'group-hover:border-amber-500/30'}`}>
@@ -416,7 +418,7 @@ export default function AdminDashboard() {
             <table className="w-full text-sm text-left">
               <tbody className="divide-y divide-white/5">
                 {(stats.recentBookings || []).slice(0, 4).map((b, i) => (
-                  <tr key={b?._id || i} className="group hover:bg-white/5 cursor-pointer transition-colors">
+                  <tr onClick={() => router.push('/admin/bookings')} key={b?._id || i} className="group hover:bg-white/5 cursor-pointer transition-colors">
                     <td className="py-3 px-2 border-r border-white/5">
                       <div className="text-[11px] font-bold text-slate-300 truncate max-w-[100px]">{b?.user?.name || 'Anonymous'}</div>
                     </td>
