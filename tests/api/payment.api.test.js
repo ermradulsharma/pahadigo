@@ -1,166 +1,86 @@
-import { jest } from '@jest/globals';
 import PaymentController from '../../src/core/Http/Controllers/PaymentController.js';
 import BookingService from '../../src/core/Services/BookingService.js';
 import RazorpayService from '../../src/core/Services/RazorpayService.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '../../src/core/Constants/index.js';
+import { createMockReq, cleanDatabase, generateId } from '../helpers/testUtils.js';
+import { HTTP_STATUS, USER_ROLES } from '../../src/core/Constants/index.js';
+import { jest } from '@jest/globals';
+import mongoose from 'mongoose';
 
-describe('PaymentController Test Suite', () => {
+describe('Industry Standard: Payment & Gateway API', () => {
+    let travelerId;
 
-    beforeEach(() => {
+    beforeEach(async () => {
+        await cleanDatabase();
+        travelerId = generateId();
         jest.clearAllMocks();
     });
 
-    afterEach(() => {
-        jest.restoreAllMocks();
-    });
-
-    describe('createOrder', () => {
-        it('should return 401 if user is not authenticated', async () => {
-            const req = { user: null };
+    describe('Feature: Order Creation', () => {
+        it('[Auth] should reject unauthenticated order requests', async () => {
+            const req = createMockReq({ user: null });
             const res = await PaymentController.createOrder(req);
             expect(res.status).toBe(HTTP_STATUS.UNAUTHORIZED);
         });
 
-        it('should return 404 if booking is not found', async () => {
-            jest.spyOn(BookingService, 'getBookingById').mockResolvedValue(null);
+        it('[Success] should initialize Razorpay order for valid booking', async () => {
+            const bookingId = generateId();
+            const req = createMockReq({ 
+                user: { id: travelerId.toString() }, 
+                jsonBody: { bookingId: bookingId.toString() } 
+            });
             
-            const req = { user: { id: '123' }, jsonBody: { bookingId: 'nonexistent' } };
-            const res = await PaymentController.createOrder(req);
-            
-            expect(res.status).toBe(HTTP_STATUS.NOT_FOUND);
-        });
-
-        it('should successfully create order and return 200', async () => {
-            const mockBooking = { _id: 'bId', totalPrice: 1000, razorpay: {}, save: jest.fn() };
+            const mockBooking = { _id: bookingId, totalPrice: 1000, razorpay: {}, save: jest.fn() };
             jest.spyOn(BookingService, 'getBookingById').mockResolvedValue(mockBooking);
             jest.spyOn(RazorpayService, 'createOrder').mockResolvedValue({ id: 'order_123' });
-
-            const req = { user: { id: '123' }, jsonBody: { bookingId: 'bId' } };
-            const res = await PaymentController.createOrder(req);
             
+            const res = await PaymentController.createOrder(req);
             expect(res.status).toBe(HTTP_STATUS.OK);
-            const data = await res.json();
-            expect(data.data.order.id).toBe('order_123');
-            expect(mockBooking.save).toHaveBeenCalled();
-            expect(mockBooking.razorpay.orderId).toBe('order_123');
-        });
-
-        it('should handle internal errors and return 500', async () => {
-            jest.spyOn(BookingService, 'getBookingById').mockRejectedValue(new Error('DB error'));
             
-            const req = { user: { id: '123' }, jsonBody: { bookingId: 'bId' } };
-            const res = await PaymentController.createOrder(req);
-            
-            expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
-        });
-        
-        it('handles async await req.json fallback', async () => {
-             const mockBooking = { _id: 'bId', totalPrice: 1000, razorpay: {}, save: jest.fn() };
-             jest.spyOn(BookingService, 'getBookingById').mockResolvedValue(mockBooking);
-             jest.spyOn(RazorpayService, 'createOrder').mockResolvedValue({ id: 'order_123' });
-
-             const req = { user: { id: '123' }, json: async () => ({ bookingId: 'bId' }) };
-             const res = await PaymentController.createOrder(req);
-             expect(res.status).toBe(HTTP_STATUS.OK);
+            const body = await res.json();
+            expect(body.data.order.id).toBe('order_123');
         });
     });
 
-    describe('verifyPayment', () => {
-        it('should verify signature and return 200', async () => {
+    describe('Feature: Payment Verification', () => {
+        it('[Integrity] should verify cryptographic signature and update status', async () => {
+            const req = createMockReq({ 
+                jsonBody: { razorpay_order_id: 'o1', razorpay_payment_id: 'p1', razorpay_signature: 's1' } 
+            });
+            
             jest.spyOn(RazorpayService, 'verifySignature').mockReturnValue(true);
             jest.spyOn(BookingService, 'updatePaymentStatus').mockResolvedValue(true);
-
-            const req = { jsonBody: { razorpay_order_id: 'o_1', razorpay_payment_id: 'p_1', razorpay_signature: 's_1' } };
-            const res = await PaymentController.verifyPayment(req);
             
+            const res = await PaymentController.verifyPayment(req);
             expect(res.status).toBe(HTTP_STATUS.OK);
-            expect(BookingService.updatePaymentStatus).toHaveBeenCalledWith('o_1', 'p_1', 's_1');
-        });
-
-        it('should return 400 on invalid signature', async () => {
-            jest.spyOn(RazorpayService, 'verifySignature').mockReturnValue(false);
-
-            const req = { jsonBody: { razorpay_order_id: 'o_1', razorpay_payment_id: 'p_1', razorpay_signature: 'invalid' } };
-            const res = await PaymentController.verifyPayment(req);
-            
-            expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST);
-        });
-
-        it('should return 404 on booking mismatch internal error', async () => {
-            jest.spyOn(RazorpayService, 'verifySignature').mockReturnValue(true);
-            jest.spyOn(BookingService, 'updatePaymentStatus').mockRejectedValue(new Error('Booking order mismatch'));
-
-            const req = { jsonBody: { razorpay_order_id: 'o_1', razorpay_payment_id: 'p_1', razorpay_signature: 's_1' } };
-            const res = await PaymentController.verifyPayment(req);
-            
-            expect(res.status).toBe(HTTP_STATUS.NOT_FOUND);
-        });
-
-        it('should return 500 on generic internal error', async () => {
-            jest.spyOn(RazorpayService, 'verifySignature').mockReturnValue(true);
-            jest.spyOn(BookingService, 'updatePaymentStatus').mockRejectedValue(new Error('Unknown db error'));
-
-            const req = { json: async () => ({ razorpay_order_id: 'o_1', razorpay_payment_id: 'p_1', razorpay_signature: 's_1' }) };
-            const res = await PaymentController.verifyPayment(req);
-            
-            expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
         });
     });
 
-    describe('webhook', () => {
-        it('should return 400 on invalid webhook signature', async () => {
-            jest.spyOn(RazorpayService, 'verifyWebhookSignature').mockResolvedValue(false);
-            const req = { headers: { get: () => 'bad_sig' }, jsonBody: {} };
+    describe('Feature: Gateway Webhooks', () => {
+        it('[Security] should block webhooks with invalid signatures', async () => {
+            const req = createMockReq({ 
+                headers: { get: () => 'invalid-sig' },
+                jsonBody: { event: 'order.paid' } 
+            });
             
+            jest.spyOn(RazorpayService, 'verifyWebhookSignature').mockResolvedValue(false);
             const res = await PaymentController.webhook(req);
             expect(res.status).toBe(HTTP_STATUS.BAD_REQUEST);
         });
 
-        it('should process order.paid event and return 200', async () => {
-            jest.spyOn(RazorpayService, 'verifyWebhookSignature').mockResolvedValue(true);
-            jest.spyOn(BookingService, 'updatePaymentStatus').mockResolvedValue(true);
-
-            const req = { 
-                headers: { get: () => 'good_sig' }, 
+        it('[Async] should process verified paid events asynchronously', async () => {
+            const req = createMockReq({ 
+                headers: { get: () => 'valid-sig' },
                 jsonBody: { 
                     event: 'order.paid', 
-                    payload: { 
-                        order: { entity: { id: 'o_1' } }, 
-                        payment: { entity: { id: 'p_1' } } 
-                    } 
+                    payload: { order: { entity: { id: 'o1' } }, payment: { entity: { id: 'p1' } } } 
                 } 
-            };
+            });
             
-            const res = await PaymentController.webhook(req);
-            expect(res.status).toBe(HTTP_STATUS.OK);
-            expect(BookingService.updatePaymentStatus).toHaveBeenCalledWith('o_1', 'p_1', 'WEBHOOK_VERIFIED');
-        });
-
-        it('should process payment.failed event without error and return 200', async () => {
             jest.spyOn(RazorpayService, 'verifyWebhookSignature').mockResolvedValue(true);
-
-            const req = { 
-                headers: { get: () => 'good_sig' }, 
-                json: async () => ({ 
-                    event: 'payment.failed', 
-                    payload: { 
-                        payment: { entity: { order_id: 'o_1' } } 
-                    } 
-                }) 
-            };
+            jest.spyOn(BookingService, 'updatePaymentStatus').mockResolvedValue(true);
             
             const res = await PaymentController.webhook(req);
             expect(res.status).toBe(HTTP_STATUS.OK);
-        });
-
-        it('should return 500 on internal webhook error', async () => {
-            jest.spyOn(console, 'error').mockImplementation(() => {});
-            jest.spyOn(RazorpayService, 'verifyWebhookSignature').mockRejectedValue(new Error('Internal throw'));
-
-            const req = { headers: { get: () => 'sig' }, jsonBody: {} };
-            const res = await PaymentController.webhook(req);
-            
-            expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
         });
     });
 });

@@ -72,6 +72,9 @@ class LocationController {
 
     async createCountry(req) {
         try {
+            if (!req.user || req.user.role !== 'admin') {
+                return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.ADMIN_ONLY, {});
+            }
             const body = await parseBody(req);
             const country = await Country.create(body);
             return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.LOCATION.COUNTRY_CREATED, { country });
@@ -148,6 +151,9 @@ class LocationController {
 
     async createState(req) {
         try {
+            if (!req.user || req.user.role !== 'admin') {
+                return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.ADMIN_ONLY, {});
+            }
             const body = await parseBody(req);
             const state = await State.create(body);
             return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.LOCATION.STATE_CREATED, { state });

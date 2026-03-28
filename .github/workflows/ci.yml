@@ -20,17 +20,18 @@ jobs:
       - name: ⚙️ Setup Node.js Environment
         uses: actions/setup-node@v6
         with:
-          node-version: '20.x'
+          node-version: '22.x'
           cache: 'npm'
 
       - name: 📦 Install Dependencies
         run: npm install
 
       - name: 🧪 Run Jest Tests with Coverage
-        run: npm run test -- --coverage
+        run: npm run test -- --coverage --forceExit
         env:
           NODE_ENV: test
-          # You can add more environment variables here if required by your application
+          MONGODB_URI: "mongodb://127.0.0.1:27017/test-ci"
+          JWT_SECRET: "workflow-secret-identity"
 
       - name: 📊 Upload Coverage Report
         uses: actions/upload-artifact@v7

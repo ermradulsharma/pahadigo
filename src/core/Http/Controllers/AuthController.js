@@ -35,6 +35,9 @@ class AuthController {
             // 3. Return Clean Response
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.OTP_SENT, { otp, email, phone });
         } catch (error) {
+            if (error.message === RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD) {
+                return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD, {});
+            }
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.AUTH.OTP_SEND_FAILED, {});
         }
     }
@@ -250,7 +253,7 @@ class AuthController {
                     body.profileImage = result.url;
                 }
             } else {
-                body = await parseBody(req);
+                body = req.validData || req.jsonBody || await parseBody(req);
             }
 
             // Prevent users from updating sensitive fields like email, password, role directly through this endpoint

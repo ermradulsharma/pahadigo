@@ -664,6 +664,11 @@ class VendorController {
   }
 
 
+  // Legacy / Test compatibility
+  async getBusinessCategories(req) {
+     return this.getVendorCategories(req);
+  }
+
   // GET /vendor/categories
   async getVendorCategories(req) {
     try {
