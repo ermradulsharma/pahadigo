@@ -59,12 +59,19 @@ async function handler(req, { params }) {
         }
 
         let userContext = null;
-        if (routeDef.middleware && routeDef.middleware.includes('auth')) {
-            const authResult = await authMiddleware(req);
-            if (!authResult.authorized) {
-                return errorResponse(HTTP_STATUS.UNAUTHORIZED, authResult.message || RESPONSE_MESSAGES.ERROR.UNAUTHORIZED, {});
+        if (routeDef.middleware) {
+            if (routeDef.middleware.includes('auth')) {
+                const authResult = await authMiddleware(req);
+                if (!authResult.authorized) {
+                    return errorResponse(HTTP_STATUS.UNAUTHORIZED, authResult.message || RESPONSE_MESSAGES.ERROR.UNAUTHORIZED, {});
+                }
+                userContext = authResult.user;
+            } else if (routeDef.middleware.includes('optionalAuth')) {
+                const authResult = await authMiddleware(req);
+                if (authResult.authorized) {
+                    userContext = authResult.user;
+                }
             }
-            userContext = authResult.user;
         }
 
         if (userContext) {
