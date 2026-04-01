@@ -174,7 +174,7 @@ class InventoryService {
     /**
      * Initialize from Package for explicit overrides.
      */
-    async initializeFromPackage(vendorId, itemId, serviceType, days = 30) {
+    async initializeFromItem(vendorId, itemId, serviceType, days = 30) {
         const pkg = await Package.findOne({ vendor: vendorId }).lean();
         if (!pkg || !pkg[serviceType]) return null;
 

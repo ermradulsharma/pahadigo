@@ -116,7 +116,7 @@ class InventoryController {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Item ID and serviceType are required', {});
             }
 
-            const inventory = await InventoryService.initializeFromPackage(user.id, itemId, serviceType, days || 30);
+            const inventory = await InventoryService.initializeFromItem(user.id, itemId, serviceType, days || 30);
             if (!inventory) return errorResponse(HTTP_STATUS.NOT_FOUND, 'Source item not found in package catalog', {});
 
             return successResponse(HTTP_STATUS.CREATED, 'Inventory initialized successfully', inventory);
