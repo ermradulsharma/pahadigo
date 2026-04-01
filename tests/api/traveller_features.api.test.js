@@ -42,7 +42,7 @@ describe('Industry Standard: Traveller API Integration', () => {
             
             const data = await res.json();
             expect(data.data.homestay).toBeDefined();
-            expect(data.data.homestay[0].id).toEqual(mockPkg._id.toString());
+            expect(data.data.homestay.items[0].id).toEqual(mockPkg._id.toString());
         });
 
         it('[Validation] should fail if coordinates are missing', async () => {

@@ -62,8 +62,7 @@
                 "auth",
                 "otp"
               ]
-            },
-            "description": "Utility for sending a one-time password to the user's primary contact method."
+            }
           },
           "response": []
         },
@@ -127,8 +126,7 @@
                 "auth",
                 "verify"
               ]
-            },
-            "description": "Securely validates the authorization code or OTP provided by the client."
+            }
           },
           "response": []
         },
@@ -155,8 +153,7 @@
                 "auth",
                 "google"
               ]
-            },
-            "description": "Performs social authentication using a Google ID Token. Handles both login and new account registration."
+            }
           },
           "response": []
         }
@@ -187,8 +184,7 @@
                         "business",
                         "profile"
                       ]
-                    },
-                    "description": "Manages the vendor's official business profile, including office location, business name, and operational categories."
+                    }
                   },
                   "response": []
                 },
@@ -375,8 +371,7 @@
                         "profile",
                         "create"
                       ]
-                    },
-                    "description": "Manages the vendor's official business profile, including office location, business name, and operational categories."
+                    }
                   },
                   "response": []
                 },
@@ -546,8 +541,7 @@
                     },
                     "url": {
                       "raw": ""
-                    },
-                    "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                    }
                   },
                   "response": []
                 },
@@ -558,8 +552,7 @@
                     "header": [],
                     "url": {
                       "raw": ""
-                    },
-                    "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                    }
                   },
                   "response": []
                 }
@@ -583,8 +576,7 @@
                         "business",
                         "documents"
                       ]
-                    },
-                    "description": "KYC Document Management: Handles the upload and retrieval of government IDs and business registrations for verification."
+                    }
                   },
                   "response": []
                 },
@@ -634,8 +626,7 @@
                         "documents",
                         "upload"
                       ]
-                    },
-                    "description": "Handles high-resolution file uploads (images/docs) to Cloudinary storage via buffer streams."
+                    }
                   },
                   "response": []
                 },
@@ -655,8 +646,7 @@
                         "documents",
                         "update"
                       ]
-                    },
-                    "description": "KYC Document Management: Handles the upload and retrieval of government IDs and business registrations for verification."
+                    }
                   },
                   "response": []
                 },
@@ -676,8 +666,7 @@
                         "documents",
                         "delete"
                       ]
-                    },
-                    "description": "KYC Document Management: Handles the upload and retrieval of government IDs and business registrations for verification."
+                    }
                   },
                   "response": []
                 }
@@ -703,8 +692,7 @@
                     "bank",
                     ""
                   ]
-                },
-                "description": "Financial Onboarding: Securely manages the vendor's bank account details and cancelled cheque images for payment settlements."
+                }
               },
               "response": []
             },
@@ -753,8 +741,7 @@
                     "bank",
                     "create"
                   ]
-                },
-                "description": "Financial Onboarding: Securely manages the vendor's bank account details and cancelled cheque images for payment settlements."
+                }
               },
               "response": []
             },
@@ -798,8 +785,7 @@
                     "bank",
                     "update"
                   ]
-                },
-                "description": "Financial Onboarding: Securely manages the vendor's bank account details and cancelled cheque images for payment settlements."
+                }
               },
               "response": []
             },
@@ -818,8 +804,7 @@
                     "bank",
                     "delete"
                   ]
-                },
-                "description": "Financial Onboarding: Securely manages the vendor's bank account details and cancelled cheque images for payment settlements."
+                }
               },
               "response": []
             }
@@ -1164,8 +1149,7 @@
                         "package",
                         "add-item"
                       ]
-                    },
-                    "description": "Catalog Expansion: Adds a new service (Trek/Stay/Tour) to the vendor's public storefront with detailed pricing and itinerary."
+                    }
                   },
                   "response": []
                 },
@@ -1479,8 +1463,7 @@
                         "package",
                         "add-item"
                       ]
-                    },
-                    "description": "Catalog Expansion: Adds a new service (Trek/Stay/Tour) to the vendor's public storefront with detailed pricing and itinerary."
+                    }
                   },
                   "response": []
                 },
@@ -1715,8 +1698,7 @@
                         "package",
                         "add-item"
                       ]
-                    },
-                    "description": "Catalog Expansion: Adds a new service (Trek/Stay/Tour) to the vendor's public storefront with detailed pricing and itinerary."
+                    }
                   },
                   "response": []
                 },
@@ -2000,8 +1982,7 @@
                         "package",
                         "add-item"
                       ]
-                    },
-                    "description": "Catalog Expansion: Adds a new service (Trek/Stay/Tour) to the vendor's public storefront with detailed pricing and itinerary."
+                    }
                   },
                   "response": []
                 },
@@ -2240,8 +2221,7 @@
                         "package",
                         "add-item"
                       ]
-                    },
-                    "description": "Catalog Expansion: Adds a new service (Trek/Stay/Tour) to the vendor's public storefront with detailed pricing and itinerary."
+                    }
                   },
                   "response": []
                 },
@@ -2430,8 +2410,7 @@
                         "package",
                         "add-item"
                       ]
-                    },
-                    "description": "Catalog Expansion: Adds a new service (Trek/Stay/Tour) to the vendor's public storefront with detailed pricing and itinerary."
+                    }
                   },
                   "response": []
                 },
@@ -2640,8 +2619,7 @@
                         "package",
                         "add-item"
                       ]
-                    },
-                    "description": "Catalog Expansion: Adds a new service (Trek/Stay/Tour) to the vendor's public storefront with detailed pricing and itinerary."
+                    }
                   },
                   "response": []
                 },
@@ -2955,8 +2933,7 @@
                         "package",
                         "add-item"
                       ]
-                    },
-                    "description": "Catalog Expansion: Adds a new service (Trek/Stay/Tour) to the vendor's public storefront with detailed pricing and itinerary."
+                    }
                   },
                   "response": []
                 },
@@ -3135,8 +3112,7 @@
                         "package",
                         "add-item"
                       ]
-                    },
-                    "description": "Catalog Expansion: Adds a new service (Trek/Stay/Tour) to the vendor's public storefront with detailed pricing and itinerary."
+                    }
                   },
                   "response": []
                 },
@@ -3330,8 +3306,7 @@
                         "package",
                         "add-item"
                       ]
-                    },
-                    "description": "Catalog Expansion: Adds a new service (Trek/Stay/Tour) to the vendor's public storefront with detailed pricing and itinerary."
+                    }
                   },
                   "response": []
                 },
@@ -3510,8 +3485,7 @@
                         "package",
                         "add-item"
                       ]
-                    },
-                    "description": "Catalog Expansion: Adds a new service (Trek/Stay/Tour) to the vendor's public storefront with detailed pricing and itinerary."
+                    }
                   },
                   "response": []
                 }
@@ -3859,8 +3833,7 @@
                         "package",
                         "update-item"
                       ]
-                    },
-                    "description": "Item Refinement: Updates technical details, pricing, or visibility status for an existing service item in the vendor's catalog."
+                    }
                   },
                   "response": []
                 },
@@ -4180,8 +4153,7 @@
                         "package",
                         "update-item"
                       ]
-                    },
-                    "description": "Item Refinement: Updates technical details, pricing, or visibility status for an existing service item in the vendor's catalog."
+                    }
                   },
                   "response": []
                 },
@@ -4422,8 +4394,7 @@
                         "package",
                         "update-item"
                       ]
-                    },
-                    "description": "Item Refinement: Updates technical details, pricing, or visibility status for an existing service item in the vendor's catalog."
+                    }
                   },
                   "response": []
                 },
@@ -4713,8 +4684,7 @@
                         "package",
                         "update-item"
                       ]
-                    },
-                    "description": "Item Refinement: Updates technical details, pricing, or visibility status for an existing service item in the vendor's catalog."
+                    }
                   },
                   "response": []
                 },
@@ -4959,8 +4929,7 @@
                         "package",
                         "update-item"
                       ]
-                    },
-                    "description": "Item Refinement: Updates technical details, pricing, or visibility status for an existing service item in the vendor's catalog."
+                    }
                   },
                   "response": []
                 },
@@ -5155,8 +5124,7 @@
                         "package",
                         "update-item"
                       ]
-                    },
-                    "description": "Item Refinement: Updates technical details, pricing, or visibility status for an existing service item in the vendor's catalog."
+                    }
                   },
                   "response": []
                 },
@@ -5371,8 +5339,7 @@
                         "package",
                         "update-item"
                       ]
-                    },
-                    "description": "Item Refinement: Updates technical details, pricing, or visibility status for an existing service item in the vendor's catalog."
+                    }
                   },
                   "response": []
                 },
@@ -5692,8 +5659,7 @@
                         "package",
                         "update-item"
                       ]
-                    },
-                    "description": "Item Refinement: Updates technical details, pricing, or visibility status for an existing service item in the vendor's catalog."
+                    }
                   },
                   "response": []
                 },
@@ -5878,8 +5844,7 @@
                         "package",
                         "update-item"
                       ]
-                    },
-                    "description": "Item Refinement: Updates technical details, pricing, or visibility status for an existing service item in the vendor's catalog."
+                    }
                   },
                   "response": []
                 },
@@ -6079,8 +6044,7 @@
                         "package",
                         "update-item"
                       ]
-                    },
-                    "description": "Item Refinement: Updates technical details, pricing, or visibility status for an existing service item in the vendor's catalog."
+                    }
                   },
                   "response": []
                 },
@@ -6265,8 +6229,7 @@
                         "package",
                         "update-item"
                       ]
-                    },
-                    "description": "Item Refinement: Updates technical details, pricing, or visibility status for an existing service item in the vendor's catalog."
+                    }
                   },
                   "response": []
                 }
@@ -6289,8 +6252,7 @@
                         "vendor",
                         "category"
                       ]
-                    },
-                    "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                    }
                   },
                   "response": []
                 },
@@ -6320,8 +6282,7 @@
                         "category",
                         "documents"
                       ]
-                    },
-                    "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                    }
                   },
                   "response": []
                 },
@@ -6448,8 +6409,7 @@
                         "documents",
                         "upload"
                       ]
-                    },
-                    "description": "Handles high-resolution file uploads (images/docs) to Cloudinary storage via buffer streams."
+                    }
                   },
                   "response": []
                 }
@@ -6494,8 +6454,7 @@
                       "value": "69b9a58f898f6eb04ad1a3d6"
                     }
                   ]
-                },
-                "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                }
               },
               "response": []
             },
@@ -6518,8 +6477,7 @@
                     "vendor",
                     "packages"
                   ]
-                },
-                "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                }
               },
               "response": []
             },
@@ -6563,8 +6521,7 @@
                     "package",
                     "toggle-item"
                   ]
-                },
-                "description": "Visibility Switch: Instantly enables or disables an item on the public marketplace without deleting its data."
+                }
               },
               "response": []
             },
@@ -6603,8 +6560,7 @@
                     "package",
                     "delete-item"
                   ]
-                },
-                "description": "Catalog Cleanup: Permanently removes a service item from the vendor's catalog."
+                }
               },
               "response": []
             }
@@ -6627,8 +6583,7 @@
                     "vendor",
                     "me"
                   ]
-                },
-                "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                }
               },
               "response": []
             },
@@ -6824,8 +6779,7 @@
                     "vendor",
                     "update"
                   ]
-                },
-                "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                }
               },
               "response": []
             },
@@ -6843,8 +6797,7 @@
                     "vendor",
                     "delete"
                   ]
-                },
-                "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                }
               },
               "response": []
             }
@@ -6853,117 +6806,6 @@
         {
           "name": "Booking",
           "item": []
-        },
-        {
-          "name": "Inventory & Availability",
-          "item": [
-            {
-              "name": "Get Item Inventory",
-              "request": {
-                "method": "GET",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{token}}"
-                  }
-                ],
-                "url": {
-                  "raw": "{{base_url}}/vendor/inventory/{{itemId}}?startDate=2024-05-01&endDate=2024-05-31",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "vendor",
-                    "inventory",
-                    "{{itemId}}"
-                  ],
-                  "query": [
-                    {
-                      "key": "startDate",
-                      "value": "2024-05-01"
-                    },
-                    {
-                      "key": "endDate",
-                      "value": "2024-05-31"
-                    }
-                  ]
-                },
-                "description": "Retrieves the date-specific availability and pricing calendar for a specific service item. Allows the mobile app to show a Green/Red calendar view."
-              },
-              "response": []
-            },
-            {
-              "name": "Update Inventory Slots",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{token}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"serviceType\": \"trekking\",\n    \"updates\": [\n        {\n            \"date\": \"2024-05-15\",\n            \"totalSlots\": 5,\n            \"status\": \"available\",\n            \"priceOverride\": 2500\n        }\n    ]\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{base_url}}/vendor/inventory/{{itemId}}/update",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "vendor",
-                    "inventory",
-                    "{{itemId}}",
-                    "update"
-                  ]
-                },
-                "description": "Performs a bulk update on specific dates in the inventory calendar. Can be used to block dates, change slot counts, or hike prices for holidays."
-              },
-              "response": []
-            },
-            {
-              "name": "Initialize Inventory",
-              "request": {
-                "method": "POST",
-                "header": [
-                  {
-                    "key": "Authorization",
-                    "value": "Bearer {{token}}"
-                  }
-                ],
-                "body": {
-                  "mode": "raw",
-                  "raw": "{\n    \"serviceType\": \"trekking\"\n}",
-                  "options": {
-                    "raw": {
-                      "language": "json"
-                    }
-                  }
-                },
-                "url": {
-                  "raw": "{{base_url}}/vendor/inventory/{{itemId}}/initialize",
-                  "host": [
-                    "{{base_url}}"
-                  ],
-                  "path": [
-                    "vendor",
-                    "inventory",
-                    "{{itemId}}",
-                    "initialize"
-                  ]
-                },
-                "description": "Forces a sync between the base Package availability and the Inventory calendar. Useful for generating the first 30 days of slots."
-              },
-              "response": []
-            }
-          ],
-          "description": "Handles date-wise availability tracking, peak-season pricing overrides, and manual slot blocking for all vendor items."
         }
       ],
       "description": "Includes APIs for vendor onboarding, profile management, and business operations. These endpoints allow vendors to create and update profiles, upload KYC documents, manage bank details, and create travel packages. This folder supports the complete vendor lifecycle, from registration and verification to publishing packages for users."
@@ -6994,8 +6836,7 @@
                 "payment",
                 "create-order"
               ]
-            },
-            "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+            }
           },
           "response": []
         },
@@ -7022,8 +6863,7 @@
                 "payment",
                 "verify"
               ]
-            },
-            "description": "Securely validates the authorization code or OTP provided by the client."
+            }
           },
           "response": []
         }
@@ -7047,8 +6887,7 @@
                 "admin",
                 "stats"
               ]
-            },
-            "description": "Retrieves high-level analytics and real-time dashboard statistics for the platform."
+            }
           },
           "response": []
         },
@@ -7066,8 +6905,7 @@
                 "admin",
                 "bookings"
               ]
-            },
-            "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+            }
           },
           "response": []
         },
@@ -7085,8 +6923,7 @@
                 "admin",
                 "vendors"
               ]
-            },
-            "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+            }
           },
           "response": []
         },
@@ -7113,8 +6950,7 @@
                 "admin",
                 "approve-vendor"
               ]
-            },
-            "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+            }
           },
           "response": []
         },
@@ -7141,8 +6977,7 @@
                 "admin",
                 "payout"
               ]
-            },
-            "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+            }
           },
           "response": []
         },
@@ -7169,8 +7004,7 @@
                 "admin",
                 "refund"
               ]
-            },
-            "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+            }
           },
           "response": []
         },
@@ -7188,8 +7022,7 @@
                 "admin",
                 "payment-history"
               ]
-            },
-            "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+            }
           },
           "response": []
         }
@@ -7219,8 +7052,7 @@
                         "vendor",
                         "privacy-policy"
                       ]
-                    },
-                    "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                    }
                   },
                   "response": []
                 },
@@ -7238,8 +7070,7 @@
                         "vendor",
                         "terms-conditions"
                       ]
-                    },
-                    "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                    }
                   },
                   "response": []
                 }
@@ -7262,8 +7093,7 @@
                         "traveller",
                         "privacy-policy"
                       ]
-                    },
-                    "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                    }
                   },
                   "response": []
                 },
@@ -7281,8 +7111,7 @@
                         "traveller",
                         "terms-conditions"
                       ]
-                    },
-                    "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                    }
                   },
                   "response": []
                 },
@@ -7300,8 +7129,7 @@
                         "traveller",
                         "refund-policy"
                       ]
-                    },
-                    "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                    }
                   },
                   "response": []
                 },
@@ -7319,8 +7147,7 @@
                         "traveller",
                         "cancellation-policy"
                       ]
-                    },
-                    "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                    }
                   },
                   "response": []
                 }
@@ -7341,8 +7168,7 @@
               "path": [
                 "categories"
               ]
-            },
-            "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+            }
           },
           "response": []
         }
@@ -7382,8 +7208,7 @@
                         "traveller",
                         "wishlist"
                       ]
-                    },
-                    "description": "Saved Items: Manages the traveler's personal collection of favorite experiences for future bookings."
+                    }
                   },
                   "response": []
                 },
@@ -7393,16 +7218,27 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{base_url}}/traveller/wishlist",
+                      "raw": "{{base_url}}/traveller/wishlist?page&limit",
                       "host": [
                         "{{base_url}}"
                       ],
                       "path": [
                         "traveller",
                         "wishlist"
+                      ],
+                      "query": [
+                        {
+                          "key": "page",
+                          "value": null,
+                          "type": "text"
+                        },
+                        {
+                          "key": "limit",
+                          "value": null,
+                          "type": "text"
+                        }
                       ]
-                    },
-                    "description": "Saved Items: Manages the traveler's personal collection of favorite experiences for future bookings."
+                    }
                   },
                   "response": []
                 },
@@ -7427,8 +7263,7 @@
                           "value": "69be5bddf64c9dd236d2e338"
                         }
                       ]
-                    },
-                    "description": "Saved Items: Manages the traveler's personal collection of favorite experiences for future bookings."
+                    }
                   },
                   "response": []
                 }
@@ -7451,8 +7286,7 @@
                         "traveller",
                         "recent-searches"
                       ]
-                    },
-                    "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                    }
                   },
                   "response": []
                 },
@@ -7470,8 +7304,7 @@
                         "traveller",
                         "recent-searches"
                       ]
-                    },
-                    "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                    }
                   },
                   "response": []
                 }
@@ -7494,8 +7327,7 @@
                         "traveller",
                         "me"
                       ]
-                    },
-                    "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                    }
                   },
                   "response": []
                 },
@@ -7521,7 +7353,8 @@
                         {
                           "key": "phone",
                           "value": "{{$randomPhoneNumber}}",
-                          "type": "text"
+                          "type": "text",
+                          "disabled": true
                         },
                         {
                           "key": "gender",
@@ -7691,8 +7524,7 @@
                         "traveller",
                         "update"
                       ]
-                    },
-                    "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                    }
                   },
                   "response": []
                 },
@@ -7710,8 +7542,7 @@
                         "traveller",
                         "delete"
                       ]
-                    },
-                    "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+                    }
                   },
                   "response": []
                 }
@@ -7736,15 +7567,24 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/packages",
+              "raw": "{{base_url}}/packages?page=1&limit=3",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "packages"
+              ],
+              "query": [
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "3"
+                }
               ]
-            },
-            "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+            }
           },
           "response": []
         },
@@ -7771,8 +7611,7 @@
                   "value": "69be4e37f64c9dd236d2dc02"
                 }
               ]
-            },
-            "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+            }
           },
           "response": []
         },
@@ -7785,7 +7624,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/packages/search?lat=-82.6549&lng=142.6203&category=homestay",
+              "raw": "{{base_url}}/packages/search?lat=-82.6549&lng=142.6203&category=homestay&page=1&limit=3",
               "host": [
                 "{{base_url}}"
               ],
@@ -7810,10 +7649,17 @@
                   "key": "radius",
                   "value": "500",
                   "disabled": true
+                },
+                {
+                  "key": "page",
+                  "value": "1"
+                },
+                {
+                  "key": "limit",
+                  "value": "3"
                 }
               ]
-            },
-            "description": "SECURE ENDPOINT: Requires valid JWT or Role-based access. Connects to PahadiGo core services."
+            }
           },
           "response": []
         }

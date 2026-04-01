@@ -55,14 +55,18 @@ class UserController {
       // Paginate each category independently using the helper
       const paginatedData = {};
       for (const [slug, items] of Object.entries(packages)) {
-        if (Array.isArray(items) && items.length > 0) {
+        if (Array.isArray(items)) {
           // Sort latest first (descending ID)
-          items.sort((a, b) => b.id.toString().localeCompare(a.id.toString()));
+          items.sort((a, b) => {
+            const idA = a.id || a._id;
+            const idB = b.id || b._id;
+            return (idB?.toString() || "").localeCompare(idA?.toString() || "");
+          });
 
           // Add wishlist status
           const itemsWithWishlist = items.map(item => ({
             ...item,
-            wishlist: wishlistSet.has(item.id.toString())
+            wishlist: wishlistSet.has((item.id || item._id).toString())
           }));
 
           paginatedData[slug] = paginateArray(itemsWithWishlist, page, limit);

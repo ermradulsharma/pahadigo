@@ -2,6 +2,8 @@ import BookingService from '../../src/core/Services/BookingService.js';
 import Booking from '../../src/core/Models/Booking.js';
 import AdminService from '../../src/core/Services/AdminService.js';
 import Package from '../../src/core/Models/Package.js';
+import InventoryService from '../../src/core/Services/InventoryService.js';
+import NotificationService from '../../src/core/Services/NotificationService.js';
 import mongoose from 'mongoose';
 import { jest } from '@jest/globals';
 
@@ -25,6 +27,12 @@ describe('BookingService Test Suite', () => {
     });
 
     beforeEach(async () => {
+        jest.clearAllMocks();
+        
+        // Globally mock side-effect services
+        jest.spyOn(NotificationService, 'notifyBookingStatus').mockResolvedValue({});
+        jest.spyOn(NotificationService, 'notifyPayout').mockResolvedValue({});
+
         const booking = await Booking.create({
             user: new mongoose.Types.ObjectId(),
             package: new mongoose.Types.ObjectId(),
@@ -70,10 +78,14 @@ describe('BookingService Test Suite', () => {
         });
 
         it('should create booking for trekking slots', async () => {
-             jest.spyOn(Package, 'findOneAndUpdate').mockResolvedValue({ _id: 'fake_pkg' });
+             const mockPkgId = new mongoose.Types.ObjectId();
+             jest.spyOn(Package, 'findById').mockResolvedValue({ _id: mockPkgId, vendor: new mongoose.Types.ObjectId() });
+             jest.spyOn(InventoryService, 'checkAvailabilityRange').mockResolvedValue({ available: true });
+             jest.spyOn(InventoryService, 'reserveSlotsRange').mockResolvedValue({});
+
              const booking = await BookingService.createBooking({
                   userId: new mongoose.Types.ObjectId(),
-                  catalogId: new mongoose.Types.ObjectId(),
+                  catalogId: mockPkgId,
                   category: 'trekking',
                   itemId: new mongoose.Types.ObjectId(),
                   travelDate: new Date(),
@@ -84,10 +96,14 @@ describe('BookingService Test Suite', () => {
         });
 
         it('should create booking for homestay rooms', async () => {
-             jest.spyOn(Package, 'findOneAndUpdate').mockResolvedValue({ _id: 'fake_pkg' });
+             const mockPkgId = new mongoose.Types.ObjectId();
+             jest.spyOn(Package, 'findById').mockResolvedValue({ _id: mockPkgId, vendor: new mongoose.Types.ObjectId() });
+             jest.spyOn(InventoryService, 'checkAvailabilityRange').mockResolvedValue({ available: true });
+             jest.spyOn(InventoryService, 'reserveSlotsRange').mockResolvedValue({});
+
              const booking = await BookingService.createBooking({
                   userId: new mongoose.Types.ObjectId(),
-                  catalogId: new mongoose.Types.ObjectId(),
+                  catalogId: mockPkgId,
                   category: 'homestay',
                   itemId: new mongoose.Types.ObjectId(),
                   travelDate: new Date(),
@@ -97,24 +113,27 @@ describe('BookingService Test Suite', () => {
         });
 
         it('should fail createBooking if no availability', async () => {
-             jest.spyOn(Package, 'findOneAndUpdate').mockResolvedValue(null);
+             const mockPkgId = new mongoose.Types.ObjectId();
+             jest.spyOn(Package, 'findById').mockResolvedValue({ _id: mockPkgId, vendor: new mongoose.Types.ObjectId() });
+             jest.spyOn(InventoryService, 'checkAvailabilityRange').mockResolvedValue({ available: false, failedDate: '2025-01-01' });
+
              await expect(
                  BookingService.createBooking({
                      userId: new mongoose.Types.ObjectId(),
-                     catalogId: new mongoose.Types.ObjectId(),
+                     catalogId: mockPkgId,
                      category: 'homestay',
                      itemId: new mongoose.Types.ObjectId(),
-                     travelDate: new Date(),
+                     travelDate: new Date('2025-01-01'),
                      price: 800
                  })
-             ).rejects.toThrow('Requested service is fully booked or not found.');
+             ).rejects.toThrow('Requested date 2025-01-01 is fully booked.');
         });
 
         it('should fail createBooking unconditionally and abort txn', async () => {
-             jest.spyOn(Package, 'findOneAndUpdate').mockRejectedValue(new Error('Txn fail'));
+             jest.spyOn(Package, 'findById').mockRejectedValue(new Error('Txn fail'));
              await expect(
                  BookingService.createBooking({
-                     categoryId: 'any'
+                     catalogId: new mongoose.Types.ObjectId()
                  })
              ).rejects.toThrow('Txn fail');
         });
@@ -125,7 +144,10 @@ describe('BookingService Test Suite', () => {
         });
 
         it('should processRefund and log action with req context', async () => {
-             const req = { user: { id: new mongoose.Types.ObjectId() } };
+             jest.spyOn(Package, 'findById').mockResolvedValue({ _id: new mongoose.Types.ObjectId(), vendor: new mongoose.Types.ObjectId() });
+             jest.spyOn(InventoryService, 'releaseSlotsRange').mockResolvedValue({});
+             
+             const req = { user: { id: new mongoose.Types.ObjectId().toString() } };
              const refunded = await BookingService.processRefund(mockBookingId, req);
              expect(refunded.status).toBe('cancelled');
              expect(AdminService.logAction).toHaveBeenCalled();
