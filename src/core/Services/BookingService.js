@@ -4,59 +4,65 @@ import Package from '@/models/Package.js';
 import Dispute from '@/models/Dispute.js';
 import AdminService from '@/services/AdminService.js';
 import NotificationService from '@/services/NotificationService.js';
+import InventoryService from '@/services/InventoryService.js';
 import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 class BookingService {
-    async createBooking({ userId, catalogId, category, itemId, travelDate, price }) {
+    async createBooking({ userId, catalogId, category, itemId, travelDate, price, slots = 1 }) {
         const session = await mongoose.startSession();
         session.startTransaction();
         try {
-            // 1. Atomic Inventory Decrement
-            // Path depends on category. Homestays use 'availableRooms', Treks use 'availableSlots'
-            let updateQuery = {};
-            let matchQuery = { _id: catalogId };
-            matchQuery[`${category}._id`] = itemId;
-
-            if (category === 'homestay' || category === 'hotel') {
-                matchQuery[`${category}.availability.availableRooms`] = { $gt: 0 };
-                updateQuery[`${category}.$.availability.availableRooms`] = -1;
-            } else if (category === 'trekking' || category === 'camping' || category === 'rafting') {
-                matchQuery[`${category}.availability.availableSlots`] = { $gt: 0 };
-                updateQuery[`${category}.$.availability.availableSlots`] = -1;
-            }
-
-            const updatedPackage = await Package.findOneAndUpdate(
-                matchQuery,
-                { $inc: updateQuery },
-                { session, returnDocument: 'after' }
+            // 1. Fetch Package to get vendor context (Inventory is keyed by vendorId + itemId)
+            const pkg = await Package.findById(catalogId);
+            if (!pkg) throw new Error("Package not found.");
+            
+            const vendorId = pkg.vendor.toString();
+            
+            // 2. Check Inventory Availability (Date-Aware)
+            // For single day trips, startDate = endDate = travelDate
+            const availability = await InventoryService.checkAvailabilityRange(
+                vendorId, 
+                itemId, 
+                category, 
+                travelDate, 
+                travelDate, 
+                slots
             );
 
-            if (!updatedPackage) {
-                throw new Error('Requested service is fully booked or not found.');
+            if (!availability.available) {
+                throw new Error(`Requested date ${availability.failedDate} is fully booked.`);
             }
 
-            // 2. Create Booking
+            // 3. Reserve Inventory
+            await InventoryService.reserveSlotsRange(
+                vendorId, 
+                itemId, 
+                category, 
+                travelDate, 
+                travelDate, 
+                slots
+            );
+
+            // 4. Create Booking
             const booking = await Booking.create([{
                 user: userId,
                 package: catalogId,
+                vendor: vendorId, // Add vendor for easier lookup
                 travelDate,
-                totalPrice: price,
+                totalPrice: price * slots,
                 status: 'pending',
                 paymentStatus: 'pending',
-                // Metadata for easy lookup
-                preferences: { category, itemId },
+                preferences: { category, itemId, slots },
                 timeline: [{
                     title: 'Booking Requested',
-                    description: 'Your booking request has been received and is pending payment.',
+                    description: `Request received for ${slots} slot(s) on ${new Date(travelDate).toDateString()}.`,
                     updatedBy: userId
                 }]
             }], { session });
 
             await session.commitTransaction();
             
-            // Asynchronously notify vendor & admin without blocking response
             NotificationService.notifyBookingStatus(booking[0]._id, 'created');
-
             return booking[0];
         } catch (error) {
             await session.abortTransaction();
@@ -96,6 +102,19 @@ class BookingService {
                 updatedBy: req?.user?.id || req?.user?._id
             });
             await booking.save({ session });
+
+            // 2. Release Inventory Slots
+            const catalog = await Package.findById(booking.package);
+            if (catalog && booking.preferences?.category && booking.preferences?.itemId) {
+                await InventoryService.releaseSlotsRange(
+                    catalog.vendor.toString(),
+                    booking.preferences.itemId,
+                    booking.preferences.category,
+                    booking.travelDate,
+                    booking.travelDate,
+                    booking.preferences.slots || 1
+                );
+            }
 
             // Audit Log via AdminService
             if (req && req.user) {

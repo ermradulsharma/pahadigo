@@ -26,3 +26,27 @@ export const buildPaginationQuery = (req, defaultLimit = 10, defaultPage = 1) =>
 
     return { page, limit, skip };
 };
+
+/**
+ * Paginates an array and returns the slice + descriptive pagination metadata.
+ * @param {Array} items - Full list of items to paginate
+ * @param {number} page - Current page number
+ * @param {number} limit - Number of items per page (0 for all)
+ * @returns {Object} { items, pagination }
+ */
+export const paginateArray = (items, page, limit) => {
+    const total = items.length;
+    const skip = (page - 1) * limit;
+
+    const paginatedItems = limit > 0 ? items.slice(skip, skip + limit) : items;
+
+    return {
+        items: paginatedItems,
+        pagination: {
+            total,
+            page,
+            limit: limit === 0 ? total : limit,
+            totalPages: limit === 0 ? 1 : Math.ceil(total / limit)
+        }
+    };
+};

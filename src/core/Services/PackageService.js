@@ -4,6 +4,7 @@ import Category from '@/models/Category.js';
 import User from '@/models/User.js';
 import { RESPONSE_MESSAGES } from '@/constants/index.js';
 import { CATEGORY_MAP, SCHEMA_KEYS } from '@/constants/categories.js';
+import InventoryService from '@/services/InventoryService.js';
 
 class PackageService {
 
@@ -100,7 +101,20 @@ class PackageService {
             throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
         }
         pkg[category].push(itemData);
-        return await pkg.save();
+        const saved = await pkg.save();
+
+        // Auto-initialize inventory for the newly added item
+        try {
+            const newItem = saved[category][saved[category].length - 1];
+            if (newItem && newItem._id) {
+                await InventoryService.initializeFromItem(vendorId, newItem._id, category);
+            }
+        } catch (invError) {
+            console.error('Inventory Initialization Failed:', invError);
+            // Non-blocking: We don't want to fail the item creation if inventory initialization fails
+        }
+        
+        return saved;
     }
 
     // Update Item in Service Array

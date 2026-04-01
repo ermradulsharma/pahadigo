@@ -16,7 +16,7 @@ class BookingController {
             }
 
             const body = req.validData || req.jsonBody || await req.json();
-            const { catalogId, category, itemId, travelDate } = body;
+            const { catalogId, category, itemId, travelDate, slots = 1 } = body;
 
             const item = await PackageService.getGranularItem(catalogId, category, itemId);
             if (!item) {
@@ -32,7 +32,8 @@ class BookingController {
                 category,
                 itemId,
                 travelDate: bookingDate,
-                price
+                price,
+                slots
             });
 
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.CREATED, { booking });

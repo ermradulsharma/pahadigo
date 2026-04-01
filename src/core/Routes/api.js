@@ -11,6 +11,7 @@ import CategoryDocumentController from '@/controllers/CategoryDocumentController
 import BookingController from '@/controllers/BookingController.js';
 import ReviewController from '@/controllers/ReviewController.js';
 import SOSController from '@/controllers/SOSController.js';
+import InventoryController from '@/controllers/InventoryController.js';
 import { apiHandler } from '@/helpers/apiHandler.js';
 import Router from './Router.js';
 import { schemas } from '@/helpers/validation.js';
@@ -182,6 +183,15 @@ const routes = [
         ...Router.group({ prefix: '/bookings' }, [
             { method: 'GET', path: '/', handler: wrap(VendorController.getBookings.bind(VendorController)) },
             { method: 'POST', path: '/:id/timeline', handler: wrap(VendorController.addTimelineEvent.bind(VendorController)) },
+        ]),
+
+        // Vendor Inventory
+        ...Router.group({ prefix: '/inventory' }, [
+            { method: 'GET', path: '/service/:serviceType', handler: wrap(InventoryController.getServiceInventory.bind(InventoryController)) },
+            { method: 'GET', path: '/:itemId', handler: wrap(InventoryController.getItemInventory.bind(InventoryController)) },
+            { method: 'POST', path: '/update', handler: wrap(InventoryController.updateInventory.bind(InventoryController)) }, // Optional itemId
+            { method: 'POST', path: '/:itemId/update', handler: wrap(InventoryController.updateInventory.bind(InventoryController)) },
+            { method: 'POST', path: '/:itemId/initialize', handler: wrap(InventoryController.initializeInventory.bind(InventoryController)) },
         ]),
     ]),
 
