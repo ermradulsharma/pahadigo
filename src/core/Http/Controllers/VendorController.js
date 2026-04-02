@@ -389,10 +389,14 @@ class VendorController {
   async getPackages(req) {
     try {
       const user = req.user;
+      const url = new URL(req.url);
+      const page = parseInt(url.searchParams.get('page')) || 1;
+      const limit = parseInt(url.searchParams.get('limit')) || 10;
+
       const packages = await VendorService.findByUserId(user.id);
       if (!packages) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
-      const catalog = await PackageService.getFormattedVendorCatalog(packages._id);
+      const catalog = await PackageService.getFormattedVendorCatalog(packages._id, page, limit);
       return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, catalog);
     } catch (error) {
       return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
