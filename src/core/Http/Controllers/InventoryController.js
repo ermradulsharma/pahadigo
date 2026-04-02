@@ -159,7 +159,39 @@ class InventoryController {
      * POST /vendor/inventory/:itemId/initialize
      */
     async initializeInventory(req, { params }) {
-        // ... (existing code)
+        try {
+            const user = req.user;
+            const vendor = await VendorService.findByUserId(user.id);
+            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
+
+            const { itemId } = (await params) || {};
+            let body;
+            if (req.formDataBody) {
+                body = parseNestedFormData(req.formDataBody);
+            } else {
+                body = req.jsonBody || await (req.json().catch(() => ({})));
+            }
+
+            let { serviceType, days } = body;
+
+            // Detect serviceType if missing using itemId
+            if (itemId && !serviceType) {
+                const itemInfo = await PackageService.getAvailablePackageItem(itemId);
+                if (itemInfo) serviceType = itemInfo.category;
+            }
+
+            if (!itemId || !serviceType) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Item ID and serviceType are required', {});
+            }
+
+            const inventory = await InventoryService.initializeFromItem(vendor._id, itemId, serviceType, days || 30);
+            if (!inventory) return errorResponse(HTTP_STATUS.NOT_FOUND, 'Source item not found in package catalog', {});
+
+            return successResponse(HTTP_STATUS.CREATED, 'Inventory initialized successfully', inventory);
+        } catch (error) {
+            console.error('Initialize Inventory Error:', error);
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+        }
     }
 
     /**
