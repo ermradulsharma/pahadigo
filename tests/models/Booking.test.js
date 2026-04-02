@@ -14,19 +14,24 @@ describe('BookingModel Test Suite', () => {
         expect(error).toBeDefined();
         expect(error.errors.user).toBeDefined();
         expect(error.errors.package).toBeDefined();
-        expect(error.errors.travelDate).toBeDefined();
+        expect(error.errors.travelStartTime).toBeDefined();
+        expect(error.errors.travelEndTime).toBeDefined();
     });
 
     it('should create a valid booking with defaults populated', async () => {
         const userId = new mongoose.Types.ObjectId();
         const packageId = new mongoose.Types.ObjectId();
-        const travelDate = new Date();
-        travelDate.setDate(travelDate.getDate() + 10); // 10 days in future
+        const travelStartTime = new Date();
+        travelStartTime.setDate(travelStartTime.getDate() + 10);
+
+        const travelEndTime = new Date();
+        travelEndTime.setDate(travelEndTime.getDate() + 11);
 
         const bookingData = {
             user: userId,
             package: packageId,
-            travelDate,
+            travelStartTime,
+            travelEndTime,
             totalPrice: 15000
         };
 
@@ -45,7 +50,8 @@ describe('BookingModel Test Suite', () => {
         const booking = new Booking({
             user: new mongoose.Types.ObjectId(),
             package: new mongoose.Types.ObjectId(),
-            travelDate: new Date(),
+            travelStartTime: new Date(),
+            travelEndTime: new Date(),
             status: 'INVALID_STATUS',
             paymentStatus: 'NOT_PAID'
         });
