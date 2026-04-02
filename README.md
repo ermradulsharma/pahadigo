@@ -138,10 +138,14 @@ npm run dev
 This repository possesses comprehensive sub-documentation manuals standardizing structural execution methodologies. It is imperative that contributing engineers consume these parameters entirely:
 
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Detailed technical design, data modeling, and system orchestration.
-- **[CONTRIBUTING.md](docs/CONTRIBUTING.md)** — Workflow standards, testing protocols, and dependency management.
-- **[SECURITY.md](docs/SECURITY.md)** — Extensive evaluations representing Authentication matrices, strict NoSQL injection parameters, and Coordinated Disclosure protocols.
 - **[API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)** — Full specification of available API routes and protocols.
-- **[postman_api_structure.md](docs/postman_api_structure.md)** — Detailed breakdown of the Postman collection structure and API request organization.
+- **[DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md)** — Deep dive into Mongoose models and polymorphic service structures.
+- **[BACKEND_OPERATIONS.md](docs/BACKEND_OPERATIONS.md)** — Operational mechanics, SOA kernel, and routing lifecycle.
+- **[FRONTEND_ARCHITECTURE.md](docs/FRONTEND_ARCHITECTURE.md)** — UI/UX design synthesis, Next.js App Router, and Framer Motion.
+- **[TESTING_SETUP.md](docs/TESTING_SETUP.md)** — Automated quality control, Jest integration, and memory-DB isolation.
+- **[SECURITY.md](docs/SECURITY.md)** — Authentication matrices, NoSQL injection parameters, and Coordinated Disclosure.
+- **[CONTRIBUTING.md](docs/CONTRIBUTING.md)** — Workflow standards, testing protocols, and dependency management.
+- **[postman_api_structure.md](docs/postman_api_structure.md)** — Detailed breakdown of the Postman collection structure and API organization.
 
 
 ---
