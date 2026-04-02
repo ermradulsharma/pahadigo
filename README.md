@@ -81,6 +81,8 @@ pahadigo/
 │   │   └── Config/           # Runtime execution variables and Global DB connection polling
 │   └── components/           # Reusable functional UI Atoms/Molecules (React)
 ├── tests/                    # Integration & Controller testing mock configurations
+├── docs/                     # Technical documentation, architectural specs, and references
+├── scripts/                  # Development scripts, database migrations, and Postman collections
 ├── public/                   # Binary Web App static assets mapping directly to Next.js ingress
 └── ...
 ```
@@ -135,9 +137,12 @@ npm run dev
 
 This repository possesses comprehensive sub-documentation manuals standardizing structural execution methodologies. It is imperative that contributing engineers consume these parameters entirely:
 
-- **[ARCHITECTURE.md](ARCHITECTURE.md)** — Detailed technical design, data modeling, and system orchestration.
-- **[CONTRIBUTING.md](CONTRIBUTING.md)** — Workflow standards, testing protocols, and dependency management.
-- **[SECURITY.md](SECURITY.md)** — Extensive evaluations representing Authentication matrices, strict NoSQL injection parameters, and Coordinated Disclosure protocols.
+- **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Detailed technical design, data modeling, and system orchestration.
+- **[CONTRIBUTING.md](docs/CONTRIBUTING.md)** — Workflow standards, testing protocols, and dependency management.
+- **[SECURITY.md](docs/SECURITY.md)** — Extensive evaluations representing Authentication matrices, strict NoSQL injection parameters, and Coordinated Disclosure protocols.
+- **[API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)** — Full specification of available API routes and protocols.
+- **[postman_api_structure.md](docs/postman_api_structure.md)** — Detailed breakdown of the Postman collection structure and API request organization.
+
 
 ---
 

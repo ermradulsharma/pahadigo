@@ -162,12 +162,15 @@
     },
     {
       "name": "Vendor",
+      "description": "Endpoints related to vendor management, including business registration, profile updates, and catalog management. These APIs allow vendors to manage their identity and the services they offer on the PahadiGo platform.",
       "item": [
         {
           "name": "Business Details",
+          "description": "Handles the core identity and legal verification of the vendor business, including profile information and KYC documents required for onboarding.",
           "item": [
             {
               "name": "Profile",
+              "description": "APIs to manage the vendor's professional profile, including contact details, business category, address, and social media integration.",
               "item": [
                 {
                   "name": "Get Profile",
@@ -540,7 +543,16 @@
                       ]
                     },
                     "url": {
-                      "raw": ""
+                      "raw": "{{base_url}}/vendor/business/profile/update",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "vendor",
+                        "business",
+                        "profile",
+                        "update"
+                      ]
                     }
                   },
                   "response": []
@@ -548,10 +560,19 @@
                 {
                   "name": "Delete Profile",
                   "request": {
-                    "method": "PUT",
+                    "method": "DELETE",
                     "header": [],
                     "url": {
-                      "raw": ""
+                      "raw": "{{base_url}}/vendor/business/profile/delete",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "vendor",
+                        "business",
+                        "profile",
+                        "delete"
+                      ]
                     }
                   },
                   "response": []
@@ -560,6 +581,7 @@
             },
             {
               "name": "Documents",
+              "description": "Securely upload and manage KYC documents such as Aadhaar, PAN Card, and GST Registration files for account verification.",
               "item": [
                 {
                   "name": "Get Documents",
@@ -676,6 +698,7 @@
         },
         {
           "name": "Bank Details",
+          "description": "Manage vendor bank accounts and cancelled cheque documents for secure payment settlements and verified transactions.",
           "item": [
             {
               "name": "Get Bank Details",
@@ -790,7 +813,7 @@
               "response": []
             },
             {
-              "name": "Detele Bank Details",
+              "name": "Delete Bank Details",
               "request": {
                 "method": "DELETE",
                 "header": [],
@@ -812,9 +835,11 @@
         },
         {
           "name": "Packages",
+          "description": "The central folder for managing travel services (Packages). It covers the full lifecycle of adding, updating, and removing service items.",
           "item": [
             {
               "name": "Package Items",
+              "description": "Specific endpoints to add and manage different types of travel items including Homestays, Hotels, Camping, Trekking, and more.",
               "item": [
                 {
                   "name": "Add Homestay Item",
@@ -918,7 +943,7 @@
                       "formdata": [
                         {
                           "key": "category",
-                          "value": " homestay",
+                          "value": "homestay",
                           "type": "text"
                         },
                         {
@@ -933,7 +958,7 @@
                         },
                         {
                           "key": "item[0][isActive]",
-                          "value": " true",
+                          "value": "true",
                           "type": "text"
                         },
                         {
@@ -1003,7 +1028,7 @@
                         },
                         {
                           "key": "item[0][roomDetails][balcony]",
-                          "value": " true",
+                          "value": "true",
                           "type": "text"
                         },
                         {
@@ -1039,7 +1064,7 @@
                         },
                         {
                           "key": "item[0][pricing][extraBedAvailable]",
-                          "value": " true",
+                          "value": "true",
                           "type": "text"
                         },
                         {
@@ -1049,7 +1074,7 @@
                         },
                         {
                           "key": "item[0][timings][checkIn]",
-                          "value": " 12:00 PM",
+                          "value": "12:00 PM",
                           "type": "text"
                         },
                         {
@@ -1069,12 +1094,12 @@
                         },
                         {
                           "key": "item[0][policies][isCouplesFriendly]",
-                          "value": " true",
+                          "value": "true",
                           "type": "text"
                         },
                         {
                           "key": "item[0][policies][isPetFriendly]",
-                          "value": " true",
+                          "value": "true",
                           "type": "text"
                         },
                         {
@@ -1089,7 +1114,7 @@
                         },
                         {
                           "key": "item[0][mealsIncluded]",
-                          "value": " true",
+                          "value": "true",
                           "type": "text"
                         },
                         {
@@ -1229,7 +1254,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -1252,7 +1277,7 @@
                         },
                         {
                           "key": "item[0][isActive]",
-                          "value": " true",
+                          "value": "true",
                           "type": "text"
                         },
                         {
@@ -1317,12 +1342,12 @@
                         },
                         {
                           "key": "item[0][roomDetails][isAC]",
-                          "value": " true",
+                          "value": "true",
                           "type": "text"
                         },
                         {
                           "key": "item[0][roomDetails][hasBalcony]",
-                          "value": " true",
+                          "value": "true",
                           "type": "text"
                         },
                         {
@@ -1353,7 +1378,7 @@
                         },
                         {
                           "key": "item[0][pricing][extraBedAvailable]",
-                          "value": " true",
+                          "value": "true",
                           "type": "text"
                         },
                         {
@@ -1363,7 +1388,7 @@
                         },
                         {
                           "key": "item[0][timings][checkIn]",
-                          "value": " 02:00 PM",
+                          "value": "02:00 PM",
                           "type": "text"
                         },
                         {
@@ -1378,7 +1403,7 @@
                         },
                         {
                           "key": "item[0][policies][isCouplesFriendly]",
-                          "value": " true",
+                          "value": "true",
                           "type": "text"
                         },
                         {
@@ -1393,7 +1418,7 @@
                         },
                         {
                           "key": "item[0][policies][requiresLocalID]",
-                          "value": " true",
+                          "value": "true",
                           "type": "text"
                         },
                         {
@@ -1403,7 +1428,7 @@
                         },
                         {
                           "key": "item[0][mealsIncluded]",
-                          "value": " true",
+                          "value": "true",
                           "type": "text"
                         },
                         {
@@ -1474,7 +1499,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -1497,7 +1522,7 @@
                         },
                         {
                           "key": "item[0][isActive]",
-                          "value": " true",
+                          "value": "true",
                           "type": "text"
                         },
                         {
@@ -1572,7 +1597,7 @@
                         },
                         {
                           "key": "item[0][details][electricityAvailable]",
-                          "value": " true",
+                          "value": "true",
                           "type": "text"
                         },
                         {
@@ -1582,7 +1607,7 @@
                         },
                         {
                           "key": "item[0][timings][checkIn]",
-                          "value": " 12:00 PM",
+                          "value": "12:00 PM",
                           "type": "text"
                         },
                         {
@@ -1709,7 +1734,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -1993,7 +2018,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -2232,7 +2257,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -2421,7 +2446,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -2675,7 +2700,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -2944,7 +2969,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -3123,7 +3148,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -3317,7 +3342,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -3913,7 +3938,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -4164,7 +4189,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -4405,7 +4430,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -4695,7 +4720,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -4940,7 +4965,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -5135,7 +5160,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -5395,7 +5420,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -5670,7 +5695,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -5855,7 +5880,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -6055,7 +6080,7 @@
                     "header": [
                       {
                         "key": "Authorization",
-                        "value": "Bearer {{token}}"
+                        "value": "Bearer {{auth_token}}"
                       }
                     ],
                     "body": {
@@ -6488,7 +6513,7 @@
                 "header": [
                   {
                     "key": "Authorization",
-                    "value": "Bearer {{token}}"
+                    "value": "Bearer {{auth_token}}"
                   }
                 ],
                 "body": {
@@ -6532,7 +6557,7 @@
                 "header": [
                   {
                     "key": "Authorization",
-                    "value": "Bearer {{token}}"
+                    "value": "Bearer {{auth_token}}"
                   }
                 ],
                 "body": {

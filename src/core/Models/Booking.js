@@ -4,9 +4,24 @@ const BookingSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
     package: { type: mongoose.Schema.Types.ObjectId, ref: 'Package', required: true },
     bookingDate: { type: Date, default: Date.now },
-    travelDate: { type: Date, required: true },
+    travelStartTime: { type: Date, required: true }, // Full Date + Time (Precision based)
+    travelEndTime: { type: Date, required: true }, // Full Date + Time (Precision based)
+    
+    // Traveler Breakdown
+    adultCount: { type: Number, default: 1, min: 1 },
+    childCount: { type: Number, default: 0, min: 0 },
+    units: { type: Number, default: 1, min: 1 }, // Total slots (adults + children)
+    
     status: { type: String, enum: ['pending', 'confirmed', 'cancelled', 'completed'], default: 'pending' },
     paymentStatus: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
+    
+    // Group Booking Details
+    includeBooker: { type: Boolean, default: true },
+    travelerDetails: [{
+        name: { type: String, required: true },
+        phone: { type: String }
+    }],
+
     razorpay: {
         orderId: String,
         paymentId: String,
@@ -17,7 +32,7 @@ const BookingSchema = new mongoose.Schema({
     refundAmount: { type: Number, default: 0, min: 0 },
     totalPrice: { type: Number, min: 0 },
     preferences: {
-        category: { type: String },
+        category: { type: String }, // homestay, trekking, etc.
         itemId: { type: mongoose.Schema.Types.ObjectId }
     },
     timeline: [{

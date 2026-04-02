@@ -1,5 +1,6 @@
 import Inventory from '@/models/Inventory.js';
 import Package from '@/models/Package.js';
+import Booking from '@/models/Booking.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 
 class InventoryService {
@@ -8,17 +9,35 @@ class InventoryService {
      * Maps PackageSchema specific fields (totalRooms/totalSlots) to generic 'units'.
      */
     async _getEffectiveDay(vendorId, itemId, serviceType, date, inventoryDoc = null) {
-        const targetDateStr = new Date(date).toISOString().split('T')[0];
+        const targetDate = new Date(date);
+        targetDate.setHours(0, 0, 0, 0);
+        const targetDateStr = targetDate.toISOString().split('T')[0];
         
-        // 1. Try to find in custom inventory calendar
+        // 1. Try to find in custom inventory calendar (Manual Overrides/Pricing)
         const inv = inventoryDoc || await Inventory.findOne({ vendorId, itemId }).lean();
         const customDay = inv?.calendar.find(d => 
             new Date(d.date).toISOString().split('T')[0] === targetDateStr
         );
 
-        if (customDay) return customDay;
+        // 2. Direct Booking Check (Dynamic Capacity)
+        // Logic for 'customTrip' or exclusive items: Check for ANY vendor booking
+        const isExclusive = serviceType === 'customTrip';
+        
+        const bookingQuery = {
+            status: { $in: ['confirmed', 'pending'] },
+            travelStartTime: { $lt: new Date(new Date(targetDate).setHours(23, 59, 59, 999)) },
+            travelEndTime: { $gt: targetDate }
+        };
 
-        // 2. Fallback: Get base availability and pricing from Package
+        if (isExclusive) {
+            bookingQuery.vendor = vendorId; // Global lock for vendor
+        } else {
+            bookingQuery['preferences.itemId'] = itemId; // Local lock for item
+        }
+
+        const liveBookings = await Booking.find(bookingQuery).lean();
+
+        // 3. Fallback: Get base availability and pricing from Package
         const pkg = await Package.findOne({ vendor: vendorId }).lean();
         if (!pkg || !pkg[serviceType]) return null;
 
@@ -30,55 +49,49 @@ class InventoryService {
         if (item.fleetAvailability) {
             totalUnits = item.fleetAvailability.totalVehicles || 0;
         } else if (item.availability) {
-            totalUnits = item.availability.totalRooms || item.availability.totalSlots || 0;
+            totalUnits = item.availability.totalRooms || item.availability.totalSlots || item.availability.totalSeats || 0;
         }
 
-        // Return a virtual record mimicking the schema
-        return {
-            date: new Date(date),
-            totalUnits,
-            bookedUnits: 0,
-            availableUnits: totalUnits,
-            status: item.isActive ? 'available' : 'closed',
-            pricing: {
-                basePrice: item.pricing?.pricePerNight || item.pricing?.pricePerPerson || item.pricing?.pricePerDay || item.pricing?.price || 0,
-                childPrice: item.pricing?.childPrice || 0,
-                extraBedPrice: item.pricing?.extraBedPrice || 0,
-                porterPrice: item.pricing?.porterPricePerDay || 0
-            },
-            isVirtual: true
-        };
+        // Calculate booked units from live bookings
+        let liveBookedUnits = 0;
+        if (isExclusive && liveBookings.length > 0) {
+            liveBookedUnits = totalUnits; // Block everything if even one booking exists
+        } else {
+            liveBookedUnits = liveBookings.reduce((sum, b) => sum + (b.units || 1), 0);
+        }
 
-        // If custom day exists, merge and apply adjustments
+        // Final merging logic
         let finalPrice = item.pricing?.pricePerNight || item.pricing?.pricePerPerson || item.pricing?.pricePerDay || item.pricing?.price || 0;
         
         if (customDay?.pricing?.basePrice !== null && customDay?.pricing?.basePrice !== undefined) {
             finalPrice = customDay.pricing.basePrice;
-        } else {
+        } else if (customDay) {
             // Apply Adjustments to Baseline
-            if (customDay?.pricing?.priceAdjustmentAmount) {
+            if (customDay.pricing?.priceAdjustmentAmount) {
                 finalPrice = parseFloat(finalPrice) + parseFloat(customDay.pricing.priceAdjustmentAmount);
             }
-            if (customDay?.pricing?.priceAdjustmentPercent) {
+            if (customDay.pricing?.priceAdjustmentPercent) {
                 finalPrice = parseFloat(finalPrice) + (parseFloat(finalPrice) * (parseFloat(customDay.pricing.priceAdjustmentPercent) / 100));
             }
         }
 
+        const totalBooked = Math.max(customDay?.bookedUnits || 0, liveBookedUnits);
+        const status = customDay?.status || (totalBooked >= totalUnits ? 'sold_out' : (item.isActive ? 'available' : 'closed'));
+
         return {
-            date: new Date(date),
+            date: targetDate,
             totalUnits,
-            bookedUnits: customDay?.bookedUnits || 0,
-            availableUnits: customDay ? Math.max(0, customDay.totalUnits - customDay.bookedUnits) : totalUnits,
-            status: customDay?.status || (item.isActive ? 'available' : 'closed'),
+            bookedUnits: totalBooked,
+            availableUnits: Math.max(0, totalUnits - totalBooked),
+            status: status,
             pricing: {
                 basePrice: finalPrice, 
                 childPrice: customDay?.pricing?.childPrice || item.pricing?.childPrice || 0,
                 extraBedPrice: customDay?.pricing?.extraBedPrice || item.pricing?.extraBedPrice || 0,
-                porterPrice: customDay?.pricing?.porterPrice || item.pricing?.porterPricePerDay || 0,
-                adjustmentAmount: customDay?.pricing?.priceAdjustmentAmount || 0,
-                adjustmentPercent: customDay?.pricing?.priceAdjustmentPercent || 0
+                porterPrice: customDay?.pricing?.porterPrice || item.pricing?.porterPricePerDay || 0
             },
-            isVirtual: !customDay
+            isVirtual: !customDay,
+            isBookedSource: liveBookedUnits > 0
         };
     }
 

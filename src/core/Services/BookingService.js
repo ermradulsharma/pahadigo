@@ -8,54 +8,77 @@ import InventoryService from '@/services/InventoryService.js';
 import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 class BookingService {
-    async createBooking({ userId, catalogId, category, itemId, travelDate, price, slots = 1 }) {
+    async createBooking({ userId, catalogId, category, itemId, startTime, adultCount = 1, childCount = 0, durationDays = 1, durationHours = 0, includeBooker = true, travelers = [] }) {
         const session = await mongoose.startSession();
         session.startTransaction();
         try {
-            // 1. Fetch Package to get vendor context (Inventory is keyed by vendorId + itemId)
+            // 1. Fetch Package to get vendor context and item details
             const pkg = await Package.findById(catalogId);
             if (!pkg) throw new Error("Package not found.");
             
             const vendorId = pkg.vendor.toString();
+            const item = pkg[category]?.find(i => i._id.toString() === itemId.toString());
+            if (!item) throw new Error("Item not found in package.");
+
+            // Pricing Calculation based on Adults and Children
+            const adultPrice = item.pricing?.pricePerNight || item.pricing?.pricePerPerson || item.pricing?.pricePerDay || item.pricing?.price || 0;
+            const childPrice = item.pricing?.childPrice || 0;
+            const totalUnits = adultCount + childCount;
+            const totalPrice = (adultCount * adultPrice) + (childCount * childPrice);
             
-            // 2. Check Inventory Availability (Date-Aware)
-            // For single day trips, startDate = endDate = travelDate
+            // Calculate Exact Start and End Times
+            const startDateTime = new Date(startTime);
+            const endDateTime = new Date(startTime);
+            
+            if (durationHours > 0) {
+                endDateTime.setHours(startDateTime.getHours() + durationHours);
+            } else if (durationDays > 1) {
+                endDateTime.setDate(startDateTime.getDate() + (durationDays - 1));
+            }
+            
+            // 2. Check Inventory Availability (Time-Sensitive Range Aware)
             const availability = await InventoryService.checkAvailabilityRange(
                 vendorId, 
                 itemId, 
                 category, 
-                travelDate, 
-                travelDate, 
-                slots
+                startDateTime, 
+                endDateTime, 
+                totalUnits
             );
 
             if (!availability.available) {
-                throw new Error(`Requested date ${availability.failedDate} is fully booked.`);
+                throw new Error(`The requested time slot (${startDateTime.toLocaleString()} to ${endDateTime.toLocaleString()}) is for ${totalUnits} traveler(s) is not available.`);
             }
 
-            // 3. Reserve Inventory
+            // 3. Mark Inventory
             await InventoryService.reserveSlotsRange(
                 vendorId, 
                 itemId, 
                 category, 
-                travelDate, 
-                travelDate, 
-                slots
+                startDateTime, 
+                endDateTime, 
+                totalUnits
             );
 
             // 4. Create Booking
             const booking = await Booking.create([{
                 user: userId,
                 package: catalogId,
-                vendor: vendorId, // Add vendor for easier lookup
-                travelDate,
-                totalPrice: price * slots,
+                vendor: vendorId,
+                travelStartTime: startDateTime,
+                travelEndTime: endDateTime,
+                adultCount,
+                childCount,
+                units: totalUnits, // Total slots locked
+                includeBooker,
+                travelerDetails: travelers,
+                totalPrice, // Dynamic calculation
                 status: 'pending',
                 paymentStatus: 'pending',
-                preferences: { category, itemId, slots },
+                preferences: { category, itemId, slots: totalUnits },
                 timeline: [{
                     title: 'Booking Requested',
-                    description: `Request received for ${slots} slot(s) on ${new Date(travelDate).toDateString()}.`,
+                    description: `Request for ${totalUnits} traveler(s) [${adultCount} Adults, ${childCount} Children] from ${startDateTime.toLocaleString()} to ${endDateTime.toLocaleString()}.`,
                     updatedBy: userId
                 }]
             }], { session });
@@ -110,8 +133,8 @@ class BookingService {
                     catalog.vendor.toString(),
                     booking.preferences.itemId,
                     booking.preferences.category,
-                    booking.travelDate,
-                    booking.travelDate,
+                    booking.travelStartTime,
+                    booking.travelEndTime,
                     booking.preferences.slots || 1
                 );
             }
