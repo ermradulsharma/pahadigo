@@ -99,8 +99,29 @@ class PackageService {
     return Array.from(allowed);
   }
 
+  // Helper to format a single catalog item
+  _formatItem(item, categorySlug, vendorCategories = []) {
+    const itemObj = item.toObject ? item.toObject() : item;
+    const category = vendorCategories.find(c => c.slug === categorySlug) || { name: categorySlug, _id: "" };
+    
+    return {
+      id: itemObj._id,
+      title: itemObj.title,
+      isActive: itemObj.isActive,
+      pricing: itemObj.pricing || {},
+      location: itemObj.location || {},
+      photos: itemObj.photos?.[0] || "",
+      category_name: category.name || "",
+      category_slug: categorySlug,
+      category_id: category._id || ""
+    };
+  }
+
   // Add Item to Specific Service Array
   async addServiceItem(vendorId, category, itemData) {
+    const vendor = await Vendor.findById(vendorId);
+    if (!vendor || !vendor.category) throw new Error("Vendor not found");
+
     const allowedCategories = await this._getAllowedCategories(vendorId);
     if (!allowedCategories.includes(category)) {
       throw new Error(`Vendor not authorized to create items in category: ${category}`);
@@ -112,22 +133,24 @@ class PackageService {
     pkg[category].push(itemData);
     const saved = await pkg.save();
 
-    // Auto-initialize inventory for the newly added item
-    try {
-      const newItem = saved[category][saved[category].length - 1];
-      if (newItem && newItem._id) {
+    const newItem = saved[category][saved[category].length - 1];
+    if (newItem && newItem._id) {
+      // Auto-initialize inventory
+      try {
         await InventoryService.initializeFromItem(vendorId, newItem._id, category);
+      } catch (invError) {
+        console.error('Inventory Initialization Failed:', invError);
       }
-    } catch (invError) {
-      console.error('Inventory Initialization Failed:', invError);
-      // Non-blocking: We don't want to fail the item creation if inventory initialization fails
     }
 
-    return saved;
+    return this._formatItem(newItem, category, vendor.category);
   }
 
   // Update Item in Service Array
   async updateServiceItem(vendorId, category, itemId, updates) {
+    const vendor = await Vendor.findById(vendorId);
+    if (!vendor || !vendor.category) throw new Error("Vendor not found");
+
     const allowedCategories = await this._getAllowedCategories(vendorId);
     if (!allowedCategories.includes(category)) {
       throw new Error(`Vendor not authorized to update items in category: ${category}`);
@@ -143,7 +166,10 @@ class PackageService {
     if (!item) throw new Error(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
 
     item.set(updates);
-    return await pkg.save();
+    const saved = await pkg.save();
+    const updatedItem = saved[category].id(itemId);
+
+    return this._formatItem(updatedItem, category, vendor.category);
   }
 
   // Remove Item from Service Array
@@ -160,7 +186,8 @@ class PackageService {
     }
 
     pkg[category].pull({ _id: itemId });
-    return await pkg.save();
+    await pkg.save();
+    return { itemId, deleted: true };
   }
 
   // Toggle Item Status

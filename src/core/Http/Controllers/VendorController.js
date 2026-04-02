@@ -436,9 +436,6 @@ class VendorController {
       if (req.formDataBody) {
         const parsed = parseNestedFormData(req.formDataBody);
         category = this._normalizeCategory(parsed.category);
-
-        // Postman often sends item[0][field], which parseNestedFormData might
-        // return as an array in parsed.item. If so, take the first element.
         const rawItem = Array.isArray(parsed.item) ? parsed.item[0] : parsed.item;
         item = await this._processItemData(user, category, rawItem);
       } else {
@@ -450,10 +447,10 @@ class VendorController {
 
       if (!category || !item) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
-      await PackageService.addServiceItem(vendor._id, category, item);
-      const catalog = await PackageService.getFormattedVendorCatalog(vendor._id);
-      return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ITEM.ADDED, catalog);
+      const newItem = await PackageService.addServiceItem(vendor._id, category, item);
+      return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.ITEM.ADDED, newItem);
     } catch (error) {
+      console.error("[ADD ITEM ERROR]", error);
       const status = error.message && (error.message.includes('not authorized') || error.message.includes('Invalid category')) ? HTTP_STATUS.BAD_REQUEST : HTTP_STATUS.INTERNAL_SERVER_ERROR;
       return errorResponse(status, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
     }
@@ -489,98 +486,102 @@ class VendorController {
   }
 
   // PATCH /vendor/package/update-item
-  async updateItem(req) {
+  async updateItem(req, { params } = {}) {
     try {
       const user = req.user;
       const vendor = await VendorService.findByUserId(user.id);
       if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
       let category, itemId, updates;
+      const p = await params;
+
       if (req.formDataBody) {
         const parsed = parseNestedFormData(req.formDataBody);
         category = this._normalizeCategory(parsed.category);
-        itemId = parsed.itemId;
+        itemId = (p?.itemId || parsed.itemId || "").toString().replace(/^["']|["']$/g, '').trim();
         const rawItem = parsed.updates || (Array.isArray(parsed.item) ? parsed.item[0] : parsed.item);
         updates = await this._processItemData(user, category, rawItem);
       } else {
         const body = req.jsonBody || await req.json();
         category = this._normalizeCategory(body.category);
-        itemId = body.itemId;
+        itemId = (p?.itemId || body.itemId || "").toString().replace(/^["']|["']$/g, '').trim();
         const rawItem = body.updates || (Array.isArray(body.item) ? body.item[0] : body.item);
         updates = await this._processItemData(user, category, rawItem);
       }
 
       if (!category || !itemId || !updates) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
-      await PackageService.updateServiceItem(vendor._id, category, itemId, updates);
-      const catalog = await PackageService.getFormattedVendorCatalog(vendor._id);
-      return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, catalog);
+      const updatedItem = await PackageService.updateServiceItem(vendor._id, category, itemId, updates);
+      return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, updatedItem);
     } catch (error) {
-      return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+      console.error("[UPDATE ITEM ERROR]", error);
+      return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
     }
   }
 
   // DELETE /vendor/package/delete-item
-  async deleteItem(req) {
+  async deleteItem(req, { params } = {}) {
     try {
       const user = req.user;
       const vendor = await VendorService.findByUserId(user.id);
       if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
       let category, itemId;
+      const p = await params;
+
       if (req.formDataBody) {
-        category = req.formDataBody.get('category');
-        itemId = req.formDataBody.get('itemId');
+        category = this._normalizeCategory(req.formDataBody.get('category'));
+        itemId = (p?.itemId || req.formDataBody.get('itemId') || "").toString().replace(/^["']|["']$/g, '').trim();
       } else {
         const body = req.jsonBody || await req.json();
-        category = body.category;
-        itemId = body.itemId;
+        category = this._normalizeCategory(body.category);
+        itemId = (p?.itemId || body.itemId || "").toString().replace(/^["']|["']$/g, '').trim();
       }
 
-      category = this._normalizeCategory(category);
       if (!category || !itemId) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
-      await PackageService.removeServiceItem(vendor._id, category, itemId);
-      const catalog = await PackageService.getFormattedVendorCatalog(vendor._id);
-      return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, catalog);
+      const result = await PackageService.removeServiceItem(vendor._id, category, itemId);
+      return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, result);
     } catch (error) {
-      return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+      console.error("[DELETE ITEM ERROR]", error);
+      return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
     }
   }
 
   // POST /vendor/package/toggle-item
-  async toggleItemStatus(req) {
+  async toggleItemStatus(req, { params } = {}) {
     try {
       const user = req.user;
       const vendor = await VendorService.findByUserId(user.id);
       if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
       let category, itemId, isActive;
+      const p = await params;
 
       if (req.formDataBody) {
-        category = req.formDataBody.get('category');
-        itemId = req.formDataBody.get('itemId');
+        const parsed = parseNestedFormData(req.formDataBody);
+        category = this._normalizeCategory(parsed.category || req.formDataBody.get('category'));
+        itemId = (p?.itemId || parsed.itemId || req.formDataBody.get('itemId') || "").toString().replace(/^["']|["']$/g, '').trim();
         if (req.formDataBody.has('isActive')) {
           const activeVal = req.formDataBody.get('isActive');
           isActive = typeof activeVal === 'string' ? activeVal.trim().toLowerCase() === 'true' : !!activeVal;
         }
       } else {
         const body = req.jsonBody || await req.json();
-        category = body.category;
-        itemId = body.itemId;
+        category = this._normalizeCategory(body.category);
+        itemId = (p?.itemId || body.itemId || "").toString().replace(/^["']|["']$/g, '').trim();
         if (body.isActive !== undefined) {
           isActive = typeof body.isActive === 'string' ? body.isActive.trim().toLowerCase() === 'true' : !!body.isActive;
         }
       }
 
-      category = this._normalizeCategory(category);
       if (!category || !itemId || typeof isActive !== 'boolean') return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
-      await PackageService.toggleItemStatus(vendor._id, category, itemId, isActive);
-      const catalog = await PackageService.getFormattedVendorCatalog(vendor._id);
-      return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, catalog);
+      const updatedItem = await PackageService.toggleItemStatus(vendor._id, category, itemId, isActive);
+      return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, updatedItem);
     } catch (error) {
-      return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+      console.error("[TOGGLE ITEM ERROR]", error);
+      return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
     }
   }
 
@@ -670,7 +671,7 @@ class VendorController {
 
   // Legacy / Test compatibility
   async getBusinessCategories(req) {
-     return this.getVendorCategories(req);
+    return this.getVendorCategories(req);
   }
 
   // GET /vendor/categories

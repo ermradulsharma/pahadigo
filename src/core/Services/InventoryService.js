@@ -44,6 +44,9 @@ class InventoryService {
         const item = pkg[serviceType].find(i => i._id.toString() === itemId.toString());
         if (!item) return null;
 
+        // Detect serviceType if missing
+        if (!serviceType) return null;
+
         // Smart Mapping: Handle diverse schema keys (Availability vs FleetAvailability)
         let totalUnits = 0;
         if (item.fleetAvailability) {
@@ -140,48 +143,55 @@ class InventoryService {
      * Bulk update availability for specific dates.
      */
     async updateInventory(vendorId, itemId, serviceType, updates) {
-        let inv = await Inventory.findOne({ vendorId, itemId });
+        try {
+            let inv = await Inventory.findOne({ vendorId, itemId });
 
-        if (!inv) {
-            inv = new Inventory({ vendorId, itemId, serviceType, calendar: [] });
-        }
-
-        updates.forEach(update => {
-            const dateStr = new Date(update.date).toISOString().split('T')[0];
-            const existingIndex = inv.calendar.findIndex(d => 
-                new Date(d.date).toISOString().split('T')[0] === dateStr
-            );
-
-            // Re-map totalUnits if provided, or preserve existing
-            const total = update.totalUnits ?? (existingIndex > -1 ? inv.calendar[existingIndex].totalUnits : 0);
-            const booked = update.bookedUnits ?? (existingIndex > -1 ? inv.calendar[existingIndex].bookedUnits : 0);
-
-            const dayData = {
-                date: new Date(update.date),
-                totalUnits: total,
-                bookedUnits: booked,
-                availableUnits: Math.max(0, total - booked),
-                status: update.status || 'available',
-                pricing: {
-                    basePrice: update.pricing?.basePrice ?? (existingIndex > -1 ? inv.calendar[existingIndex].pricing?.basePrice : null),
-                    childPrice: update.pricing?.childPrice ?? (existingIndex > -1 ? inv.calendar[existingIndex].pricing?.childPrice : null),
-                    extraBedPrice: update.pricing?.extraBedPrice ?? (existingIndex > -1 ? inv.calendar[existingIndex].pricing?.extraBedPrice : null),
-                    porterPrice: update.pricing?.porterPrice ?? (existingIndex > -1 ? inv.calendar[existingIndex].pricing?.porterPrice : null),
-                },
-                note: update.note || ''
-            };
-
-            if (existingIndex > -1) {
-                inv.calendar[existingIndex] = { ...inv.calendar[existingIndex].toObject(), ...dayData };
-            } else {
-                inv.calendar.push(dayData);
+            if (!inv) {
+                inv = new Inventory({ vendorId, itemId, serviceType, calendar: [] });
             }
-        });
 
-        inv.calendar.sort((a, b) => new Date(a.date) - new Date(b.date));
-        inv.lastSyncAt = new Date();
-        await inv.save();
-        return inv;
+            updates.forEach(update => {
+                const dateStr = new Date(update.date).toISOString().split('T')[0];
+                const existingIndex = inv.calendar.findIndex(d => 
+                    new Date(d.date).toISOString().split('T')[0] === dateStr
+                );
+
+                // Re-map totalUnits if provided, or preserve existing
+                const total = update.totalUnits ?? (existingIndex > -1 ? inv.calendar[existingIndex].totalUnits : 0);
+                const booked = update.bookedUnits ?? (existingIndex > -1 ? inv.calendar[existingIndex].bookedUnits : 0);
+
+                const dayData = {
+                    date: new Date(update.date),
+                    totalUnits: total,
+                    bookedUnits: booked,
+                    availableUnits: Math.max(0, total - booked),
+                    status: update.status || (existingIndex > -1 ? inv.calendar[existingIndex].status : 'available'),
+                    pricing: {
+                        basePrice: update.pricing?.basePrice ?? (existingIndex > -1 ? inv.calendar[existingIndex].pricing?.basePrice : null),
+                        childPrice: update.pricing?.childPrice ?? (existingIndex > -1 ? inv.calendar[existingIndex].pricing?.childPrice : null),
+                        extraBedPrice: update.pricing?.extraBedPrice ?? (existingIndex > -1 ? inv.calendar[existingIndex].pricing?.extraBedPrice : null),
+                        porterPrice: update.pricing?.porterPrice ?? (existingIndex > -1 ? inv.calendar[existingIndex].pricing?.porterPrice : null),
+                    },
+                    note: update.note || (existingIndex > -1 ? inv.calendar[existingIndex].note : '')
+                };
+
+                if (existingIndex > -1) {
+                    // Update existing
+                    Object.assign(inv.calendar[existingIndex], dayData);
+                } else {
+                    // Add new
+                    inv.calendar.push(dayData);
+                }
+            });
+
+            inv.calendar.sort((a, b) => new Date(a.date) - new Date(b.date));
+            inv.lastSyncAt = new Date();
+            await inv.save();
+            return inv;
+        } catch (error) {
+            console.error("[UPDATE INVENTORY SERVICE ERROR]", error);
+            throw error;
+        }
     }
 
     /**
