@@ -141,7 +141,8 @@ async function handler(req, { params }) {
         return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.GENERIC, result);
     } catch (error) {
         console.error("API Handler Error:", error);
-        return NextResponse.json({ success: false, message: error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, data: { stack: error.stack } }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR });
+        const errorData = process.env.NODE_ENV === 'development' ? { stack: error.stack } : {};
+        return NextResponse.json({ success: false, message: error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, data: errorData }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR });
     }
 }
 

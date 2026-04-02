@@ -38,8 +38,6 @@ const routes = [
         { method: 'POST', path: '/facebook', handler: wrap(AuthController.facebookLogin.bind(AuthController)) },
         { method: 'POST', path: '/apple', handler: wrap(AuthController.appleLogin.bind(AuthController)) },
         { method: 'POST', path: '/forget-password', handler: wrap(AuthController.forgetPassword.bind(AuthController)) },
-        { method: 'POST', path: '/reset-password', handler: wrap(AuthController.resetPassword.bind(AuthController)) },
-        { method: 'POST', path: '/change-password', handler: wrap(AuthController.changePassword.bind(AuthController)) },
     ]),
 
     // Browsing Packages & Categories
@@ -97,6 +95,8 @@ const routes = [
         { method: 'POST', path: '/update-profile', handler: wrap(AuthController.updateProfile.bind(AuthController)) },
         { method: 'POST', path: '/delete-profile', handler: wrap(AuthController.deleteProfile.bind(AuthController)) },
         { method: 'PATCH', path: '/emergency-contacts', handler: wrap(SOSController.updateEmergencyContacts.bind(SOSController)) },
+        { method: 'POST', path: '/reset-password', handler: wrap(AuthController.resetPassword.bind(AuthController)) },
+        { method: 'POST', path: '/change-password', handler: wrap(AuthController.changePassword.bind(AuthController)) },
     ]),
 
 

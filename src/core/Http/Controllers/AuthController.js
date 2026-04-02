@@ -204,31 +204,46 @@ class AuthController {
 
     async resetPassword(req) {
         try {
+            const userContext = req.user;
+            if (!userContext || !userContext.id) return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED, {});
+
             const body = await parseBody(req);
-            const { email, password } = body;
-            if (!email || !password) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
-            await AuthService.resetPassword(email, password);
+            const { otp, password } = body;
+            if (!otp || !password) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
+
+            const user = await User.findById(userContext.id);
+            if (!user) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.NOT_FOUND, {});
+
+            const identifier = user.email || user.phone;
+            const otpRecord = await OTPService.verifyOTP(identifier, otp);
+            if (!otpRecord) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.AUTH.INVALID_OTP, {});
+
+            await AuthService.resetPassword(user._id, password);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.PASSWORD_RESET_SUCCESS, {});
         } catch (error) {
+            console.error("Reset Password Error:", error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
 
     async changePassword(req) {
         try {
+            const userContext = req.user;
+            if (!userContext || !userContext.id) return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED, {});
+
             const body = await parseBody(req);
-            const { email, oldPassword, newPassword } = body;
-            if (!email || !oldPassword || !newPassword) {
+            const { oldPassword, newPassword } = body;
+            if (!oldPassword || !newPassword) {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
             }
 
-            const user = await User.findOne({ email }).select('+password');
+            const user = await User.findById(userContext.id).select('+password');
             if (!user) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.NOT_FOUND, {});
 
             const isMatch = await user.comparePassword(oldPassword);
             if (!isMatch) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS, {});
 
-            await AuthService.changePassword(email, newPassword);
+            await AuthService.changePassword(user._id, newPassword);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, {});
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});

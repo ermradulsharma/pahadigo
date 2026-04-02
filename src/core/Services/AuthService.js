@@ -227,7 +227,9 @@ class AuthService {
     async facebookAuth(accessToken, targetRole) {
         if (!accessToken) throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED);
 
-        const response = await fetch(`https://graph.facebook.com/me?access_token=${accessToken}&fields=id,name,email`);
+        const response = await fetch(`https://graph.facebook.com/me?fields=id,name,email`, {
+            headers: { 'Authorization': `Bearer ${accessToken}` }
+        });
         const data = await response.json();
 
         if (data.error) {
@@ -373,16 +375,16 @@ class AuthService {
         return { message: RESPONSE_MESSAGES.AUTH.PASSWORD_RESET_LINK_SENT };
     }
 
-    async resetPassword(email, newPassword) {
-        const user = await User.findOne({ email });
+    async resetPassword(userId, newPassword) {
+        const user = await User.findById(userId);
         if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         user.password = newPassword;
         await user.save();
         return true;
     }
 
-    async changePassword(email, newPassword) {
-        return this.resetPassword(email, newPassword);
+    async changePassword(userId, newPassword) {
+        return this.resetPassword(userId, newPassword);
     }
 
     async updateProfile(email, updates) {
