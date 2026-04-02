@@ -59,14 +59,13 @@ describe('AuthService', () => {
 
     describe('Account Deactivation Flow', () => {
         it('should reject login for suspended accounts', async () => {
-            const email = 'suspended@example.com';
+            const email = 'suspended@test.com'; // Use a fresh email for this test
             await User.create({ email, role: 'traveller', isVerified: true, status: USER_STATUS.SUSPENDED });
 
             const otp = await OTPService.generateOTP(email, 'traveller');
             await expect(AuthService.verifyAndLogin({
                 identifier: email,
-                otp,
-                email
+                otp
             })).rejects.toThrow(RESPONSE_MESSAGES.AUTH.ACCOUNT_SUSPENDED);
         });
     });
