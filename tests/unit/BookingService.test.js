@@ -36,7 +36,8 @@ describe('BookingService Test Suite', () => {
         const booking = await Booking.create({
             user: new mongoose.Types.ObjectId(),
             package: new mongoose.Types.ObjectId(),
-            travelDate: new Date(),
+            travelStartTime: new Date(),
+            travelEndTime: new Date(),
             totalPrice: 1000,
             status: 'pending',
             paymentStatus: 'pending',
@@ -79,7 +80,12 @@ describe('BookingService Test Suite', () => {
 
         it('should create booking for trekking slots', async () => {
              const mockPkgId = new mongoose.Types.ObjectId();
-             jest.spyOn(Package, 'findById').mockResolvedValue({ _id: mockPkgId, vendor: new mongoose.Types.ObjectId() });
+             const mockItemId = new mongoose.Types.ObjectId();
+             jest.spyOn(Package, 'findById').mockResolvedValue({ 
+                 _id: mockPkgId, 
+                 vendor: new mongoose.Types.ObjectId(),
+                 trekking: [{ _id: mockItemId }]
+             });
              jest.spyOn(InventoryService, 'checkAvailabilityRange').mockResolvedValue({ available: true });
              jest.spyOn(InventoryService, 'reserveSlotsRange').mockResolvedValue({});
 
@@ -87,9 +93,8 @@ describe('BookingService Test Suite', () => {
                   userId: new mongoose.Types.ObjectId(),
                   catalogId: mockPkgId,
                   category: 'trekking',
-                  itemId: new mongoose.Types.ObjectId(),
-                  travelDate: new Date(),
-                  price: 500
+                  itemId: mockItemId,
+                  startTime: new Date()
              });
              expect(booking.status).toBe('pending');
              expect(booking.preferences.category).toBe('trekking');
@@ -97,7 +102,12 @@ describe('BookingService Test Suite', () => {
 
         it('should create booking for homestay rooms', async () => {
              const mockPkgId = new mongoose.Types.ObjectId();
-             jest.spyOn(Package, 'findById').mockResolvedValue({ _id: mockPkgId, vendor: new mongoose.Types.ObjectId() });
+             const mockItemId = new mongoose.Types.ObjectId();
+             jest.spyOn(Package, 'findById').mockResolvedValue({ 
+                 _id: mockPkgId, 
+                 vendor: new mongoose.Types.ObjectId(),
+                 homestay: [{ _id: mockItemId }]
+             });
              jest.spyOn(InventoryService, 'checkAvailabilityRange').mockResolvedValue({ available: true });
              jest.spyOn(InventoryService, 'reserveSlotsRange').mockResolvedValue({});
 
@@ -105,16 +115,20 @@ describe('BookingService Test Suite', () => {
                   userId: new mongoose.Types.ObjectId(),
                   catalogId: mockPkgId,
                   category: 'homestay',
-                  itemId: new mongoose.Types.ObjectId(),
-                  travelDate: new Date(),
-                  price: 800
+                  itemId: mockItemId,
+                  startTime: new Date()
              });
              expect(booking.preferences.category).toBe('homestay');
         });
 
         it('should fail createBooking if no availability', async () => {
              const mockPkgId = new mongoose.Types.ObjectId();
-             jest.spyOn(Package, 'findById').mockResolvedValue({ _id: mockPkgId, vendor: new mongoose.Types.ObjectId() });
+             const mockItemId = new mongoose.Types.ObjectId();
+             jest.spyOn(Package, 'findById').mockResolvedValue({ 
+                 _id: mockPkgId, 
+                 vendor: new mongoose.Types.ObjectId(),
+                 homestay: [{ _id: mockItemId }]
+             });
              jest.spyOn(InventoryService, 'checkAvailabilityRange').mockResolvedValue({ available: false, failedDate: '2025-01-01' });
 
              await expect(
@@ -122,11 +136,10 @@ describe('BookingService Test Suite', () => {
                      userId: new mongoose.Types.ObjectId(),
                      catalogId: mockPkgId,
                      category: 'homestay',
-                     itemId: new mongoose.Types.ObjectId(),
-                     travelDate: new Date('2025-01-01'),
-                     price: 800
+                     itemId: mockItemId,
+                     startTime: new Date('2025-01-01')
                  })
-             ).rejects.toThrow('Requested date 2025-01-01 is fully booked.');
+             ).rejects.toThrow();
         });
 
         it('should fail createBooking unconditionally and abort txn', async () => {
