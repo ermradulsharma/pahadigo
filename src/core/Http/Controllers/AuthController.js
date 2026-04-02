@@ -6,7 +6,7 @@ import { parseNestedFormData } from '@/helpers/parseNestedFormData.js';
 import { uploadToCloudinary } from '@/helpers/cloudinary.js';
 import { schemas, validate } from '@/helpers/validation.js';
 import User from '@/models/User.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES, USER_ROLES } from '../../Constants/index.js';
 
 class AuthController {
 
@@ -213,6 +213,7 @@ class AuthController {
 
             const user = await User.findById(userContext.id);
             if (!user) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.NOT_FOUND, {});
+            if (user.role !== USER_ROLES.ADMIN) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD, {});
 
             const identifier = user.email || user.phone;
             const otpRecord = await OTPService.verifyOTP(identifier, otp);
@@ -239,6 +240,7 @@ class AuthController {
 
             const user = await User.findById(userContext.id).select('+password');
             if (!user) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.NOT_FOUND, {});
+            if (user.role !== USER_ROLES.ADMIN) return errorResponse(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD, {});
 
             const isMatch = await user.comparePassword(oldPassword);
             if (!isMatch) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS, {});

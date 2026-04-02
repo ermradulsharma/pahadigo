@@ -95,8 +95,6 @@ const routes = [
         { method: 'POST', path: '/update-profile', handler: wrap(AuthController.updateProfile.bind(AuthController)) },
         { method: 'POST', path: '/delete-profile', handler: wrap(AuthController.deleteProfile.bind(AuthController)) },
         { method: 'PATCH', path: '/emergency-contacts', handler: wrap(SOSController.updateEmergencyContacts.bind(SOSController)) },
-        { method: 'POST', path: '/reset-password', handler: wrap(AuthController.resetPassword.bind(AuthController)) },
-        { method: 'POST', path: '/change-password', handler: wrap(AuthController.changePassword.bind(AuthController)) },
     ]),
 
 
@@ -206,7 +204,8 @@ const routes = [
         { method: 'GET', path: '/stats', handler: wrap(AdminController.getStats.bind(AdminController)) },
         { method: 'GET', path: '/analytics', handler: wrap(AdminController.getAnalytics.bind(AdminController)) },
         { method: 'GET', path: '/audit-logs', handler: wrap(AdminController.getAuditLogs.bind(AdminController)) },
-        { method: 'POST', path: '/change-password', handler: wrap(AdminController.changePassword.bind(AdminController)) },
+        { method: 'POST', path: '/change-password', handler: wrap(AuthController.changePassword.bind(AuthController)) },
+        { method: 'POST', path: '/reset-password', handler: wrap(AuthController.resetPassword.bind(AuthController)) },
 
         // --- Users: Travellers ---
         ...Router.group({ prefix: '/travellers' }, [
