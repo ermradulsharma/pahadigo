@@ -2,6 +2,7 @@ import Inventory from '@/models/Inventory.js';
 import Package from '@/models/Package.js';
 import Booking from '@/models/Booking.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
+import { formatDateKey, calculateEffectivePrice, normalizeAvailability, determineDayStatus } from '@/helpers/InventoryHelper.js';
 
 class InventoryService {
     /**
@@ -9,20 +10,17 @@ class InventoryService {
      * Maps PackageSchema specific fields (totalRooms/totalSlots) to generic 'units'.
      */
     async _getEffectiveDay(vendorId, itemId, serviceType, date, inventoryDoc = null) {
-        const targetDate = new Date(date);
-        targetDate.setHours(0, 0, 0, 0);
-        const targetDateStr = targetDate.toISOString().split('T')[0];
-        
+        const targetDateStr = formatDateKey(date);
+        const targetDate = new Date(targetDateStr);
+
         // 1. Try to find in custom inventory calendar (Manual Overrides/Pricing)
         const inv = inventoryDoc || await Inventory.findOne({ vendorId, itemId }).lean();
-        const customDay = inv?.calendar.find(d => 
-            new Date(d.date).toISOString().split('T')[0] === targetDateStr
-        );
+        const customDay = inv?.calendar.find(d => formatDateKey(d.date) === targetDateStr);
 
         // 2. Direct Booking Check (Dynamic Capacity)
         // Logic for 'customTrip' or exclusive items: Check for ANY vendor booking
         const isExclusive = serviceType === 'customTrip';
-        
+
         const bookingQuery = {
             status: { $in: ['confirmed', 'pending'] },
             travelStartTime: { $lt: new Date(new Date(targetDate).setHours(23, 59, 59, 999)) },
@@ -44,16 +42,8 @@ class InventoryService {
         const item = pkg[serviceType].find(i => i._id.toString() === itemId.toString());
         if (!item) return null;
 
-        // Detect serviceType if missing
-        if (!serviceType) return null;
-
-        // Smart Mapping: Handle diverse schema keys (Availability vs FleetAvailability)
-        let totalUnits = 0;
-        if (item.fleetAvailability) {
-            totalUnits = item.fleetAvailability.totalVehicles || 0;
-        } else if (item.availability) {
-            totalUnits = item.availability.totalRooms || item.availability.totalSlots || item.availability.totalSeats || 0;
-        }
+        // Use helper to normalize units
+        const { totalUnits } = normalizeAvailability(item);
 
         // Calculate booked units from live bookings
         let liveBookedUnits = 0;
@@ -64,22 +54,12 @@ class InventoryService {
         }
 
         // Final merging logic
-        let finalPrice = item.pricing?.pricePerNight || item.pricing?.pricePerPerson || item.pricing?.pricePerDay || item.pricing?.price || 0;
-        
-        if (customDay?.pricing?.basePrice !== null && customDay?.pricing?.basePrice !== undefined) {
-            finalPrice = customDay.pricing.basePrice;
-        } else if (customDay) {
-            // Apply Adjustments to Baseline
-            if (customDay.pricing?.priceAdjustmentAmount) {
-                finalPrice = parseFloat(finalPrice) + parseFloat(customDay.pricing.priceAdjustmentAmount);
-            }
-            if (customDay.pricing?.priceAdjustmentPercent) {
-                finalPrice = parseFloat(finalPrice) + (parseFloat(finalPrice) * (parseFloat(customDay.pricing.priceAdjustmentPercent) / 100));
-            }
-        }
+        // Use helper for price calculation
+        const baseItemPrice = item.pricing?.pricePerNight || item.pricing?.pricePerPerson || item.pricing?.pricePerDay || item.pricing?.price || 0;
+        const finalPrice = calculateEffectivePrice(baseItemPrice, customDay?.pricing);
 
         const totalBooked = Math.max(customDay?.bookedUnits || 0, liveBookedUnits);
-        const status = customDay?.status || (totalBooked >= totalUnits ? 'sold_out' : (item.isActive ? 'available' : 'closed'));
+        const status = determineDayStatus(totalUnits, totalBooked, customDay?.status, item.isActive);
 
         return {
             date: targetDate,
@@ -88,7 +68,7 @@ class InventoryService {
             availableUnits: Math.max(0, totalUnits - totalBooked),
             status: status,
             pricing: {
-                basePrice: finalPrice, 
+                basePrice: finalPrice,
                 childPrice: customDay?.pricing?.childPrice || item.pricing?.childPrice || 0,
                 extraBedPrice: customDay?.pricing?.extraBedPrice || item.pricing?.extraBedPrice || 0,
                 porterPrice: customDay?.pricing?.porterPrice || item.pricing?.porterPricePerDay || 0
@@ -103,7 +83,7 @@ class InventoryService {
      */
     async getItemInventory(vendorId, itemId, serviceType, startDate, endDate) {
         const inv = await Inventory.findOne({ vendorId, itemId }).lean() || { calendar: [] };
-        
+
         const start = new Date(startDate);
         const end = new Date(endDate);
         const resultCalendar = [];
@@ -151,10 +131,8 @@ class InventoryService {
             }
 
             updates.forEach(update => {
-                const dateStr = new Date(update.date).toISOString().split('T')[0];
-                const existingIndex = inv.calendar.findIndex(d => 
-                    new Date(d.date).toISOString().split('T')[0] === dateStr
-                );
+                const dateStr = formatDateKey(update.date);
+                const existingIndex = inv.calendar.findIndex(d => formatDateKey(d.date) === dateStr);
 
                 // Re-map totalUnits if provided, or preserve existing
                 const total = update.totalUnits ?? (existingIndex > -1 ? inv.calendar[existingIndex].totalUnits : 0);
@@ -204,14 +182,8 @@ class InventoryService {
         const item = pkg[serviceType].find(i => i._id.toString() === itemId.toString());
         if (!item) return null;
 
-        // Smart Mapping: Handle diverse schema keys (Availability vs FleetAvailability)
-        let totalUnits = 0;
-        if (item.fleetAvailability) {
-            totalUnits = item.fleetAvailability.totalVehicles || 0;
-        } else if (item.availability) {
-            totalUnits = item.availability.totalRooms || item.availability.totalSlots || 0;
-        }
-        
+        const { totalUnits } = normalizeAvailability(item);
+
         const initialCalendar = Array.from({ length: days }).map((_, i) => {
             const d = new Date();
             d.setDate(d.getDate() + i);
@@ -234,13 +206,13 @@ class InventoryService {
         const inv = await Inventory.findOne({ vendorId, itemId }).lean();
         const start = new Date(startDate);
         const end = new Date(endDate);
-        
+
         for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
             const dayData = await this._getEffectiveDay(vendorId, itemId, serviceType, d, inv);
-            
+
             if (!dayData || dayData.status !== 'available' || dayData.availableUnits < unitsRequired) {
-                return { 
-                    available: false, 
+                return {
+                    available: false,
                     failedDate: d.toISOString().split('T')[0],
                     reason: dayData?.status !== 'available' ? 'Status: ' + dayData?.status : 'Insufficient units'
                 };
@@ -288,7 +260,7 @@ class InventoryService {
 
         for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
             const dateStr = new Date(d).toISOString().split('T')[0];
-            const dayRecord = inv.calendar.find(day => 
+            const dayRecord = inv.calendar.find(day =>
                 new Date(day.date).toISOString().split('T')[0] === dateStr
             );
 

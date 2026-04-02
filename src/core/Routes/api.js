@@ -197,9 +197,12 @@ const routes = [
 
     // Vendor Inventory
     ...Router.group({ prefix: '/inventory' }, [
+      { method: 'GET', path: '/', handler: wrap(InventoryController.getAllInventory.bind(InventoryController)) },
+      { method: 'PATCH', path: '/:itemId/baseline', handler: wrap(InventoryController.updateItemBaseline.bind(InventoryController)) },
+
       { method: 'GET', path: '/service/:serviceType', handler: wrap(InventoryController.getServiceInventory.bind(InventoryController)) },
       { method: 'GET', path: '/:itemId', handler: wrap(InventoryController.getItemInventory.bind(InventoryController)) },
-      
+
       { method: 'POST', path: '/update', handler: wrap(InventoryController.updateInventory.bind(InventoryController)) },
       { method: 'PUT', path: '/update', handler: wrap(InventoryController.updateInventory.bind(InventoryController)) },
       { method: 'PATCH', path: '/update', handler: wrap(InventoryController.updateInventory.bind(InventoryController)) },

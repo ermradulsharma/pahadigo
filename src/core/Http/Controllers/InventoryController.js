@@ -7,6 +7,22 @@ import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 
 class InventoryController {
     /**
+     * GET /vendor/inventory/
+     */
+    async getAllInventory(req) {
+        try {
+            const user = req.user;
+            const vendor = await VendorService.findByUserId(user.id);
+            if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
+            const catalog = await PackageService.getVendorInventoryCatalog(vendor._id);
+            return successResponse(HTTP_STATUS.OK, 'Packages retrieved successfully', catalog);
+        } catch (error) {
+            console.error('Get All Inventory Error:', error);
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+        }
+    }
+
+    /**
      * GET /vendor/inventory/:itemId?serviceType=trekking&startDate=...&endDate=...
      */
     async getItemInventory(req, { params }) {
@@ -16,7 +32,7 @@ class InventoryController {
             if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             const { itemId } = (await params) || {};
-            
+
             const url = new URL(req.url);
             let serviceType = url.searchParams.get('serviceType');
             const startDate = url.searchParams.get('startDate') || new Date().toISOString();
@@ -51,7 +67,7 @@ class InventoryController {
 
             const p = (await params) || {};
             const serviceType = p.serviceType;
-            
+
             const url = new URL(req.url);
             const startDate = url.searchParams.get('startDate') || new Date().toISOString();
             const endDate = url.searchParams.get('endDate') || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
@@ -77,7 +93,7 @@ class InventoryController {
             if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             const { itemId } = (await params) || {};
-            
+
             let body;
             if (req.formDataBody) {
                 body = parseNestedFormData(req.formDataBody);
@@ -101,14 +117,14 @@ class InventoryController {
 
             // Extract pricing overrides and adjustments
             const { totalUnits, status, priceOverride, priceAdjustmentAmount, priceAdjustmentPercent, pricing, note, date } = body;
-            
+
             // Handle single update from top-level fields (common in form-data)
             if (!updates && date) {
                 updates = [{ date, totalUnits, status, priceOverride, priceAdjustmentAmount, priceAdjustmentPercent, pricing, note }];
             }
 
-            const pricingSettings = pricing || { 
-                basePrice: priceOverride, 
+            const pricingSettings = pricing || {
+                basePrice: priceOverride,
                 priceAdjustmentAmount: priceAdjustmentAmount ? parseFloat(priceAdjustmentAmount) : null,
                 priceAdjustmentPercent: priceAdjustmentPercent ? parseFloat(priceAdjustmentPercent) : null
             };
@@ -123,11 +139,11 @@ class InventoryController {
             else if (itemId && startDate && endDate) {
                 const settings = { totalUnits, status, pricing: pricingSettings, note };
                 inventory = await InventoryService.updateInventoryRange(vendor._id, itemId, serviceType, startDate, endDate, settings);
-            } 
+            }
             // 3. Individual Item Specific Date Array
             else if (itemId && updates && Array.isArray(updates)) {
                 inventory = await InventoryService.updateInventory(vendor._id, itemId, serviceType, updates);
-            } 
+            }
             else {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Invalid request format. Provide itemId and updates, or serviceType and range with applyToService=true.', {});
             }
@@ -143,6 +159,14 @@ class InventoryController {
      * POST /vendor/inventory/:itemId/initialize
      */
     async initializeInventory(req, { params }) {
+        // ... (existing code)
+    }
+
+    /**
+     * PATCH /vendor/inventory/:itemId/baseline
+     * Updates the master pricing and availability in the Package catalog.
+     */
+    async updateItemBaseline(req, { params }) {
         try {
             const user = req.user;
             const vendor = await VendorService.findByUserId(user.id);
@@ -157,24 +181,33 @@ class InventoryController {
                 body = req.jsonBody || await (req.json().catch(() => ({})));
             }
 
-            let { serviceType, days } = body;
+            let { serviceType, pricing, availability, fleetAvailability } = body;
 
-            // Detect serviceType if missing using itemId
+            // Detect serviceType if missing
             if (itemId && !serviceType) {
                 const itemInfo = await PackageService.getAvailablePackageItem(itemId);
                 if (itemInfo) serviceType = itemInfo.category;
             }
 
             if (!itemId || !serviceType) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Item ID and serviceType are required (or valid itemId for auto-detection)', {});
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Item ID and serviceType are required', {});
             }
 
-            const inventory = await InventoryService.initializeFromItem(vendor._id, itemId, serviceType, days || 30);
-            if (!inventory) return errorResponse(HTTP_STATUS.NOT_FOUND, 'Source item not found in package catalog', {});
+            // Prepare baseline updates
+            const updates = {};
+            if (pricing) updates.pricing = pricing;
+            if (availability) updates.availability = availability;
+            if (fleetAvailability) updates.fleetAvailability = fleetAvailability;
 
-            return successResponse(HTTP_STATUS.CREATED, 'Inventory initialized successfully', inventory);
+            if (Object.keys(updates).length === 0) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, 'No updates provided (pricing or availability required)', {});
+            }
+
+            const updated = await PackageService.updateServiceItem(vendor._id, serviceType, itemId, updates);
+            
+            return successResponse(HTTP_STATUS.OK, 'Item baseline updated successfully', updated);
         } catch (error) {
-            console.error('Initialize Inventory Error:', error);
+            console.error('Update Item Baseline Error:', error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
         }
     }
