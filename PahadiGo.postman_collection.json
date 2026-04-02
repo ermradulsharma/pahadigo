@@ -12,157 +12,471 @@
       "name": "Authentication",
       "item": [
         {
-          "name": "Send OTP (Email)",
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "email",
-                  "value": "vendor@pahadigo.com",
-                  "type": "text"
-                },
-                {
-                  "key": "phone",
-                  "value": "+917252933077",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "role",
-                  "value": "vendor",
-                  "type": "text",
-                  "description": "vendor, traveller"
-                },
-                {
-                  "key": "role",
-                  "value": "traveller",
-                  "type": "text",
-                  "description": "vendor, traveller",
-                  "disabled": true
-                },
-                {
-                  "key": "termsAccepted",
-                  "value": "true",
-                  "type": "text"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{base_url}}/auth/otp",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "auth",
-                "otp"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Verify OTP",
-          "event": [
+          "name": "Token & Session",
+          "item": [
             {
-              "listen": "test",
-              "script": {
-                "exec": [
-                  ""
-                ],
-                "type": "text/javascript",
-                "packages": {},
-                "requests": {}
+              "name": "Send OTP (Email)",
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "email",
+                      "value": "vendor@pahadigo.com",
+                      "type": "text"
+                    },
+                    {
+                      "key": "phone",
+                      "value": "+917252933077",
+                      "type": "text",
+                      "disabled": true
+                    },
+                    {
+                      "key": "role",
+                      "value": "vendor",
+                      "type": "text",
+                      "description": "vendor, traveller"
+                    },
+                    {
+                      "key": "role",
+                      "value": "traveller",
+                      "type": "text",
+                      "description": "vendor, traveller",
+                      "disabled": true
+                    },
+                    {
+                      "key": "termsAccepted",
+                      "value": "true",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/otp",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "otp"
+                  ]
+                }
               },
-              "disabled": false
+              "response": []
+            },
+            {
+              "name": "Verify OTP",
+              "event": [
+                {
+                  "listen": "test",
+                  "script": {
+                    "exec": [
+                      ""
+                    ],
+                    "type": "text/javascript",
+                    "packages": {},
+                    "requests": {}
+                  },
+                  "disabled": false
+                }
+              ],
+              "request": {
+                "auth": {
+                  "type": "noauth"
+                },
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "email",
+                      "value": "traveller@gmail.com",
+                      "type": "text",
+                      "description": "traveller@gmail.com, vendor@pahadigo.com"
+                    },
+                    {
+                      "key": "phone",
+                      "value": "+917252933077",
+                      "type": "text",
+                      "disabled": true
+                    },
+                    {
+                      "key": "otp",
+                      "value": "888888",
+                      "type": "text",
+                      "description": "888888"
+                    },
+                    {
+                      "key": "role",
+                      "value": "traveller",
+                      "type": "text",
+                      "description": "traveller, vendor"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/verify",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "verify"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Google Login",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "idToken",
+                      "value": "<YOUR_GOOGLE_ID_TOKEN>",
+                      "type": "text"
+                    },
+                    {
+                      "key": "role",
+                      "value": "user",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/google",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "google"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verify Token",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/verify",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "verify"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Refresh Token",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/refresh",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "refresh"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Password Login (Admin)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/login",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "login"
+                  ]
+                },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "email",
+                      "value": "admin@pahadigo.com",
+                      "type": "text"
+                    },
+                    {
+                      "key": "password",
+                      "value": "Admin@123",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Facebook Login",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/facebook",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "facebook"
+                  ]
+                },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "accessToken",
+                      "value": "<FB_TOKEN>",
+                      "type": "text"
+                    },
+                    {
+                      "key": "role",
+                      "value": "traveller",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Apple Login",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/apple",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "apple"
+                  ]
+                },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "idToken",
+                      "value": "<APPLE_TOKEN>",
+                      "type": "text"
+                    },
+                    {
+                      "key": "role",
+                      "value": "traveller",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Forget Password",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/forget-password",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "forget-password"
+                  ]
+                },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "email",
+                      "value": "admin@pahadigo.com",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Logout Current Session",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/logout",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "logout"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Logout All Sessions",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/logout-all",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "logout-all"
+                  ]
+                }
+              },
+              "response": []
             }
           ],
-          "request": {
-            "auth": {
-              "type": "noauth"
-            },
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "formdata",
-              "formdata": [
-                {
-                  "key": "email",
-                  "value": "traveller@gmail.com",
-                  "type": "text",
-                  "description": "traveller@gmail.com, vendor@pahadigo.com"
-                },
-                {
-                  "key": "phone",
-                  "value": "+917252933077",
-                  "type": "text",
-                  "disabled": true
-                },
-                {
-                  "key": "otp",
-                  "value": "888888",
-                  "type": "text",
-                  "description": "888888"
-                },
-                {
-                  "key": "role",
-                  "value": "traveller",
-                  "type": "text",
-                  "description": "traveller, vendor"
-                }
-              ]
-            },
-            "url": {
-              "raw": "{{base_url}}/auth/verify",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "auth",
-                "verify"
-              ]
-            }
-          },
-          "response": []
+          "description": "Endpoints for authentication, login, and session token management."
         },
         {
-          "name": "Google Login",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"idToken\": \"<YOUR_GOOGLE_ID_TOKEN>\",\n    \"role\": \"user\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+          "name": "Account & Profile",
+          "item": [
+            {
+              "name": "Get Me (Session Profile)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/me",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "me"
+                  ]
                 }
-              }
+              },
+              "response": []
             },
-            "url": {
-              "raw": "{{base_url}}/auth/google",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "auth",
-                "google"
-              ]
+            {
+              "name": "Update Auth Profile",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/update-profile",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "update-profile"
+                  ]
+                },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "name",
+                      "value": "New Name",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Auth Profile",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/delete-profile",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "delete-profile"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Emergency Contacts",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/emergency-contacts",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "emergency-contacts"
+                  ]
+                },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "emergencyContacts[0][name]",
+                      "value": "Contact",
+                      "type": "text"
+                    },
+                    {
+                      "key": "emergencyContacts[0][phone]",
+                      "value": "+91000",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
             }
-          },
-          "response": []
+          ],
+          "description": "Endpoints for managing user account properties and profile data."
         }
       ],
       "description": "Contains all authentication and session-related APIs for the application. These endpoints handle OTP-based login, social logins (Google, Facebook, Apple), user verification, token generation, session validation, and logout. All secured APIs across the system depend on the access tokens generated by these endpoints."
     },
     {
       "name": "Vendor",
-      "description": "Endpoints related to vendor management, including business registration, profile updates, and catalog management. These APIs allow vendors to manage their identity and the services they offer on the PahadiGo platform.",
+      "description": "Includes APIs for vendor onboarding, profile management, and business operations. These endpoints allow vendors to create and update profiles, upload KYC documents, manage bank details, and create travel packages. This folder supports the complete vendor lifecycle, from registration and verification to publishing packages for users.",
       "item": [
         {
           "name": "Business Details",
@@ -200,166 +514,89 @@
                       "mode": "formdata",
                       "formdata": [
                         {
-                          "key": "profile_image",
-                          "type": "file",
-                          "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
-                        },
-                        {
-                          "key": "ownerName",
-                          "value": "{{$randomFullName}}",
-                          "type": "text"
-                        },
-                        {
-                          "key": "profileType",
-                          "value": "individual",
-                          "type": "text",
-                          "description": "individual, business",
-                          "disabled": true
-                        },
-                        {
-                          "key": "personalNumber",
-                          "value": "{{$randomPhoneNumber}}",
-                          "type": "text",
-                          "disabled": true
-                        },
-                        {
-                          "key": "personalPanCard",
-                          "value": "{{panNumber}}",
-                          "type": "text",
-                          "disabled": true
-                        },
-                        {
-                          "key": "personalAbout",
-                          "value": "{{$randomPhrase}}",
-                          "type": "text",
-                          "disabled": true
-                        },
-                        {
                           "key": "profileType",
                           "value": "business",
                           "type": "text"
                         },
                         {
+                          "key": "ownerName",
+                          "value": "John Vendor",
+                          "type": "text"
+                        },
+                        {
                           "key": "businessName",
-                          "value": "{{$randomCompanyName}}",
+                          "value": "Pahadi Travels",
                           "type": "text"
                         },
                         {
                           "key": "businessNumber",
-                          "value": "{{$randomPhoneNumber}}",
+                          "value": "+919876543210",
                           "type": "text"
                         },
                         {
                           "key": "businessRegistration",
-                          "value": "{{businessRegistration}}",
-                          "type": "text",
-                          "description": "BRN"
+                          "value": "BRN123456",
+                          "type": "text"
                         },
                         {
                           "key": "gstNumber",
-                          "value": "{{gstNumber}}",
-                          "type": "text",
-                          "description": "GSTTIN/UIN"
+                          "value": "05AAAAA0000A1Z5",
+                          "type": "text"
                         },
                         {
                           "key": "businessAbout",
-                          "value": "{{$randomLoremText}}",
+                          "value": "Exploring the mountains with you.",
                           "type": "text"
                         },
                         {
                           "key": "businessCategory[0]",
-                          "value": "bike-scooter-rental",
-                          "type": "text"
-                        },
-                        {
-                          "key": "businessCategory[1]",
-                          "value": "bungee-jumping",
-                          "type": "text"
-                        },
-                        {
-                          "key": "businessCategory[2]",
-                          "value": "camping",
-                          "type": "text"
-                        },
-                        {
-                          "key": "businessCategory[3]",
-                          "value": "chardham-tour",
-                          "type": "text"
-                        },
-                        {
-                          "key": "businessCategory[4]",
-                          "value": "custom-trip",
-                          "type": "text"
-                        },
-                        {
-                          "key": "businessCategory[5]",
-                          "value": "homestay",
-                          "type": "text"
-                        },
-                        {
-                          "key": "businessCategory[6]",
-                          "value": "hotel",
-                          "type": "text"
-                        },
-                        {
-                          "key": "businessCategory[7]",
-                          "value": "rafting",
-                          "type": "text"
-                        },
-                        {
-                          "key": "businessCategory[8]",
                           "value": "trekking",
                           "type": "text"
                         },
                         {
-                          "key": "businessCategory[9]",
-                          "value": "skiing",
-                          "type": "text"
-                        },
-                        {
-                          "key": "businessCategory[10]",
-                          "value": "paragliding",
+                          "key": "businessCategory[1]",
+                          "value": "homestay",
                           "type": "text"
                         },
                         {
                           "key": "address[addressLine1]",
-                          "value": "{{$randomStreetAddress}}",
-                          "type": "text"
-                        },
-                        {
-                          "key": "address[addressLine2]",
-                          "value": "{{$randomStreetName}}",
+                          "value": "123 Pine St",
                           "type": "text"
                         },
                         {
                           "key": "address[city]",
-                          "value": "{{$randomCity}}",
+                          "value": "Shimla",
                           "type": "text"
                         },
                         {
                           "key": "address[state]",
-                          "value": "{{randomState}}",
+                          "value": "Himachal Pradesh",
                           "type": "text"
                         },
                         {
                           "key": "address[country]",
-                          "value": "{{$randomCountryCode}}",
+                          "value": "India",
                           "type": "text"
                         },
                         {
                           "key": "address[pincode]",
-                          "value": "{{randomZip}}",
+                          "value": "171001",
                           "type": "text"
                         },
                         {
                           "key": "address[latitude]",
-                          "value": "{{$randomLatitude}}",
+                          "value": "31.1048",
                           "type": "text"
                         },
                         {
                           "key": "address[longitude]",
-                          "value": "{{$randomLongitude}}",
+                          "value": "77.1734",
                           "type": "text"
+                        },
+                        {
+                          "key": "profile_image",
+                          "value": "",
+                          "type": "file"
                         }
                       ]
                     },
@@ -948,219 +1185,58 @@
                         },
                         {
                           "key": "item[0][title]",
-                          "value": "{{hTitle}}",
+                          "value": "Luxury Mountain View Homestay",
                           "type": "text"
-                        },
-                        {
-                          "key": "item[0][description]",
-                          "value": "{{hDesc}}",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][isActive]",
-                          "value": "true",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][homestayType]",
-                          "value": "{{hType}}",
-                          "type": "text",
-                          "description": "Bungalow, Cottage, Farmstay, Heritage, Kath Kuni, Mudhouse, Stone House, Treehouse, Villa, Wooden Chalet, Alpine, Apple Orchard Stay, Desert, Jungle, Luxury, Offbeat, Orchard, Riverside, Village Stay"
-                        },
-                        {
-                          "key": "item[0][availability][totalRooms]",
-                          "value": "{{hTotal}}",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][availability][availableRooms]",
-                          "value": "{{hAvailable}}",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][availability][occupiedRooms]",
-                          "value": "{{hOccupied}}",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][availability][reservedRooms]",
-                          "value": "{{hReserved}}",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][availability][cancelledRooms]",
-                          "value": "{{hCancelled}}",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][roomDetails][rentalType]",
-                          "value": "{{hRentalType}}",
-                          "type": "text",
-                          "description": "Entire Place, Private Room, Shared Room"
-                        },
-                        {
-                          "key": "item[0][roomDetails][roomType]",
-                          "value": "{{hRoomType}}",
-                          "type": "text",
-                          "description": "Attic, Cottage, Deluxe, Dormitory, Duplex, Family Room, Female Dormitory, Glass House, Male Dormitory, Mixed Dormitory, Mud Room, Pahadi House, Penthouse, Standard, Studio Apartment, Suite, Tent, Treehouse, Wooden Attic"
-                        },
-                        {
-                          "key": "item[0][roomDetails][roomSize]",
-                          "value": " 120",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][roomDetails][bedType]",
-                          "value": "{{hBedType}}",
-                          "type": "text",
-                          "description": "Bunk, Double, King, Queen, Single"
-                        },
-                        {
-                          "key": "item[0][roomDetails][bathroomType]",
-                          "value": "{{hBathType}}",
-                          "type": "text",
-                          "description": "Private, Shared"
-                        },
-                        {
-                          "key": "item[0][roomDetails][baths]",
-                          "value": " 1",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][roomDetails][balcony]",
-                          "value": "true",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][roomDetails][view]",
-                          "value": "{{hView}}",
-                          "type": "text",
-                          "description": "Apple Orchard, City, Forest, Ganga View, Garden, Himalayan View, Lake, Meadow, Mountain, No View, Ocean, Orchard, Pool, River, Sea, Snow Peak, Sunrise, Sunset, Valley"
                         },
                         {
                           "key": "item[0][pricing][pricePerNight]",
-                          "value": "{{hPrice}}",
+                          "value": "2500",
                           "type": "text"
                         },
                         {
-                          "key": "item[0][pricing][maxGuestPerRoom]",
-                          "value": " 2",
+                          "key": "item[0][location][addressLine1]",
+                          "value": "Mall Road",
                           "type": "text"
                         },
                         {
-                          "key": "item[0][pricing][maxAdults]",
-                          "value": " 2",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][pricing][maxChildren]",
-                          "value": " 1",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][pricing][childPrice]",
-                          "value": "{{hChildPrice}}",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][pricing][extraBedAvailable]",
-                          "value": "true",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][pricing][extraBedPrice]",
-                          "value": "{{hExtraBed}}",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][timings][checkIn]",
-                          "value": "12:00 PM",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][timings][checkOut]",
-                          "value": " 11:00 AM",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][policies][houseRules]",
-                          "value": " Keep noise low after 10 PM.",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][policies][cancellationPolicy]",
-                          "value": " Free cancellation within 24 hours.",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][policies][isCouplesFriendly]",
-                          "value": "true",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][policies][isPetFriendly]",
-                          "value": "true",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][policies][isSmokingAllowed]",
-                          "value": " false",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][amenities]",
-                          "value": " WiFi, Heater, Parking",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][mealsIncluded]",
-                          "value": "true",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][mealType]",
-                          "value": "{{hMealType}}",
-                          "type": "text"
-                        },
-                        {
-                          "key": "item[0][location][address]",
-                          "value": "{{$randomStreetAddress}}",
+                          "key": "item[0][location][city]",
+                          "value": "Manali",
                           "type": "text"
                         },
                         {
                           "key": "item[0][location][latitude]",
-                          "value": "{{$randomLatitude}}",
+                          "value": "32.2432",
                           "type": "text"
                         },
                         {
                           "key": "item[0][location][longitude]",
-                          "value": "{{$randomLongitude}}",
+                          "value": "77.1892",
                           "type": "text"
                         },
                         {
-                          "key": "item[0][seoMetadata][metaTitle]",
-                          "value": " Best Homestay in Jibhi",
+                          "key": "item[0][about]",
+                          "value": "A beautiful homestay in Manali.",
                           "type": "text"
                         },
                         {
-                          "key": "item[0][seoMetadata][metaDescription]",
-                          "value": " Stay comfortably in the mountains.",
+                          "key": "item[0][roomDetails][roomType]",
+                          "value": "Deluxe Room",
                           "type": "text"
                         },
                         {
-                          "key": "item[0][seoMetadata][keywords]",
-                          "value": " jibhi homestay, cottages",
+                          "key": "item[0][roomDetails][bedType]",
+                          "value": "Double Bed",
                           "type": "text"
                         },
                         {
-                          "key": "item[0][photos][]",
-                          "type": "file",
-                          "src": "postman-cloud:///1f0f7c1b-3782-4670-ac09-03b024e85291"
+                          "key": "item[0][amenities][0]",
+                          "value": "WiFi",
+                          "type": "text"
                         },
                         {
-                          "key": "item[0][photos][]",
-                          "type": "file",
-                          "src": "postman-cloud:///1f0f7c1b-2561-44a0-8bcc-bb9d919d56fa"
+                          "key": "item[0][amenities][1]",
+                          "value": "Parking",
+                          "type": "text"
                         }
                       ]
                     },
@@ -6588,6 +6664,58 @@
                 }
               },
               "response": []
+            },
+            {
+              "name": "Create Package",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/vendor/create-package",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vendor",
+                    "create-package"
+                  ]
+                },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "name",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "category",
+                      "value": "",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Toggle Category Status",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/vendor/package/toggle-category",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vendor",
+                    "package",
+                    "toggle-category"
+                  ]
+                }
+              },
+              "response": []
             }
           ]
         },
@@ -6830,10 +6958,148 @@
         },
         {
           "name": "Booking",
-          "item": []
+          "item": [
+            {
+              "name": "Add Timeline Event",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/vendor/bookings/:id/timeline",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vendor",
+                    "bookings",
+                    ":id",
+                    "timeline"
+                  ]
+                },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "status",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "note",
+                      "value": "",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Inventory",
+          "item": [
+            {
+              "name": "Get Service Inventory",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/vendor/inventory/service/:serviceType",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vendor",
+                    "inventory",
+                    "service",
+                    ":serviceType"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Item Inventory",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/vendor/inventory/:itemId",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vendor",
+                    "inventory",
+                    ":itemId"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Inventory",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/vendor/inventory/update",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vendor",
+                    "inventory",
+                    "update"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Item Inventory",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/vendor/inventory/:itemId/update",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vendor",
+                    "inventory",
+                    ":itemId",
+                    "update"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Initialize Inventory",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/vendor/inventory/:itemId/initialize",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vendor",
+                    "inventory",
+                    ":itemId",
+                    "initialize"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
         }
-      ],
-      "description": "Includes APIs for vendor onboarding, profile management, and business operations. These endpoints allow vendors to create and update profiles, upload KYC documents, manage bank details, and create travel packages. This folder supports the complete vendor lifecycle, from registration and verification to publishing packages for users."
+      ]
     },
     {
       "name": "Payments",
@@ -6844,13 +7110,14 @@
             "method": "POST",
             "header": [],
             "body": {
-              "mode": "raw",
-              "raw": "{\n    \"bookingId\": \"<BOOKING_ID>\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "bookingId",
+                  "value": "<BOOKING_ID>",
+                  "type": "text"
                 }
-              }
+              ]
             },
             "url": {
               "raw": "{{base_url}}/payment/create-order",
@@ -6871,13 +7138,24 @@
             "method": "POST",
             "header": [],
             "body": {
-              "mode": "raw",
-              "raw": "{\n    \"razorpay_order_id\": \"order_...\",\n    \"razorpay_payment_id\": \"pay_...\",\n    \"razorpay_signature\": \"...\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "razorpay_order_id",
+                  "value": "order_...",
+                  "type": "text"
+                },
+                {
+                  "key": "razorpay_payment_id",
+                  "value": "pay_...",
+                  "type": "text"
+                },
+                {
+                  "key": "razorpay_signature",
+                  "value": "...",
+                  "type": "text"
                 }
-              }
+              ]
             },
             "url": {
               "raw": "{{base_url}}/payment/verify",
@@ -6899,157 +7177,820 @@
       "name": "Admin",
       "item": [
         {
-          "name": "Get Stats",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/admin/stats",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "stats"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Bookings",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/admin/bookings",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "bookings"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Get Vendors",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/admin/vendors",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "vendors"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Approve Vendor",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"vendorId\": \"<VENDOR_ID>\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+          "name": "Dashboard & General",
+          "item": [
+            {
+              "name": "Get Stats",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/stats",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "stats"
+                  ]
                 }
-              }
+              },
+              "response": []
             },
-            "url": {
-              "raw": "{{base_url}}/admin/approve-vendor",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "approve-vendor"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Mark Payout",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"bookingId\": \"<BOOKING_ID>\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+            {
+              "name": "Get Analytics",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/analytics",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "analytics"
+                  ]
                 }
-              }
+              },
+              "response": []
             },
-            "url": {
-              "raw": "{{base_url}}/admin/payout",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "payout"
-              ]
-            }
-          },
-          "response": []
-        },
-        {
-          "name": "Refund Booking",
-          "request": {
-            "method": "POST",
-            "header": [],
-            "body": {
-              "mode": "raw",
-              "raw": "{\n    \"bookingId\": \"<BOOKING_ID>\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+            {
+              "name": "Audit Logs",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/audit-logs",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "audit-logs"
+                  ]
                 }
-              }
+              },
+              "response": []
             },
-            "url": {
-              "raw": "{{base_url}}/admin/refund",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "refund"
-              ]
+            {
+              "name": "Change Password",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/change-password",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "change-password"
+                  ]
+                },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "old_password",
+                      "value": "Admin@123",
+                      "type": "text"
+                    },
+                    {
+                      "key": "password",
+                      "value": "NewAdmin@123",
+                      "type": "text"
+                    },
+                    {
+                      "key": "password_confirmation",
+                      "value": "NewAdmin@123",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Reset Password",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/reset-password",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "reset-password"
+                  ]
+                },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "userId",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "otp",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "password",
+                      "value": "",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
             }
-          },
-          "response": []
+          ]
         },
         {
-          "name": "Payment History",
-          "request": {
-            "method": "GET",
-            "header": [],
-            "url": {
-              "raw": "{{base_url}}/admin/payment-history",
-              "host": [
-                "{{base_url}}"
-              ],
-              "path": [
-                "admin",
-                "payment-history"
+          "name": "Travellers",
+          "item": [
+            {
+              "name": "Get Travellers",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/travellers",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "travellers"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Traveller",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/travellers/create",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "travellers",
+                    "create"
+                  ]
+                },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "name",
+                      "value": "Alice Traveller",
+                      "type": "text"
+                    },
+                    {
+                      "key": "email",
+                      "value": "alice@example.com",
+                      "type": "text"
+                    },
+                    {
+                      "key": "password",
+                      "value": "Alice@123",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Traveller",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/travellers/:id/update",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "travellers",
+                    ":id",
+                    "update"
+                  ]
+                },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "name",
+                      "value": "",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Traveller",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/travellers/:id/delete",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "travellers",
+                    ":id",
+                    "delete"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Vendors",
+          "item": [
+            {
+              "name": "Get Vendors",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/vendors",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "vendors"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Vendor By ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/vendors/:id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "vendors",
+                    ":id"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Vendor Packages",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/vendors/:id/packages",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "vendors",
+                    ":id",
+                    "packages"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Vendor",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/vendors/create",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "vendors",
+                    "create"
+                  ]
+                },
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "name",
+                      "value": "",
+                      "type": "text"
+                    },
+                    {
+                      "key": "email",
+                      "value": "",
+                      "type": "text"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Vendor",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/vendors/:id/update",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "vendors",
+                    ":id",
+                    "update"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Delete Vendor",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/vendors/:id/delete",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "vendors",
+                    ":id",
+                    "delete"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Approve Vendor",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "vendorId",
+                      "value": "<VENDOR_ID>",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/approve-vendor",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "approve-vendor"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Finances",
+          "item": [
+            {
+              "name": "Get Bookings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/bookings",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "bookings"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Payment History",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/payment-history",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "payment-history"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Mark Payout",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "bookingId",
+                      "value": "<BOOKING_ID>",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/payout",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "payout"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Refund Booking",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "bookingId",
+                      "value": "<BOOKING_ID>",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/admin/refund",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "refund"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Verification & OCR",
+          "item": [
+            {
+              "name": "Verify Business Doc",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/verify-document",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "verify-document"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verify Category Doc",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/verify-category-document",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "verify-category-document"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Trigger OCR",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/trigger-ocr",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "trigger-ocr"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Inventory Management",
+          "item": [
+            {
+              "name": "Get Packages",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/packages",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "packages"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Package Status",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/packages/:id/status",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "packages",
+                    ":id",
+                    "status"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Package Item",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/packages/item/:id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "packages",
+                    "item",
+                    ":id"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Marketing",
+          "item": [
+            {
+              "name": "Banners",
+              "item": [
+                {
+                  "name": "List",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/admin/marketing/banners",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "marketing",
+                        "banners"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Create",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/admin/marketing/banners",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "marketing",
+                        "banners"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Coupons",
+              "item": [
+                {
+                  "name": "List",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/admin/marketing/coupons",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "marketing",
+                        "coupons"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Create",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/admin/marketing/coupons",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "admin",
+                        "marketing",
+                        "coupons"
+                      ]
+                    }
+                  },
+                  "response": []
+                }
               ]
             }
-          },
-          "response": []
+          ]
+        },
+        {
+          "name": "System Settings",
+          "item": [
+            {
+              "name": "Get Settings",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/settings",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "settings"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Update Settings",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/settings",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "settings"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Policies",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/policies",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "policies"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create Country",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/countries",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "countries"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Create State",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/admin/states",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "admin",
+                    "states"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
         }
       ],
       "description": "Includes administrative APIs used to manage and monitor the platform. These endpoints allow admins to view system statistics, manage vendors, approve vendor accounts, and verify submitted documents. Access to these APIs is restricted to admin roles to ensure platform security and compliance."
@@ -7196,6 +8137,119 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Locations",
+          "item": [
+            {
+              "name": "Get Countries",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/countries",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "countries"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get Country By ID",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/countries/:id",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "countries",
+                    ":id"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get States",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/states",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "states"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Get States By Country",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/countries/:id/states",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "countries",
+                    ":id",
+                    "states"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Submit Inquiry",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/inquiries",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "inquiries"
+              ]
+            },
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "name",
+                  "value": "John Doe",
+                  "type": "text"
+                },
+                {
+                  "key": "email",
+                  "value": "john@example.com",
+                  "type": "text"
+                },
+                {
+                  "key": "message",
+                  "value": "I want to partner with PahadiGo.",
+                  "type": "text"
+                }
+              ]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -7218,9 +8272,13 @@
                       "formdata": [
                         {
                           "key": "itemId",
-                          "value": "69be5bddf64c9dd236d2e338",
-                          "type": "text",
-                          "uuid": "23bafcdc-13ce-45b6-83f1-945cbdc33223"
+                          "value": "{{item_id}}",
+                          "type": "text"
+                        },
+                        {
+                          "key": "category",
+                          "value": "homestay",
+                          "type": "text"
                         }
                       ]
                     },
@@ -7580,6 +8638,187 @@
                 "header": []
               },
               "response": []
+            },
+            {
+              "name": "Bookings & Activity",
+              "item": [
+                {
+                  "name": "Create Booking",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/traveller/book",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "traveller",
+                        "book"
+                      ]
+                    },
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "catalogId",
+                          "value": "{{package_id}}",
+                          "type": "text"
+                        },
+                        {
+                          "key": "category",
+                          "value": "homestay",
+                          "type": "text"
+                        },
+                        {
+                          "key": "itemId",
+                          "value": "{{item_id}}",
+                          "type": "text"
+                        },
+                        {
+                          "key": "travelDate",
+                          "value": "2024-12-25",
+                          "type": "text"
+                        },
+                        {
+                          "key": "slots",
+                          "value": "1",
+                          "type": "text"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "My Bookings",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/traveller/bookings",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "traveller",
+                        "bookings"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Booking Details",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/traveller/bookings/:id",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "traveller",
+                        "bookings",
+                        ":id"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Cancel Booking",
+                  "request": {
+                    "method": "PATCH",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/traveller/bookings/:id/cancel",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "traveller",
+                        "bookings",
+                        ":id",
+                        "cancel"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Raise Dispute",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/traveller/bookings/:id/dispute",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "traveller",
+                        "bookings",
+                        ":id",
+                        "dispute"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Add Review",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/traveller/reviews",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "traveller",
+                        "reviews"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Trigger SOS",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/traveller/sos",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "traveller",
+                        "sos"
+                      ]
+                    },
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "latitude",
+                          "value": "0",
+                          "type": "text"
+                        },
+                        {
+                          "key": "longitude",
+                          "value": "0",
+                          "type": "text"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
             }
           ]
         },
