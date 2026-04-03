@@ -12,7 +12,7 @@ class AuthService {
     async requestOtp({ identifier, role, termsAccepted }) {
         // SECURITY: Prevent Admins from requesting OTPs
         const existingUser = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
-        if (existingUser && existingUser.role === 'admin') {
+        if (existingUser && existingUser.role === USER_ROLES.ADMIN) {
             throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD); // Custom error throwing (will be caught by controller)
         }
 
@@ -151,7 +151,7 @@ class AuthService {
                 }
             }
             if (role === USER_ROLES.VENDOR && user.role === USER_ROLES.TRAVELLER) {
-                user.role = 'vendor';
+                user.role = USER_ROLES.VENDOR;
             }
             if (termsAccepted && !user.termsAccepted) {
                 user.termsAccepted = true;
@@ -165,7 +165,7 @@ class AuthService {
         await this._handleDeactivation(user);
 
         let vendorData = {};
-        if (user.role === 'vendor') {
+        if (user.role === USER_ROLES.VENDOR) {
             vendorData = await this._getVendorStatus(user);
         }
         const token = await generateToken({ id: user._id, role: user.role, identifier: user.email || user.phone });
@@ -316,7 +316,7 @@ class AuthService {
         await this._handleDeactivation(user);
 
         let vendorData = {};
-        if (user.role === 'vendor') {
+        if (user.role === USER_ROLES.VENDOR) {
             vendorData = await this._getVendorStatus(user);
         }
 
@@ -336,7 +336,7 @@ class AuthService {
         if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
 
         let vendorData = {};
-        if (user.role === 'vendor') {
+        if (user.role === USER_ROLES.VENDOR) {
             vendorData = await this._getVendorStatus(user);
         }
 
@@ -380,6 +380,7 @@ class AuthService {
         const user = await User.findById(userId);
         if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         if (user.role === USER_ROLES.ADMIN) throw new Error("Admins cannot switch roles.");
+        if (user.role === USER_ROLES.VENDOR) throw new Error("Access denied: You are already a vendor.");
 
         user.role = USER_ROLES.VENDOR;
         await user.save();
@@ -392,6 +393,7 @@ class AuthService {
         const user = await User.findById(userId);
         if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         if (user.role === USER_ROLES.ADMIN) throw new Error("Admins cannot switch roles.");
+        if (user.role === USER_ROLES.TRAVELLER) throw new Error("Access denied: You are already a traveller.");
 
         user.role = USER_ROLES.TRAVELLER;
         await user.save();

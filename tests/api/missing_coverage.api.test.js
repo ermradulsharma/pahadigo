@@ -90,7 +90,7 @@ describe('Industry Standard: Administrative & Safety API', () => {
     describe('Auth: Token Health', () => {
         it('[Integrity] should verify and refresh valid tokens', async () => {
             await User.create({ _id: travelerId, name: 'U1', role: USER_ROLES.TRAVELLER });
-            const token = generateToken({ id: travelerId, role: USER_ROLES.TRAVELLER });
+            const token = await generateToken({ id: travelerId, role: USER_ROLES.TRAVELLER });
             
             const req = { headers: { get: (name) => name === 'authorization' ? `Bearer ${token}` : null } };
             const res = await AuthController.verify(req);

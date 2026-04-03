@@ -255,7 +255,7 @@ describe('AuthService', () => {
              const jwtHelper = await import('../../src/core/Helpers/jwt.js');
              const email = 'verify@example.com';
              const user = await User.create({ email, role: 'traveller', isVerified: true });
-             const token = jwtHelper.generateToken({ id: user._id, role: user.role });
+             const token = await jwtHelper.generateToken({ id: user._id, role: user.role });
              
              const result = await AuthService.verify(token);
              expect(result.user._id.toString()).toBe(user._id.toString());
@@ -275,6 +275,38 @@ describe('AuthService', () => {
              await User.create({ email, name: 'Old Name', role: 'traveller', isVerified: true });
              const updated = await AuthService.updateProfile(email, { name: 'New Name' });
              expect(updated.name).toBe('New Name');
+        });
+
+        it('should upgrade traveller to vendor via becomeVendor', async () => {
+             const email = 'upgrade@example.com';
+             const user = await User.create({ email, role: 'traveller', isVerified: true });
+             const updated = await AuthService.becomeVendor(user._id);
+             expect(updated.role).toBe('vendor');
+             
+             const dbUser = await User.findById(user._id);
+             expect(dbUser.role).toBe('vendor');
+        });
+
+        it('should revert vendor to traveller via becomeTraveller', async () => {
+             const email = 'revert@example.com';
+             const user = await User.create({ email, role: 'vendor', isVerified: true });
+             const updated = await AuthService.becomeTraveller(user._id);
+             expect(updated.role).toBe('traveller');
+             
+             const dbUser = await User.findById(user._id);
+             expect(dbUser.role).toBe('traveller');
+        });
+
+        it('should throw error if user is already vendor in becomeVendor', async () => {
+             const email = 'alreadyvendor@example.com';
+             const user = await User.create({ email, role: 'vendor', isVerified: true });
+             await expect(AuthService.becomeVendor(user._id)).rejects.toThrow("Access denied: You are already a vendor.");
+        });
+
+        it('should throw error if user is already traveller in becomeTraveller', async () => {
+             const email = 'alreadytraveller@example.com';
+             const user = await User.create({ email, role: 'traveller', isVerified: true });
+             await expect(AuthService.becomeTraveller(user._id)).rejects.toThrow("Access denied: You are already a traveller.");
         });
     });
 });
