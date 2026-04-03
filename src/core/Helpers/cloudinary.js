@@ -1,6 +1,8 @@
 import { v2 as cloudinary } from 'cloudinary';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 
+import { getAppConfig } from '@/lib/appConfig';
+
 // Allowed MIME types for the entire application
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 const MAX_FILE_SIZE_MB = 5;
@@ -8,8 +10,11 @@ const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
 
 export const uploadToCloudinary = async (file, folder = 'general') => {
     try {
-        if (!process.env.CLOUDINARY_URL) {
-            throw new Error('CLOUDINARY_URL not found in environment variables');
+        const config = await getAppConfig();
+        const cloudinaryUrl = config.cloudinary?.url;
+
+        if (!cloudinaryUrl) {
+            throw new Error('Cloudinary config not found in appConfig or env');
         }
 
         // 1. File Type Validation

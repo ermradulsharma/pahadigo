@@ -10,7 +10,7 @@ const authMiddleware = async (req) => {
         }
 
         const token = authHeader.split(' ')[1];
-        const decoded = verifyToken(token);
+        const decoded = await verifyToken(token);
         if (!decoded) {
             return { authorized: false, message: RESPONSE_MESSAGES.AUTH.TOKEN_INVALID };
         }

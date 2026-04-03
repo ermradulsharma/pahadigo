@@ -6,6 +6,7 @@ import googleAuthLib from 'google-auth-library';
 const { OAuth2Client } = googleAuthLib;
 import Vendor from '@/models/Vendor.js';
 import jwt from 'jsonwebtoken';
+import { getAppConfig } from '@/lib/appConfig';
 
 class AuthService {
     async requestOtp({ identifier, role, termsAccepted }) {
@@ -91,7 +92,7 @@ class AuthService {
         }
 
         const tokenExpiry = rememberMe ? '30d' : '1d';
-        const token = generateToken({ id: user._id, role: user.role, email: user.email }, tokenExpiry);
+        const token = await generateToken({ id: user._id, role: user.role, email: user.email }, tokenExpiry);
         return {
             token,
             user: { ...user.toObject(), password: undefined },
@@ -167,7 +168,7 @@ class AuthService {
         if (user.role === 'vendor') {
             vendorData = await this._getVendorStatus(user);
         }
-        const token = generateToken({ id: user._id, role: user.role, identifier: user.email || user.phone });
+        const token = await generateToken({ id: user._id, role: user.role, identifier: user.email || user.phone });
         return {
             token,
             role: user.role,
@@ -178,7 +179,8 @@ class AuthService {
     }
 
     async googleAuth(idToken, targetRole) {
-        const googleClientId = process.env.GOOGLE_CLIENT_ID;
+        const config = await getAppConfig();
+        const googleClientId = config.google?.client_id;
         if (!googleClientId) {
             throw new Error(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
         }
@@ -220,7 +222,7 @@ class AuthService {
             vendorData = await this._getVendorStatus(user);
         }
 
-        const token = generateToken({ id: user._id, role: user.role, email: user.email });
+        const token = await generateToken({ id: user._id, role: user.role, email: user.email });
         return { token, role: user.role, isNewUser, user, ...vendorData };
     }
 
@@ -269,7 +271,7 @@ class AuthService {
             vendorData = await this._getVendorStatus(user);
         }
 
-        const token = generateToken({ id: user._id, role: user.role, email: user.email });
+        const token = await generateToken({ id: user._id, role: user.role, email: user.email });
         return { token, role: user.role, isNewUser, user, ...vendorData };
     }
 
@@ -318,7 +320,7 @@ class AuthService {
             vendorData = await this._getVendorStatus(user);
         }
 
-        const token = generateToken({ id: user._id, role: user.role, email: user.email });
+        const token = await generateToken({ id: user._id, role: user.role, email: user.email });
         return { token, role: user.role, isNewUser, user, ...vendorData };
     }
 
@@ -327,7 +329,7 @@ class AuthService {
     }
 
     async verify(token) {
-        const decoded = verifyToken(token);
+        const decoded = await verifyToken(token);
         if (!decoded) throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
 
         const user = await User.findById(decoded.id).select('-password');
@@ -342,8 +344,8 @@ class AuthService {
     }
 
     async refresh(token) {
-        const decoded = verifyToken(token);
-        const newToken = generateToken({ id: decoded.id, role: decoded.role, email: decoded.email });
+        const decoded = await verifyToken(token);
+        const newToken = await generateToken({ id: decoded.id, role: decoded.role, email: decoded.email });
         return { token: newToken };
     }
 
@@ -375,7 +377,7 @@ class AuthService {
     }
 
     async me(token) {
-        const decoded = verifyToken(token);
+        const decoded = await verifyToken(token);
         if (!decoded) throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
         const user = await User.findById(decoded.id).select('-password');
         if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);

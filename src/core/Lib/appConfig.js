@@ -55,10 +55,18 @@ export const getAppConfig = async () => {
             },
             app: {
                 name: dbSettings.app_name || process.env.APP_NAME || APP_DETAILS.APP_NAME,
-                terms_conditions: dbSettings.terms_conditions || '',
-                privacy_policy: dbSettings.privacy_policy || '',
-                rate_on_apple_store: dbSettings.rate_on_apple_store || '',
-                rate_on_google_store: dbSettings.rate_on_google_store || '',
+                terms_conditions: dbSettings.terms_conditions || process.env.TERMS_CONDITIONS || '',
+                privacy_policy: dbSettings.privacy_policy || process.env.PRIVACY_POLICY || '',
+                rate_on_apple_store: dbSettings.rate_on_apple_store || process.env.RATE_ON_APPLE_STORE || '',
+                rate_on_google_store: dbSettings.rate_on_google_store || process.env.RATE_ON_GOOGLE_STORE || '',
+            },
+            cloudinary: {
+                url: dbSettings.cloudinary_url || process.env.CLOUDINARY_URL || '',
+            },
+            secrets: {
+                social_pass: dbSettings.social_pass || process.env.SOCIAL_PASS || '',
+                other_account_pass: dbSettings.other_account_pass || process.env.OTHER_ACCOUNT_PASS || '',
+                master_otp: dbSettings.master_otp || process.env.MASTER_OTP || '',
             }
         };
 
@@ -110,6 +118,14 @@ export const getAppConfig = async () => {
                 privacy_policy: '',
                 rate_on_apple_store: '',
                 rate_on_google_store: '',
+            },
+            cloudinary: {
+                url: process.env.CLOUDINARY_URL || '',
+            },
+            secrets: {
+                social_pass: process.env.SOCIAL_PASS || '',
+                other_account_pass: process.env.OTHER_ACCOUNT_PASS || '',
+                master_otp: process.env.MASTER_OTP || '',
             }
         };
     }

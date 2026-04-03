@@ -48,6 +48,13 @@ const SettingSchema = new mongoose.Schema({
     privacy_policy: { type: String, default: '' },
     rate_on_apple_store: { type: String, default: '' },
     rate_on_google_store: { type: String, default: '' },
+    // Cloudinary Configuration
+    cloudinary_url: { type: String, default: '' },
+
+    // App Secrets
+    social_pass: { type: String, default: '' },
+    other_account_pass: { type: String, default: '' },
+    master_otp: { type: String, default: '' },
 
 }, { timestamps: true });
 

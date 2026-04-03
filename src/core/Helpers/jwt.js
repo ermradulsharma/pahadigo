@@ -1,14 +1,22 @@
 import jwt from 'jsonwebtoken';
-if (!process.env.JWT_SECRET) {
-    console.warn('WARNING: JWT_SECRET is not defined in environment variables. JWT operations will fail.');
-}
-const generateToken = (payload, expiresIn = '1d') => {
-    const SECRET = process.env.JWT_SECRET;
-    if (!SECRET) throw new Error('JWT_SECRET is missing');
+import { getAppConfig } from '@/lib/appConfig';
+
+/**
+ * Generates a JWT token using settings from appConfig.
+ */
+const generateToken = async (payload, expiresIn = '1d') => {
+    const config = await getAppConfig();
+    const SECRET = config.jwt_secret;
+    if (!SECRET) throw new Error('JWT_SECRET is missing in appConfig');
     return jwt.sign(payload, SECRET, { expiresIn });
 };
-const verifyToken = (token) => {
-    const SECRET = process.env.JWT_SECRET;
+
+/**
+ * Verifies a JWT token using settings from appConfig.
+ */
+const verifyToken = async (token) => {
+    const config = await getAppConfig();
+    const SECRET = config.jwt_secret;
     if (!SECRET) return null;
     try {
         return jwt.verify(token, SECRET);
