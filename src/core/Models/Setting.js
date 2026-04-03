@@ -56,6 +56,9 @@ const SettingSchema = new mongoose.Schema({
     other_account_pass: { type: String, default: '' },
     master_otp: { type: String, default: '' },
 
+    // Developer Diagnostics
+    debug_mode: { type: Boolean, default: false },
+
 }, { timestamps: true });
 
 export default mongoose.models.Setting || mongoose.model('Setting', SettingSchema);

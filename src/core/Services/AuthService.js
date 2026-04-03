@@ -376,6 +376,29 @@ class AuthService {
         };
     }
 
+    async becomeVendor(userId) {
+        const user = await User.findById(userId);
+        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+        if (user.role === USER_ROLES.ADMIN) throw new Error("Admins cannot switch roles.");
+
+        user.role = USER_ROLES.VENDOR;
+        await user.save();
+
+        const vendorData = await this._getVendorStatus(user);
+        return { success: true, role: user.role, user: { ...user.toObject(), password: undefined }, ...vendorData };
+    }
+
+    async becomeTraveller(userId) {
+        const user = await User.findById(userId);
+        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+        if (user.role === USER_ROLES.ADMIN) throw new Error("Admins cannot switch roles.");
+
+        user.role = USER_ROLES.TRAVELLER;
+        await user.save();
+
+        return { success: true, role: user.role, user: { ...user.toObject(), password: undefined } };
+    }
+
     async me(token) {
         const decoded = await verifyToken(token);
         if (!decoded) throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);

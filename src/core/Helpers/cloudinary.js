@@ -17,6 +17,9 @@ export const uploadToCloudinary = async (file, folder = 'general') => {
             throw new Error('Cloudinary config not found in appConfig or env');
         }
 
+        // Apply dynamic configuration to the SDK before each upload
+        cloudinary.config({ cloudinary_url: cloudinaryUrl });
+
         // 1. File Type Validation
         if (!ALLOWED_MIME_TYPES.includes(file.type)) {
             return Promise.reject({

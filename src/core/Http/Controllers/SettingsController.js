@@ -2,6 +2,7 @@ import connectDB from '@/config/db.js';
 import Setting from '@/models/Setting.js';
 import { successResponse, errorResponse } from '@/helpers/response.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
+import { clearAppConfigCache } from '@/lib/appConfig';
 
 class SettingsController {
     async getSettings(req) {
@@ -27,6 +28,7 @@ class SettingsController {
                 Object.assign(setting, body);
             }
             await setting.save();
+            clearAppConfigCache();
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, setting);
         } catch (error) {
             return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, { error: error.message });

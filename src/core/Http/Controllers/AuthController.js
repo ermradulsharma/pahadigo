@@ -184,6 +184,30 @@ class AuthController {
         }
     }
 
+    async becomeVendor(req) {
+        try {
+            const userContext = req.user;
+            if (!userContext || !userContext.id) return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED, {});
+
+            const result = await AuthService.becomeVendor(userContext.id);
+            return successResponse(HTTP_STATUS.OK, "Role updated to Vendor successfully", result);
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.BAD_REQUEST, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+        }
+    }
+
+    async becomeTraveller(req) {
+        try {
+            const userContext = req.user;
+            if (!userContext || !userContext.id) return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED, {});
+
+            const result = await AuthService.becomeTraveller(userContext.id);
+            return successResponse(HTTP_STATUS.OK, "Role updated to Traveller successfully", result);
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.BAD_REQUEST, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+        }
+    }
+
     async me(req) {
         try {
             // Using middleware auth context

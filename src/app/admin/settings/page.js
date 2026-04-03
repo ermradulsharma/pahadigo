@@ -106,7 +106,8 @@ export default function SettingsPage() {
     cloudinary_url: '',
     social_pass: '',
     other_account_pass: '',
-    master_otp: ''
+    master_otp: '',
+    debug_mode: false
   });
 
   useEffect(() => {
@@ -165,7 +166,7 @@ export default function SettingsPage() {
       if (data.success && data.data) {
         const newFormData = { ...formData };
         Object.keys(newFormData).forEach(key => {
-          if (data.data[key] !== undefined) {
+          if (data.data[key] !== undefined && data.data[key] !== null) {
             newFormData[key] = data.data[key];
           }
         });
@@ -179,8 +180,11 @@ export default function SettingsPage() {
   };
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
-    setFormData(prev => ({ ...prev, [name]: value }));
+    const { name, value, type, checked } = e.target;
+    setFormData(prev => ({ 
+      ...prev, 
+      [name]: type === 'checkbox' ? checked : value 
+    }));
   };
 
   const handleSubmit = async (e) => {
@@ -292,10 +296,10 @@ export default function SettingsPage() {
           </Card>
 
           <Card title="Developer Diagnostics" icon={Bug}>
-            <form onSubmit={(e) => { e.preventDefault(); showMessage('error', 'Diagnostics toggle override locked.'); }} className="flex flex-col h-full">
+            <form onSubmit={handleSubmit} className="flex flex-col h-full">
               <div className="flex items-center gap-4 mb-4 bg-white/5 p-4 rounded-lg border border-white/5">
                 <div className="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
-                  <input type="checkbox" name="debug_mode" id="debug_mode" className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-[#111116] border-2 border-slate-600 appearance-none cursor-pointer transition-all" />
+                  <input type="checkbox" name="debug_mode" id="debug_mode" checked={formData.debug_mode} onChange={handleChange} className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-[#111116] border-2 border-slate-600 appearance-none cursor-pointer transition-all" />
                   <label htmlFor="debug_mode" className="toggle-label block overflow-hidden h-6 rounded-full bg-slate-800 cursor-pointer transition-colors shadow-[inset_0_0_5px_rgba(0,0,0,0.5)]"></label>
                 </div>
                 <div>

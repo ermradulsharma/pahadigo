@@ -39,6 +39,7 @@ export const getAppConfig = async () => {
             jwt_secret: dbSettings.jwt_secret || process.env.JWT_SECRET,
             mongodb_uri: dbSettings.mongodb_uri || process.env.MONGODB_URI,
             api_url: dbSettings.api_url || process.env.NEXT_PUBLIC_API_URL || APP_DETAILS.APP_URL,
+            debug_mode: dbSettings.debug_mode ?? (process.env.DEBUG === "true"),
             google: {
                 client_id: dbSettings.google_client_id || process.env.GOOGLE_CLIENT_ID || '',
                 client_secret: dbSettings.google_client_secret || process.env.GOOGLE_CLIENT_SECRET || APP_SECRETS.SOCIAL_PASS,
@@ -98,6 +99,7 @@ export const getAppConfig = async () => {
             jwt_secret: process.env.JWT_SECRET,
             mongodb_uri: process.env.MONGODB_URI,
             api_url: process.env.NEXT_PUBLIC_API_URL || APP_DETAILS.APP_URL,
+            debug_mode: process.env.DEBUG === "true",
             google: {
                 client_id: process.env.GOOGLE_CLIENT_ID || '',
                 client_secret: process.env.GOOGLE_CLIENT_SECRET || APP_SECRETS.SOCIAL_PASS,
@@ -129,4 +131,9 @@ export const getAppConfig = async () => {
             }
         };
     }
+};
+
+export const clearAppConfigCache = () => {
+    cachedSettings = null;
+    lastFetchTime = 0;
 };

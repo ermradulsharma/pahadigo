@@ -121,6 +121,7 @@ const routes = [
       { method: 'POST', path: '/create-order', handler: wrap(PaymentController.createOrder.bind(PaymentController)) },
       { method: 'POST', path: '/verify', handler: wrap(PaymentController.verifyPayment.bind(PaymentController)) },
     ]),
+    { method: 'POST', path: '/become-vendor', handler: wrap(AuthController.becomeVendor.bind(AuthController)) },
 
   ]),
 
@@ -131,6 +132,7 @@ const routes = [
     { method: 'GET', path: '/me', handler: wrap(AuthController.me.bind(AuthController)) },
     { method: 'PATCH', path: '/update', handler: wrap(AuthController.updateProfile.bind(AuthController)) },
     { method: 'DELETE', path: '/delete', handler: wrap(AuthController.deleteProfile.bind(AuthController)) },
+    { method: 'POST', path: '/become-traveller', handler: wrap(AuthController.becomeTraveller.bind(AuthController)) },
 
     // Vendor Business
     ...Router.group({ prefix: '/business' }, [
