@@ -12,6 +12,209 @@
       "name": "Authentication",
       "item": [
         {
+          "name": "Authorization",
+          "item": [
+            {
+              "name": "Logout Current Session",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/logout",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "logout"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Logout All Sessions",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/logout-all",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "logout-all"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Refresh Token",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/refresh",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "refresh"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Verify Token",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/verify",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "verify"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Switch Role",
+              "request": {
+                "auth": {
+                  "type": "bearer",
+                  "bearer": [
+                    {
+                      "key": "token",
+                      "value": "{{traveller_token}}",
+                      "type": "string"
+                    }
+                  ]
+                },
+                "method": "PATCH",
+                "header": [],
+                "url": {
+                  "raw": "{{base_url}}/auth/switch-role",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "switch-role"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
+          "name": "Social Login",
+          "item": [
+            {
+              "name": "Apple Login",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "idToken",
+                      "value": "<APPLE_TOKEN>",
+                      "type": "text"
+                    },
+                    {
+                      "key": "role",
+                      "value": "traveller",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/apple",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "apple"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Facebook Login",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "accessToken",
+                      "value": "<FB_TOKEN>",
+                      "type": "text"
+                    },
+                    {
+                      "key": "role",
+                      "value": "traveller",
+                      "type": "text"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/facebook",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "facebook"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Google Login",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n    \"idToken\": \"<YOUR_GOOGLE_ID_TOKEN>\",\n    \"role\": \"user\"\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{base_url}}/auth/google",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "auth",
+                    "google"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ]
+        },
+        {
           "name": "Send OTP (Email)",
           "request": {
             "auth": {
@@ -93,7 +296,7 @@
               "formdata": [
                 {
                   "key": "email",
-                  "value": "vendor@pahadigo.com",
+                  "value": "traveller@gmail.com",
                   "type": "text",
                   "description": "traveller@gmail.com, vendor@pahadigo.com"
                 },
@@ -111,7 +314,7 @@
                 },
                 {
                   "key": "role",
-                  "value": "vendor",
+                  "value": "traveller",
                   "type": "text",
                   "description": "traveller, vendor"
                 }
@@ -131,27 +334,61 @@
           "response": []
         },
         {
-          "name": "Google Login",
+          "name": "Password Login (Admin)",
           "request": {
             "method": "POST",
             "header": [],
             "body": {
-              "mode": "raw",
-              "raw": "{\n    \"idToken\": \"<YOUR_GOOGLE_ID_TOKEN>\",\n    \"role\": \"user\"\n}",
-              "options": {
-                "raw": {
-                  "language": "json"
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "admin@pahadigo.com",
+                  "type": "text"
+                },
+                {
+                  "key": "password",
+                  "value": "Admin@123",
+                  "type": "text"
                 }
-              }
+              ]
             },
             "url": {
-              "raw": "{{base_url}}/auth/google",
+              "raw": "{{base_url}}/auth/login",
               "host": [
                 "{{base_url}}"
               ],
               "path": [
                 "auth",
-                "google"
+                "login"
+              ]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forget Password",
+          "request": {
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {
+                  "key": "email",
+                  "value": "admin@pahadigo.com",
+                  "type": "text"
+                }
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/auth/forget-password",
+              "host": [
+                "{{base_url}}"
+              ],
+              "path": [
+                "auth",
+                "forget-password"
               ]
             }
           },
@@ -11827,7 +12064,7 @@
                     "method": "GET",
                     "header": [],
                     "url": {
-                      "raw": "{{base_url}}/traveller/wishlist?page&limit",
+                      "raw": "{{base_url}}/traveller/wishlist?page=1&limit=10",
                       "host": [
                         "{{base_url}}"
                       ],
@@ -11838,13 +12075,11 @@
                       "query": [
                         {
                           "key": "page",
-                          "value": null,
-                          "type": "text"
+                          "value": "1"
                         },
                         {
                           "key": "limit",
-                          "value": null,
-                          "type": "text"
+                          "value": "10"
                         }
                       ]
                     }
@@ -12478,10 +12713,6 @@
   "variable": [
     {
       "key": "traveller_token",
-      "value": ""
-    },
-    {
-      "key": "iPrice",
       "value": ""
     }
   ]
