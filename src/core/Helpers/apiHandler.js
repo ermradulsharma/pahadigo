@@ -7,13 +7,15 @@ export function apiHandler(handler) {
     return async (req, params) => {
         try {
             const response = await handler(req, params);
+            if (req._auditLogged) return response; // Skip global audit if service already did it specifically
+
             if (req.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method.toUpperCase())) {
                 if (req.user && req.user.id) {
                     try {
                         const urlObj = new URL(req.url, 'http://localhost');
                         const urlParts = urlObj.pathname.split('/').filter(Boolean);
                         const ignoreList = ['api', 'create', 'update', 'delete', 'add', 'remove', 'add-item', 'update-status', 'profile', 'business', 'vendor', 'admin', 'status', 'verify', 'resolve', 'upload'];
-                        const significantParts = urlParts.filter(p => !ignoreList.includes(p.toLowerCase()) && p.length !== 24 && p.length !== 36);
+                        const significantParts = urlParts.filter(p => !ignoreList.includes(p.toLowerCase()) && !/^[0-9a-fA-F]{24}$/.test(p) && !/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(p));
                         let extractedTarget = significantParts.slice(-1)[0];
                         if (!extractedTarget) {
                             extractedTarget = urlParts.length > 2 ? urlParts[urlParts.length - 2] : (urlParts[1] || 'DATA');

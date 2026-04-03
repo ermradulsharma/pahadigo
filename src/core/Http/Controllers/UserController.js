@@ -189,8 +189,6 @@ class UserController {
     }
   }
 
-  // --- Traveller Recent Searches ---
-
   // GET /traveller/recent-searches
   async getRecentSearches(req) {
     try {
@@ -215,8 +213,6 @@ class UserController {
     }
   }
 
-  // --- Traveller Wishlist ---
-
   // GET /traveller/wishlist
   async getWishlist(req) {
     try {
@@ -225,31 +221,42 @@ class UserController {
       const limitParam = url.searchParams.get('limit') || url.searchParams.get('limits');
       const limit = limitParam === 'all' ? 0 : parseInt(limitParam) || 5;
 
-      // Sort by latest added (descending ID)
-      const wishlistEntries = await Wishlist.find({ user: req.user.id })
-        .sort({ _id: -1 })
-        .lean();
+      const wishlistEntries = await Wishlist.find({ user: req.user.id }).sort({ _id: -1 }).lean();
+      if (!wishlistEntries.length) return successResponse(HTTP_STATUS.OK, "Wishlist is empty", paginateArray([], page, limit));
 
-      // Populate the full package item details for each wishlist entry
-      const items = [];
-      for (const entry of wishlistEntries) {
-        const item = await PackageService.getAvailablePackageItem(entry.itemId.toString());
-        if (item) {
-          const category = await Category.findOne({ slug: item.category }).lean();
-          items.push({
-            wishlistId: entry._id,
-            id: item._id,
-            title: item.title,
-            isActive: item.isActive,
-            pricing: item.pricing || {},
-            location: item.location || {},
-            photos: item.photos?.[0] || "",
-            category_name: category?.name || item.category,
-            category_slug: item.category,
-            category_id: category?._id || ""
-          });
-        }
-      }
+      const itemIds = wishlistEntries.map(e => e.itemId.toString());
+      const packageItems = await PackageService.getMultiplePackageItems(itemIds);
+      const categories = await Category.find({}).lean();
+
+      // Create a map for quick access
+      const itemMap = packageItems.reduce((acc, item) => {
+        acc[item.id.toString()] = item;
+        return acc;
+      }, {});
+
+      const categoryMap = categories.reduce((acc, cat) => {
+        acc[cat.slug.toLowerCase()] = cat;
+        return acc;
+      }, {});
+
+      const items = wishlistEntries.map(entry => {
+        const item = itemMap[entry.itemId.toString()];
+        if (!item) return null;
+
+        const category = categoryMap[item.category_slug.toLowerCase()];
+        return {
+          wishlistId: entry._id,
+          id: item.id,
+          title: item.title,
+          isActive: item.isActive,
+          pricing: item.pricing || {},
+          location: item.location || {},
+          photos: item.photos?.[0] || "",
+          category_name: category?.name || item.category_slug,
+          category_slug: item.category_slug,
+          category_id: category?._id || ""
+        };
+      }).filter(Boolean);
 
       const responseData = paginateArray(items, page, limit);
       return successResponse(HTTP_STATUS.OK, "Wishlist retrieved", responseData);

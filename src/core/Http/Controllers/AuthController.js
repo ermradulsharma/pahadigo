@@ -170,6 +170,20 @@ class AuthController {
         }
     }
 
+    async switchRole(req) {
+        try {
+            const userContext = req.user;
+            if (!userContext || !userContext.id) {
+                return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED, {});
+            }
+
+            const result = await AuthService.switchRole(userContext.id);
+            return successResponse(HTTP_STATUS.OK, "Role switched successfully", result);
+        } catch (error) {
+            return errorResponse(HTTP_STATUS.BAD_REQUEST, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+        }
+    }
+
     async me(req) {
         try {
             // Using middleware auth context

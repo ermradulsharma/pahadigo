@@ -15,8 +15,8 @@ const authMiddleware = async (req) => {
             return { authorized: false, message: RESPONSE_MESSAGES.AUTH.TOKEN_INVALID };
         }
 
-        // [SECURITY] Real-time status check to block suspended/deleted users
-        const user = await User.findById(decoded.id).select('status deletedAt').lean();
+        // [SECURITY] Real-time status and role check to ensure data consistency
+        const user = await User.findById(decoded.id).select('status deletedAt role').lean();
 
         if (!user || user.deletedAt) {
             return { authorized: false, message: RESPONSE_MESSAGES.AUTH.ACCOUNT_SUSPENDED };
@@ -37,7 +37,7 @@ const authMiddleware = async (req) => {
             };
         }
 
-        return { authorized: true, user: decoded };
+        return { authorized: true, user: { ...user, id: user._id.toString() } };
 
     } catch (error) {
         return { authorized: false, message: RESPONSE_MESSAGES.AUTH.AUTH_SERVICE_ERROR };

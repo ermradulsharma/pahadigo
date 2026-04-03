@@ -149,22 +149,33 @@ class AdminService {
     }
 
     async getAllVendors() {
-        // Return combined view of user nodes and vendor profiles
-        const vendors = await User.find({ role: 'vendor' }).select('-password').lean();
-        const profiles = await Vendor.find().lean();
-        const profileMap = profiles.reduce((acc, p) => ({ ...acc, [p.user.toString()]: p }), {});
-
-        return vendors.map(v => {
-            const profile = profileMap[v._id.toString()];
-            return {
-                ...v,
-                user: v,
-                hasProfile: !!profile,
-                businessName: profile?.businessName || 'N/A',
-                isApproved: profile?.isApproved || false,
-                ...profile
-            };
-        });
+        // Return combined view using aggregation for performance
+        return await User.aggregate([
+            { $match: { role: 'vendor' } },
+            { $project: { password: 0 } },
+            {
+                $lookup: {
+                    from: 'vendors',
+                    localField: '_id',
+                    foreignField: 'user',
+                    as: 'vendorProfile'
+                }
+            },
+            { $unwind: { path: '$vendorProfile', preserveNullAndEmptyArrays: true } },
+            {
+                $addFields: {
+                    user: "$$ROOT",
+                    hasProfile: { $cond: [{ $ifNull: ["$vendorProfile", false] }, true, false] },
+                    businessName: { $ifNull: ["$vendorProfile.businessName", "N/A"] },
+                    isApproved: { $ifNull: ["$vendorProfile.isApproved", false] }
+                }
+            },
+            {
+                $replaceRoot: {
+                    newRoot: { $mergeObjects: ["$$ROOT", "$vendorProfile"] }
+                }
+            }
+        ]);
     }
 
     async getVendorById(id) {
@@ -314,9 +325,12 @@ class AdminService {
     }
 
     async changeAdminPassword(adminId, oldPass, newPass) {
-        const user = await User.findById(adminId);
+        const user = await User.findById(adminId).select('+password');
         if (!user) throw new Error("Admin not found");
-        // Simple mock check for now - in real app use bcrypt compare
+
+        const isMatch = await user.comparePassword(oldPass);
+        if (!isMatch) throw new Error("Incorrect current password.");
+
         user.password = newPass;
         await user.save();
         return true;
@@ -345,16 +359,17 @@ class AdminService {
     // --- Inventory & Items ---
 
     async getAllServices() {
-        const packages = await Package.find().populate('vendor', 'businessName');
+        const packages = await Package.find().populate('vendor', 'name email');
         const services = [];
         packages.forEach(pkg => {
             SCHEMA_KEYS.forEach(type => {
-                if (Array.isArray(pkg[type])) {
-                    pkg[type].forEach(item => {
+                const list = pkg[type];
+                if (Array.isArray(list)) {
+                    list.forEach(item => {
                         services.push({
                             ...item.toObject(),
                             serviceType: type,
-                            vendor: pkg.vendor
+                            vendor: pkg.vendor // Still User ref, but with proper data
                         });
                     });
                 }
@@ -388,27 +403,33 @@ class AdminService {
     }
 
     async getPackageItem(itemId) {
-        const packages = await Package.find();
-        for (const pkg of packages) {
-            for (const key of SCHEMA_KEYS) {
-                const item = pkg[key]?.id(itemId);
-                if (item) return { ...item.toObject(), serviceType: key, vendorId: pkg.vendor };
-            }
+        const pkg = await Package.findOne({
+            $or: SCHEMA_KEYS.map(key => ({ [`${key}._id`]: itemId }))
+        }).populate('vendor', 'name email');
+
+        if (!pkg) throw new Error("Item not found");
+
+        for (const key of SCHEMA_KEYS) {
+            const item = pkg[key]?.id(itemId);
+            if (item) return { ...item.toObject(), serviceType: key, vendor: pkg.vendor };
         }
         throw new Error("Item not found");
     }
 
     async updatePackageItem(itemId, data) {
-        const packages = await Package.find();
-        for (const pkg of packages) {
-            for (const key of SCHEMA_KEYS) {
-                const item = pkg[key]?.id(itemId);
-                if (item) {
-                    Object.assign(item, data);
-                    pkg.markModified(key);
-                    await pkg.save();
-                    return item;
-                }
+        const pkg = await Package.findOne({
+            $or: SCHEMA_KEYS.map(key => ({ [`${key}._id`]: itemId }))
+        });
+
+        if (!pkg) throw new Error("Item not found");
+
+        for (const key of SCHEMA_KEYS) {
+            const item = pkg[key]?.id(itemId);
+            if (item) {
+                Object.assign(item, data);
+                pkg.markModified(key);
+                await pkg.save();
+                return item;
             }
         }
         throw new Error("Item not found");
@@ -552,6 +573,7 @@ class AdminService {
 
     async logAction(userId, action, target, targetId, details = {}, req = null) {
         try {
+            if (req) req._auditLogged = true; // Flag to prevent duplicate logging in apiHandler
             const { ipAddress, userAgent } = getRequestMetadata(req);
             const logData = {
                 userId,

@@ -241,6 +241,44 @@ class PackageService {
         return null;
     }
 
+    // [NEW] Bulk Retrieval to prevent N+1 issues
+    async getMultiplePackageItems(itemIds) {
+        if (!itemIds || itemIds.length === 0) return [];
+        const objectIds = itemIds.map(id => (typeof id === 'string' ? id : id.toString()));
+
+        return await Package.aggregate([
+            {
+                $project: {
+                    items: {
+                        $concatArrays: SCHEMA_KEYS.map(key => {
+                            return {
+                                $map: {
+                                    input: { $ifNull: [`$${key}`, []] },
+                                    as: "item",
+                                    in: { $mergeObjects: ["$$item", { category: key, catalogId: "$_id" }] }
+                                }
+                            };
+                        })
+                    }
+                }
+            },
+            { $unwind: "$items" },
+            { $match: { "items._id": { $in: objectIds.map(id => new (require('mongoose')).Types.ObjectId(id)) } } },
+            {
+                $project: {
+                    id: "$items._id",
+                    title: "$items.title",
+                    isActive: "$items.isActive",
+                    pricing: "$items.pricing",
+                    location: "$items.location",
+                    photos: "$items.photos",
+                    category_slug: "$items.category",
+                    catalogId: "$items.catalogId"
+                }
+            }
+        ]);
+    }
+
     async getGranularItem(catalogId, category, itemId) {
         const pkg = await Package.findById(catalogId);
         if (!pkg || !pkg[category]) return null;
@@ -250,52 +288,79 @@ class PackageService {
     async getAvailablePackages(query = '') {
         const regex = new RegExp(query, 'i');
 
-        // Fetch all records for maximum visibility in dev
-        const catalogs = await Package.find({}).lean();
-        const vendors = await Vendor.find({}).lean();
-        const users = await User.find({ role: 'vendor' }).lean();
-
-        // Map vendors by User ID
-        const vendorMap = vendors.reduce((acc, v) => {
-            const uId = v.user?.toString();
-            if (uId) acc[uId] = v;
-            return acc;
-        }, {});
-
-        // Map users as fallback
-        const userMap = users.reduce((acc, u) => {
-            acc[u._id?.toString()] = u;
-            return acc;
-        }, {});
-
-        const flattened = [];
-        catalogs.forEach(cat => {
-            const vendorIdString = cat.vendor?.toString();
-            // Try Vendor table first, then fallback to User table, or default
-            const vendorInfo = vendorMap[vendorIdString] || userMap[vendorIdString] || { name: "System Partner" };
-
-            // Look for ANY array in the document that might contain packages
-            Object.keys(cat).forEach(key => {
-                // Skip metadata keys
-                if (['_id', 'vendor', 'createdAt', 'updatedAt', '__v'].includes(key)) return;
-
-                if (Array.isArray(cat[key])) {
-                    cat[key].forEach(item => {
-                        const matchesQuery = !query || regex.test(item.title || item.name || item.businessName || '');
-
-                        if (matchesQuery) {
-                            flattened.push({
-                                ...item,
-                                category: key,
-                                catalogId: cat._id.toString(),
-                                vendor: vendorInfo // Now includes vendor context
-                            });
-                        }
-                    });
+        // [PERFORMANCE] Use aggregation to join data in DB instead of memory
+        const results = await Package.aggregate([
+            // 1. Project and concat all arrays into one for search
+            {
+                $project: {
+                    vendor: 1,
+                    items: {
+                        $concatArrays: SCHEMA_KEYS.map(key => {
+                            return {
+                                $map: {
+                                    input: { $ifNull: [`$${key}`, []] },
+                                    as: "item",
+                                    in: { $mergeObjects: ["$$item", { category: key, catalogId: "$_id" }] }
+                                }
+                            };
+                        })
+                    }
                 }
-            });
-        });
-        return flattened;
+            },
+            { $unwind: "$items" },
+            // 2. Filter by query if provided
+            {
+                $match: query ? {
+                    $or: [
+                        { "items.title": regex },
+                        { "items.description": regex }
+                    ]
+                } : {}
+            },
+            // 3. Join with Users (Vendor role)
+            {
+                $lookup: {
+                    from: 'users',
+                    localField: 'vendor',
+                    foreignField: '_id',
+                    pipeline: [{ $project: { password: 0 } }], // Securely exclude password
+                    as: 'userInfo'
+                }
+            },
+            { $unwind: { path: '$userInfo', preserveNullAndEmptyArrays: true } },
+            // 4. Join with Vendors table for business details
+            {
+                $lookup: {
+                    from: 'vendors',
+                    localField: 'vendor',
+                    foreignField: 'user',
+                    as: 'vendorProfile'
+                }
+            },
+            { $unwind: { path: '$vendorProfile', preserveNullAndEmptyArrays: true } },
+            // 5. Final Projection
+            {
+                $project: {
+                    _id: "$items._id",
+                    title: "$items.title",
+                    isActive: "$items.isActive",
+                    pricing: "$items.pricing",
+                    location: "$items.location",
+                    photos: "$items.photos",
+                    category: "$items.category",
+                    catalogId: "$items.catalogId",
+                    vendor: {
+                        $cond: {
+                            if: { $ifNull: ["$vendorProfile", false] },
+                            then: { $mergeObjects: ["$userInfo", "$vendorProfile"] }, // Favors profile
+                            else: { $ifNull: ["$userInfo", { name: "System Partner" }] }
+                        }
+                    }
+                }
+            }
+        ]);
+
+        return results;
     }
 
     async getAvailablePackagesByCategory(query = '') {

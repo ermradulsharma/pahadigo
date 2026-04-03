@@ -14,6 +14,7 @@ import SOSController from '@/controllers/SOSController.js';
 import InventoryController from '@/controllers/InventoryController.js';
 import { apiHandler } from '@/helpers/apiHandler.js';
 import Router from './Router.js';
+import { USER_ROLES, RESPONSE_MESSAGES } from '@/constants/index.js';
 import { schemas } from '@/helpers/validation.js';
 
 
@@ -84,7 +85,6 @@ const routes = [
     { method: 'POST', path: '/webhook', handler: wrap(PaymentController.webhook.bind(PaymentController)) },
   ]),
 
-
   // ==========================================
   // 2. COMMON AUTHENTICATED ROUTES (Any Logged-in User)
   // ==========================================
@@ -94,14 +94,14 @@ const routes = [
     { method: 'POST', path: '/logout-all', handler: wrap(AuthController.logoutAll.bind(AuthController)) },
     { method: 'POST', path: '/update-profile', handler: wrap(AuthController.updateProfile.bind(AuthController)) },
     { method: 'POST', path: '/delete-profile', handler: wrap(AuthController.deleteProfile.bind(AuthController)) },
+    { method: 'PATCH', path: '/switch-role', handler: wrap(AuthController.switchRole.bind(AuthController)) },
     { method: 'PATCH', path: '/emergency-contacts', handler: wrap(SOSController.updateEmergencyContacts.bind(SOSController)) },
   ]),
-
 
   // ==========================================
   // 3. TRAVELLER ROUTES (Requires Traveller Role)
   // ==========================================
-  ...Router.group({ prefix: '/traveller', middleware: ['auth'], roles: ['traveller'] }, [
+  ...Router.group({ prefix: '/traveller', middleware: ['auth'], roles: [USER_ROLES.TRAVELLER] }, [
     { method: 'GET', path: '/me', handler: wrap(AuthController.me.bind(AuthController)) },
     { method: 'PATCH', path: '/update', handler: wrap(AuthController.updateProfile.bind(AuthController)), schema: schemas.profileUpdate },
     { method: 'DELETE', path: '/delete', handler: wrap(AuthController.deleteProfile.bind(AuthController)) },
@@ -127,7 +127,7 @@ const routes = [
   // ==========================================
   // 4. VENDOR ROUTES (Requires Vendor Role)
   // ==========================================
-  ...Router.group({ prefix: '/vendor', middleware: ['auth'], roles: ['vendor'] }, [
+  ...Router.group({ prefix: '/vendor', middleware: ['auth'], roles: [USER_ROLES.VENDOR] }, [
     { method: 'GET', path: '/me', handler: wrap(AuthController.me.bind(AuthController)) },
     { method: 'PATCH', path: '/update', handler: wrap(AuthController.updateProfile.bind(AuthController)) },
     { method: 'DELETE', path: '/delete', handler: wrap(AuthController.deleteProfile.bind(AuthController)) },
@@ -216,12 +216,10 @@ const routes = [
     ]),
   ]),
 
-
-  // ==========================================
   // ==========================================
   // 5. ADMIN ROUTES (Requires Admin Role)
   // ==========================================
-  ...Router.group({ prefix: '/admin', middleware: ['auth'], roles: ['admin'] }, [
+  ...Router.group({ prefix: '/admin', middleware: ['auth'], roles: [USER_ROLES.ADMIN] }, [
 
     // --- Dashboard & General ---
     { method: 'GET', path: '/stats', handler: wrap(AdminController.getStats.bind(AdminController)) },
