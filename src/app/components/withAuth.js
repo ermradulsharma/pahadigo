@@ -36,7 +36,7 @@ export default function withAuth(Component, allowedRoles = []) {
                         // Redirect based on actual role to prevent loop or show forbidden
                         if (userRole === 'admin') router.push('/admin');
                         else if (userRole === 'vendor') router.push('/vendor');
-                        else router.push('/user');
+                        else router.push('/traveller');
                     } else {
                         setAuth(true);
                     }
@@ -45,7 +45,7 @@ export default function withAuth(Component, allowedRoles = []) {
                     if (allowedRoles.length > 0 && !allowedRoles.includes(userRole)) {
                         if (userRole === 'admin') router.push('/admin');
                         else if (userRole === 'vendor') router.push('/vendor');
-                        else router.push('/user');
+                        else router.push('/traveller');
                     } else {
                         setAuth(true);
                     }

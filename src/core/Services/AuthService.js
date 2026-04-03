@@ -150,8 +150,9 @@ class AuthService {
                     user.authProvider = email ? AUTH_PROVIDERS.LOCAL : AUTH_PROVIDERS.PHONE;
                 }
             }
-            if (role === USER_ROLES.VENDOR && user.role === USER_ROLES.TRAVELLER) {
-                user.role = USER_ROLES.VENDOR;
+            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
+            if (role && validRoles.includes(role) && user.role !== role) {
+                user.role = role;
             }
             if (termsAccepted && !user.termsAccepted) {
                 user.termsAccepted = true;
@@ -211,6 +212,12 @@ class AuthService {
             if (!user.googleId) {
                 user.googleId = googleId;
                 user.authProvider = 'google';
+            }
+            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
+            if (targetRole && validRoles.includes(targetRole) && user.role !== targetRole) {
+                user.role = targetRole;
+            }
+            if (user.isModified()) {
                 await user.save();
             }
         }
@@ -260,6 +267,12 @@ class AuthService {
             if (!user.facebookId) {
                 user.facebookId = facebookId;
                 if (user.authProvider === 'phone') user.authProvider = 'facebook';
+            }
+            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
+            if (targetRole && validRoles.includes(targetRole) && user.role !== targetRole) {
+                user.role = targetRole;
+            }
+            if (user.isModified()) {
                 await user.save();
             }
         }
@@ -309,6 +322,12 @@ class AuthService {
             if (!user.appleId) {
                 user.appleId = appleId;
                 if (user.authProvider === 'phone') user.authProvider = 'apple';
+            }
+            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
+            if (targetRole && validRoles.includes(targetRole) && user.role !== targetRole) {
+                user.role = targetRole;
+            }
+            if (user.isModified()) {
                 await user.save();
             }
         }

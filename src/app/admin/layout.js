@@ -20,4 +20,4 @@ function AdminLayout({ children }) {
         </div>
     );
 }
-export default withAuth(AdminLayout, 'admin');
+export default withAuth(AdminLayout, ['admin']);

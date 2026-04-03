@@ -1,11 +1,22 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { setToken } from '@/helpers/authUtils';
+import { setToken, getToken, getRole } from '@/helpers/authUtils';
 
 export default function LoginPage() {
     const router = useRouter();
+    
+    useEffect(() => {
+        const token = getToken();
+        const role = getRole();
+        if (token && role) {
+            if (role === 'admin') router.push('/admin');
+            else if (role === 'vendor') router.push('/vendor');
+            else if (role === 'traveller') router.push('/traveller');
+        }
+    }, [router]);
+
     const [email, setEmail] = useState('');
     const [password, setPassword] = useState('');
     const [error, setError] = useState('');
@@ -33,17 +44,23 @@ export default function LoginPage() {
                 // Use helper to set token based on rememberMe preference
                 setToken(data.token, data.role, rememberMe);
 
-                if (data.role === 'admin') {
+                const USER_ROLES = {
+                    ADMIN: 'admin',
+                    VENDOR: 'vendor',
+                    TRAVELLER: 'traveller'
+                };
+
+                if (data.role === USER_ROLES.ADMIN) {
                     router.push('/admin');
+                } else if (data.role === USER_ROLES.VENDOR) {
+                    router.push('/vendor');
+                } else if (data.role === USER_ROLES.TRAVELLER) {
+                    router.push('/traveller');
                 } else {
-                    setError('Access restricted to Admins only');
-                    // Clear tokens if access denied
-                    setToken(null, null, false); // effectively removes both due to logic, or call removeToken
-                    localStorage.removeItem('token'); // Safer manual clear ensuring clean state
-                    localStorage.removeItem('role');
-                    sessionStorage.removeItem('token');
-                    sessionStorage.removeItem('role');
+                    setError('Invalid role detected');
+                    setToken(null, null, false);
                 }
+
             } else {
                 setError(response.message || response.error || 'Login failed');
             }
