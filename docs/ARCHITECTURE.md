@@ -10,9 +10,15 @@
 
 `Ingress (API/UI) → Controllers → Services → Models → Persistence (MongoDB)`
 
-### Abstracted Kernel Design
-
 Unlike standard Next.js applications, PahadiGo decouples the **Next.js App Ingress** from the **Business Logic Kernel**. All heavy mutations, third-party integrations (Razorpay, MSG91), and complex validation routines reside in the `src/core` directory, which is agnostic of the specific HTTP presentation layer.
+
+### 🏛️ Modular Facade Pattern
+The platform leverages centralized indices (`index.js`) for all core directories:
+- **`@models`**: Unified entry point for all 23+ Mongoose schemas.
+- **`@services`**: Single access point for cross-module business logic.
+- **`@helpers` & `@lib`**: Grouped utility and configuration providers.
+
+This pattern enforces **destructive imports**, reducing boilerplate and improving architectural clarity throughout the codebase.
 
 ---
 

@@ -35,6 +35,7 @@ describe('BookingService Test Suite', () => {
 
         const booking = await Booking.create({
             user: new mongoose.Types.ObjectId(),
+            vendor: new mongoose.Types.ObjectId(),
             package: new mongoose.Types.ObjectId(),
             travelStartTime: new Date(),
             travelEndTime: new Date(),

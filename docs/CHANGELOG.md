@@ -5,6 +5,18 @@ All notable changes to the PahadiGo project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.3.0] - 2026-04-03
+
+### Added
+- **Centralized Facade Architecture**: Implemented index-based exports for `@models`, `@services`, `@helpers`, and `@lib`.
+- **Architecture Documentation**: Added `docs/ARCHITECTURE.md` updates regarding the modular design.
+- **Automated Housekeeping**: Added `npm run clean` command to clear temporary diagnostic logs.
+
+### Fixed
+- **100% Test Stability**: Reached a milestone of **265 functional tests passed** across 54 suites.
+- **Service Hardening**: Fixed critical null-safety and population logic issues in `InventoryService` and `NotificationService`.
+- **Schema Validation**: Restored and validated mandatory fields in `Booking` and `Package` schemas.
+
 ## [2.2.0] - 2026-04-02
 
 ### Added

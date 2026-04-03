@@ -137,6 +137,7 @@ npm run dev
 
 This repository possesses comprehensive sub-documentation manuals standardizing structural execution methodologies. It is imperative that contributing engineers consume these parameters entirely:
 
+- **[CHANGELOG.md](docs/CHANGELOG.md)** — History of platform updates and version releases.
 - **[ARCHITECTURE.md](docs/ARCHITECTURE.md)** — Detailed technical design, data modeling, and system orchestration.
 - **[API_DOCUMENTATION.md](docs/API_DOCUMENTATION.md)** — Full specification of available API routes and protocols.
 - **[DATABASE_SCHEMA.md](docs/DATABASE_SCHEMA.md)** — Deep dive into Mongoose models and polymorphic service structures.

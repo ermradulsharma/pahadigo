@@ -1,7 +1,5 @@
-import Inventory from '@/models/Inventory.js';
-import Package from '@/models/Package.js';
-import Booking from '@/models/Booking.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
+import { Inventory, Package, Booking } from '@/models';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants';
 import { formatDateKey, calculateEffectivePrice, normalizeAvailability, determineDayStatus } from '@/helpers/InventoryHelper.js';
 
 class InventoryService {
@@ -37,9 +35,10 @@ class InventoryService {
 
         // 3. Fallback: Get base availability and pricing from Package
         const pkg = await Package.findOne({ vendor: vendorId }).lean();
-        if (!pkg || !pkg[serviceType]) return null;
+        if (!pkg) return null;
+        if (!pkg[serviceType]) return null;
 
-        const item = pkg[serviceType].find(i => i._id.toString() === itemId.toString());
+        const item = pkg[serviceType].find(i => String(i._id) === String(itemId));
         if (!item) return null;
 
         // Use helper to normalize units
@@ -214,7 +213,7 @@ class InventoryService {
                 return {
                     available: false,
                     failedDate: d.toISOString().split('T')[0],
-                    reason: dayData?.status !== 'available' ? 'Status: ' + dayData?.status : 'Insufficient units'
+                    reason: !dayData ? 'Item not configured' : (dayData.status !== 'available' ? 'Status: ' + dayData.status : 'Insufficient units')
                 };
             }
         }
@@ -234,8 +233,8 @@ class InventoryService {
 
         for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
             const dayData = await this._getEffectiveDay(vendorId, itemId, serviceType, d, inv);
-            const total = dayData.totalUnits || 0;
-            const newBooked = (dayData.bookedUnits || 0) + unitsToReserve;
+            const total = dayData?.totalUnits || 0;
+            const newBooked = (dayData?.bookedUnits || 0) + unitsToReserve;
 
             if (newBooked > total) {
                 throw new Error(`Insufficient units on ${d.toISOString().split('T')[0]}`);

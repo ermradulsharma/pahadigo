@@ -13,6 +13,7 @@ describe('BookingModel Test Suite', () => {
         }
         expect(error).toBeDefined();
         expect(error.errors.user).toBeDefined();
+        expect(error.errors.vendor).toBeDefined();
         expect(error.errors.package).toBeDefined();
         expect(error.errors.travelStartTime).toBeDefined();
         expect(error.errors.travelEndTime).toBeDefined();
@@ -29,6 +30,7 @@ describe('BookingModel Test Suite', () => {
 
         const bookingData = {
             user: userId,
+            vendor: new mongoose.Types.ObjectId(),
             package: packageId,
             travelStartTime,
             travelEndTime,
@@ -49,6 +51,7 @@ describe('BookingModel Test Suite', () => {
     it('should enforce enum restrictions on status fields', async () => {
         const booking = new Booking({
             user: new mongoose.Types.ObjectId(),
+            vendor: new mongoose.Types.ObjectId(),
             package: new mongoose.Types.ObjectId(),
             travelStartTime: new Date(),
             travelEndTime: new Date(),
