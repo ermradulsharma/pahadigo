@@ -38,7 +38,7 @@
     "devDependencies": {
         "@tailwindcss/postcss": "^4.2.2",
         "autoprefixer": "^10.4.27",
-        "eslint": "^10.1.0",
+        "eslint": "^10.2.0",
         "eslint-config-next": "16.2.2",
         "gcp-metadata": "^8.1.2",
         "jest": "^30.3.0",
