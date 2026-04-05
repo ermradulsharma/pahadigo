@@ -235,19 +235,28 @@ class PackageService {
     }
 
     async getAvailablePackageItem(itemId) {
+        const item = await this.getPackageItem(itemId);
+        if (!item) return null;
+
+        // Check vendor availability for search/booking context
+        const pkg = await Package.findById(item.catalogId).lean();
+        if (!pkg || !(await this.vendorStatusService.isVendorAvailable(pkg.vendor))) return null;
+
+        if (item.isActive === false) return null;
+        return item;
+    }
+
+    async getPackageItem(itemId) {
         const pkg = await Package.findOne({
             $or: SCHEMA_KEYS.map(key => ({ [`${key}._id`]: itemId }))
         }).lean();
 
         if (!pkg) return null;
 
-        // Check vendor availability using the injected service
-        if (!(await this.vendorStatusService.isVendorAvailable(pkg.vendor))) return null;
-
         for (const key of SCHEMA_KEYS) {
             if (Array.isArray(pkg[key])) {
                 const item = pkg[key].find(i => i._id.toString() === itemId);
-                if (item && item.isActive !== false) {
+                if (item) {
                     return {
                         ...item,
                         category: key,

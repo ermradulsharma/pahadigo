@@ -40,7 +40,7 @@ class InventoryController {
 
             // Detect serviceType if missing using itemId
             if (itemId && !serviceType) {
-                const itemInfo = await PackageService.getAvailablePackageItem(itemId);
+                const itemInfo = await PackageService.getPackageItem(itemId);
                 if (itemInfo) serviceType = itemInfo.category;
             }
 
@@ -105,7 +105,7 @@ class InventoryController {
 
             // Detect serviceType if missing
             if (itemId && !serviceType) {
-                const itemInfo = await PackageService.getAvailablePackageItem(itemId);
+                const itemInfo = await PackageService.getPackageItem(itemId);
                 if (itemInfo) serviceType = itemInfo.category;
             }
 
@@ -176,7 +176,7 @@ class InventoryController {
 
             // Detect serviceType if missing using itemId
             if (itemId && !serviceType) {
-                const itemInfo = await PackageService.getAvailablePackageItem(itemId);
+                const itemInfo = await PackageService.getPackageItem(itemId);
                 if (itemInfo) serviceType = itemInfo.category;
             }
 
@@ -217,7 +217,7 @@ class InventoryController {
 
             // Detect serviceType if missing
             if (itemId && !serviceType) {
-                const itemInfo = await PackageService.getAvailablePackageItem(itemId);
+                const itemInfo = await PackageService.getPackageItem(itemId);
                 if (itemInfo) serviceType = itemInfo.category;
             }
 
