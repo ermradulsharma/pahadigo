@@ -51,7 +51,12 @@ describe('InventoryController Test Suite', () => {
                 availability: { totalRooms: 10 },
                 isActive: false
             };
-            const req = createMockReq({ jsonBody: { ...updates, serviceType: 'hotel' }, params: { itemId } });
+            // user must be provided so VendorService.findByUserId can be called
+            const req = createMockReq({ 
+                user: { id: userId },
+                jsonBody: { ...updates, serviceType: 'hotel' }, 
+                params: { itemId } 
+            });
             const mockUpdatedItem = { id: itemId, ...updates };
             const updateSpy = jest.spyOn(PackageService, 'updateServiceItem').mockResolvedValue(mockUpdatedItem);
 
@@ -64,7 +69,11 @@ describe('InventoryController Test Suite', () => {
 
         it('should auto-detect serviceType if missing', async () => {
             const updates = { pricing: { pricePerNight: 500 } };
-            const req = createMockReq({ jsonBody: updates, params: { itemId } });
+            const req = createMockReq({ 
+                user: { id: userId },
+                jsonBody: updates, 
+                params: { itemId } 
+            });
             jest.spyOn(PackageService, 'getPackageItem').mockResolvedValue({ category: 'homestay' });
             const updateSpy = jest.spyOn(PackageService, 'updateServiceItem').mockResolvedValue({ id: itemId });
 
@@ -76,6 +85,7 @@ describe('InventoryController Test Suite', () => {
     describe('updateInventory (specific dates)', () => {
         it('should update specific dates via InventoryService', async () => {
             const req = createMockReq({
+                user: { id: userId },
                 params: { itemId },
                 jsonBody: { serviceType: 'homestay', updates: [{ date: '2024-05-10', priceOverride: 6000 }] }
             });
@@ -88,7 +98,11 @@ describe('InventoryController Test Suite', () => {
 
     describe('initializeInventory', () => {
         it('should initialize inventory via InventoryService', async () => {
-            const req = createMockReq({ params: { itemId }, jsonBody: { serviceType: 'homestay', days: 60 } });
+            const req = createMockReq({ 
+                user: { id: userId },
+                params: { itemId }, 
+                jsonBody: { serviceType: 'homestay', days: 60 } 
+            });
             const initSpy = jest.spyOn(InventoryService, 'initializeFromItem').mockResolvedValue({ id: itemId });
             const res = await InventoryController.initializeInventory(req, { params: req.params });
             expect(res.status).toBe(HTTP_STATUS.CREATED);

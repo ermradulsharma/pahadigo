@@ -6,9 +6,9 @@ import mongoose from 'mongoose';
 export const generateId = () => new mongoose.Types.ObjectId();
 
 /**
- * Clean all collections in the in-memory test database.
- * Can be called explicitly within a test for granular control,
- * in addition to the global afterEach in tests/setup.js.
+ * Clean database between tests.
+ * Note: tests/setup.js runs afterEach to wipe all collections globally.
+ * This helper is a compatibility shim for tests that manually call cleanDatabase().
  */
 export const cleanDatabase = async () => {
     if (mongoose.connection.readyState !== 0) {
@@ -20,15 +20,15 @@ export const cleanDatabase = async () => {
 };
 
 /**
- * Build a mock Next.js App Router Request object for controller unit tests.
+ * Build a mock Next.js Request object for controller unit tests.
  * @param {Object} options
  * @param {Object} options.jsonBody - Pre-parsed JSON body
- * @param {Object} options.formDataBody - Pre-parsed FormData body  
+ * @param {Object} options.formDataBody - Pre-parsed FormData body
  * @param {Object} options.params - URL path parameters
- * @param {Object} options.headers - HTTP headers as plain object
+ * @param {Object} options.headers - HTTP headers
  * @param {Object} options.user - Authenticated user attached to request
  * @param {string} options.url - Request URL
- * @returns {Object} Mock request object compatible with controllers
+ * @returns {Object} Mock request object
  */
 export const createMockReq = ({
     jsonBody = null,
@@ -38,7 +38,7 @@ export const createMockReq = ({
     user = null,
     url = 'http://localhost/api/test'
 } = {}) => {
-    const headerMap = new Map(Object.entries(headers).map(([k, v]) => [k.toLowerCase(), v]));
+    const headerMap = new Map(Object.entries(headers));
 
     return {
         jsonBody,

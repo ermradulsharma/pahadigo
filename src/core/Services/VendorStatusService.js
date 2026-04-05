@@ -43,7 +43,7 @@ class VendorStatusService {
 
         // 2. Check Vendor Business Profile Status
         const vendor = await Vendor.findOne({ user: userId, deletedAt: null }).lean();
-        if (!user) return { allowed: false, message: "Business profile not found" };
+        if (!vendor) return { allowed: false, message: "Business profile not found" };
 
         // Block if Business itself is Restricted
         if (this.restrictedStatuses.includes(vendor.status) || vendor.deletedAt) {

@@ -268,7 +268,8 @@ class UserController {
   // POST /traveller/wishlist
   async addToWishlist(req) {
     try {
-      const { itemId, category } = req.validData || {};
+      const body = req.validData || req.jsonBody || {};
+      const { itemId, category } = body;
       if (!itemId) {
         return errorResponse(HTTP_STATUS.BAD_REQUEST, "Item ID is required", {});
       }
