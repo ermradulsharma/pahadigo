@@ -227,12 +227,16 @@ class InventoryController {
 
             // Prepare baseline updates
             const updates = {};
-            if (pricing) updates.pricing = pricing;
-            if (availability) updates.availability = availability;
-            if (fleetAvailability) updates.fleetAvailability = fleetAvailability;
+            const allowedFields = ['pricing', 'availability', 'fleetAvailability', 'isActive', 'roomDetails', 'details', 'policies', 'timings', 'amenities', 'mealsIncluded', 'mealType'];
+            
+            allowedFields.forEach(field => {
+                if (body[field] !== undefined) {
+                    updates[field] = body[field];
+                }
+            });
 
             if (Object.keys(updates).length === 0) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, 'No updates provided (pricing or availability required)', {});
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, 'No valid updates provided (pricing, availability, isActive, etc.)', {});
             }
 
             const updated = await PackageService.updateServiceItem(vendor._id, serviceType, itemId, updates);

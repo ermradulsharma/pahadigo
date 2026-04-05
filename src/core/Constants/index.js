@@ -9,13 +9,13 @@ export const USER_ROLES = {
     TRAVELLER: 'traveller'
 };
 
-export const USER_STATUS = {
-    ACTIVE: 'active',
-    INACTIVE: 'inactive',
-    BLOCKED: 'blocked',
+export const STATUS = {
     PENDING: 'pending',
-    DELETED: 'deleted',
-    SUSPENDED: 'suspended'
+    ACTIVE: 'active',
+    REJECT: 'reject',
+    BLOCKED: 'blocked',
+    SUSPENDED: 'suspended',
+    DELETED: 'deleted'
 };
 
 export const AUTH_PROVIDERS = {
@@ -114,7 +114,7 @@ export const UPLOAD_PATHS = {
 
 export const DEFAULTS = {
     USER_ROLE: USER_ROLES.TRAVELLER,
-    USER_STATUS: USER_STATUS.PENDING,
+    STATUS: STATUS.PENDING,
     AUTH_PROVIDER: AUTH_PROVIDERS.PHONE,
     GENDER: GENDER.OTHER,
     CURRENCY: 'INR',
@@ -124,11 +124,19 @@ export const DEFAULTS = {
     NOTIFICATIONS: {
         EMAIL: true,
         SMS: true,
-        PUSH: true
+        PUSH: true,
+        WHATSAPP: true
     },
 
     VENDOR_VERIFICATION_STATUS: VERIFICATION_STATUS.PENDING,
-    VENDOR_IS_APPROVED: false
+    VENDOR_IS_APPROVED: false,
+
+    NULL: null,
+    ARRAY: [],
+    STRING: '',
+
+    BLOOD_GROUP: null,
+    MEDICAL_CONDITIONS: []
 };
 
 export const SEED_ACCOUNTS = {
@@ -212,7 +220,8 @@ export const RESPONSE_MESSAGES = {
         ITEM_ID_REQUIRED: 'Item ID is required',
         INVALID_DATE: 'Invalid date format',
         NAME_MIN_LENGTH: 'Name must be at least 2 characters',
-        INVALID_PHONE: 'Invalid phone number format'
+        INVALID_PHONE: 'Invalid phone number format',
+        TERMS_REQUIRED: 'Terms and Conditions must be accepted'
     },
     ERROR: {
         GENERIC: 'Something went wrong',

@@ -1,6 +1,6 @@
 import User from '../../Models/User.js';
 import bcrypt from 'bcryptjs';
-import { USER_ROLES, USER_STATUS, AUTH_PROVIDERS, GENDER, SEED_ACCOUNTS } from '../../Constants/index.js';
+import { USER_ROLES, STATUS, AUTH_PROVIDERS, GENDER, SEED_ACCOUNTS } from '../../Constants/index.js';
 
 export const seedUsers = async () => {
     try {
@@ -12,7 +12,7 @@ export const seedUsers = async () => {
                 role: USER_ROLES.ADMIN,
                 authProvider: AUTH_PROVIDERS.LOCAL,
                 isVerified: true,
-                status: USER_STATUS.ACTIVE,
+                status: STATUS.ACTIVE,
                 phone: '1111111111',
                 gender: GENDER.OTHER,
                 dateOfBirth: new Date('1990-01-01'),
@@ -31,7 +31,7 @@ export const seedUsers = async () => {
                 role: USER_ROLES.ADMIN, // Developer as admin as requested
                 authProvider: AUTH_PROVIDERS.LOCAL,
                 isVerified: true,
-                status: USER_STATUS.ACTIVE,
+                status: STATUS.ACTIVE,
                 phone: '2222222222',
                 gender: GENDER.MALE,
                 address: {
@@ -48,7 +48,7 @@ export const seedUsers = async () => {
                 role: USER_ROLES.VENDOR,
                 authProvider: AUTH_PROVIDERS.PHONE,
                 isVerified: true,
-                status: USER_STATUS.ACTIVE,
+                status: STATUS.ACTIVE,
                 email: 'vendor@pahadigo.com', // Optional but good for record
                 gender: GENDER.FEMALE,
                 address: {
@@ -69,7 +69,7 @@ export const seedUsers = async () => {
                 role: USER_ROLES.TRAVELLER,
                 authProvider: AUTH_PROVIDERS.PHONE,
                 isVerified: true,
-                status: USER_STATUS.ACTIVE,
+                status: STATUS.ACTIVE,
                 phone: '9998887776',
                 preferences: {
                     language: 'en',

@@ -1,11 +1,18 @@
 import Vendor from '@/models/Vendor.js';
+import User from '@/models/User.js';
 import Review from '@/models/Review.js';
 import Booking from '@/models/Booking.js';
 import Dispute from '@/models/Dispute.js';
 import Package from '@/models/Package.js';
+import VendorClosure from '@/models/VendorClosure.js';
 import { CATEGORY_TITLES } from '@/constants/categories.js';
+import { STATUS } from '@/constants/index.js';
 
 class VendorService {
+    constructor() {
+        this.activeStatus = STATUS.ACTIVE;
+    }
+
     async upsertProfile(userId, profileData) {
         const updateData = { ...profileData };
         if (profileData.documents) {
@@ -16,7 +23,6 @@ class VendorService {
                 }
             }
         }
-
         if (profileData.bankDetails) {
             delete updateData.bankDetails;
             for (const key in profileData.bankDetails) {
@@ -25,17 +31,8 @@ class VendorService {
                 }
             }
         }
-
         const { businessName, description, address, socialLinks, contactEmail, contactPhone } = profileData;
-        const validProfileData = {
-            businessName,
-            description,
-            address,
-            socialLinks,
-            contactEmail,
-            contactPhone
-        };
-
+        const validProfileData = { businessName, description, address, socialLinks, contactEmail, contactPhone };
         const vendor = await Vendor.findOneAndUpdate(
             { user: userId, deletedAt: null },
             {
@@ -46,16 +43,22 @@ class VendorService {
                 deletedBy: null
             },
             { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true, runValidators: true }
-        ).populate('user', 'email phone role');
-        return vendor;
+        );
+        await User.findByIdAndUpdate(userId, { vendorProfile: vendor._id });
+        return await vendor.populate('user', 'email phone role');
     }
 
     async findByUserId(userId) {
-        return await Vendor.findOne({ user: userId, deletedAt: null }).populate('user', 'email phone role');
+        const vendor = await Vendor.findOne({ user: userId, deletedAt: null }).populate('user', 'email phone role');
+        if (vendor) {
+            const closures = await VendorClosure.find({ vendor: vendor._id, isActive: true }).sort({ startDate: 1 });
+            vendor._doc.closurePeriods = closures;
+        }
+        return vendor;
     }
 
     async getFullProfile(userId) {
-        return await Vendor.findOne({ user: userId, deletedAt: null }).populate('user', 'email phone role');
+        return await this.findByUserId(userId);
     }
 
     async deleteProfile(userId, deletedBy) {
@@ -113,7 +116,7 @@ class VendorService {
             isBusinessRegistrationVerified = vendor.documents?.businessRegistration?.status === 'verified';
         }
 
-        const isVerified = vendor.isApproved && isAadharVerified && isPanVerified && isBusinessRegistrationVerified;
+        const isVerified = vendor.status === this.activeStatus && isAadharVerified && isPanVerified && isBusinessRegistrationVerified;
 
         if (isVerified) {
             newBadge = 'verified';
@@ -122,10 +125,10 @@ class VendorService {
             // Criteria: avgRating >= 4.5, totalBookings >= 10, dispute rate <= 5%
 
             const catalog = await Package.findOne({ vendor: vendorId });
-            
+
             if (catalog) {
                 const totalBookings = await Booking.countDocuments({ package: catalog._id, status: 'completed' });
-                
+
                 if (totalBookings >= 10) {
                     const disputeCount = await Dispute.countDocuments({ vendorId: vendorId, status: 'resolved_refunded' });
                     const disputeRate = disputeCount / totalBookings;
@@ -134,7 +137,7 @@ class VendorService {
                         { $match: { vendor: vendor._id } },
                         { $group: { _id: null, avgRating: { $avg: '$rating' } } }
                     ]);
-                    
+
                     const avgRating = reviewStats.length > 0 ? reviewStats[0].avgRating : 0;
 
                     if (avgRating >= 4.5 && disputeRate <= 0.05) {
@@ -150,6 +153,53 @@ class VendorService {
         }
 
         return newBadge;
+    }
+
+    async updateBusinessStatus(userId, status) {
+        return await Vendor.findOneAndUpdate(
+            { user: userId, deletedAt: null },
+            { status: status },
+            { returnDocument: 'after' }
+        );
+    }
+
+    async addClosurePeriod(userId, closureData) {
+        const vendor = await Vendor.findOne({ user: userId, deletedAt: null });
+        if (!vendor) throw new Error("Vendor not found");
+
+        const closure = await VendorClosure.create({
+            vendor: vendor._id,
+            user: vendor.user,
+            startDate: closureData.startDate,
+            endDate: closureData.endDate,
+            reason: closureData.reason || 'Vacation',
+            isActive: true
+        });
+
+        return closure;
+    }
+
+    async getClosurePeriods(userId) {
+        return await VendorClosure.find({ user: userId, isActive: true }).sort({ startDate: 1 });
+    }
+
+    async updateClosurePeriod(userId, closureId, updateData) {
+        const closure = await VendorClosure.findOne({ _id: closureId, user: userId });
+        if (!closure) throw new Error("Closure period not found");
+
+        if (updateData.startDate) closure.startDate = updateData.startDate;
+        if (updateData.endDate) closure.endDate = updateData.endDate;
+        if (updateData.reason) closure.reason = updateData.reason;
+
+        return await closure.save(); // save() calls pre-save middleware
+    }
+
+    async deleteClosurePeriod(userId, closureId) {
+        return await VendorClosure.findOneAndUpdate(
+            { _id: closureId, user: userId },
+            { isActive: false },
+            { new: true }
+        );
     }
 }
 

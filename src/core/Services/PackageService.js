@@ -2,18 +2,30 @@ import Package from '@/models/Package.js';
 import Vendor from '@/models/Vendor.js';
 import Category from '@/models/Category.js';
 import User from '@/models/User.js';
+import VendorClosure from '@/models/VendorClosure.js';
 import { RESPONSE_MESSAGES } from '@/constants/index.js';
 import { CATEGORY_MAP, SCHEMA_KEYS } from '@/constants/categories.js';
 import InventoryService from '@/services/InventoryService.js';
+import VendorStatusService from '@/services/VendorStatusService.js';
 import { formatInventoryItem } from '@/helpers/InventoryHelper.js';
 
 class PackageService {
+    constructor(vendorStatusService = VendorStatusService) {
+        this.vendorStatusService = vendorStatusService;
+    }
 
     // Helper: Find or Create Catalog for Vendor
     async ensureCatalog(vendorId) {
         let pkg = await Package.findOne({ vendor: vendorId });
         if (!pkg) {
-            const initialData = { vendor: vendorId };
+            // Find the Vendor record to get its _id for the 'business' field
+            const vendor = await Vendor.findOne({ user: vendorId });
+            if (!vendor) throw new Error("Vendor profile not found. Please create a business profile first.");
+
+            const initialData = { 
+                vendor: vendorId,
+                business: vendor._id // Link to the Vendor document
+            };
             SCHEMA_KEYS.forEach(key => {
                 initialData[key] = [];
             });
@@ -128,6 +140,8 @@ class PackageService {
             title: itemObj.title,
             isActive: itemObj.isActive,
             pricing: itemObj.pricing || {},
+            availability: itemObj.availability || {},
+            fleetAvailability: itemObj.fleetAvailability || {},
             location: itemObj.location || {},
             photos: itemObj.photos?.[0] || "",
             category_name: category.name || "",
@@ -226,10 +240,13 @@ class PackageService {
 
         if (!pkg) return null;
 
+        // Check vendor availability using the injected service
+        if (!(await this.vendorStatusService.isVendorAvailable(pkg.vendor))) return null;
+
         for (const key of SCHEMA_KEYS) {
             if (Array.isArray(pkg[key])) {
                 const item = pkg[key].find(i => i._id.toString() === itemId);
-                if (item) {
+                if (item && item.isActive !== false) {
                     return {
                         ...item,
                         category: key,
@@ -338,7 +355,10 @@ class PackageService {
                 }
             },
             { $unwind: { path: '$vendorProfile', preserveNullAndEmptyArrays: true } },
-            // 5. Final Projection
+            // 5. Active Item & Vendor Availability Filtering
+            { $match: { "items.isActive": true } },
+            ...this.vendorStatusService.getVendorClosureFilterStages('vendorProfile'),
+            // 6. Final Projection
             {
                 $project: {
                     _id: "$items._id",
@@ -398,19 +418,36 @@ class PackageService {
             throw new Error("Invalid coordinates provided");
         }
 
-        // 1. Find nearby vendors
+        // 1. Find nearby vendors (active status)
         const nearbyVendors = await Vendor.find({
             'address.location': {
                 $near: {
                     $geometry: { type: "Point", coordinates: [longitude, latitude] },
                     $maxDistance: parseFloat(radiusKm) * 1000 // meters
                 }
-            }
+            },
+            ...this.vendorStatusService.getVendorClosureQuery()
         }).lean();
+
         if (nearbyVendors.length === 0) return [];
 
-        const vendorUserIds = nearbyVendors.map(v => (v._id).toString());
-        const vendorMap = nearbyVendors.reduce((acc, v) => {
+        // 2. Filter out vendors who have an active closure period
+        const vendorIds = nearbyVendors.map(v => v._id);
+        const now = new Date();
+        const activeClosures = await VendorClosure.find({
+            vendor: { $in: vendorIds },
+            isActive: true,
+            startDate: { $lte: now },
+            endDate: { $gte: now }
+        }).lean();
+
+        const closedVendorIds = new Set(activeClosures.map(c => c.vendor.toString()));
+        const availableVendors = nearbyVendors.filter(v => !closedVendorIds.has(v._id.toString()));
+
+        if (availableVendors.length === 0) return [];
+
+        const vendorUserIds = availableVendors.map(v => (v._id).toString());
+        const vendorMap = availableVendors.reduce((acc, v) => {
             const uId = (v._id).toString();
             acc[uId] = v;
             return acc;
@@ -438,11 +475,13 @@ class PackageService {
 
                 if (Array.isArray(cat[key])) {
                     cat[key].forEach(item => {
-                        results.push({
-                            ...item,
-                            category: key,
-                            catalogId: cat._id.toString(),
-                        });
+                        if (item.isActive !== false) {
+                            results.push({
+                                ...item,
+                                category: key,
+                                catalogId: cat._id.toString(),
+                            });
+                        }
                     });
                 }
             });

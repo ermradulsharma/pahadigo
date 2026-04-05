@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { VERIFICATION_STATUS, DEFAULTS, VENDOR_PROFILE_TYPES } from '@/constants/index.js';
+import { VERIFICATION_STATUS, DEFAULTS, VENDOR_PROFILE_TYPES, STATUS } from '@/constants/index.js';
 
 const VendorSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
@@ -24,7 +24,7 @@ const VendorSchema = new mongoose.Schema({
     businessAbout: { type: String, default: null },
 
     // approval status
-    isApproved: { type: Boolean, default: DEFAULTS.VENDOR_IS_APPROVED },
+    status: { type: String, enum: Object.values(STATUS), default: DEFAULTS.VENDOR_VERIFICATION_STATUS },
 
     // quality & trust
     trustBadge: { type: String, enum: ['none', 'verified', 'super_partner'], default: 'none' },
@@ -112,7 +112,7 @@ const VendorSchema = new mongoose.Schema({
     toObject: { virtuals: true, getters: true, minimize: false }
 });
 
-VendorSchema.index({ isApproved: 1 });
+VendorSchema.index({ status: 1 });
 VendorSchema.index({ 'address.location': '2dsphere' });
 if (mongoose.models.Vendor) {
     delete mongoose.models.Vendor;

@@ -24,9 +24,9 @@ export function formatInventoryItem(item, categorySlug, vendorCategories = []) {
 export function normalizeAvailability(item) {
     if (!item) return {};
     return {
-        totalUnits: item.fleetAvailability?.totalVehicles || item.availability?.totalRooms || item.availability?.totalSlots || item.availability?.totalSeats || 0,
-        availableUnits: item.fleetAvailability?.availableVehicles || item.availability?.availableRooms || 0,
-        bookedUnits: item.fleetAvailability?.rentedVehicles || item.availability?.occupiedRooms || item.availability?.bookedSlots || 0
+        totalUnits: item.fleetAvailability?.totalVehicles || item.availability?.totalRooms || item.availability?.totalSlots || item.availability?.totalTents || item.availability?.totalSeats || 0,
+        availableUnits: item.fleetAvailability?.availableVehicles || item.availability?.availableRooms || item.availability?.availableSlots || item.availability?.availableTents || 0,
+        bookedUnits: item.fleetAvailability?.rentedVehicles || item.availability?.occupiedRooms || item.availability?.bookedSlots || item.availability?.occupiedTents || 0
     };
 }
 

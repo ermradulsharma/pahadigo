@@ -1,145 +1,111 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { USER_ROLES, AUTH_PROVIDERS, USER_STATUS, DEFAULTS } from '../Constants/index.js';
+import { USER_ROLES, AUTH_PROVIDERS, STATUS, DEFAULTS } from '../Constants/index.js';
 
 const UserSchema = new mongoose.Schema({
-    name: { type: String, default: null },
-    email: { type: String, lowercase: true, trim: true, default: null },
-    phone: { type: String, trim: true, default: null },
-    role: { type: String, enum: Object.values(USER_ROLES), default: DEFAULTS.USER_ROLE },
-    password: { type: String, select: false },
-    authProvider: { type: String, enum: Object.values(AUTH_PROVIDERS), default: DEFAULTS.AUTH_PROVIDER },
-
-    googleId: { type: String, default: null },
-    facebookId: { type: String, default: null },
-    appleId: { type: String, default: null },
-
-    profileImage: { type: String, default: null },
-    gender: { type: String, default: null },
-    dateOfBirth: { type: Date, default: null },
-    designation: { type: String, default: null },
-    bio: { type: String, maxlength: 500, default: null },
-    website: { type: String, default: null },
-    socialLinks: {
-        linkedin: { type: String, default: null },
-        twitter: { type: String, default: null },
-        instagram: { type: String, default: null },
-        github: { type: String, default: null },
-        youtube: { type: String, default: null },
-        whatsapp: { type: String, default: null },
-        telegram: { type: String, default: null },
-        snapchat: { type: String, default: null },
-        tiktok: { type: String, default: null },
-        other: { type: String, default: null },
-
+  name: { type: String, trim: true, default: DEFAULTS.NULL },
+  email: { type: String, lowercase: true, trim: true, default: DEFAULTS.NULL },
+  phone: { type: String, trim: true, default: DEFAULTS.NULL },
+  role: { type: String, enum: Object.values(USER_ROLES), default: DEFAULTS.USER_ROLE },
+  password: { type: String, select: false, default: DEFAULTS.NULL },
+  authProvider: { type: String, enum: Object.values(AUTH_PROVIDERS), default: DEFAULTS.AUTH_PROVIDER },
+  googleId: { type: String, default: DEFAULTS.NULL },
+  facebookId: { type: String, default: DEFAULTS.NULL },
+  appleId: { type: String, default: DEFAULTS.NULL },
+  profileImage: { type: String, default: DEFAULTS.NULL },
+  gender: { type: String, default: DEFAULTS.NULL },
+  dateOfBirth: { type: Date, default: DEFAULTS.NULL },
+  bloodGroup: { type: String, default: DEFAULTS.NULL },
+  medicalConditions: { type: [String], default: DEFAULTS.ARRAY },
+  designation: { type: String, default: DEFAULTS.NULL },
+  bio: { type: String, maxlength: 500, default: DEFAULTS.NULL },
+  website: { type: String, default: DEFAULTS.NULL },
+  socialLinks: {
+    linkedin: { type: String, default: DEFAULTS.NULL },
+    twitter: { type: String, default: DEFAULTS.NULL },
+    instagram: { type: String, default: DEFAULTS.NULL },
+    github: { type: String, default: DEFAULTS.NULL },
+    youtube: { type: String, default: DEFAULTS.NULL },
+    whatsapp: { type: String, default: DEFAULTS.NULL },
+    telegram: { type: String, default: DEFAULTS.NULL },
+    snapchat: { type: String, default: DEFAULTS.NULL },
+    tiktok: { type: String, default: DEFAULTS.NULL },
+    other: { type: String, default: DEFAULTS.NULL },
+  },
+  expertise: [{ type: String, default: DEFAULTS.NULL }],
+  emergencyContacts: [{
+    name: { type: String, required: true, default: DEFAULTS.NULL },
+    phone: { type: String, required: true, default: DEFAULTS.NULL },
+    relationship: { type: String, default: DEFAULTS.NULL }
+  }],
+  address: {
+    addressLine1: { type: String, default: DEFAULTS.NULL },
+    addressLine2: { type: String, default: DEFAULTS.NULL },
+    city: { type: String, default: DEFAULTS.NULL },
+    state: { type: String, default: DEFAULTS.NULL },
+    country: { type: String, default: DEFAULTS.COUNTRY },
+    pincode: { type: String, default: DEFAULTS.NULL },
+    latitude: { type: String, default: DEFAULTS.NULL },
+    longitude: { type: String, default: DEFAULTS.NULL },
+    location: {
+      type: { type: String, default: 'Point' },
+      coordinates: { type: [Number], default: [0, 0] }
+    }
+  },
+  preferences: {
+    language: { type: String, default: DEFAULTS.LANGUAGE },
+    notifications: {
+      email: { type: Boolean, default: DEFAULTS.NOTIFICATIONS.EMAIL },
+      sms: { type: Boolean, default: DEFAULTS.NOTIFICATIONS.SMS },
+      push: { type: Boolean, default: DEFAULTS.NOTIFICATIONS.PUSH },
+      whatsapp: { type: Boolean, default: DEFAULTS.NOTIFICATIONS.WHATSAPP }
     },
-    expertise: [{ type: String, default: null }],
-    emergencyContacts: [{
-        name: { type: String, required: true },
-        phone: { type: String, required: true },
-        relationship: { type: String, default: null }
-    }],
-    address: {
-        addressLine1: { type: String, default: null },
-        addressLine2: { type: String, default: null },
-        city: { type: String, default: null },
-        state: { type: String, default: null },
-        country: { type: String, default: DEFAULTS.COUNTRY },
-        pincode: { type: String, default: null },
-        latitude: { type: String, default: null },
-        longitude: { type: String, default: null },
-        location: {
-            type: { type: String, default: 'Point' },
-            coordinates: { type: [Number], default: [0, 0] }
-        }
-    },
-    preferences: {
-        language: { type: String, default: DEFAULTS.LANGUAGE },
-        notifications: {
-            email: { type: Boolean, default: DEFAULTS.NOTIFICATIONS.EMAIL },
-            sms: { type: Boolean, default: DEFAULTS.NOTIFICATIONS.SMS },
-            push: { type: Boolean, default: DEFAULTS.NOTIFICATIONS.PUSH },
-            whatsapp: { type: Boolean, default: DEFAULTS.NOTIFICATIONS.WHATSAPP }
-        },
-        tempRole: { type: String },
-        tempExtraData: { type: mongoose.Schema.Types.Mixed }
-    },
-
-    rating: {
-        average: { type: Number, default: 0 },
-        count: { type: Number, default: 0 }
-    },
-
-    fcmTokens: [{ type: String }], // Cloud Messaging Tokens for Push Notifications
-
-    otp: { type: String },
-    otpExpires: { type: Date },
-    isVerified: { type: Boolean, default: false },
-    status: {
-        type: String,
-        enum: Object.values(USER_STATUS),
-        default: DEFAULTS.USER_STATUS
-    },
-    lastLoginAt: { type: Date, default: null },
-    termsAccepted: { type: Boolean, default: false },
-    termsAcceptedAt: { type: Date, default: null },
-
-    deletedAt: { type: Date, default: null },
-    deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: null },
-    deletedReason: { type: String, default: null },
+    tempRole: { type: String, default: DEFAULTS.NULL },
+    tempExtraData: { type: mongoose.Schema.Types.Mixed, default: DEFAULTS.NULL }
+  },
+  isVendorVerified: { type: Boolean, default: false },
+  vendorProfile: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', default: DEFAULTS.NULL },
+  rating: {
+    average: { type: Number, default: 0 },
+    count: { type: Number, default: 0 }
+  },
+  fcmTokens: { type: String, default: DEFAULTS.NULL },
+  otp: { type: String, select: false, default: DEFAULTS.NULL },
+  otpExpires: { type: Date, select: false, default: DEFAULTS.NULL },
+  isVerified: { type: Boolean, default: false },
+  status: { type: String, enum: Object.values(STATUS), default: DEFAULTS.STATUS },
+  lastLoginAt: { type: Date, default: DEFAULTS.NULL },
+  termsAccepted: { type: Boolean, default: false },
+  termsAcceptedAt: { type: Date, default: DEFAULTS.NULL },
+  deletedAt: { type: Date, default: DEFAULTS.NULL },
+  deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: DEFAULTS.NULL },
+  deletedReason: { type: String, default: DEFAULTS.NULL },
 }, {
-    timestamps: true,
-    toJSON: { virtuals: true, getters: true, minimize: false },
-    toObject: { virtuals: true, getters: true, minimize: false }
+  timestamps: true,
+  toJSON: { virtuals: true, getters: true, minimize: false },
+  toObject: { virtuals: true, getters: true, minimize: false }
 });
 
 UserSchema.pre('save', async function () {
-    if (!this.isModified('password')) return;
-    try {
-        const salt = await bcrypt.genSalt(10);
-        this.password = await bcrypt.hash(this.password, salt);
-    } catch (err) {
-        throw err;
-    }
+  if (!this.isModified('password')) return;
+  try {
+    const salt = await bcrypt.genSalt(10);
+    this.password = await bcrypt.hash(this.password, salt);
+  } catch (err) {
+    throw err;
+  }
 });
 
 UserSchema.methods.comparePassword = async function (candidatePassword) {
-    return bcrypt.compare(candidatePassword, this.password);
+  return bcrypt.compare(candidatePassword, this.password);
 };
-
-UserSchema.index(
-    { googleId: 1 },
-    {
-        unique: true,
-        partialFilterExpression: { googleId: { $type: "string" } }
-    }
-);
-
-UserSchema.index(
-    { facebookId: 1 },
-    {
-        unique: true,
-        partialFilterExpression: { facebookId: { $type: "string" } }
-    }
-);
-
-UserSchema.index(
-    { appleId: 1 },
-    {
-        unique: true,
-        partialFilterExpression: { appleId: { $type: "string" } }
-    }
-);
-
-UserSchema.index(
-    { email: 1 },
-    {
-        unique: true,
-        partialFilterExpression: { email: { $type: "string" } }
-    }
-);
-
-UserSchema.index({ status: 1 });
+UserSchema.index({ email: 1 }, { unique: true, partialFilterExpression: { email: { $type: "string" } } });
 UserSchema.index({ phone: 1 }, { unique: true, partialFilterExpression: { phone: { $type: "string" } } });
+UserSchema.index({ googleId: 1 }, { unique: true, partialFilterExpression: { googleId: { $type: "string" } } });
+UserSchema.index({ facebookId: 1 }, { unique: true, partialFilterExpression: { facebookId: { $type: "string" } } });
+UserSchema.index({ appleId: 1 }, { unique: true, partialFilterExpression: { appleId: { $type: "string" } } });
+UserSchema.index({ "address.location": "2dsphere" });
+UserSchema.index({ status: 1 });
+UserSchema.index({ role: 1 });
 
 export default mongoose.models.User || mongoose.model('User', UserSchema);

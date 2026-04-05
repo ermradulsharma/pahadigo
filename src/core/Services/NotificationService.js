@@ -5,6 +5,7 @@ import nodemailer from 'nodemailer';
 import admin from 'firebase-admin';
 import msg91 from 'msg91-api';
 import { getAppConfig } from '@/lib/appConfig.js';
+import { renderTemplate } from '@/helpers/TemplateHelper.js';
 
 class NotificationService {
     /**
@@ -187,6 +188,97 @@ class NotificationService {
             });
         } catch (e) {
             console.error(`[NotificationService] SMTP Email Error to ${to}:`, e.message);
+        }
+    }
+
+    /**
+     * Send a professional, high-standard OTP verification email.
+     * @param {String} email 
+     * @param {String} otp 
+     */
+    async sendOTPEmail(email, otp) {
+        try {
+            const config = (await getAppConfig()) || {};
+            const { user, pass, host, port, from_address, from_name } = config.smtp || {};
+
+            if (!user || !host) {
+                console.error("[NotificationService] SMTP credentials or host missing.");
+                return;
+            }
+
+            const smtpPort = parseInt(port) || 587;
+            const isSecure = smtpPort === 465;
+
+            const transporter = nodemailer.createTransport({
+                host,
+                port: smtpPort,
+                secure: isSecure,
+                auth: { user, pass },
+                tls: { rejectUnauthorized: false }
+            });
+
+            const senderName = from_name || "PahadiGo";
+            const senderEmail = from_address || user;
+
+            // Render HTML using Template System
+            const htmlContent = await renderTemplate('Emails/auth-otp.html', { OTP: otp });
+
+            await transporter.sendMail({
+                from: `"${senderName}" <${senderEmail}>`,
+                to: email,
+                subject: `${otp} is your PahadiGo verification code`,
+                text: `Your verification code is: ${otp}`,
+                html: htmlContent
+            });
+        } catch (error) {
+            console.error("[NotificationService] Failed to send OTP email:", error);
+        }
+    }
+
+    /**
+     * Send a security alert email on successful login.
+     */
+    async sendLoginAlertEmail(email, { device, ip, time }) {
+        try {
+            const config = (await getAppConfig()) || {};
+            const { user, pass, host, port, from_address, from_name } = config.smtp || {};
+
+            if (!user || !host) return;
+
+            const transporter = nodemailer.createTransport({
+                host,
+                port: parseInt(port) || 587,
+                secure: parseInt(port) === 465,
+                auth: { user, pass },
+                tls: { rejectUnauthorized: false }
+            });
+
+            const htmlContent = await renderTemplate('Emails/login-alert.html', {
+                DEVICE: device || 'Unknown Device',
+                IP: ip || 'Hidden',
+                TIME: time || new Date().toLocaleString()
+            });
+
+            await transporter.sendMail({
+                from: `"${from_name || 'PahadiGo Security'}" <${from_address || user}>`,
+                to: email,
+                subject: `Security Alert: New sign-in to your PahadiGo account`,
+                html: htmlContent
+            });
+        } catch (error) {
+            console.error("[NotificationService] Failed to send login alert:", error);
+        }
+    }
+
+    /**
+     * Send a security alert SMS on successful login.
+     */
+    async sendLoginAlertSMS(phone, { device, ip }) {
+        try {
+            const msg = `Security Alert: New login to your PahadiGo account from ${device || 'Unknown'}. IP: ${ip || 'Hidden'}. If not you, contact support.`;
+            await this.sendSMS(phone, msg);
+        } catch (error) {
+            console.error("[NotificationService] Failed to send login alert SMS:", error);
         }
     }
 

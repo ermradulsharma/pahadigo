@@ -227,7 +227,7 @@
               "formdata": [
                 {
                   "key": "email",
-                  "value": "vendor@pahadigo.com",
+                  "value": "mradulsharma_1@yopmail.com",
                   "type": "text"
                 },
                 {
@@ -241,13 +241,6 @@
                   "value": "vendor",
                   "type": "text",
                   "description": "vendor, traveller"
-                },
-                {
-                  "key": "role",
-                  "value": "traveller",
-                  "type": "text",
-                  "description": "vendor, traveller",
-                  "disabled": true
                 },
                 {
                   "key": "termsAccepted",
@@ -296,7 +289,7 @@
               "formdata": [
                 {
                   "key": "email",
-                  "value": "traveller@gmail.com",
+                  "value": "mradulsharma_1@yopmail.com",
                   "type": "text",
                   "description": "traveller@gmail.com, vendor@pahadigo.com"
                 },
@@ -308,15 +301,22 @@
                 },
                 {
                   "key": "otp",
-                  "value": "888888",
+                  "value": "600060",
                   "type": "text",
                   "description": "888888"
                 },
                 {
                   "key": "role",
-                  "value": "traveller",
+                  "value": "vendor",
                   "type": "text",
                   "description": "traveller, vendor"
+                },
+                {
+                  "key": "termsAccepted",
+                  "value": "",
+                  "type": "text",
+                  "uuid": "c8fa50e7-e6c3-4d6c-9f90-dd029724373e",
+                  "disabled": true
                 }
               ]
             },
@@ -910,6 +910,152 @@
                 }
               ],
               "description": "Securely upload and manage KYC documents such as Aadhaar, PAN Card, and GST Registration files."
+            },
+            {
+              "name": "Closures",
+              "item": [
+                {
+                  "name": "Get Business Closures",
+                  "protocolProfileBehavior": {
+                    "disableBodyPruning": true
+                  },
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": []
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/vendor/business/closures",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "vendor",
+                        "business",
+                        "closures"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Add Business Closures",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "startDate",
+                          "value": " 2026-10-10",
+                          "type": "text"
+                        },
+                        {
+                          "key": "endDate",
+                          "value": " 2026-10-10",
+                          "type": "text"
+                        },
+                        {
+                          "key": "reason",
+                          "value": " One day leave",
+                          "type": "text"
+                        }
+                      ]
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/vendor/business/closures",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "vendor",
+                        "business",
+                        "closures"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Update Business Closures",
+                  "request": {
+                    "method": "PATCH",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "startDate",
+                          "value": " 2026-04-11",
+                          "type": "text"
+                        },
+                        {
+                          "key": "endDate",
+                          "value": " 2026-04-11",
+                          "type": "text"
+                        },
+                        {
+                          "key": "reason",
+                          "value": " One day leave",
+                          "type": "text"
+                        }
+                      ]
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/vendor/business/closures/:id",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "vendor",
+                        "business",
+                        "closures",
+                        ":id"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "69d0de478d723ccde7399cfd"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Delete Business Closures",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": []
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/vendor/business/closures/:id",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "vendor",
+                        "business",
+                        "closures",
+                        ":id"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "69d0de478d723ccde7399cfd"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
             }
           ],
           "description": "Handles the core identity and legal verification of the vendor business, including profile information and KYC documents required for onboarding."
@@ -1158,7 +1304,7 @@
                       "formdata": [
                         {
                           "key": "category",
-                          "value": " homestay",
+                          "value": "homestay",
                           "type": "text"
                         },
                         {
@@ -9988,6 +10134,12 @@
                           "key": "availability[cancelledRooms]",
                           "value": "{{inventoryCancelled}}",
                           "type": "text"
+                        },
+                        {
+                          "key": "isActive",
+                          "value": "false",
+                          "type": "text",
+                          "uuid": "cf87b504-37cf-498e-b47f-ef0d3a84e234"
                         }
                       ]
                     },
@@ -10128,6 +10280,11 @@
                           "key": "availability[cancelledRooms]",
                           "value": "{{inventoryCancelled}}",
                           "type": "text"
+                        },
+                        {
+                          "key": "isActive",
+                          "value": "false",
+                          "type": "text"
                         }
                       ]
                     },
@@ -10266,6 +10423,11 @@
                           "value": " 0",
                           "type": "text",
                           "uuid": "744d2841-8012-480a-873e-554c85ea8203"
+                        },
+                        {
+                          "key": "isActive",
+                          "value": "false",
+                          "type": "text"
                         }
                       ]
                     },
@@ -10341,70 +10503,38 @@
                       "mode": "formdata",
                       "formdata": [
                         {
-                          "key": "pricing[pricePerNight]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "c47c348e-2d26-4653-8c5e-9c45e2f254b7"
-                        },
-                        {
-                          "key": "pricing[maxGuestPerRoom]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "2b0d770f-9163-4f1f-aa92-c1a41b08f60d"
-                        },
-                        {
-                          "key": "pricing[maxAdults]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "66b9611a-8b47-4c70-a1a9-58b626416a31"
-                        },
-                        {
-                          "key": "pricing[maxChildren]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "b48bf6bf-fea4-43aa-bdd9-b71289f83c4c"
-                        },
-                        {
-                          "key": "pricing[childPrice]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "95290856-49a7-49b0-af7a-ee353d8f90b0"
-                        },
-                        {
-                          "key": "pricing[extraBedAvailable]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "23b5e932-ace5-441b-9950-b43d6b3dde1b"
-                        },
-                        {
-                          "key": "pricing[extraBedPrice]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "744d2841-8012-480a-873e-554c85ea8203"
-                        },
-                        {
-                          "key": "availability[totalRooms]",
-                          "value": "",
+                          "key": "isActive",
+                          "value": " true",
                           "type": "text"
                         },
                         {
-                          "key": "availability[availableRooms]",
-                          "value": "",
+                          "key": "availability[totalSlots]",
+                          "value": " 30",
                           "type": "text"
                         },
                         {
-                          "key": "availability[occupiedRooms]",
-                          "value": "",
+                          "key": "availability[availableSlots]",
+                          "value": " 30",
                           "type": "text"
                         },
                         {
-                          "key": "availability[reservedRooms]",
-                          "value": "",
+                          "key": "availability[bookedSlots]",
+                          "value": " 0",
                           "type": "text"
                         },
                         {
-                          "key": "availability[cancelledRooms]",
-                          "value": "",
+                          "key": "availability[cancelledSlots]",
+                          "value": " 0",
+                          "type": "text"
+                        },
+                        {
+                          "key": "pricing[pricePerPerson]",
+                          "value": " 6500",
+                          "type": "text"
+                        },
+                        {
+                          "key": "pricing[porterPricePerDay]",
+                          "value": " 1200",
                           "type": "text"
                         }
                       ]
@@ -10481,70 +10611,33 @@
                       "mode": "formdata",
                       "formdata": [
                         {
-                          "key": "pricing[pricePerNight]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "c47c348e-2d26-4653-8c5e-9c45e2f254b7"
-                        },
-                        {
-                          "key": "pricing[maxGuestPerRoom]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "2b0d770f-9163-4f1f-aa92-c1a41b08f60d"
-                        },
-                        {
-                          "key": "pricing[maxAdults]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "66b9611a-8b47-4c70-a1a9-58b626416a31"
-                        },
-                        {
-                          "key": "pricing[maxChildren]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "b48bf6bf-fea4-43aa-bdd9-b71289f83c4c"
-                        },
-                        {
-                          "key": "pricing[childPrice]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "95290856-49a7-49b0-af7a-ee353d8f90b0"
-                        },
-                        {
-                          "key": "pricing[extraBedAvailable]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "23b5e932-ace5-441b-9950-b43d6b3dde1b"
-                        },
-                        {
-                          "key": "pricing[extraBedPrice]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "744d2841-8012-480a-873e-554c85ea8203"
-                        },
-                        {
-                          "key": "availability[totalRooms]",
-                          "value": "",
+                          "key": "isActive",
+                          "value": " true",
                           "type": "text"
                         },
                         {
-                          "key": "availability[availableRooms]",
-                          "value": "",
+                          "key": "availability[totalSeats]",
+                          "value": " 80",
                           "type": "text"
                         },
                         {
-                          "key": "availability[occupiedRooms]",
-                          "value": "",
+                          "key": "availability[availableSeats]",
+                          "value": " 80",
                           "type": "text"
                         },
                         {
-                          "key": "availability[reservedRooms]",
-                          "value": "",
+                          "key": "availability[bookedSeats]",
+                          "value": " 0",
                           "type": "text"
                         },
                         {
-                          "key": "availability[cancelledRooms]",
-                          "value": "",
+                          "key": "availability[cancelledSeats]",
+                          "value": " 0",
+                          "type": "text"
+                        },
+                        {
+                          "key": "pricing[pricePerPerson]",
+                          "value": " 1500",
                           "type": "text"
                         }
                       ]
@@ -10621,70 +10714,33 @@
                       "mode": "formdata",
                       "formdata": [
                         {
-                          "key": "pricing[pricePerNight]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "c47c348e-2d26-4653-8c5e-9c45e2f254b7"
-                        },
-                        {
-                          "key": "pricing[maxGuestPerRoom]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "2b0d770f-9163-4f1f-aa92-c1a41b08f60d"
-                        },
-                        {
-                          "key": "pricing[maxAdults]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "66b9611a-8b47-4c70-a1a9-58b626416a31"
-                        },
-                        {
-                          "key": "pricing[maxChildren]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "b48bf6bf-fea4-43aa-bdd9-b71289f83c4c"
-                        },
-                        {
-                          "key": "pricing[childPrice]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "95290856-49a7-49b0-af7a-ee353d8f90b0"
-                        },
-                        {
-                          "key": "pricing[extraBedAvailable]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "23b5e932-ace5-441b-9950-b43d6b3dde1b"
-                        },
-                        {
-                          "key": "pricing[extraBedPrice]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "744d2841-8012-480a-873e-554c85ea8203"
-                        },
-                        {
-                          "key": "availability[totalRooms]",
-                          "value": "",
+                          "key": "isActive",
+                          "value": " true",
                           "type": "text"
                         },
                         {
-                          "key": "availability[availableRooms]",
-                          "value": "",
+                          "key": "availability[totalSlots]",
+                          "value": " 50",
                           "type": "text"
                         },
                         {
-                          "key": "availability[occupiedRooms]",
-                          "value": "",
+                          "key": "availability[availableSlots]",
+                          "value": " 50",
                           "type": "text"
                         },
                         {
-                          "key": "availability[reservedRooms]",
-                          "value": "",
+                          "key": "availability[bookedSlots]",
+                          "value": " 0",
                           "type": "text"
                         },
                         {
-                          "key": "availability[cancelledRooms]",
-                          "value": "",
+                          "key": "availability[cancelledSlots]",
+                          "value": " 0",
+                          "type": "text"
+                        },
+                        {
+                          "key": "pricing[pricePerPerson]",
+                          "value": " 3700",
                           "type": "text"
                         }
                       ]
@@ -10761,70 +10817,48 @@
                       "mode": "formdata",
                       "formdata": [
                         {
-                          "key": "pricing[pricePerNight]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "c47c348e-2d26-4653-8c5e-9c45e2f254b7"
-                        },
-                        {
-                          "key": "pricing[maxGuestPerRoom]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "2b0d770f-9163-4f1f-aa92-c1a41b08f60d"
-                        },
-                        {
-                          "key": "pricing[maxAdults]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "66b9611a-8b47-4c70-a1a9-58b626416a31"
-                        },
-                        {
-                          "key": "pricing[maxChildren]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "b48bf6bf-fea4-43aa-bdd9-b71289f83c4c"
-                        },
-                        {
-                          "key": "pricing[childPrice]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "95290856-49a7-49b0-af7a-ee353d8f90b0"
-                        },
-                        {
-                          "key": "pricing[extraBedAvailable]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "23b5e932-ace5-441b-9950-b43d6b3dde1b"
-                        },
-                        {
-                          "key": "pricing[extraBedPrice]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "744d2841-8012-480a-873e-554c85ea8203"
-                        },
-                        {
-                          "key": "availability[totalRooms]",
-                          "value": "",
+                          "key": "isActive",
+                          "value": " true",
                           "type": "text"
                         },
                         {
-                          "key": "availability[availableRooms]",
-                          "value": "",
+                          "key": "fleetAvailability[totalVehicles]",
+                          "value": " 4",
                           "type": "text"
                         },
                         {
-                          "key": "availability[occupiedRooms]",
-                          "value": "",
+                          "key": "fleetAvailability[availableVehicles]",
+                          "value": " 4",
                           "type": "text"
                         },
                         {
-                          "key": "availability[reservedRooms]",
-                          "value": "",
+                          "key": "fleetAvailability[rentedVehicles]",
+                          "value": " 0",
                           "type": "text"
                         },
                         {
-                          "key": "availability[cancelledRooms]",
-                          "value": "",
+                          "key": "fleetAvailability[maintenanceVehicles]",
+                          "value": " 0",
+                          "type": "text"
+                        },
+                        {
+                          "key": "pricing[pricePerDay]",
+                          "value": " 3500",
+                          "type": "text"
+                        },
+                        {
+                          "key": "pricing[pricePerHour]",
+                          "value": " 200",
+                          "type": "text"
+                        },
+                        {
+                          "key": "pricing[depositAmount]",
+                          "value": " 5000",
+                          "type": "text"
+                        },
+                        {
+                          "key": "pricing[driverBatthaPerDay]",
+                          "value": " 400",
                           "type": "text"
                         }
                       ]
@@ -10901,70 +10935,49 @@
                       "mode": "formdata",
                       "formdata": [
                         {
-                          "key": "pricing[pricePerNight]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "c47c348e-2d26-4653-8c5e-9c45e2f254b7"
+                          "key": "isActive",
+                          "value": " true",
+                          "type": "text"
                         },
                         {
-                          "key": "pricing[maxGuestPerRoom]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "2b0d770f-9163-4f1f-aa92-c1a41b08f60d"
+                          "key": "availability[totalSeats]",
+                          "value": " 45",
+                          "type": "text"
                         },
                         {
-                          "key": "pricing[maxAdults]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "66b9611a-8b47-4c70-a1a9-58b626416a31"
+                          "key": "availability[availableSeats]",
+                          "value": " 45",
+                          "type": "text"
                         },
                         {
-                          "key": "pricing[maxChildren]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "b48bf6bf-fea4-43aa-bdd9-b71289f83c4c"
+                          "key": "availability[bookedSeats]",
+                          "value": " 0",
+                          "type": "text"
+                        },
+                        {
+                          "key": "availability[reservedSeats]",
+                          "value": " 0",
+                          "type": "text"
+                        },
+                        {
+                          "key": "availability[cancelledSeats]",
+                          "value": " 0",
+                          "type": "text"
+                        },
+                        {
+                          "key": "pricing[pricePerPerson]",
+                          "value": "0",
+                          "type": "text"
                         },
                         {
                           "key": "pricing[childPrice]",
-                          "value": "",
+                          "value": "0",
                           "type": "text",
                           "uuid": "95290856-49a7-49b0-af7a-ee353d8f90b0"
                         },
                         {
-                          "key": "pricing[extraBedAvailable]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "23b5e932-ace5-441b-9950-b43d6b3dde1b"
-                        },
-                        {
-                          "key": "pricing[extraBedPrice]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "744d2841-8012-480a-873e-554c85ea8203"
-                        },
-                        {
-                          "key": "availability[totalRooms]",
-                          "value": "",
-                          "type": "text"
-                        },
-                        {
-                          "key": "availability[availableRooms]",
-                          "value": "",
-                          "type": "text"
-                        },
-                        {
-                          "key": "availability[occupiedRooms]",
-                          "value": "",
-                          "type": "text"
-                        },
-                        {
-                          "key": "availability[reservedRooms]",
-                          "value": "",
-                          "type": "text"
-                        },
-                        {
-                          "key": "availability[cancelledRooms]",
-                          "value": "",
+                          "key": "pricing[infantPrice]",
+                          "value": " 0",
                           "type": "text"
                         }
                       ]
@@ -11041,70 +11054,28 @@
                       "mode": "formdata",
                       "formdata": [
                         {
-                          "key": "pricing[pricePerNight]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "c47c348e-2d26-4653-8c5e-9c45e2f254b7"
-                        },
-                        {
-                          "key": "pricing[maxGuestPerRoom]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "2b0d770f-9163-4f1f-aa92-c1a41b08f60d"
-                        },
-                        {
-                          "key": "pricing[maxAdults]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "66b9611a-8b47-4c70-a1a9-58b626416a31"
-                        },
-                        {
-                          "key": "pricing[maxChildren]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "b48bf6bf-fea4-43aa-bdd9-b71289f83c4c"
-                        },
-                        {
-                          "key": "pricing[childPrice]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "95290856-49a7-49b0-af7a-ee353d8f90b0"
-                        },
-                        {
-                          "key": "pricing[extraBedAvailable]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "23b5e932-ace5-441b-9950-b43d6b3dde1b"
-                        },
-                        {
-                          "key": "pricing[extraBedPrice]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "744d2841-8012-480a-873e-554c85ea8203"
-                        },
-                        {
-                          "key": "availability[totalRooms]",
-                          "value": "",
+                          "key": "isActive",
+                          "value": " true",
                           "type": "text"
                         },
                         {
-                          "key": "availability[availableRooms]",
-                          "value": "",
+                          "key": "availability[totalPasses]",
+                          "value": " 20",
                           "type": "text"
                         },
                         {
-                          "key": "availability[occupiedRooms]",
-                          "value": "",
+                          "key": "availability[availablePasses]",
+                          "value": " 20",
                           "type": "text"
                         },
                         {
-                          "key": "availability[reservedRooms]",
-                          "value": "",
+                          "key": "availability[bookedPasses]",
+                          "value": " 0",
                           "type": "text"
                         },
                         {
-                          "key": "availability[cancelledRooms]",
-                          "value": "",
+                          "key": "pricing[pricePerPerson]",
+                          "value": " 12000",
                           "type": "text"
                         }
                       ]
@@ -11181,70 +11152,33 @@
                       "mode": "formdata",
                       "formdata": [
                         {
-                          "key": "pricing[pricePerNight]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "c47c348e-2d26-4653-8c5e-9c45e2f254b7"
-                        },
-                        {
-                          "key": "pricing[maxGuestPerRoom]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "2b0d770f-9163-4f1f-aa92-c1a41b08f60d"
-                        },
-                        {
-                          "key": "pricing[maxAdults]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "66b9611a-8b47-4c70-a1a9-58b626416a31"
-                        },
-                        {
-                          "key": "pricing[maxChildren]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "b48bf6bf-fea4-43aa-bdd9-b71289f83c4c"
-                        },
-                        {
-                          "key": "pricing[childPrice]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "95290856-49a7-49b0-af7a-ee353d8f90b0"
-                        },
-                        {
-                          "key": "pricing[extraBedAvailable]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "23b5e932-ace5-441b-9950-b43d6b3dde1b"
-                        },
-                        {
-                          "key": "pricing[extraBedPrice]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "744d2841-8012-480a-873e-554c85ea8203"
-                        },
-                        {
-                          "key": "availability[totalRooms]",
-                          "value": "",
+                          "key": "isActive",
+                          "value": " true",
                           "type": "text"
                         },
                         {
-                          "key": "availability[availableRooms]",
-                          "value": "",
+                          "key": "availability[totalFlights]",
+                          "value": " 15",
                           "type": "text"
                         },
                         {
-                          "key": "availability[occupiedRooms]",
-                          "value": "",
+                          "key": "availability[availableFlights]",
+                          "value": " 15",
                           "type": "text"
                         },
                         {
-                          "key": "availability[reservedRooms]",
-                          "value": "",
+                          "key": "availability[bookedFlights]",
+                          "value": " 0",
                           "type": "text"
                         },
                         {
-                          "key": "availability[cancelledRooms]",
-                          "value": "",
+                          "key": "availability[cancelledFlights]",
+                          "value": " 0",
+                          "type": "text"
+                        },
+                        {
+                          "key": "pricing[pricePerPerson]",
+                          "value": " 3000",
                           "type": "text"
                         }
                       ]
@@ -11321,70 +11255,43 @@
                       "mode": "formdata",
                       "formdata": [
                         {
-                          "key": "pricing[pricePerNight]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "c47c348e-2d26-4653-8c5e-9c45e2f254b7"
-                        },
-                        {
-                          "key": "pricing[maxGuestPerRoom]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "2b0d770f-9163-4f1f-aa92-c1a41b08f60d"
-                        },
-                        {
-                          "key": "pricing[maxAdults]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "66b9611a-8b47-4c70-a1a9-58b626416a31"
-                        },
-                        {
-                          "key": "pricing[maxChildren]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "b48bf6bf-fea4-43aa-bdd9-b71289f83c4c"
-                        },
-                        {
-                          "key": "pricing[childPrice]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "95290856-49a7-49b0-af7a-ee353d8f90b0"
-                        },
-                        {
-                          "key": "pricing[extraBedAvailable]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "23b5e932-ace5-441b-9950-b43d6b3dde1b"
-                        },
-                        {
-                          "key": "pricing[extraBedPrice]",
-                          "value": "",
-                          "type": "text",
-                          "uuid": "744d2841-8012-480a-873e-554c85ea8203"
-                        },
-                        {
-                          "key": "availability[totalRooms]",
-                          "value": "",
+                          "key": "isActive",
+                          "value": " true",
                           "type": "text"
                         },
                         {
-                          "key": "availability[availableRooms]",
-                          "value": "",
+                          "key": "availability[totalSeats]",
+                          "value": " 4",
                           "type": "text"
                         },
                         {
-                          "key": "availability[occupiedRooms]",
-                          "value": "",
+                          "key": "availability[availableSeats]",
+                          "value": " 4",
                           "type": "text"
                         },
                         {
-                          "key": "availability[reservedRooms]",
-                          "value": "",
+                          "key": "availability[bookedSeats]",
+                          "value": " 0",
                           "type": "text"
                         },
                         {
-                          "key": "availability[cancelledRooms]",
-                          "value": "",
+                          "key": "pricing[baseFare]",
+                          "value": " 100",
+                          "type": "text"
+                        },
+                        {
+                          "key": "pricing[pricePerKm]",
+                          "value": " 15",
+                          "type": "text"
+                        },
+                        {
+                          "key": "pricing[pricePerDay]",
+                          "value": " 1500",
+                          "type": "text"
+                        },
+                        {
+                          "key": "pricing[waitingChargePerHour]",
+                          "value": " 200",
                           "type": "text"
                         }
                       ]

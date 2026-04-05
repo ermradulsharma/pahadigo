@@ -5,6 +5,19 @@ All notable changes to the PahadiGo project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.4.0] - 2026-04-04
+
+### Changed
+- **Unified Status Management**: Migrated from entity-specific status constants to a universal **`STATUS`** constant (`PENDING`, `ACTIVE`, `REJECT`, `BLOCKED`, `SUSPENDED`, `DELETED`).
+- **Service Architectural Refactor**: Implemented Class Constructors in **`VendorStatusService`** and **`VendorService`** to centralize status configurations and properties for better maintainability.
+- **Improved Authentication Policy**:
+    - **`auth.js` Middleware**: Updated to permit `BLOCKED` and `SUSPENDED` users for dashboard/support access, while strictly barring `DELETED` accounts.
+    - **`AuthService.js`**: Refactored `_handleDeactivation` to allow restricted logins while preventing account reactivation for non-self-deleted accounts.
+
+### Added
+- **Operation-Level Security**: Integrated strict status validation in **`VendorStatusService.isVendorAllowedToOperate`** to block business operations (catalog/booking management) for restricted vendors.
+- **Business Profile Authorization Check**: Added **`canManageBusinessProfile`** validation in `VendorController` to restrict profile, document, and bank updates to only `PENDING`, `ACTIVE`, or `REJECT` statuses.
+
 ## [2.3.0] - 2026-04-03
 
 ### Added
