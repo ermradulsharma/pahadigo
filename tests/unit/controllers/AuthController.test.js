@@ -30,7 +30,7 @@ describe('Industry Standard: Authentication API', () => {
         });
 
         it('[Security] should block admin OTP requests via public endpoint', async () => {
-            const req = createMockReq({ jsonBody: { email: 'admin@system.com' } });
+            const req = createMockReq({ jsonBody: { email: 'admin@system.com', termsAccepted: true } });
             jest.spyOn(AuthService, 'requestOtp').mockRejectedValue(new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD));
             
             const res = await AuthController.sendOtp(req);
@@ -38,7 +38,7 @@ describe('Industry Standard: Authentication API', () => {
         });
 
         it('[Success] should verify OTP and return identity with token', async () => {
-            const req = createMockReq({ jsonBody: { identifier: 'test@example.com', otp: '123456' } });
+            const req = createMockReq({ jsonBody: { email: 'test@example.com', otp: '123456' } });
             const mockUser = { id: userId.toString(), role: USER_ROLES.TRAVELLER, toObject: () => ({ id: userId.toString() }) };
             
             jest.spyOn(AuthService, 'verifyAndLogin').mockResolvedValue({ 

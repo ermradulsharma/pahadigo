@@ -6,6 +6,7 @@ import Category from '../../../src/core/Models/Category.js';
 import { createMockReq, cleanDatabase, generateId } from '../../helpers/testUtils.js';
 import { HTTP_STATUS, USER_ROLES } from '../../../src/core/Constants/index.js';
 import { jest } from '@jest/globals';
+import VendorStatusService from '../../../src/core/Services/VendorStatusService.js';
 import mongoose from 'mongoose';
 
 describe('Industry Standard: Vendor Operations API', () => {
@@ -33,6 +34,13 @@ describe('Industry Standard: Vendor Operations API', () => {
     });
 
     describe('Feature: Catalog Lifecycle', () => {
+        beforeEach(() => {
+            jest.spyOn(VendorStatusService, 'isVendorAllowedToOperate').mockResolvedValue({ 
+                allowed: true, 
+                vendor: { _id: vendorId.toString() } 
+            });
+        });
+
         it('[Success] should add a new categorized service item', async () => {
             const req = createMockReq({ 
                 user: { id: userId.toString() },

@@ -82,14 +82,14 @@ describe('PackageService Test Suite', () => {
 
         it('should support partially updating pricing using dot-notation', async () => {
              const initialItem = await PackageService.addServiceItem(vendorId, 'trekking', {
-                title: 'Trek One', description: 'desc', pricing: { pricePerPerson: 100, minGuest: 1 },
+                title: 'Trek One', description: 'desc', pricing: { pricePerPerson: 100, porterPricePerDay: 50 },
                 location: { address: 'test' }
             });
             const updates = { 'pricing.pricePerPerson': 200 };
             const updatedItem = await PackageService.updateServiceItem(vendorId, 'trekking', initialItem.id, updates);
 
             expect(Number(updatedItem.pricing.pricePerPerson)).toBe(200);
-            expect(updatedItem.pricing.minGuest).toBe(1); // Preserved
+            expect(Number(updatedItem.pricing.porterPricePerDay)).toBe(50); // Preserved
         });
     });
 });

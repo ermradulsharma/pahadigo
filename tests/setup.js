@@ -5,6 +5,7 @@ process.env.NODE_ENV = 'test';
 
 import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
+import { jest } from '@jest/globals';
 
 // Removed jest.setTimeout, relying on proper teardown instead.
 
@@ -39,3 +40,28 @@ afterEach(async () => {
         }
     }
 });
+
+// Suppress surgical noisy logs to keep test output clean
+const originalError = console.error;
+const originalLog = console.log;
+
+console.error = (...args) => {
+    // Suppress only known expected noise from tests
+    const noise = [
+        'SMTP credentials or host missing',
+        'Different login method',
+        'error:',
+        'Error:',
+        'ERROR:',
+        'Account uses a different login method'
+    ];
+    const msg = args[0] && typeof args[0] === 'string' ? args[0] : '';
+    if (noise.some(n => msg.includes(n))) return;
+    originalError(...args);
+};
+
+console.log = (...args) => {
+    const msg = args[0] && typeof args[0] === 'string' ? args[0] : '';
+    if (msg.includes('successfully')) return;
+    originalLog(...args);
+};

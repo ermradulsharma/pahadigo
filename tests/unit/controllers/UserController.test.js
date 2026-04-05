@@ -32,7 +32,7 @@ describe('UserController Test Suite', () => {
         it('[Success] should retrieve results within radius (nearby search)', async () => {
             const queryUrl = 'http://localhost/api/packages/search?lat=30.3&lng=78.0&radius=10&category=homestay';
             const req = createMockReq({ user: { id: travelerId.toString() }, url: queryUrl });
-            const mockPkg = { _id: generateId(), title: 'Hill Stay' };
+            const mockPkg = { _id: generateId(), title: 'Hill Stay', category: 'homestay' };
             
             jest.spyOn(PackageService, 'searchNearbyPackages').mockResolvedValue([mockPkg]);
             jest.spyOn(Category, 'find').mockReturnValue({ lean: () => ([{ slug: 'homestay', name: 'Homestay' }]) });

@@ -65,7 +65,7 @@ describe('InventoryController Test Suite', () => {
         it('should auto-detect serviceType if missing', async () => {
             const updates = { pricing: { pricePerNight: 500 } };
             const req = createMockReq({ jsonBody: updates, params: { itemId } });
-            jest.spyOn(PackageService, 'getAvailablePackageItem').mockResolvedValue({ category: 'homestay' });
+            jest.spyOn(PackageService, 'getPackageItem').mockResolvedValue({ category: 'homestay' });
             const updateSpy = jest.spyOn(PackageService, 'updateServiceItem').mockResolvedValue({ id: itemId });
 
             await InventoryController.updateItemBaseline(req, { params: req.params });

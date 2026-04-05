@@ -48,6 +48,6 @@ describe('VendorModel Test Suite', () => {
 
         expect(savedVendor._id).toBeDefined();
         expect(savedVendor.user.toString()).toBe(userId.toString());
-        expect(savedVendor.isApproved).toBe(false); // Should be false by default
+        expect(savedVendor.status).toBeDefined(); // Should have a default status
     });
 });

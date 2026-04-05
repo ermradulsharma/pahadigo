@@ -2,6 +2,7 @@ import BookingController from '../../../src/core/Http/Controllers/BookingControl
 import BookingService from '../../../src/core/Services/BookingService.js';
 import NotificationService from '../../../src/core/Services/NotificationService.js';
 import Booking from '../../../src/core/Models/Booking.js';
+import PackageService from '../../../src/core/Services/PackageService.js';
 import { createMockReq, cleanDatabase, generateId } from '../../helpers/testUtils.js';
 import { HTTP_STATUS, USER_ROLES } from '../../../src/core/Constants/index.js';
 import { jest } from '@jest/globals';
@@ -18,11 +19,18 @@ describe('BookingController Test Suite', () => {
 
     describe('Feature: Transactional Bookings', () => {
         it('[Success] should process booking with atomic inventory lock', async () => {
+            const catalogId = generateId().toString();
+            const itemId = generateId().toString();
             const req = createMockReq({ 
                 user: { id: travelerId.toString() }, 
-                jsonBody: { catalogId: 'v1', category: 'hotel', itemId: 'i1', travelDate: '2025-05-01' } 
+                jsonBody: { catalogId, category: 'hotel', itemId, travelDate: '2025-05-01' } 
             });
             
+            jest.spyOn(PackageService, 'getGranularItem').mockResolvedValue({ 
+                _id: itemId,
+                id: itemId,
+                pricing: { pricePerNight: 5000 } 
+            });
             jest.spyOn(BookingService, 'createBooking').mockResolvedValue({ _id: generateId(), status: 'confirmed' });
             
             const res = await BookingController.createBooking(req);
