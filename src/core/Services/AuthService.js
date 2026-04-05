@@ -46,6 +46,9 @@ class AuthService {
   }
 
   async _handleDeactivation(user) {
+    if (user.status === STATUS.SUSPENDED) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_SUSPENDED);
+    if (user.status === STATUS.BLOCKED) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_BLOCKED);
+
     if (!user.deletedAt && user.status !== STATUS.DELETED) return;
 
     const isSelfDeleted = user.deletedBy && user.deletedBy.toString() === user._id.toString();

@@ -69,7 +69,7 @@ const UserSchema = new mongoose.Schema({
     average: { type: Number, default: 0 },
     count: { type: Number, default: 0 }
   },
-  fcmTokens: { type: String, default: DEFAULTS.NULL },
+  fcmTokens: { type: [String], default: DEFAULTS.ARRAY },
   otp: { type: String, select: false, default: DEFAULTS.NULL },
   otpExpires: { type: Date, select: false, default: DEFAULTS.NULL },
   isVerified: { type: Boolean, default: false },

@@ -13,7 +13,7 @@ import CustomTripSchema from './PackageSchemas/CustomTripSchema.js';
 
 const VendorPackageSchema = new mongoose.Schema({
   vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
-  business: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true },
+  business: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor' },
   homestay: [HomestaySchema],
   hotel: [HotelSchema],
   camping: [CampingSchema],

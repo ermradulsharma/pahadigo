@@ -15,16 +15,19 @@ class PackageService {
     }
 
     // Helper: Find or Create Catalog for Vendor
-    async ensureCatalog(vendorId) {
-        let pkg = await Package.findOne({ vendor: vendorId });
-        if (!pkg) {
-            // Find the Vendor record to get its _id for the 'business' field
-            const vendor = await Vendor.findOne({ user: vendorId });
-            if (!vendor) throw new Error("Vendor profile not found. Please create a business profile first.");
+    async ensureCatalog(id) {
+        // Find vendor document by either User ID or its own _id
+        const vendor = await Vendor.findOne({ $or: [{ user: id }, { _id: id }] });
+        if (!vendor) throw new Error("Vendor profile not found. Please create a business profile first.");
 
+        const userId = vendor.user;
+        const businessId = vendor._id;
+
+        let pkg = await Package.findOne({ vendor: userId });
+        if (!pkg) {
             const initialData = { 
-                vendor: vendorId,
-                business: vendor._id // Link to the Vendor document
+                vendor: userId,
+                business: businessId // Link to the Vendor document
             };
             SCHEMA_KEYS.forEach(key => {
                 initialData[key] = [];
@@ -159,7 +162,7 @@ class PackageService {
         if (!allowedCategories.includes(category)) {
             throw new Error(`Vendor not authorized to create items in category: ${category}`);
         }
-        const pkg = await this.ensureCatalog(vendorId);
+        const pkg = await this.ensureCatalog(vendor.user);
         if (!pkg[category]) {
             throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
         }
@@ -189,7 +192,7 @@ class PackageService {
             throw new Error(`Vendor not authorized to update items in category: ${category}`);
         }
 
-        const pkg = await this.ensureCatalog(vendorId);
+        const pkg = await this.ensureCatalog(vendor.user);
 
         if (!pkg[category]) {
             throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
@@ -207,12 +210,10 @@ class PackageService {
 
     // Remove Item from Service Array
     async removeServiceItem(vendorId, category, itemId) {
-        const allowedCategories = await this._getAllowedCategories(vendorId);
-        if (!allowedCategories.includes(category)) {
-            throw new Error(`Vendor not authorized to remove items in category: ${category}`);
-        }
+        const vendor = await Vendor.findById(vendorId);
+        if (!vendor) throw new Error("Vendor not found");
 
-        const pkg = await this.ensureCatalog(vendorId);
+        const pkg = await this.ensureCatalog(vendor.user);
 
         if (!pkg[category]) {
             throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
@@ -492,7 +493,9 @@ class PackageService {
 
     // Toggle Category Status (Bulk)
     async toggleCategoryStatus(vendorId, category, isActive) {
-        const pkg = await this.ensureCatalog(vendorId);
+        const vendor = await Vendor.findById(vendorId);
+        if (!vendor) throw new Error("Vendor not found");
+        const pkg = await this.ensureCatalog(vendor.user);
         if (!pkg[category]) throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
 
         pkg[category].forEach(item => {
