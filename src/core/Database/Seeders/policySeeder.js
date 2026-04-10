@@ -55,3 +55,5 @@ export const seedPolicies = async () => {
         throw error;
     }
 };
+
+export default seedPolicies;

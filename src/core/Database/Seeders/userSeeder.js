@@ -88,3 +88,5 @@ export const seedUsers = async () => {
         throw error;
     }
 };
+
+export default seedUsers;

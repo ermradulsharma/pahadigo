@@ -60,3 +60,5 @@ export const seedSettings = async () => {
         throw error;
     }
 };
+
+export default seedSettings;

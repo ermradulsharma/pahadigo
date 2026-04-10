@@ -50,3 +50,5 @@ export const rateLimit = ({ limit = 5, windowMs = 60000, message = 'Too many req
         return null;
     };
 };
+
+export default rateLimit;

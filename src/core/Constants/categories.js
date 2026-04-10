@@ -43,3 +43,5 @@ export const CATEGORY_TITLES = {
     'skiing': 'Skiing',
     'paragliding': 'Paragliding'
 };
+
+export default { CATEGORY_MAP, SCHEMA_KEYS, CATEGORY_TITLES };

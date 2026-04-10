@@ -3,7 +3,7 @@ import Package from '@/models/Package.js';
 import Vendor from '@/models/Vendor.js';
 import Category from '@/models/Category.js';
 import { CATEGORY_MAP, SCHEMA_KEYS } from '@/constants/categories.js';
-import VendorStatusService from '@/services/VendorStatusService.js';
+import VendorStatusService from '@/services/Vendor/VendorStatusService.js';
 
 /**
  * PackageService (Traveller Role)

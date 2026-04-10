@@ -20,3 +20,5 @@ export const loadEnv = () => {
     } catch (e) {
     }
 };
+
+export default { loadEnv };

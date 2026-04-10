@@ -50,3 +50,5 @@ export const paginateArray = (items, page, limit) => {
         }
     };
 };
+
+export default { buildPaginationQuery, paginateArray };

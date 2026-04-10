@@ -1,7 +1,7 @@
-import RazorpayService from '@/services/RazorpayService.js';
-import BookingService from '@/services/BookingService.js';
+import RazorpayService from '@/services/General/RazorpayService.js';
+import BookingService from '@/services/General/BookingService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * PaymentController (Traveller Role) - Handles user-initiated payment flows.

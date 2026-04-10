@@ -1,7 +1,7 @@
 import DashboardService from '../../../Services/Admin/DashboardService.js';
 import AuditService from '../../../Services/Admin/AuditService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * DashboardController (Admin Role)

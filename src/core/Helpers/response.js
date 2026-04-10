@@ -21,3 +21,5 @@ function errorResponse(status = HTTP_STATUS.BAD_REQUEST, message = "Error", data
 }
 
 export { successResponse, errorResponse };
+
+export default { successResponse, errorResponse };

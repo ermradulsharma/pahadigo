@@ -23,3 +23,5 @@ export const getRequestMetadata = (req) => {
 
     return { ipAddress, userAgent };
 };
+
+export default { getRequestMetadata };

@@ -57,3 +57,5 @@ export const redactSensitiveData = (details) => {
     redact(sanitizedDetails);
     return sanitizedDetails;
 };
+
+export default { sanitizeNoSQL, sanitizeHTML, redactSensitiveData };

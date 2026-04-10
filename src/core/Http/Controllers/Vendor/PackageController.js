@@ -2,7 +2,7 @@ import BusinessService from '@/services/Vendor/BusinessService.js';
 import PackageService from '@/services/Vendor/PackageService.js';
 import { CATEGORY_MAP } from '@/constants/categories.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 import { uploadToCloudinary } from '@/helpers/cloudinary.js';
 
 /**
@@ -161,7 +161,7 @@ class PackageController extends Controller {
   }
 
   // PATCH /vendor/package/update-item (Modify service item details)
-  async updateItem(req, { params } = {}) {
+  async updatePackageItem(req, { params } = {}) {
     try {
       const body = req.payload;
       const vendor = await BusinessService.findByUserId(req.user.id);

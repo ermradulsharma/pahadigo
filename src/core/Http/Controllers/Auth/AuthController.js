@@ -1,5 +1,5 @@
 import { AdminAuthService, UserAuthService, BaseAuthService } from '@/services/Auth/index.js';
-import OTPService from '@/services/OTPService.js';
+import OTPService from '@/services/Auth/User/OTPService.js';
 import { parseBody } from '@/helpers/parseBody.js';
 import { parseNestedFormData } from '@/helpers/parseNestedFormData.js';
 import { uploadToCloudinary } from '@/helpers/cloudinary.js';
@@ -8,7 +8,7 @@ import User from '@/models/User.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, USER_ROLES } from '@/constants/index.js';
 import { transformAuthResponse } from '@/helpers/index.js';
 import AuthEvents from '@/core/Events/AuthEvents.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * AuthController - Handles all authentication related logic.
@@ -225,7 +225,7 @@ class AuthController extends Controller {
     }
   }
 
-  async updatePassword(req) {
+  async changePassword(req) {
     try {
       if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
       const body = await parseBody(req);

@@ -23,3 +23,5 @@ export const syncLocation = (locationObj) => {
 
     return locationObj;
 };
+
+export default { syncLocation };

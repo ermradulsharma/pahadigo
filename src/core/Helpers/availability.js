@@ -46,3 +46,5 @@ export const calculateAvailability = (availObj) => {
     
     return availObj;
 };
+
+export default { calculateAvailability };

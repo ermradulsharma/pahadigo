@@ -28,3 +28,5 @@ export const renderTemplate = async (templateName, data = {}) => {
         throw new Error("Failed to render email template.");
     }
 };
+
+export default { renderTemplate };

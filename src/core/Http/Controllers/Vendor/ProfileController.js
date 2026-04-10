@@ -4,7 +4,7 @@ import { BaseAuthService } from '@/services/Auth/index.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, STATUS } from '@/constants/index.js';
 import { uploadToCloudinary } from '@/helpers/cloudinary.js';
 import { transformAuthResponse } from '@/helpers/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * ProfileController (Vendor Role) - Specialized management of

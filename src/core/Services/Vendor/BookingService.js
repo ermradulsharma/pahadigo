@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import Booking from '@/models/Booking.js';
 import Package from '@/models/Package.js';
-import NotificationService from '@/services/NotificationService.js';
+import NotificationService from '@/services/General/NotificationService.js';
 import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 class BookingService {

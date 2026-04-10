@@ -22,3 +22,5 @@ export const wrap = (controller, methodName) => {
     }
   };
 };
+
+export default { wrap };

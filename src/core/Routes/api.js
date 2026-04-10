@@ -7,7 +7,7 @@ import PackageController from '@/controllers/General/PackageController.js';
 import CategoryController from '@/controllers/General/CategoryController.js';
 import LocationController from '@/controllers/General/LocationController.js';
 import PolicyController from '@/controllers/General/PolicyController.js';
-import PaymentController from '@/controllers/PaymentController.js';
+import PaymentController from '@/controllers/General/PaymentController.js';
 import InquiryController from '@/controllers/General/InquiryController.js';
 
 import Router from './Router.js';

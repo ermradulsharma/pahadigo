@@ -1,6 +1,6 @@
 import TravellerService from '../../../Services/Admin/TravellerService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * TravellerController (Admin Role)

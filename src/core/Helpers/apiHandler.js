@@ -1,4 +1,4 @@
-import AdminService from '@/services/AdminService.js';
+import AuditService from '@/services/Admin/AuditService.js';
 import { redactSensitiveData, sanitizeNoSQL } from '@/helpers/security.js';
 import { successResponse, errorResponse } from '@/helpers/response.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
@@ -28,7 +28,7 @@ export function apiHandler(handler) {
                         if (req.method.toUpperCase() === 'POST') logicalAction = 'CREATE';
                         if (req.method.toUpperCase() === 'DELETE') logicalAction = 'DELETE';
 
-                        await AdminService.logAction(req.user.id, logicalAction, extractedTarget.toUpperCase(), params?.params?.id || 'GLOBAL', {
+                        await AuditService.logAction(req.user.id, logicalAction, extractedTarget.toUpperCase(), params?.params?.id || 'GLOBAL', {
                             route: urlObj.pathname,
                             status: response?.status || 'OK',
                             payload: redactSensitiveData(req.payload)
@@ -57,3 +57,5 @@ export function apiHandler(handler) {
         }
     };
 }
+
+export default apiHandler;

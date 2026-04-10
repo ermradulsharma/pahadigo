@@ -18,6 +18,8 @@ module.exports = {
         '^@/routes/(.*)$': '<rootDir>/src/core/Routes/$1',
         '^@/config/(.*)$': '<rootDir>/src/core/Config/$1',
         '^@/seeders/(.*)$': '<rootDir>/src/core/Database/Seeders/$1',
+        '^@/database/Seeders/(.*)$': '<rootDir>/src/core/Database/Seeders/$1',
+        '^@/events/(.*)$': '<rootDir>/src/core/Events/$1',
         '^@/(.*)$': '<rootDir>/src/$1',
     },
 };

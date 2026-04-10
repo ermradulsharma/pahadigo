@@ -1,7 +1,7 @@
 import DocumentService from '@/services/Vendor/DocumentService.js';
 import BusinessService from '@/services/Vendor/BusinessService.js';
 import { HTTP_STATUS } from '@/constants/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * BusinessDocumentController (Vendor Role) - Specialized management of 

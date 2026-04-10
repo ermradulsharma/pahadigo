@@ -26,3 +26,5 @@ const verifyToken = async (token) => {
 };
 
 export { generateToken, verifyToken };
+
+export default { generateToken, verifyToken };

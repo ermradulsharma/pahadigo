@@ -164,3 +164,5 @@ export const seedCategoryDocuments = async () => {
     }
 
 };
+
+export default seedCategoryDocuments;

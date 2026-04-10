@@ -2,9 +2,9 @@ import mongoose from 'mongoose';
 import Booking from '@/models/Booking.js';
 import Package from '@/models/Package.js';
 import Dispute from '@/models/Dispute.js';
-import AdminService from '@/services/AdminService.js';
-import NotificationService from '@/services/NotificationService.js';
-import InventoryService from '@/services/InventoryService.js';
+
+import NotificationService from '@/services/General/NotificationService.js';
+import InventoryService from './InventoryService.js';
 import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 /**

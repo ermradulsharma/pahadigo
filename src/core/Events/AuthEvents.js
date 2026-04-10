@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import NotificationService from '../Services/NotificationService.js';
+import NotificationService from '@/services/General/NotificationService.js';
 
 const AuthEvents = new EventEmitter();
 

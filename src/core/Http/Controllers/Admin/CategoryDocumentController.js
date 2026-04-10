@@ -1,6 +1,6 @@
 import categoryDocumentService from '../../../Services/Admin/CategoryDocumentService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * CategoryDocumentController (Admin Role) - Handles document hierarchy and taxonomy for vendor verification.

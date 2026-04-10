@@ -15,3 +15,5 @@ export const mapToGeoJSON = (obj, targetProp = 'coordinates') => {
     };
   }
 };
+
+export default { mapToGeoJSON };

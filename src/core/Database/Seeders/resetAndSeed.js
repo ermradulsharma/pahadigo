@@ -28,4 +28,8 @@ const resetAndSeed = async () => {
     }
 };
 
-resetAndSeed();
+if (process.env.NODE_ENV !== 'test') {
+    resetAndSeed();
+}
+
+export default resetAndSeed;

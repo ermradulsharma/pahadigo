@@ -1,7 +1,7 @@
 import BusinessService from '@/services/Vendor/BusinessService.js';
 import BookingService from '@/services/Vendor/BookingService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * BookingController (Vendor Role) - Comprehensive management of Business Timeline,

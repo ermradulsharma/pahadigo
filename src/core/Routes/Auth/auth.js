@@ -1,5 +1,5 @@
 import AuthController from '@/controllers/Auth/AuthController.js';
-import SOSController from '@/controllers/SOSController.js';
+import SOSController from '@/controllers/General/SOSController.js';
 import Router from '../Router.js';
 import { wrap } from '../helpers.js';
 

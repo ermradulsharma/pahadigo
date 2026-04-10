@@ -90,3 +90,5 @@ export const validate = (schema, data) => {
         return { success: false, error: RESPONSE_MESSAGES.ERROR.VALIDATION };
     }
 };
+
+export default { schemas, validate };

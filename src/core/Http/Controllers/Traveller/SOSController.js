@@ -1,6 +1,6 @@
 import SOSService from '@/services/Traveller/SOSService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * SOSController (Traveller Role)

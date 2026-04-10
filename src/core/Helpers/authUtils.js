@@ -28,3 +28,5 @@ export const removeToken = () => {
     Cookies.remove('token');
     Cookies.remove('role');
 };
+
+export default { getToken, getRole, setToken, removeToken };

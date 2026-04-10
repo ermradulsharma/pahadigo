@@ -1,4 +1,4 @@
-import Setting from '@/models/Setting';
+import Setting from '@/models/Setting.js';
 import { APP_DETAILS, APP_SECRETS } from '@/constants/index.js';
 import connectDB from '@/config/db';
 
@@ -190,4 +190,9 @@ export const getAppConfig = async (forceReal = false) => {
 export const clearAppConfigCache = () => {
     cachedSettings = null;
     lastFetchTime = 0;
+};
+
+export default {
+    getAppConfig,
+    clearAppConfigCache
 };

@@ -69,3 +69,5 @@ export function determineDayStatus(totalUnits, bookedUnits, manualStatus, itemIs
     if (bookedUnits >= totalUnits) return 'sold_out';
     return itemIsActive ? 'available' : 'closed';
 }
+
+export default { formatInventoryItem, normalizeAvailability, formatDateKey, calculateEffectivePrice, determineDayStatus };

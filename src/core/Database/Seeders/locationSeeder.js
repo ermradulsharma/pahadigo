@@ -73,3 +73,5 @@ export const seedLocations = async () => {
         return false;
     }
 };
+
+export default seedLocations;

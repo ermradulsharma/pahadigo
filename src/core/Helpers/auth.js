@@ -24,3 +24,5 @@ export const transformAuthResponse = (result) => {
     businessProfile: result.businessProfile || user.businessProfile
   };
 };
+
+export default { transformAuthResponse };

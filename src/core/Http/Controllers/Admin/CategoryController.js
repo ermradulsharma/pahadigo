@@ -1,7 +1,7 @@
 import CategoryService from '../../../Services/Admin/CategoryService.js';
 import { seedCategories } from '@/seeders/categorySeeder.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * CategoryController (Admin Role) - Handles administrative management of activity categories.

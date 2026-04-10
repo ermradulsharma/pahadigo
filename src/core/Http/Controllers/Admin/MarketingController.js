@@ -1,6 +1,6 @@
 import MarketingService from '../../../Services/Admin/MarketingService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * MarketingController (Admin Role)
@@ -61,11 +61,22 @@ class MarketingController extends Controller {
   }
 
   // POST /admin/marketing/coupons
-  async addCoupon(req) {
+  async createCoupon(req) {
     try {
       const body = req.validData || req.jsonBody || await req.json();
       const coupon = await MarketingService.createCoupon(body, req);
       return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.CREATED, { coupon });
+    } catch (error) {
+      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+    }
+  }
+
+  // PUT /admin/marketing/coupons/:id
+  async updateCoupon(req, { params }) {
+    try {
+      const body = req.validData || req.jsonBody || await req.json();
+      const coupon = await MarketingService.updateCoupon(params.id, body, req);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, { coupon });
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }

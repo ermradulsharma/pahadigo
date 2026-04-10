@@ -1,5 +1,5 @@
-import AdminAuthService from './AdminAuthService.js';
-import UserAuthService from './UserAuthService.js';
+import AdminAuthService from './Admin/AuthService.js';
+import UserAuthService from './User/AuthService.js';
 import BaseAuthService from './BaseAuthService.js';
 
 /**

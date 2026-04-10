@@ -39,3 +39,5 @@ async function parseBody(req) {
 }
 
 export { parseBody };
+
+export default parseBody;

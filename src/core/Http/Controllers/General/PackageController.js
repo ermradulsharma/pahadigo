@@ -1,12 +1,12 @@
 import User from '@/models/User.js';
-import PackageService from '@/services/PackageService.js';
+import PackageService from '@/services/Traveller/PackageService.js';
 import SearchLog from '@/models/SearchLog.js';
 import Category from '@/models/Category.js';
 import Wishlist from '@/models/Wishlist.js';
 import { CATEGORY_MAP } from '@/constants/categories.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 import { paginateArray } from '@/helpers/queryUtils.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * PackageController (General/Public Role) - Handles public browsing and search of packages.

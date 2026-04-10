@@ -1,6 +1,6 @@
 import ProfileService from '@/services/Traveller/ProfileService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * ProfileController (Traveller Role)
@@ -30,7 +30,7 @@ class ProfileController extends Controller {
     }
 
     // POST /traveller/profile/avatar
-    async updateAvatar(req) {
+    async updateProfileImage(req) {
         try {
             const formDataBody = req.formDataBody;
             if (!formDataBody || !formDataBody.get('avatar')) {

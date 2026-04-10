@@ -2,7 +2,7 @@ import Booking from '@/models/Booking.js';
 import PackageService from '@/services/Traveller/PackageService.js';
 import BookingService from '@/services/Traveller/BookingService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * BookingController (Traveller Role) - Specialized management of customer-facing 

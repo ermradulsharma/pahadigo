@@ -1,7 +1,7 @@
 import BusinessService from '@/services/Vendor/BusinessService.js';
 import BankService from '@/services/Vendor/BankService.js';
 import { HTTP_STATUS } from '@/constants/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * BankController (Vendor Role) - Specialized management of

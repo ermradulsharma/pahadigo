@@ -9,7 +9,7 @@ import PackageController from '@/controllers/Vendor/PackageController.js';
 import BookingController from '@/controllers/Vendor/BookingController.js';
 import InventoryController from '@/controllers/Vendor/InventoryController.js';
 import AuthController from '@/controllers/Auth/AuthController.js';
-import SOSController from '@/controllers/SOSController.js';
+import SOSController from '@/controllers/Traveller/SOSController.js';
 
 import Router from '../Router.js';
 import { USER_ROLES } from '@/constants/index.js';
@@ -69,19 +69,6 @@ const vendorRoutes = [
                 { method: 'POST', path: '/documents/upload/:slug', handler: wrap(() => CategoryController, 'uploadDocuments') },
                 { method: 'GET', path: '/documents/uploaded', handler: wrap(() => CategoryController, 'getUploadedDocuments') },
             ]),
-        ]),
-
-        // Primary Taxonomy Access (Line 185-204)
-        ...Router.group({ prefix: '/category' }, [
-            { method: 'GET', path: '/', handler: wrap(() => CategoryController, 'getCategories') },
-            { method: 'POST', path: '/', handler: wrap(() => CategoryController, 'assignCategory') },
-            { method: 'DELETE', path: '/:slug', handler: wrap(() => CategoryController, 'removeCategory') },
-            { method: 'GET', path: '/eligible', handler: wrap(() => CategoryController, 'getEligibleCategories') },
-            { method: ['GET', 'POST'], path: '/documents', handler: wrap(() => CategoryController, 'getCategoryDocuments') },
-            { method: 'GET', path: '/documents/:slug', handler: wrap(() => CategoryController, 'getCategoryDocuments') },
-            { method: 'POST', path: '/documents/upload', handler: wrap(() => CategoryController, 'uploadDocuments') },
-            { method: 'POST', path: '/documents/upload/:slug', handler: wrap(() => CategoryController, 'uploadDocuments') },
-            { method: 'GET', path: '/documents/uploaded', handler: wrap(() => CategoryController, 'getUploadedDocuments') },
         ]),
 
         // Financial Hierarchy -> BankController (Matches Line 172-177)

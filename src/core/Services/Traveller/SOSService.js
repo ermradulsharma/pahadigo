@@ -1,6 +1,6 @@
 import User from '@/models/User.js';
 import EmergencyAlert from '@/models/EmergencyAlert.js';
-import NotificationService from '@/services/NotificationService.js';
+import NotificationService from '@/services/General/NotificationService.js';
 
 /**
  * SOSService (Traveller Role)

@@ -1,7 +1,7 @@
 import ClosureService from '@/services/Vendor/ClosureService.js';
 import BusinessService from '@/services/Vendor/BusinessService.js';
 import { HTTP_STATUS } from '@/constants/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * BusinessClosuresController (Vendor Role) - Specialized management of 

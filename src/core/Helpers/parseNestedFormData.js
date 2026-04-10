@@ -42,3 +42,5 @@ export function parseNestedFormData(formData) {
 
     return result;
 }
+
+export default parseNestedFormData;

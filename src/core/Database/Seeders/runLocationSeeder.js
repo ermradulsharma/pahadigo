@@ -43,4 +43,8 @@ const run = async () => {
     process.exit(0);
 };
 
-run();
+if (process.env.NODE_ENV !== 'test') {
+    run();
+}
+
+export default run;

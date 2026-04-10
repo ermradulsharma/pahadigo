@@ -1,7 +1,7 @@
 import LocationService from '../../../Services/Admin/LocationService.js';
 import { parseBody } from '@/helpers/parseBody.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * LocationController (Admin Role)

@@ -1,6 +1,6 @@
-import AdminService from '@/services/AdminService.js';
+import PolicyService from '@/services/Admin/PolicyService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * InquiryController (General/Public Role) - Handles public submission of inquiries.
@@ -13,7 +13,7 @@ class InquiryController extends Controller {
       const body = req.validData || req.jsonBody || await req.json();
       if (!body.name || !body.email || !body.message) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
       
-      const inquiry = await AdminService.submitInquiry(body);
+      const inquiry = await PolicyService.submitInquiry(body);
       return this.success(HTTP_STATUS.CREATED, "Inquiry submitted successfully", inquiry);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);

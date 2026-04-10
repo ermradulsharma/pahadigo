@@ -36,3 +36,5 @@ export const seedCategories = async () => {
     }
     return results;
 };
+
+export default seedCategories;

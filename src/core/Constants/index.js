@@ -222,7 +222,8 @@ export const RESPONSE_MESSAGES = {
     INVALID_DATE: 'Invalid date format',
     NAME_MIN_LENGTH: 'Name must be at least 2 characters',
     INVALID_PHONE: 'Invalid phone number format',
-    TERMS_REQUIRED: 'Terms and Conditions must be accepted'
+    TERMS_REQUIRED: 'Terms and Conditions must be accepted',
+    ID_REQUIRED: 'ID is required'
   },
   ERROR: {
     GENERIC: 'Something went wrong',

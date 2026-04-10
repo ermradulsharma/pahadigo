@@ -1,6 +1,6 @@
 import CategoryService from '@/services/Vendor/CategoryService.js';
 import { HTTP_STATUS } from '@/constants/index.js';
-import Controller from '../Controller.js';
+import Controller from '@/controllers/Controller.js';
 
 /**
  * CategoryController (Vendor Role) - Specialized management of
@@ -41,7 +41,7 @@ class CategoryController extends Controller {
   }
 
   // GET /vendor/category/eligible (Retrieve unassigned categories for the vendor)
-  async eligible(req) {
+  async getEligibleCategories(req) {
     try {
       const categories = await CategoryService.getEligibleCategories(req.user.id);
       return this.success(HTTP_STATUS.OK, "Eligible categories fetched", categories);
@@ -51,7 +51,7 @@ class CategoryController extends Controller {
   }
 
   // GET /vendor/category/documents (Retrieve document requirements)
-  async showDocuments(req, { params } = {}) {
+  async getCategoryDocuments(req, { params } = {}) {
     try {
       const slug = params.slug || (req.payload && (req.payload.slug || req.payload.category_slug));
       if (!slug) throw new Error("Category slug is required");
@@ -76,7 +76,7 @@ class CategoryController extends Controller {
   }
 
   // GET /vendor/category/documents/uploaded (Retrieve all submitted compliance files for the vendor)
-  async uploaded(req) {
+  async getUploadedDocuments(req) {
     try {
       const docs = await CategoryService.getUploadedDocuments(req.user.id);
       return this.success(HTTP_STATUS.OK, "Vendor's profile-wide uploaded documents fetched", docs);

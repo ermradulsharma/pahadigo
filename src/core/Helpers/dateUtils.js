@@ -21,3 +21,5 @@ export const getStartDateByPeriod = (period = 'monthly') => {
 
     return startDate;
 };
+
+export default { getStartDateByPeriod };
