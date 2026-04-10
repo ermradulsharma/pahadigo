@@ -1,5 +1,5 @@
 import authMiddleware from '@/middleware/auth.js';
-import { createMockReq } from '../../helpers/testUtils.js';
+import { createMockReq } from '../../Helpers/testUtils.js';
 import { HTTP_STATUS } from '@/constants/index.js';
 import { jest } from '@jest/globals';
 
