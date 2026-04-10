@@ -31,12 +31,19 @@ class Router {
             const newMiddleware = [...middleware, ...(route.middleware || [])];
             const newRoles = [...roles, ...(route.roles || [])];
 
-            return {
+            const finalRoute = {
                 ...route,
                 path: newPath,
                 middleware: newMiddleware.length > 0 ? [...new Set(newMiddleware)] : undefined,
                 roles: newRoles.length > 0 ? [...new Set(newRoles)] : undefined
             };
+
+            // Handle multiple methods (match/any pattern expansion)
+            if (Array.isArray(finalRoute.method)) {
+                return finalRoute.method.map(m => ({ ...finalRoute, method: m }));
+            }
+
+            return finalRoute;
         }).flat(Infinity);
     }
 }

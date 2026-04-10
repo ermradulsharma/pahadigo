@@ -44,6 +44,7 @@ export default function VendorDetailsPage({ params }) {
         }
         if (pkgRes.ok) {
           const pkgData = await pkgRes.json();
+          console.log(pkgData.data);
           if (pkgData.success) {
             setPackages(pkgData.data.packages || []);
           }

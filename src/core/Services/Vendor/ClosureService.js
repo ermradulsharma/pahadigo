@@ -1,0 +1,49 @@
+import Vendor from '@/models/Vendor.js';
+import VendorClosure from '@/models/VendorClosure.js';
+
+class ClosureService {
+    async addClosurePeriod(userId, closureData) {
+        const vendor = await Vendor.findOne({ user: userId, deletedAt: null });
+        if (!vendor) throw new Error("Vendor not found");
+
+        const closure = await VendorClosure.create({
+            vendor: vendor._id,
+            user: vendor.user,
+            startDate: closureData.startDate,
+            endDate: closureData.endDate,
+            reason: closureData.reason || 'Vacation',
+            isActive: true
+        });
+
+        return closure;
+    }
+
+    async getClosurePeriods(userId) {
+        return await VendorClosure.find({ user: userId, isActive: true }).sort({ startDate: 1 });
+    }
+
+    async updateClosurePeriod(userId, closureId, updateData) {
+        const closure = await VendorClosure.findOne({ _id: closureId, user: userId });
+        if (!closure) throw new Error("Closure period not found");
+
+        if (updateData.startDate) closure.startDate = updateData.startDate;
+        if (updateData.endDate) closure.endDate = updateData.endDate;
+        if (updateData.reason) closure.reason = updateData.reason;
+
+        return await closure.save();
+    }
+
+    async deleteClosurePeriod(closureId) {
+        return await VendorClosure.findOneAndUpdate(
+            { _id: closureId },
+            { isActive: false },
+            { new: true }
+        );
+    }
+
+    // --- INDUSTRY STANDARD ALIASES ---
+    async createClosurePeriod(...args) { return this.addClosurePeriod(...args); }
+    async removeClosurePeriod(...args) { return this.deleteClosurePeriod(...args); }
+}
+
+export default new ClosureService();

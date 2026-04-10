@@ -1,7 +1,7 @@
 import Review from '@/models/Review.js';
 import Booking from '@/models/Booking.js';
 import Package from '@/models/Package.js';
-import VendorService from '@/services/VendorService.js';
+import BusinessService from '@/services/Vendor/BusinessService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 import { successResponse, errorResponse } from '@/helpers/response.js';
 
@@ -43,7 +43,7 @@ class ReviewController {
             });
 
             if (vendorId) {
-                await VendorService.evaluateVendorTrustBadge(vendorId);
+                await BusinessService.evaluateVendorTrustBadge(vendorId);
             }
 
             return successResponse(HTTP_STATUS.OK, "Review submitted successfully", { review });

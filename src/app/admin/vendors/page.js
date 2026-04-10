@@ -125,6 +125,7 @@ export default function VendorsPage() {
     let mounted = true;
     const load = async () => {
       const data = await getVendors();
+      console.log(data);
       if (mounted) {
         setVendors(data);
         setLoading(false);
@@ -147,19 +148,19 @@ export default function VendorsPage() {
       className: 'w-1/4',
       render: (v) => (
         <div className="flex flex-col items-start gap-1">
-          <div className="font-bold text-slate-200 group-hover:text-indigo-300 transition-colors flex items-center gap-2">{v.user?.name || v.ownerName || 'Unknown Entity'}</div>
+          <div className="font-bold text-slate-200 group-hover:text-indigo-300 transition-colors flex items-center gap-2">{v.ownerName || v.businessName || 'Unknown Entity'}</div>
         </div>
       )
     },
     {
       header: 'Comm Link',
       tdClassName: 'text-sm text-slate-400 font-mono text-[13px]',
-      render: (v) => v.user?.email || 'OFFLINE'
+      render: (v) => v.email || v.businessEmail || 'OFFLINE'
     },
     {
       header: 'Telecom',
       tdClassName: 'text-sm text-slate-400 font-mono text-[13px]',
-      render: (v) => v.user?.phone || 'UNAVAILABLE'
+      render: (v) => v.phone || v.businessNumber || 'UNAVAILABLE'
     },
     {
       header: 'Clearance',
@@ -234,18 +235,15 @@ export default function VendorsPage() {
           </div>
         )}
         renderExpandableRow={(v) => (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1">
             <div className="space-y-2">
               <h4 className="text-xs font-mono text-indigo-400 uppercase tracking-widest border-b border-indigo-500/20 pb-2 mb-3">System Identity</h4>
               <p className="font-mono text-[11px] text-slate-400"><span className="text-slate-500 inline-block w-24">UUID:</span> {v._id}</p>
-              <p className="font-mono text-[11px] text-slate-400"><span className="text-slate-500 inline-block w-24">Link ID:</span> {v.user?._id || 'UNLINKED'}</p>
+              <p className="font-mono text-[11px] text-slate-400"><span className="text-slate-500 inline-block w-24">Business Name:</span> {v.businessName}</p>
+              <p className="font-mono text-[11px] text-slate-400"><span className="text-slate-500 inline-block w-24">Owner Name:</span> {v.ownerName}</p>
+              <p className="font-mono text-[11px] text-slate-400"><span className="text-slate-500 inline-block w-24">Registration:</span> {v.businessRegistration}</p>
+              <p className="font-mono text-[11px] text-slate-400"><span className="text-slate-500 inline-block w-24">GSTTIN:</span> {v.gstNumber}</p>
               <p className="font-mono text-[11px] text-slate-400"><span className="text-slate-500 inline-block w-24">Created:</span> {new Date(v.createdAt).toUTCString()}</p>
-            </div>
-            <div className="space-y-2">
-              <h4 className="text-xs font-mono text-emerald-400 uppercase tracking-widest border-b border-emerald-500/20 pb-2 mb-3">Raw Vector Dump</h4>
-              <pre className="bg-black/50 p-3 rounded-lg border border-white/5 text-[10px] overflow-x-auto text-emerald-500/80 custom-scrollbar max-h-32">
-                {JSON.stringify(v, null, 2)}
-              </pre>
             </div>
           </div>
         )}

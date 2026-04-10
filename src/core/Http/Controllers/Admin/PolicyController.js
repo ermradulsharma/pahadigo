@@ -1,0 +1,49 @@
+import PolicyService from '../../../Services/Admin/PolicyService.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
+import Controller from '../Controller.js';
+
+/**
+ * PolicyController (Admin Role)
+ * Administration of legal content, terms, and system-wide policies.
+ */
+class PolicyController extends Controller {
+
+  // GET /admin/policies
+  async getPolicies(req) {
+    try {
+      const url = new URL(req.url, 'http://localhost');
+      const target = url.searchParams.get('target');
+      const policies = await PolicyService.getPolicies(target);
+      return this.success(HTTP_STATUS.OK, "Policies retrieved", { policies });
+    } catch (error) {
+      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+    }
+  }
+
+  // POST /admin/policies
+  async savePolicy(req) {
+    try {
+      const body = req.validData || req.jsonBody || await req.json();
+      const { target, type, content } = body;
+      if (!target || !type || !content) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
+
+      const policy = await PolicyService.updatePolicy(target, type, content, req.user.id);
+      return this.success(HTTP_STATUS.OK, "Policy updated successfully", { policy });
+    } catch (error) {
+      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+    }
+  }
+
+  // POST /admin/policies/seed
+  async seed(req) {
+    try {
+      await PolicyService.seedPolicies();
+      return this.success(HTTP_STATUS.OK, "Initial policies seeded successfully");
+    } catch (error) {
+      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+    }
+  }
+}
+
+const policyController = new PolicyController();
+export default policyController;

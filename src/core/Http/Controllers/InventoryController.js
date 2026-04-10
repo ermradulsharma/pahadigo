@@ -1,6 +1,6 @@
 import InventoryService from '@/services/InventoryService.js';
 import PackageService from '@/services/PackageService.js';
-import VendorService from '@/services/VendorService.js';
+import BusinessService from '@/services/Vendor/BusinessService.js';
 import { parseNestedFormData } from '@/helpers/parseNestedFormData.js';
 import { successResponse, errorResponse } from '@/helpers/response.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
@@ -28,7 +28,7 @@ class InventoryController {
     async getItemInventory(req, { params }) {
         try {
             const user = req.user;
-            const vendor = await VendorService.findByUserId(user.id);
+            const vendor = await BusinessService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             const { itemId } = (await params) || {};
@@ -62,7 +62,7 @@ class InventoryController {
     async getServiceInventory(req, { params }) {
         try {
             const user = req.user;
-            const vendor = await VendorService.findByUserId(user.id);
+            const vendor = await BusinessService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             const p = (await params) || {};
@@ -89,7 +89,7 @@ class InventoryController {
     async updateInventory(req, { params }) {
         try {
             const user = req.user;
-            const vendor = await VendorService.findByUserId(user.id);
+            const vendor = await BusinessService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             const { itemId } = (await params) || {};

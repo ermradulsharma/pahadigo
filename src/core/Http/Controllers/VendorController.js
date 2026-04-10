@@ -1,4 +1,4 @@
-import VendorService from '@/services/VendorService.js';
+import BusinessService from '@/services/Vendor/BusinessService.js';
 import PackageService from '@/services/PackageService.js';
 import VendorStatusService from '@/services/VendorStatusService.js';
 import Vendor from '@/models/Vendor.js';
@@ -30,7 +30,7 @@ class VendorController {
             if (!user || user.role !== 'vendor') {
                 return errorResponse(HTTP_STATUS.FORBIDDEN, 'Only vendors can access this profile', {});
             }
-            const vendor = await VendorService.getFullProfile(user.id);
+            const vendor = await BusinessService.getFullProfile(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, vendor);
         } catch (error) {
@@ -102,7 +102,7 @@ class VendorController {
                 }
             }
 
-            const vendor = await VendorService.upsertProfile(user.id, data);
+            const vendor = await BusinessService.upsertProfile(user.id, data);
             const fullUser = await User.findById(user.id);
             const vendorData = await AuthService._getVendorStatus(fullUser);
             const userObj = fullUser.toObject();
@@ -148,7 +148,7 @@ class VendorController {
                 data.category = categories.map(c => ({ _id: c._id, name: c.name, slug: c.slug }));
                 delete data.businessCategory;
             }
-            const vendor = await VendorService.upsertProfile(user.id, data);
+            const vendor = await BusinessService.upsertProfile(user.id, data);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PROFILE_UPDATED, vendor);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
@@ -159,7 +159,7 @@ class VendorController {
     async deleteBusinessProfile(req) {
         try {
             const user = req.user;
-            await VendorService.deleteProfile(user.id, user.id);
+            await BusinessService.deleteProfile(user.id, user.id);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, {});
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
@@ -178,7 +178,7 @@ class VendorController {
             }
             const { isActive } = body;
             if (isActive === undefined) return errorResponse(HTTP_STATUS.BAD_REQUEST, 'isActive field is required', {});
-            const vendor = await VendorService.updateBusinessStatus(user.id, isActive);
+            const vendor = await BusinessService.updateBusinessStatus(user.id, isActive);
             return successResponse(HTTP_STATUS.OK, 'Business status updated', vendor);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
@@ -189,7 +189,7 @@ class VendorController {
     async getClosurePeriods(req) {
         try {
             const user = req.user;
-            const closures = await VendorService.getClosurePeriods(user.id);
+            const closures = await BusinessService.getClosurePeriods(user.id);
             return successResponse(HTTP_STATUS.OK, 'Business closure ranges retrieved', closures);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
@@ -210,7 +210,7 @@ class VendorController {
             if (!startDate || !endDate) {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, 'startDate and endDate are required', {});
             }
-            const closure = await VendorService.addClosurePeriod(user.id, { startDate, endDate, reason });
+            const closure = await BusinessService.addClosurePeriod(user.id, { startDate, endDate, reason });
             return successResponse(HTTP_STATUS.CREATED, 'Business closure range added', closure);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
@@ -228,7 +228,7 @@ class VendorController {
             } else {
                 body = req.jsonBody || await req.json();
             }
-            const closure = await VendorService.updateClosurePeriod(user.id, id, body);
+            const closure = await BusinessService.updateClosurePeriod(user.id, id, body);
             return successResponse(HTTP_STATUS.OK, 'Business closure range updated', closure);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
@@ -241,7 +241,7 @@ class VendorController {
             const user = req.user;
             const { id } = params;
             if (!id) return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Closure ID is required', {});
-            await VendorService.deleteClosurePeriod(user.id, id);
+            await BusinessService.deleteClosurePeriod(user.id, id);
             return successResponse(HTTP_STATUS.OK, 'Business closure range deleted', {});
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
@@ -252,7 +252,7 @@ class VendorController {
     async getBusinessDocuments(req) {
         try {
             const user = req.user;
-            const vendor = await VendorService.findByUserId(user.id);
+            const vendor = await BusinessService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, vendor);
@@ -323,7 +323,7 @@ class VendorController {
                     return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
                 }
             }
-            const updatedVendor = await VendorService.upsertProfile(user.id, { documents });
+            const updatedVendor = await BusinessService.upsertProfile(user.id, { documents });
             const duration = Date.now() - startTime;
             return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.DOCUMENTS_UPLOADED, updatedVendor);
         } catch (error) {
@@ -405,7 +405,7 @@ class VendorController {
     async getBankDetails(req) {
         try {
             const user = req.user;
-            const vendor = await VendorService.findByUserId(user.id);
+            const vendor = await BusinessService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, vendor);
@@ -454,7 +454,7 @@ class VendorController {
                     return errorResponse(HTTP_STATUS.BAD_REQUEST, errorMsg, {});
                 }
             }
-            const updatedVendor = await VendorService.upsertProfile(user.id, { bankDetails: bankData });
+            const updatedVendor = await BusinessService.upsertProfile(user.id, { bankDetails: bankData });
             return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.BANK_DETAILS_UPDATED, updatedVendor);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
@@ -470,7 +470,7 @@ class VendorController {
     async deleteBankDetails(req) {
         try {
             const user = req.user;
-            const updatedVendor = await VendorService.deleteBankDetails(user.id);
+            const updatedVendor = await BusinessService.deleteBankDetails(user.id);
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED, updatedVendor);
         } catch (error) {
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
@@ -488,7 +488,7 @@ class VendorController {
             const page = parseInt(url.searchParams.get('page')) || 1;
             const limit = parseInt(url.searchParams.get('limit')) || 10;
 
-            const packages = await VendorService.findByUserId(user.id);
+            const packages = await BusinessService.findByUserId(user.id);
             if (!packages) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             const catalog = await PackageService.getFormattedVendorCatalog(packages._id, page, limit);
@@ -560,7 +560,7 @@ class VendorController {
     async getItem(req, { params }) {
         try {
             const user = req.user;
-            const vendor = await VendorService.findByUserId(user.id);
+            const vendor = await BusinessService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             const p = await params;
@@ -695,7 +695,7 @@ class VendorController {
     async toggleCategoryStatus(req) {
         try {
             const user = req.user;
-            const vendor = await VendorService.findByUserId(user.id);
+            const vendor = await BusinessService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
             let category, isActive;
             if (req.formDataBody) {
@@ -730,7 +730,7 @@ class VendorController {
     async getBookings(req) {
         try {
             const user = req.user;
-            const vendor = await VendorService.findByUserId(user.id);
+            const vendor = await BusinessService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             const bookings = await BookingService.getVendorBookings(vendor._id);
@@ -753,7 +753,7 @@ class VendorController {
             if (!title) return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS, {});
 
             // Security: Ensure booking belongs to this vendor
-            const vendor = await VendorService.findByUserId(user.id);
+            const vendor = await BusinessService.findByUserId(user.id);
             const booking = await BookingService.getBookingById(bookingId);
 
             if (!booking) return errorResponse(HTTP_STATUS.NOT_FOUND, 'Booking not found', {});
@@ -784,7 +784,7 @@ class VendorController {
     async getVendorCategories(req) {
         try {
             const user = req.user;
-            const vendor = await VendorService.findByUserId(user.id);
+            const vendor = await BusinessService.findByUserId(user.id);
             if (!vendor) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND, {});
 
             const categories = vendor.category || [];

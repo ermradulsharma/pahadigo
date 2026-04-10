@@ -1,5 +1,6 @@
 export * from './InventoryHelper.js';
 export { default as apiHandler } from './apiHandler.js';
+export * from './auth.js';
 export * from './authUtils.js';
 export * from './cloudinary.js';
 export * from './dateUtils.js';

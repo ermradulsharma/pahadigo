@@ -1,3 +1,5 @@
+import { calculateAvailability } from '../../Helpers/availability.js';
+import { mapToGeoJSON } from '../../Helpers/geoUtils.js';
 import mongoose from 'mongoose';
 import { PACKAGE } from '@/constants/index.js';
 
@@ -93,5 +95,25 @@ const HomestaySchema = new mongoose.Schema({
     }
 
 }, { toJSON: { getters: true }, toObject: { getters: true } });
+
+
+
+
+
+
+
+
+
+
+
+// --- Dynamic Schema Sync Hooks ---
+HomestaySchema.pre('save', function() {
+    if (this.availability) calculateAvailability(this.availability);
+    if (this.fleetAvailability) calculateAvailability(this.fleetAvailability);
+    if (this.location) {
+        mapToGeoJSON(this.location);
+        if (typeof this.markModified === 'function') this.markModified('location');
+    }
+});
 
 export default HomestaySchema;

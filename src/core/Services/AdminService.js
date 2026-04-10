@@ -11,6 +11,9 @@ import Inquiry from '@/models/Inquiry.js';
 import AuditLog from '@/models/AuditLog.js';
 import VendorDocument from '@/models/VendorDocument.js';
 import Dispute from '@/models/Dispute.js';
+import VerifiedIdentity from '@/models/VerifiedIdentity.js';
+import OCRService from '@/services/OCRService.js';
+import BusinessService from '@/services/Vendor/BusinessService.js';
 import NotificationService from '@/services/NotificationService.js';
 import { RESPONSE_MESSAGES, HTTP_STATUS, USER_ROLES } from '@/constants/index.js';
 import { SCHEMA_KEYS } from '@/constants/categories.js';
@@ -23,624 +26,845 @@ import crypto from 'crypto';
 
 class AdminService {
 
-    // --- Stats & Health ---
+  // --- Stats & Health ---
 
-    async getSystemHealth() {
-        // Mock health check - in real app, check DB, Redis, API connections
-        return {
-            status: 'healthy',
-            uptime: process.uptime(),
-            activeUsers: await User.countDocuments({ status: 'active' }),
-            errorRate24h: '0.05%'
-        };
-    }
+  async getSystemHealth() {
+    // Mock health check - in real app, check DB, Redis, API connections
+    return {
+      status: 'healthy',
+      uptime: process.uptime(),
+      activeUsers: await User.countDocuments({ status: 'active' }),
+      errorRate24h: '0.05%'
+    };
+  }
 
-    async getDashboardStats() {
-        const [users, totalVendors, pendingVendors, packages, categories, bookings, confirmedBookings] = await Promise.all([
-            User.countDocuments({ role: 'traveller' }),
-            Vendor.countDocuments(),
-            Vendor.countDocuments({ isApproved: false }),
-            Package.countDocuments(),
-            Category.countDocuments(),
-            Booking.countDocuments(),
-            Booking.find({ paymentStatus: 'paid' }).select('totalPrice')
-        ]);
+  async getDashboardStats() {
+    const [users, totalVendors, pendingVendors, categories, bookings, confirmedBookings] = await Promise.all([
+      User.countDocuments({ role: 'traveller' }),
+      Vendor.countDocuments(),
+      Vendor.countDocuments({ isApproved: false }),
+      Category.countDocuments(),
+      Booking.countDocuments(),
+      Booking.find({ paymentStatus: 'paid' }).select('totalPrice')
+    ]);
 
-        const revenue = confirmedBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
+    const allCatalogs = await Package.find().lean();
+    const metadataKeys = ['_id', 'vendor', 'business', 'createdAt', 'updatedAt', '__v'];
+    let activeItemsCount = 0;
 
-        const recentBookings = await Booking.find()
-            .populate('user', 'name')
-            .populate('package', 'title')
-            .sort({ createdAt: -1 })
-            .limit(5);
-
-        const recentVendors = await Vendor.find()
-            .populate('user', 'name email')
-            .sort({ createdAt: -1 })
-            .limit(5);
-
-        // Mock/Aggregate additional dashboard data
-        const systemActivity = [
-            { time: '2 mins ago', type: 'security', status: 'success', message: 'New administrative login from 192.168.1.1' },
-            { time: '15 mins ago', type: 'system', status: 'info', message: 'Weekly backup completed successfully.' },
-            { time: '1 hour ago', type: 'alert', status: 'warning', message: 'High CPU usage detected on API node cluster 2' }
-        ];
-
-        const activeDisputes = await Dispute.find({ status: 'open' }).limit(3);
-
-        const topTerritories = [
-            { name: 'Uttarakhand', load: 85, color: 'bg-indigo-500' },
-            { name: 'Himachal', load: 62, color: 'bg-emerald-500' },
-            { name: 'Sikkim', load: 45, color: 'bg-rose-500' }
-        ];
-
-        const departures = [
-            { user: 'Rahul Sharma', destination: 'Kedarnath Trek', time: 'Tomorrow, 06:00 AM', status: 'Active' },
-            { user: 'Sanya Gupta', destination: 'Valley of Flowers', time: 'In 2 days', status: 'Pending' }
-        ];
-
-        const systemHealth = {
-            dbLoad: 12,
-            latency: 45,
-            storageLoad: 38
-        };
-
-        return { 
-            users, totalVendors, pendingVendors, packages, categories, revenue,
-            recentBookings, recentVendors, systemActivity, activeDisputes, 
-            topTerritories, departures, systemHealth 
-        };
-    }
-
-    async getFinancialStats() {
-        const stats = await Booking.aggregate([
-            {
-                $group: {
-                    _id: null,
-                    totalRevenue: { $sum: { $cond: [{ $eq: ["$paymentStatus", "paid"] }, "$totalPrice", 0] } },
-                    pendingPayouts: { $sum: { $cond: [{ $eq: ["$payoutStatus", "pending"] }, "$totalPrice", 0] } },
-                    refundsProcessed: { $sum: { $cond: [{ $eq: ["$refundStatus", "refunded"] }, "$refundAmount", 0] } }
-                }
-            }
-        ]);
-        return stats[0] || { totalRevenue: 0, pendingPayouts: 0, refundsProcessed: 0 };
-    }
-
-    async getMapAnalyticsData() {
-        // Aggregate user distribution by state for heatmaps
-        const userDistribution = await User.aggregate([
-            { $group: { _id: "$address.state", count: { $sum: 1 } } }
-        ]);
-        return { userDistribution };
-    }
-
-    async getCalendarEvents(start, end) {
-        // Fetch bookings for calendar view
-        const bookings = await Booking.find({
-            travelDate: { $gte: start, $lte: end }
-        }).populate('user', 'name').populate('package', 'title');
-
-        return bookings.map(b => ({
-            id: b._id,
-            title: b.package?.title || 'Booking',
-            start: b.travelDate,
-            user: b.user?.name,
-            type: 'booking'
-        }));
-    }
-
-    async getSearchAnalytics() {
-        // Simplified search trends
-        return {
-            topSearches: [
-                { query: 'Trekking', count: 1240 },
-                { query: 'Homestays in Goa', count: 850 }
-            ],
-            zeroResultSearches: [
-                { query: 'Skiing in Chennai', count: 12 }
-            ]
-        };
-    }
-
-    // --- User & Vendor Management ---
-
-    async getAllTravellers() {
-        return await User.find({ role: 'traveller' }).sort({ createdAt: -1 }).select('-password').lean();
-    }
-
-    async getAllVendors() {
-        // Return combined view using aggregation for performance
-        return await User.aggregate([
-            { $match: { role: 'vendor' } },
-            { $project: { password: 0 } },
-            {
-                $lookup: {
-                    from: 'vendors',
-                    localField: '_id',
-                    foreignField: 'user',
-                    as: 'vendorProfile'
-                }
-            },
-            { $unwind: { path: '$vendorProfile', preserveNullAndEmptyArrays: true } },
-            {
-                $addFields: {
-                    user: "$$ROOT",
-                    hasProfile: { $cond: [{ $ifNull: ["$vendorProfile", false] }, true, false] },
-                    businessName: { $ifNull: ["$vendorProfile.businessName", "N/A"] },
-                    isApproved: { $ifNull: ["$vendorProfile.isApproved", false] }
-                }
-            },
-            {
-                $replaceRoot: {
-                    newRoot: { $mergeObjects: ["$$ROOT", "$vendorProfile"] }
-                }
-            }
-        ]);
-    }
-
-    async getVendorById(id) {
-        let profile = await Vendor.findById(id).populate('category').lean();
-        let user = null;
-
-        if (profile) {
-            user = await User.findById(profile.user).lean();
-        } else {
-            user = await User.findById(id).lean();
-            if (user) profile = await Vendor.findOne({ user: id }).populate('category').lean();
+    allCatalogs.forEach(cat => {
+      Object.keys(cat).forEach(key => {
+        if (metadataKeys.includes(key)) return;
+        const list = cat[key];
+        if (Array.isArray(list)) {
+          activeItemsCount += list.filter(item => item && item.isActive).length;
         }
+      });
+    });
 
-        if (!profile && !user) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+    const packages = activeItemsCount;
 
-        const categoryDocuments = profile ? await VendorDocument.find({ vendor_id: profile._id }).lean() : [];
-        return {
-            ...(profile || {}),
-            user: user || {},
-            hasProfile: !!profile,
-            categoryDocuments
-        };
-    }
+    const revenue = confirmedBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0);
 
-    async createTraveller(data, req = null) {
-        const { email, phone, name, password } = data;
-        const exists = await User.findOne({ email });
-        if (exists) throw new Error(RESPONSE_MESSAGES.ERROR.ALREADY_EXISTS);
+    const recentBookings = await Booking.find()
+      .populate('user', 'name')
+      .populate('package', 'title')
+      .sort({ createdAt: -1 })
+      .limit(5);
 
-        const user = await User.create({
-            email, phone, name, password,
-            role: 'traveller', isVerified: true
-        });
+    const recentVendors = await Vendor.find()
+      .populate('user', 'name email')
+      .sort({ createdAt: -1 })
+      .limit(5);
 
-        if (req && req.user) {
-            await this.logAction(req.user.id, 'CREATE', 'USER', user._id, { email: user.email }, req);
+    // Mock/Aggregate additional dashboard data
+    const systemActivity = [
+      { time: '2 mins ago', type: 'security', status: 'success', message: 'New administrative login from 192.168.1.1' },
+      { time: '15 mins ago', type: 'system', status: 'info', message: 'Weekly backup completed successfully.' },
+      { time: '1 hour ago', type: 'alert', status: 'warning', message: 'High CPU usage detected on API node cluster 2' }
+    ];
+
+    const activeDisputes = await Dispute.find({ status: 'open' }).limit(3);
+
+    const topTerritories = [
+      { name: 'Uttarakhand', load: 85, color: 'bg-indigo-500' },
+      { name: 'Himachal', load: 62, color: 'bg-emerald-500' },
+      { name: 'Sikkim', load: 45, color: 'bg-rose-500' }
+    ];
+
+    const departures = [
+      { user: 'Rahul Sharma', destination: 'Kedarnath Trek', time: 'Tomorrow, 06:00 AM', status: 'Active' },
+      { user: 'Sanya Gupta', destination: 'Valley of Flowers', time: 'In 2 days', status: 'Pending' }
+    ];
+
+    const systemHealth = {
+      dbLoad: 12,
+      latency: 45,
+      storageLoad: 38
+    };
+
+    return {
+      users, totalVendors, pendingVendors, packages, categories, revenue,
+      recentBookings, recentVendors, systemActivity, activeDisputes,
+      topTerritories, departures, systemHealth
+    };
+  }
+
+  async getFinancialStats() {
+    const stats = await Booking.aggregate([
+      {
+        $group: {
+          _id: null,
+          totalRevenue: { $sum: { $cond: [{ $eq: ["$paymentStatus", "paid"] }, "$totalPrice", 0] } },
+          pendingPayouts: { $sum: { $cond: [{ $eq: ["$payoutStatus", "pending"] }, "$totalPrice", 0] } },
+          refundsProcessed: { $sum: { $cond: [{ $eq: ["$refundStatus", "refunded"] }, "$refundAmount", 0] } }
         }
-        return user;
+      }
+    ]);
+    return stats[0] || { totalRevenue: 0, pendingPayouts: 0, refundsProcessed: 0 };
+  }
+
+  async getMapAnalyticsData() {
+    // Aggregate user distribution by state for heatmaps
+    const userDistribution = await User.aggregate([
+      { $group: { _id: "$address.state", count: { $sum: 1 } } }
+    ]);
+    return { userDistribution };
+  }
+
+  async getCalendarEvents(start, end) {
+    // Fetch bookings for calendar view
+    const bookings = await Booking.find({
+      travelDate: { $gte: start, $lte: end }
+    }).populate('user', 'name').populate('package', 'title');
+
+    return bookings.map(b => ({
+      id: b._id,
+      title: b.package?.title || 'Booking',
+      start: b.travelDate,
+      user: b.user?.name,
+      type: 'booking'
+    }));
+  }
+
+  async getSearchAnalytics() {
+    // Simplified search trends
+    return {
+      topSearches: [
+        { query: 'Trekking', count: 1240 },
+        { query: 'Homestays in Goa', count: 850 }
+      ],
+      zeroResultSearches: [
+        { query: 'Skiing in Chennai', count: 12 }
+      ]
+    };
+  }
+
+  // --- User & Vendor Management ---
+
+  async getAllTravellers() {
+    return await User.find({ role: 'traveller' }).sort({ createdAt: -1 }).select('-password').lean();
+  }
+
+  async getAllVendors() {
+    // Aggregation pipeline to join User and Vendor data efficiently
+    return await User.aggregate([
+      { $match: { role: 'vendor' } },
+      { $sort: { createdAt: -1 } },
+      {
+        $lookup: {
+          from: 'vendors',
+          localField: '_id',
+          foreignField: 'user',
+          as: 'profile'
+        }
+      },
+      { $unwind: { path: '$profile', preserveNullAndEmptyArrays: true } },
+      {
+        $project: {
+          _id: 1,
+          name: 1,
+          email: 1,
+          phone: 1,
+          ownerName: { $ifNull: ["$profile.ownerName", "$name"] },
+          businessName: { $ifNull: ["$profile.businessName", "N/A"] },
+          businessRegistration: { $ifNull: ["$profile.businessRegistration", "N/A"] },
+          gstNumber: { $ifNull: ["$profile.gstNumber", "N/A"] },
+          isApproved: { $ifNull: ["$profile.isApproved", false] },
+          hasProfile: { $cond: [{ $ifNull: ["$profile", false] }, true, false] },
+          createdAt: 1
+        }
+      }
+    ]);
+  }
+
+  async getVendorById(id) {
+    let profile = await Vendor.findById(id).populate('category').lean();
+    let user = null;
+
+    if (profile) {
+      user = await User.findById(profile.user).lean();
+    } else {
+      user = await User.findById(id).lean();
+      if (user) profile = await Vendor.findOne({ user: id }).populate('category').lean();
     }
 
-    async createVendor(data, req = null) {
-        let existingUser = await User.findOne({ email: data.email });
-        if (existingUser) {
-            if (existingUser.role !== 'vendor') throw new Error("Email registered with different role.");
-        } else {
-            existingUser = await User.create({
-                email: data.email,
-                phone: data.phone,
-                name: data.ownerName || data.businessName,
-                password: data.password || crypto.randomBytes(8).toString('hex'),
-                role: 'vendor', isVerified: true
+    if (!profile && !user) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+
+    const categoryDocuments = profile ? await VendorDocument.find({ vendor_id: profile._id }).lean() : [];
+    return {
+      ...(profile || {}),
+      user: user || {},
+      hasProfile: !!profile,
+      categoryDocuments
+    };
+  }
+
+  async createTraveller(data, req = null) {
+    const { email, phone, name, password } = data;
+    const exists = await User.findOne({ email });
+    if (exists) throw new Error(RESPONSE_MESSAGES.ERROR.ALREADY_EXISTS);
+
+    const user = await User.create({
+      email, phone, name, password,
+      role: 'traveller', isVerified: true
+    });
+
+    if (req && req.user) {
+      await this.logAction(req.user.id, 'CREATE', 'USER', user._id, { email: user.email }, req);
+    }
+    return user;
+  }
+
+  async createVendor(data, req = null) {
+    let existingUser = await User.findOne({ email: data.email });
+    if (existingUser) {
+      if (existingUser.role !== 'vendor') throw new Error("Email registered with different role.");
+    } else {
+      existingUser = await User.create({
+        email: data.email,
+        phone: data.phone,
+        name: data.ownerName || data.businessName,
+        password: data.password || crypto.randomBytes(8).toString('hex'),
+        role: 'vendor', isVerified: true
+      });
+    }
+
+    const existingVendor = await Vendor.findOne({ user: existingUser._id });
+    if (existingVendor) throw new Error("Vendor profile already exists.");
+
+    const vendor = await Vendor.create({
+      user: existingUser._id,
+      ownerName: data.ownerName || existingUser.name,
+      businessName: data.businessName,
+      isApproved: true
+    });
+
+    if (req && req.user) {
+      await this.logAction(req.user.id, 'CREATE', 'VENDOR', vendor._id, { businessName: vendor.businessName }, req);
+    }
+    return { user: existingUser, vendor };
+  }
+
+  async updateVendor(id, data, req = null) {
+    let vendor = await Vendor.findById(id);
+    let user = null;
+
+    if (vendor) {
+      user = await User.findById(vendor.user);
+    } else {
+      user = await User.findById(id);
+      if (user) vendor = await Vendor.findOne({ user: id });
+    }
+
+    if (!vendor && !user) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+
+    const userFields = ['name', 'phone', 'status', 'isVerified'];
+    const vendorFields = ['ownerName', 'businessName', 'address', 'bankDetails', 'documents', 'isApproved'];
+
+    const userData = {};
+    const vendorUpdateData = {};
+
+    Object.keys(data).forEach(key => {
+      if (userFields.includes(key)) userData[key] = data[key];
+      if (vendorFields.includes(key)) vendorUpdateData[key] = data[key];
+    });
+
+    if (vendor && Object.keys(vendorUpdateData).length > 0) {
+      if (data.address) {
+        vendorUpdateData.address = { ...(vendor.address || {}), ...data.address };
+        mapToGeoJSON(vendorUpdateData.address, 'location');
+      }
+      await Vendor.findByIdAndUpdate(vendor._id, { $set: vendorUpdateData });
+    }
+
+    if (user && Object.keys(userData).length > 0) {
+      if (data.preferences) {
+        const existing = user.preferences || {};
+        userData.preferences = { ...existing, ...data.preferences };
+      }
+      await User.findByIdAndUpdate(user._id, { $set: userData });
+    }
+
+    if (req && req.user) {
+      await this.logAction(req.user.id, 'UPDATE', 'VENDOR', id, { changes: data }, req);
+    }
+
+    return vendor ? await Vendor.findById(vendor._id).populate('user') : await User.findById(user._id);
+  }
+
+  async approveVendor(vendorId) {
+    const vendor = await Vendor.findByIdAndUpdate(vendorId, { isApproved: true }, { returnDocument: 'after' });
+    if (vendor) NotificationService.notifyVendorApproval(vendorId, true);
+    return vendor;
+  }
+
+  async deleteVendor(id) {
+    const vendor = await Vendor.findById(id);
+    if (vendor) {
+      await User.findByIdAndDelete(vendor.user);
+      await Vendor.findByIdAndDelete(id);
+    } else {
+      const user = await User.findById(id);
+      if (user) {
+        await Vendor.findOneAndDelete({ user: id });
+        await User.findByIdAndDelete(id);
+      }
+    }
+    return true;
+  }
+
+  async deleteTraveller(id) {
+    return await User.findByIdAndDelete(id);
+  }
+
+  async updateTraveller(id, data, req = null) {
+    const user = await User.findByIdAndUpdate(id, data, { returnDocument: 'after' });
+    if (req && req.user) await this.logAction(req.user.id, 'UPDATE', 'USER', id, { changes: data }, req);
+    return user;
+  }
+
+  async changeAdminPassword(adminId, oldPass, newPass) {
+    const user = await User.findById(adminId).select('+password');
+    if (!user) throw new Error("Admin not found");
+
+    const isMatch = await user.comparePassword(oldPass);
+    if (!isMatch) throw new Error("Incorrect current password.");
+
+    user.password = newPass;
+    await user.save();
+    return true;
+  }
+
+  // --- Policies & content ---
+
+  async getPolicies(target = null) {
+    const filter = target ? { target } : {};
+    return await Policy.find(filter);
+  }
+
+  async getPolicy(target, type) {
+    return await Policy.findOne({ target, type });
+  }
+
+  async updatePolicy(target, type, content, adminId) {
+    const sanitized = sanitizeHTML(content);
+    return await Policy.findOneAndUpdate(
+      { target, type },
+      { content: sanitized, lastUpdatedBy: adminId },
+      { returnDocument: 'after', upsert: true }
+    );
+  }
+
+  async getPackages() {
+    return await Package.find().populate('vendor', 'name email').sort({ createdAt: -1 });
+  }
+
+  // --- Inventory & Items ---
+
+  async getAllServices() {
+    // [PERFORMANCE] Use lean() for faster read and to avoid Mongoose overhead
+    const packages = await Package.find()
+      .populate('vendor', 'name email')
+      .populate('business', 'businessName ownerName phone')
+      .lean();
+
+    const services = [];
+    const EXCLUDED_KEYS = ['_id', 'vendor', 'business', 'createdAt', 'updatedAt', '__v'];
+    if (!packages || !Array.isArray(packages)) return [];
+
+    packages.forEach(pkg => {
+      if (!pkg) return;
+
+      Object.keys(pkg).forEach(key => {
+        if (EXCLUDED_KEYS.includes(key)) return;
+
+        const list = pkg[key];
+        if (list && Array.isArray(list)) {
+          list.forEach(item => {
+            if (!item) return;
+
+            services.push({
+              ...item,
+              serviceType: key,
+              vendor: pkg.vendor || {},
+              vendorId: pkg.vendor?._id?.toString() || "",
+              businessId: pkg.business?._id?.toString() || "",
+              catalogId: pkg._id?.toString() || ""
             });
+          });
         }
+      });
+    });
+    return services;
+  }
 
-        const existingVendor = await Vendor.findOne({ user: existingUser._id });
-        if (existingVendor) throw new Error("Vendor profile already exists.");
+  async toggleServiceStatus(vendorId, serviceType, serviceId, status, req = null) {
+    const pkg = await Package.findOne({ vendor: vendorId });
+    if (!pkg) throw new Error(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
 
-        const vendor = await Vendor.create({
-            user: existingUser._id,
-            ownerName: data.ownerName || existingUser.name,
-            businessName: data.businessName,
-            isApproved: true
-        });
+    const list = pkg[serviceType];
+    if (!list) throw new Error(`Invalid service type: ${serviceType}`);
 
-        if (req && req.user) {
-            await this.logAction(req.user.id, 'CREATE', 'VENDOR', vendor._id, { businessName: vendor.businessName }, req);
-        }
-        return { user: existingUser, vendor };
+    const idx = list.findIndex(s => s._id.toString() === serviceId);
+    if (idx === -1) throw new Error(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
+
+    pkg[serviceType][idx].isActive = status;
+    pkg.markModified(serviceType);
+    await pkg.save();
+
+    if (req && req.user) {
+      await this.logAction(req.user.id, 'UPDATE_STATUS', 'INVENTORY', serviceId, { status }, req);
     }
+    return pkg[serviceType][idx];
+  }
 
-    async updateVendor(id, data, req = null) {
-        let vendor = await Vendor.findById(id);
-        let user = null;
+  async getVendorPackages(vendorId) {
+    // [FLEXIBILITY] Match by either User ID (vendor field) or Vendor Profile ID (business field)
+    const packages = await Package.find({
+      $or: [
+        { vendor: vendorId },
+        { business: vendorId }
+      ]
+    })
+      .populate('vendor', 'name email')
+      .lean();
 
-        if (vendor) {
-            user = await User.findById(vendor.user);
-        } else {
-            user = await User.findById(id);
-            if (user) vendor = await Vendor.findOne({ user: id });
-        }
+    const services = [];
+    const EXCLUDED_KEYS = ['_id', 'vendor', 'business', 'createdAt', 'updatedAt', '__v'];
+    if (!packages) return [];
 
-        if (!vendor && !user) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+    packages.forEach(pkg => {
+      Object.keys(pkg).forEach(key => {
+        if (EXCLUDED_KEYS.includes(key)) return;
 
-        const userFields = ['name', 'phone', 'status', 'isVerified'];
-        const vendorFields = ['ownerName', 'businessName', 'address', 'bankDetails', 'documents', 'isApproved'];
-
-        const userData = {};
-        const vendorUpdateData = {};
-
-        Object.keys(data).forEach(key => {
-            if (userFields.includes(key)) userData[key] = data[key];
-            if (vendorFields.includes(key)) vendorUpdateData[key] = data[key];
-        });
-
-        if (vendor && Object.keys(vendorUpdateData).length > 0) {
-            if (data.address) {
-                vendorUpdateData.address = { ...(vendor.address || {}), ...data.address };
-                mapToGeoJSON(vendorUpdateData.address, 'location');
-            }
-            await Vendor.findByIdAndUpdate(vendor._id, { $set: vendorUpdateData });
-        }
-
-        if (user && Object.keys(userData).length > 0) {
-            if (data.preferences) {
-                const existing = user.preferences || {};
-                userData.preferences = { ...existing, ...data.preferences };
-            }
-            await User.findByIdAndUpdate(user._id, { $set: userData });
-        }
-
-        if (req && req.user) {
-            await this.logAction(req.user.id, 'UPDATE', 'VENDOR', id, { changes: data }, req);
-        }
-
-        return vendor ? await Vendor.findById(vendor._id).populate('user') : await User.findById(user._id);
-    }
-
-    async approveVendor(vendorId) {
-        const vendor = await Vendor.findByIdAndUpdate(vendorId, { isApproved: true }, { returnDocument: 'after' });
-        if (vendor) NotificationService.notifyVendorApproval(vendorId, true);
-        return vendor;
-    }
-
-    async deleteVendor(id) {
-        const vendor = await Vendor.findById(id);
-        if (vendor) {
-            await User.findByIdAndDelete(vendor.user);
-            await Vendor.findByIdAndDelete(id);
-        } else {
-            const user = await User.findById(id);
-            if (user) {
-                await Vendor.findOneAndDelete({ user: id });
-                await User.findByIdAndDelete(id);
-            }
-        }
-        return true;
-    }
-
-    async deleteTraveller(id) {
-        return await User.findByIdAndDelete(id);
-    }
-
-    async updateTraveller(id, data, req = null) {
-        const user = await User.findByIdAndUpdate(id, data, { returnDocument: 'after' });
-        if (req && req.user) await this.logAction(req.user.id, 'UPDATE', 'USER', id, { changes: data }, req);
-        return user;
-    }
-
-    async changeAdminPassword(adminId, oldPass, newPass) {
-        const user = await User.findById(adminId).select('+password');
-        if (!user) throw new Error("Admin not found");
-
-        const isMatch = await user.comparePassword(oldPass);
-        if (!isMatch) throw new Error("Incorrect current password.");
-
-        user.password = newPass;
-        await user.save();
-        return true;
-    }
-
-    // --- Policies & content ---
-
-    async getPolicies(target = null) {
-        const filter = target ? { target } : {};
-        return await Policy.find(filter);
-    }
-
-    async getPolicy(target, type) {
-        return await Policy.findOne({ target, type });
-    }
-
-    async updatePolicy(target, type, content, adminId) {
-        const sanitized = sanitizeHTML(content);
-        return await Policy.findOneAndUpdate(
-            { target, type },
-            { content: sanitized, lastUpdatedBy: adminId },
-            { returnDocument: 'after', upsert: true }
-        );
-    }
-
-    // --- Inventory & Items ---
-
-    async getAllServices() {
-        const packages = await Package.find().populate('vendor', 'name email');
-        const services = [];
-        packages.forEach(pkg => {
-            SCHEMA_KEYS.forEach(type => {
-                const list = pkg[type];
-                if (Array.isArray(list)) {
-                    list.forEach(item => {
-                        services.push({
-                            ...item.toObject(),
-                            serviceType: type,
-                            vendor: pkg.vendor // Still User ref, but with proper data
-                        });
-                    });
-                }
+        const list = pkg[key];
+        if (list && Array.isArray(list)) {
+          list.forEach(item => {
+            services.push({
+              ...item,
+              serviceType: key,
+              vendor: pkg.vendor,
+              vendorId: pkg.vendor?._id?.toString() || vendorId,
+              catalogId: pkg._id?.toString()
             });
-        });
-        return services;
+          });
+        }
+      });
+    });
+    return services;
+  }
+
+  async getPackageItem(itemId) {
+    const oid = new mongoose.Types.ObjectId(String(itemId));
+    // Dynamically find all array fields in the Package schema to build the query
+    const categoryFields = Object.keys(Package.schema.paths)
+      .filter(p => !p.includes('.') && Array.isArray(Package.schema.paths[p].options.type));
+
+    const pkg = await Package.findOne({
+      $or: categoryFields.map(key => ({ [`${key}._id`]: oid }))
+    }).populate('vendor', 'name email').lean();
+
+    if (!pkg) throw new Error("Item not found");
+
+    const EXCLUDED_KEYS = ['_id', 'vendor', 'business', 'createdAt', 'updatedAt', '__v'];
+    for (const key of Object.keys(pkg)) {
+      if (EXCLUDED_KEYS.includes(key)) continue;
+
+      const list = pkg[key];
+      if (Array.isArray(list)) {
+        const item = list.find(it => it._id?.toString() === String(itemId));
+        if (item) return { ...item, serviceType: key, vendor: pkg.vendor };
+      }
     }
+    throw new Error("Item not found");
+  }
 
-    async toggleServiceStatus(vendorId, serviceType, serviceId, status, req = null) {
-        const pkg = await Package.findOne({ vendor: vendorId });
-        if (!pkg) throw new Error(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
+  async getPackageById(id) {
+    return await Package.findById(id).populate('vendor', 'name email');
+  }
 
-        const list = pkg[serviceType];
-        if (!list) throw new Error(`Invalid service type: ${serviceType}`);
+  async updatePackageItem(itemId, data) {
+    const oid = new mongoose.Types.ObjectId(String(itemId));
+    const categoryFields = Object.keys(Package.schema.paths)
+      .filter(p => !p.includes('.') && Array.isArray(Package.schema.paths[p].options.type));
 
-        const idx = list.findIndex(s => s._id.toString() === serviceId);
-        if (idx === -1) throw new Error(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
+    const pkg = await Package.findOne({
+      $or: categoryFields.map(key => ({ [`${key}._id`]: oid }))
+    });
 
-        pkg[serviceType][idx].isActive = status;
-        pkg.markModified(serviceType);
+    if (!pkg) throw new Error("Item not found");
+
+    const EXCLUDED_KEYS = ['_id', 'vendor', 'business', 'createdAt', 'updatedAt', '__v'];
+    for (const key of Object.keys(pkg.toObject())) {
+      if (EXCLUDED_KEYS.includes(key)) continue;
+
+      const item = pkg[key]?.id(oid);
+      if (item) {
+        Object.assign(item, data);
+        pkg.markModified(key);
         await pkg.save();
-
-        if (req && req.user) {
-            await this.logAction(req.user.id, 'UPDATE_STATUS', 'INVENTORY', serviceId, { status }, req);
-        }
-        return pkg[serviceType][idx];
+        return item;
+      }
     }
+    throw new Error("Item not found");
+  }
 
-    async getVendorPackages(vendorId) {
-        return await Package.find({ vendor: vendorId });
+  // --- Reviews ---
+
+  async getAllReviews() {
+    return await Review.find().populate('user', 'name').populate('vendor', 'businessName').sort({ createdAt: -1 });
+  }
+
+  async toggleReviewVisibility(reviewId, isVisible, req = null) {
+    const review = await Review.findByIdAndUpdate(reviewId, { isVisible }, { returnDocument: 'after' });
+    if (req && req.user) {
+      await this.logAction(req.user.id, 'UPDATE_VISIBILITY', 'REVIEW', reviewId, { isVisible }, req);
     }
+    return review;
+  }
 
-    async getPackageItem(itemId) {
-        const pkg = await Package.findOne({
-            $or: SCHEMA_KEYS.map(key => ({ [`${key}._id`]: itemId }))
-        }).populate('vendor', 'name email');
+  async deleteReview(reviewId, req = null) {
+    const res = await Review.findByIdAndDelete(reviewId);
+    if (req && req.user) await this.logAction(req.user.id, 'DELETE', 'REVIEW', reviewId, {}, req);
+    return res;
+  }
 
-        if (!pkg) throw new Error("Item not found");
+  // --- Assets & Coupons ---
 
-        for (const key of SCHEMA_KEYS) {
-            const item = pkg[key]?.id(itemId);
-            if (item) return { ...item.toObject(), serviceType: key, vendor: pkg.vendor };
-        }
-        throw new Error("Item not found");
-    }
+  async createBanner(data, req = null) {
+    const b = await Banner.create(data);
+    if (req && req.user) this.logAction(req.user.id, 'CREATE', 'BANNER', b._id, { title: b.title }, req);
+    return b;
+  }
 
-    async updatePackageItem(itemId, data) {
-        const pkg = await Package.findOne({
-            $or: SCHEMA_KEYS.map(key => ({ [`${key}._id`]: itemId }))
-        });
+  async getBanners() {
+    return await Banner.find().sort({ position: 1 });
+  }
 
-        if (!pkg) throw new Error("Item not found");
+  async updateBanner(id, data, req = null) {
+    const b = await Banner.findByIdAndUpdate(id, data, { returnDocument: 'after' });
+    if (req && req.user) this.logAction(req.user.id, 'UPDATE', 'BANNER', id, { changes: data }, req);
+    return b;
+  }
 
-        for (const key of SCHEMA_KEYS) {
-            const item = pkg[key]?.id(itemId);
-            if (item) {
-                Object.assign(item, data);
-                pkg.markModified(key);
-                await pkg.save();
-                return item;
+  async deleteBanner(id, req = null) {
+    if (req && req.user) await this.logAction(req.user.id, 'DELETE', 'BANNER', id, {}, req);
+    return await Banner.findByIdAndDelete(id);
+  }
+
+  async createCoupon(data, req = null) {
+    const c = await Coupon.create(data);
+    if (req && req.user) this.logAction(req.user.id, 'CREATE', 'COUPON', c._id, { code: c.code }, req);
+    return c;
+  }
+
+  async getCoupons() {
+    return await Coupon.find().sort({ createdAt: -1 });
+  }
+
+  async updateCoupon(id, data, req = null) {
+    const c = await Coupon.findByIdAndUpdate(id, data, { returnDocument: 'after' });
+    if (req && req.user) this.logAction(req.user.id, 'UPDATE', 'COUPON', id, { changes: data }, req);
+    return c;
+  }
+
+  async deleteCoupon(id, req = null) {
+    if (req && req.user) this.logAction(req.user.id, 'DELETE', 'COUPON', id, {}, req);
+    return await Coupon.findByIdAndDelete(id);
+  }
+
+  // --- Support ---
+
+  async submitInquiry(data) {
+    return await Inquiry.create(data);
+  }
+
+  async getInquiries() {
+    return await Inquiry.find().sort({ createdAt: -1 });
+  }
+
+  async updateInquiry(id, data) {
+    return await Inquiry.findByIdAndUpdate(id, data, { returnDocument: 'after' });
+  }
+
+  async deleteInquiry(id) {
+    return await Inquiry.findByIdAndDelete(id);
+  }
+
+  // --- Analytics ---
+
+  async getAnalyticsData(period = 'monthly') {
+    const startDate = getStartDateByPeriod(period);
+    const [revenueData, bookingStatus, userGrowth] = await Promise.all([
+      Booking.aggregate([
+        { $match: { createdAt: { $gte: startDate } } },
+        { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, revenue: { $sum: "$totalPrice" } } },
+        { $sort: { _id: 1 } }
+      ]),
+      Booking.aggregate([
+        { $group: { _id: "$status", value: { $sum: 1 } } }
+      ]),
+      User.aggregate([
+        { $match: { createdAt: { $gte: startDate }, role: { $in: ['traveller', 'vendor'] } } },
+        {
+          $group: {
+            _id: {
+              date: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+              role: "$role"
+            },
+            count: { $sum: 1 }
+          }
+        },
+        {
+          $group: {
+            _id: "$_id.date",
+            travellers: {
+              $sum: { $cond: [{ $eq: ["$_id.role", "traveller"] }, "$count", 0] }
+            },
+            vendors: {
+              $sum: { $cond: [{ $eq: ["$_id.role", "vendor"] }, "$count", 0] }
             }
-        }
-        throw new Error("Item not found");
+          }
+        },
+        { $sort: { _id: 1 } }
+      ])
+    ]);
+
+    const topVendors = await Booking.aggregate([
+      { $match: { paymentStatus: 'paid' } },
+      { $group: { _id: "$vendor", totalRevenue: { $sum: "$totalPrice" }, bookings: { $sum: 1 } } },
+      { $sort: { totalRevenue: -1 } },
+      { $limit: 5 }
+    ]);
+
+    // Map vendor names to topVendors
+    const vendorIds = topVendors.map(v => v._id);
+    const vendors = await Vendor.find({ _id: { $in: vendorIds } }).lean();
+    const vendorMap = vendors.reduce((acc, v) => ({ ...acc, [v._id.toString()]: v.businessName }), {});
+
+    const formattedTopVendors = topVendors.map(v => ({
+      name: vendorMap[v._id?.toString()] || 'Unknown Vendor',
+      bookings: v.bookings,
+      revenue: v.totalRevenue
+    }));
+
+    return {
+      revenueData,
+      bookingStatus: bookingStatus.map(b => ({ name: b._id, value: b.value })),
+      userGrowth,
+      topVendors: formattedTopVendors
+    };
+  }
+
+  async getPaymentHistory() {
+    return await Booking.find({ $or: [{ paymentStatus: 'paid' }, { refundStatus: 'refunded' }] })
+      .populate('user', 'name')
+      .populate({ path: 'package', populate: { path: 'vendor', select: 'businessName' } });
+  }
+
+  // --- Audit Logs ---
+
+  async logAction(userId, action, target, targetId, details = {}, req = null) {
+    try {
+      if (req) req._auditLogged = true; // Flag to prevent duplicate logging in apiHandler
+      const { ipAddress, userAgent } = getRequestMetadata(req);
+      const logData = {
+        userId,
+        action: action.toUpperCase(),
+        target: target.toUpperCase(),
+        targetId: String(targetId),
+        details: redactSensitiveData(details),
+        ipAddress,
+        userAgent
+      };
+      await AuditLog.create(logData);
+    } catch (error) {
+      console.error("[AuditLog] Failed to log:", error.message);
+    }
+  }
+
+  async getAuditLogs(filter = {}, page = 1, limit = 20) {
+    const query = {};
+    if (filter.userId) query.userId = filter.userId;
+    if (filter.adminId) query.userId = filter.adminId; // Backwards compatibility for tests
+    if (filter.action) query.action = filter.action.toUpperCase();
+    if (filter.target) query.target = filter.target.toUpperCase();
+    if (filter.startDate) query.createdAt = { $gte: new Date(filter.startDate) };
+
+    const total = await AuditLog.countDocuments(query);
+    const logs = await AuditLog.find(query)
+      .populate('userId', 'name email role')
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(parseInt(limit));
+
+    return { logs, total, totalPages: Math.ceil(total / limit) };
+  }
+
+  // --- Bookings ---
+
+  async getAllBookings() {
+    return await Booking.find().populate('user', 'name email').populate('package', 'title price').sort({ createdAt: -1 });
+  }
+
+  async getBookingById(id) {
+    return await Booking.findById(id).populate('user', 'name email phone').populate({
+      path: 'package',
+      populate: { path: 'vendor', select: 'businessName ownerName phone email' }
+    });
+  }
+
+  async markPayout(data, req = null) {
+    const { bookingId, amount, transactionId, note } = data;
+    const booking = await Booking.findByIdAndUpdate(bookingId, {
+      payoutStatus: 'paid',
+      payoutDate: new Date(),
+      payoutTransactionId: transactionId,
+      adminNotes: note
+    }, { returnDocument: 'after' });
+
+    if (req && req.user) await this.logAction(req.user.id, 'PAYOUT', 'BOOKING', bookingId, { amount, transactionId }, req);
+    return booking;
+  }
+
+  async refundBooking(data, req = null) {
+    const { bookingId, amount, reason } = data;
+    const booking = await Booking.findByIdAndUpdate(bookingId, {
+      refundStatus: 'refunded',
+      refundAmount: amount,
+      refundDate: new Date(),
+      status: 'cancelled',
+      adminNotes: reason
+    }, { returnDocument: 'after' });
+
+    if (req && req.user) await this.logAction(req.user.id, 'REFUND', 'BOOKING', bookingId, { amount, reason }, req);
+    return booking;
+  }
+
+  // --- Disputes ---
+
+  async getDisputes(filter = {}, page = 1, limit = 20) {
+    const query = {};
+    if (filter.status) query.status = filter.status;
+    if (filter.vendorId) query.vendorId = filter.vendorId;
+
+    const total = await Dispute.countDocuments(query);
+    const disputes = await Dispute.find(query)
+      .sort({ createdAt: -1 })
+      .skip((page - 1) * limit)
+      .limit(limit);
+
+    return { disputes, total, totalPages: Math.ceil(total / limit) };
+  }
+
+  async resolveDispute(adminId, disputeId, decision, adminNotes, req = null) {
+    const dispute = await Dispute.findByIdAndUpdate(disputeId, {
+      status: decision,
+      adminNotes,
+      resolvedAt: new Date(),
+      resolvedBy: adminId
+    }, { returnDocument: 'after' });
+
+    if (req && req.user) await this.logAction(adminId, 'RESOLVE', 'DISPUTE', disputeId, { decision }, req);
+    return dispute;
+  }
+
+  // --- Specialized Verification ---
+
+  async verifyCategoryDocument(data, req = null) {
+    const { documentId, status, reason } = data;
+    const doc = await VendorDocument.findById(documentId);
+    if (!doc) throw new Error(RESPONSE_MESSAGES.ERROR.DOCUMENT_NOT_FOUND);
+
+    doc.status = status;
+    doc.rejection_reason = status === 'rejected' ? reason : null;
+    await doc.save();
+
+    NotificationService.notifyDocumentVerification(doc.vendor, "A Category Specific Document", status === 'approved' || status === 'verified');
+    if (req && req.user) await this.logAction(req.user.id, 'VERIFY', 'CATEGORY_DOCUMENT', documentId, { status }, req);
+    return doc;
+  }
+
+  async verifyDocumentOCR(data, req = null) {
+    const { vendorId, documentField, index } = data;
+    const vendor = await Vendor.findById(vendorId);
+    if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+
+    let doc = null;
+    if (Array.isArray(vendor.documents[documentField])) {
+      if (typeof index !== 'number') throw new Error(RESPONSE_MESSAGES.ERROR.INDEX_REQUIRED);
+      doc = vendor.documents[documentField][index];
+    } else {
+      doc = vendor.documents[documentField];
     }
 
-    // --- Reviews ---
+    if (!doc || !doc.url) throw new Error(RESPONSE_MESSAGES.ERROR.DOCUMENT_NOT_FOUND);
 
-    async getAllReviews() {
-        return await Review.find().populate('user', 'name').populate('vendor', 'businessName').sort({ createdAt: -1 });
+    // Fetch and process image
+    const optimizedUrl = doc.url.includes('cloudinary') ? doc.url.replace('/upload/', '/upload/f_jpg,q_auto/') : doc.url;
+    const imgRes = await fetch(optimizedUrl);
+    if (!imgRes.ok) throw new Error(`Failed to fetch document image (Status: ${imgRes.status})`);
+
+    const buffer = Buffer.from(await imgRes.arrayBuffer());
+    if (buffer.length < 100) throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_IMAGE);
+
+    const ocrResult = await OCRService.processDocument(buffer);
+    if (ocrResult.error) throw new Error(RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+
+    // Save identity
+    const identityData = {
+      vendor: vendorId,
+      docType: ocrResult.idType,
+      idNumber: ocrResult.identifiedId || "UNKNOWN",
+      name: ocrResult.name,
+      dateOfBirth: ocrResult.dob,
+      rawOcrText: ocrResult.text
+    };
+
+    await VerifiedIdentity.findOneAndUpdate(
+      { vendor: vendorId, docType: ocrResult.idType },
+      identityData,
+      { upsert: true, returnDocument: 'after' }
+    );
+
+    // Update document
+    if (Array.isArray(vendor.documents[documentField])) {
+      vendor.documents[documentField][index].status = 'verified';
+      vendor.documents[documentField][index].ocrData = { identifiedId: ocrResult.identifiedId, text: ocrResult.text };
+    } else {
+      vendor.documents[documentField].status = 'verified';
+      vendor.documents[documentField].ocrData = { identifiedId: ocrResult.identifiedId, text: ocrResult.text };
     }
 
-    async toggleReviewVisibility(reviewId, isVisible, req = null) {
-        const review = await Review.findByIdAndUpdate(reviewId, { isVisible }, { returnDocument: 'after' });
-        if (req && req.user) {
-            await this.logAction(req.user.id, 'UPDATE_VISIBILITY', 'REVIEW', reviewId, { isVisible }, req);
-        }
-        return review;
-    }
+    vendor.markModified('documents');
+    vendor.isApproved = true;
+    await vendor.save();
+    await BusinessService.evaluateVendorTrustBadge(vendorId);
 
-    async deleteReview(reviewId, req = null) {
-        const res = await Review.findByIdAndDelete(reviewId);
-        if (req && req.user) await this.logAction(req.user.id, 'DELETE', 'REVIEW', reviewId, {}, req);
-        return res;
-    }
-
-    // --- Assets & Coupons ---
-
-    async createBanner(data, req = null) {
-        const b = await Banner.create(data);
-        if (req && req.user) this.logAction(req.user.id, 'CREATE', 'BANNER', b._id, { title: b.title }, req);
-        return b;
-    }
-
-    async getBanners() {
-        return await Banner.find().sort({ position: 1 });
-    }
-
-    async updateBanner(id, data, req = null) {
-        const b = await Banner.findByIdAndUpdate(id, data, { returnDocument: 'after' });
-        if (req && req.user) this.logAction(req.user.id, 'UPDATE', 'BANNER', id, { changes: data }, req);
-        return b;
-    }
-
-    async deleteBanner(id, req = null) {
-        if (req && req.user) await this.logAction(req.user.id, 'DELETE', 'BANNER', id, {}, req);
-        return await Banner.findByIdAndDelete(id);
-    }
-
-    async createCoupon(data, req = null) {
-        const c = await Coupon.create(data);
-        if (req && req.user) this.logAction(req.user.id, 'CREATE', 'COUPON', c._id, { code: c.code }, req);
-        return c;
-    }
-
-    async getCoupons() {
-        return await Coupon.find().sort({ createdAt: -1 });
-    }
-
-    async updateCoupon(id, data, req = null) {
-        const c = await Coupon.findByIdAndUpdate(id, data, { returnDocument: 'after' });
-        if (req && req.user) this.logAction(req.user.id, 'UPDATE', 'COUPON', id, { changes: data }, req);
-        return c;
-    }
-
-    async deleteCoupon(id, req = null) {
-        if (req && req.user) this.logAction(req.user.id, 'DELETE', 'COUPON', id, {}, req);
-        return await Coupon.findByIdAndDelete(id);
-    }
-
-    // --- Support ---
-
-    async submitInquiry(data) {
-        return await Inquiry.create(data);
-    }
-
-    async getInquiries() {
-        return await Inquiry.find().sort({ createdAt: -1 });
-    }
-
-    async updateInquiry(id, data) {
-        return await Inquiry.findByIdAndUpdate(id, data, { returnDocument: 'after' });
-    }
-
-    async deleteInquiry(id) {
-        return await Inquiry.findByIdAndDelete(id);
-    }
-
-    // --- Analytics ---
-
-    async getAnalyticsData(period = 'monthly') {
-        const startDate = getStartDateByPeriod(period);
-        const [revenueData, bookingStatus, userGrowth] = await Promise.all([
-            Booking.aggregate([
-                { $match: { createdAt: { $gte: startDate } } },
-                { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, revenue: { $sum: "$totalPrice" } } },
-                { $sort: { _id: 1 } }
-            ]),
-            Booking.aggregate([
-                { $group: { _id: "$status", value: { $sum: 1 } } }
-            ]),
-            User.aggregate([
-                { $match: { role: 'traveller', createdAt: { $gte: startDate } } },
-                { $group: { _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } }, users: { $sum: 1 } } },
-                { $sort: { _id: 1 } }
-            ])
-        ]);
-
-        const topVendors = await Booking.aggregate([
-            { $match: { paymentStatus: 'paid' } },
-            { $group: { _id: "$vendor", totalRevenue: { $sum: "$totalPrice" }, bookings: { $sum: 1 } } },
-            { $sort: { totalRevenue: -1 } },
-            { $limit: 5 }
-        ]);
-
-        // Map vendor names to topVendors
-        const vendorIds = topVendors.map(v => v._id);
-        const vendors = await Vendor.find({ _id: { $in: vendorIds } }).lean();
-        const vendorMap = vendors.reduce((acc, v) => ({ ...acc, [v._id.toString()]: v.businessName }), {});
-
-        const formattedTopVendors = topVendors.map(v => ({
-            name: vendorMap[v._id?.toString()] || 'Unknown Vendor',
-            bookings: v.bookings,
-            revenue: v.totalRevenue
-        }));
-
-        return { 
-            revenueData, 
-            bookingStatus: bookingStatus.map(b => ({ name: b._id, value: b.value })),
-            userGrowth,
-            topVendors: formattedTopVendors
-        };
-    }
-
-    async getPaymentHistory() {
-        return await Booking.find({ $or: [{ paymentStatus: 'paid' }, { refundStatus: 'refunded' }] })
-            .populate('user', 'name')
-            .populate({ path: 'package', populate: { path: 'vendor', select: 'businessName' } });
-    }
-
-    // --- Audit Logs ---
-
-    async logAction(userId, action, target, targetId, details = {}, req = null) {
-        try {
-            if (req) req._auditLogged = true; // Flag to prevent duplicate logging in apiHandler
-            const { ipAddress, userAgent } = getRequestMetadata(req);
-            const logData = {
-                userId,
-                action: action.toUpperCase(),
-                target: target.toUpperCase(),
-                targetId: String(targetId),
-                details: redactSensitiveData(details),
-                ipAddress,
-                userAgent
-            };
-            await AuditLog.create(logData);
-        } catch (error) {
-            console.error("[AuditLog] Failed to log:", error.message);
-        }
-    }
-
-    async getAuditLogs(filter = {}, page = 1, limit = 20) {
-        const query = {};
-        if (filter.userId) query.userId = filter.userId;
-        if (filter.adminId) query.userId = filter.adminId; // Backwards compatibility for tests
-        if (filter.action) query.action = filter.action.toUpperCase();
-        if (filter.target) query.target = filter.target.toUpperCase();
-        if (filter.startDate) query.createdAt = { $gte: new Date(filter.startDate) };
-
-        const total = await AuditLog.countDocuments(query);
-        const logs = await AuditLog.find(query)
-            .populate('userId', 'name email role')
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(parseInt(limit));
-
-        return { logs, total, totalPages: Math.ceil(total / limit) };
-    }
-
-    // --- Bookings ---
-
-    async getAllBookings() {
-        return await Booking.find().populate('user', 'name').populate('package', 'title').sort({ createdAt: -1 });
-    }
-
-    // --- Disputes ---
-
-    async getDisputes(filter = {}, page = 1, limit = 20) {
-        const query = {};
-        if (filter.status) query.status = filter.status;
-        if (filter.vendorId) query.vendorId = filter.vendorId;
-        
-        const total = await Dispute.countDocuments(query);
-        const disputes = await Dispute.find(query)
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(limit);
-        
-        return { disputes, total, totalPages: Math.ceil(total / limit) };
-    }
-
-    async resolveDispute(adminId, disputeId, decision, adminNotes, req = null) {
-        const dispute = await Dispute.findByIdAndUpdate(disputeId, {
-            status: decision,
-            adminNotes,
-            resolvedAt: new Date(),
-            resolvedBy: adminId
-        }, { returnDocument: 'after' });
-        
-        if (req && req.user) await this.logAction(adminId, 'RESOLVE', 'DISPUTE', disputeId, { decision }, req);
-        return dispute;
-    }
+    if (req && req.user) await this.logAction(req.user.id, 'OCR_VERIFY', 'DOCUMENT', vendorId, { docType: ocrResult.idType }, req);
+    return identityData;
+  }
 }
 
 const adminService = new AdminService();

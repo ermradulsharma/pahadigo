@@ -1,3 +1,5 @@
+import { calculateAvailability } from '../../Helpers/availability.js';
+import { mapToGeoJSON } from '../../Helpers/geoUtils.js';
 import mongoose from 'mongoose';
 import { PACKAGE } from '@/constants/index.js';
 
@@ -87,5 +89,38 @@ const HotelSchema = new mongoose.Schema({
     }
 
 }, { toJSON: { getters: true }, toObject: { getters: true } });
+
+
+
+
+
+
+
+
+
+
+
+// --- Dynamic Schema Sync Hooks ---
+HotelSchema.pre('save', function() {
+    if (this.availability) {
+        calculateAvailability(this.availability);
+    }
+    if (this.fleetAvailability) {
+        calculateAvailability(this.fleetAvailability);
+    }
+    
+    // Explicit Location Sync for Mongoose Persistence
+    if (this.location && (this.location.latitude || this.location.longitude)) {
+        const lat = parseFloat(this.location.latitude);
+        const lng = parseFloat(this.location.longitude);
+        
+        if (!isNaN(lat) && !isNaN(lng)) {
+            this.set('location.coordinates', {
+                type: 'Point',
+                coordinates: [lng, lat]
+            });
+        }
+    }
+});
 
 export default HotelSchema;

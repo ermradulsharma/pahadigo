@@ -35,13 +35,29 @@ describe('ApiHandler Helper Test Suite', () => {
         await wrapped(req);
         expect(spy).toHaveBeenCalled();
     });
-
-    it('should return 500 on unhandled exceptions in handler', async () => {
-        const handler = async () => { throw new Error('Crashed'); };
+    it('should return 500 and mask message on unhandled exceptions in handler', async () => {
+        const handler = async () => { throw new Error('Sensitive Database Error'); };
         const wrapped = apiHandler(handler);
         const req = { method: 'GET', url: 'http://localhost' };
         
         const res = await wrapped(req);
         expect(res.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        const body = await res.json();
+        expect(body.message).not.toBe('Sensitive Database Error'); // Should be masked
+    });
+
+    it('should sanitize NoSQL injection in the request body', async () => {
+        const handler = async (req) => successResponse(HTTP_STATUS.OK, 'Done', req.jsonBody);
+        const wrapped = apiHandler(handler);
+        const req = { 
+            method: 'POST', 
+            url: 'http://localhost',
+            jsonBody: { username: { $gt: "" }, password: "123" } 
+        };
+        
+        const res = await wrapped(req);
+        const body = await res.json();
+        expect(body.data.username).toEqual({}); // $gt was stripped, leaving empty object
+        expect(body.data.password).toBe('123');
     });
 });

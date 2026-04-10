@@ -25,8 +25,8 @@ class LocationController {
                 skip = (page - 1) * limit;
             }
 
-            const total = await Country.countDocuments({ status: 'active' });
-            let query = Country.find({ status: 'active' }).sort({ name: 1 });
+            const total = await Country.countDocuments({ status: 'active', name: 'India' });
+            let query = Country.find({ status: 'active', name: 'India' }).sort({ name: 1 });
 
             if (limit > 0) {
                 query = query.skip(skip).limit(limit);

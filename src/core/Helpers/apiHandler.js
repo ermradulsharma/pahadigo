@@ -1,14 +1,17 @@
 import AdminService from '@/services/AdminService.js';
-import { redactSensitiveData } from '@/helpers/security.js';
+import { redactSensitiveData, sanitizeNoSQL } from '@/helpers/security.js';
 import { successResponse, errorResponse } from '@/helpers/response.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
+import { parseNestedFormData } from '@/helpers/parseNestedFormData.js';
 
 export function apiHandler(handler) {
     return async (req, params) => {
         try {
+            let payload = req.validData || req.jsonBody || (req.formDataBody ? parseNestedFormData(req.formDataBody) : {});
+            req.payload = payload;
+            sanitizeNoSQL(req.payload);
             const response = await handler(req, params);
-            if (req._auditLogged) return response; // Skip global audit if service already did it specifically
-
+            if (req._auditLogged) return response;
             if (req.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method.toUpperCase())) {
                 if (req.user && req.user.id) {
                     try {
@@ -25,27 +28,32 @@ export function apiHandler(handler) {
                         if (req.method.toUpperCase() === 'POST') logicalAction = 'CREATE';
                         if (req.method.toUpperCase() === 'DELETE') logicalAction = 'DELETE';
 
-                        await AdminService.logAction(
-                            req.user.id,
-                            logicalAction,
-                            extractedTarget.toUpperCase(), // "VENDOR", "USER", etc.
-                            params?.params?.id || 'GLOBAL',
-                            {
-                                route: urlObj.pathname,
-                                status: response?.status || 'OK',
-                                payload: redactSensitiveData(req.validData || req.jsonBody || (req.formDataBody ? Object.fromEntries(req.formDataBody.entries()) : null))
-                            },
-                            req
-                        );
+                        await AdminService.logAction(req.user.id, logicalAction, extractedTarget.toUpperCase(), params?.params?.id || 'GLOBAL', {
+                            route: urlObj.pathname,
+                            status: response?.status || 'OK',
+                            payload: redactSensitiveData(req.payload)
+                        }, req);
                     } catch (logError) {
-                        console.error("[AUTO AUDIT LOG FAIL]", logError);
+                        // Silent fail for logging errors to avoid blocking the main response
                     }
                 }
             }
-            return response;
+
+            // Standardize Response: If handler returns a raw object, wrap it correctly
+            if (response instanceof Response) return response;
+            
+            if (response && typeof response === 'object' && response.data !== undefined && response.success !== undefined) {
+                if (response.success === false) {
+                    return errorResponse(response.status || HTTP_STATUS.BAD_REQUEST, response.message || RESPONSE_MESSAGES.ERROR.GENERIC, response.data);
+                }
+                return successResponse(response.status || HTTP_STATUS.OK, response.message || RESPONSE_MESSAGES.SUCCESS.GENERIC, response.data);
+            }
+
+            return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.GENERIC, response);
         } catch (err) {
             if (!handler) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.ROUTE_NOT_FOUND, {});
-            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, err.message || RESPONSE_MESSAGES.ERROR.INTERNAL_SERVER_ERROR, {});
+            const status = err.status || HTTP_STATUS.INTERNAL_SERVER_ERROR;
+            return errorResponse(status, err.message, {});
         }
     };
 }

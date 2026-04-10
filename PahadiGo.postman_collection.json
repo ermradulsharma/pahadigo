@@ -227,7 +227,7 @@
               "formdata": [
                 {
                   "key": "email",
-                  "value": "mradulsharma_1@yopmail.com",
+                  "value": "mradulsharma_36@yopmail.com",
                   "type": "text"
                 },
                 {
@@ -289,7 +289,7 @@
               "formdata": [
                 {
                   "key": "email",
-                  "value": "mradulsharma_1@yopmail.com",
+                  "value": "mradulsharma_36@yopmail.com",
                   "type": "text",
                   "description": "traveller@gmail.com, vendor@pahadigo.com"
                 },
@@ -301,7 +301,7 @@
                 },
                 {
                   "key": "otp",
-                  "value": "600060",
+                  "value": "964114",
                   "type": "text",
                   "description": "888888"
                 },
@@ -404,10 +404,10 @@
           "name": "Business Details",
           "item": [
             {
-              "name": "Profile",
+              "name": "Business Profile",
               "item": [
                 {
-                  "name": "Get Profile",
+                  "name": "Get Business Profile",
                   "request": {
                     "method": "GET",
                     "header": [],
@@ -426,7 +426,7 @@
                   "response": []
                 },
                 {
-                  "name": "Create Profile",
+                  "name": "Create Business Profile",
                   "request": {
                     "method": "POST",
                     "header": [],
@@ -613,7 +613,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Profile",
+                  "name": "Update Business Profile",
                   "request": {
                     "method": "PATCH",
                     "header": [],
@@ -777,18 +777,92 @@
                       ]
                     },
                     "url": {
-                      "raw": ""
+                      "raw": "{{base_url}}/vendor/business/profile/update/:id",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "vendor",
+                        "business",
+                        "profile",
+                        "update",
+                        ":id"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "69d32bf07ba7098746d8163c"
+                        }
+                      ]
                     }
                   },
                   "response": []
                 },
                 {
-                  "name": "Delete Profile",
+                  "name": "Delete Business Profile",
                   "request": {
-                    "method": "PUT",
+                    "method": "DELETE",
                     "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": []
+                    },
                     "url": {
-                      "raw": ""
+                      "raw": "{{base_url}}/vendor/business/profile/delete/:id",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "vendor",
+                        "business",
+                        "profile",
+                        "delete",
+                        ":id"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "69d32bf07ba7098746d8163c"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Change Business Profile Status",
+                  "request": {
+                    "method": "PATCH",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "isOperating",
+                          "value": "false",
+                          "type": "text",
+                          "disabled": true
+                        }
+                      ]
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/vendor/business/profile/status/:id",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "vendor",
+                        "business",
+                        "profile",
+                        "status",
+                        ":id"
+                      ],
+                      "variable": [
+                        {
+                          "key": "id",
+                          "value": "69d32bf07ba7098746d8163c"
+                        }
+                      ]
                     }
                   },
                   "response": []
@@ -797,7 +871,7 @@
               "description": "APIs to manage the vendor's professional profile, including contact details, business category, and address"
             },
             {
-              "name": "Documents",
+              "name": "Business Documents",
               "item": [
                 {
                   "name": "Get Documents",
@@ -867,52 +941,12 @@
                     }
                   },
                   "response": []
-                },
-                {
-                  "name": "Update Document",
-                  "request": {
-                    "method": "PATCH",
-                    "header": [],
-                    "url": {
-                      "raw": "{{base_url}}/vendor/business/documents/update",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "vendor",
-                        "business",
-                        "documents",
-                        "update"
-                      ]
-                    }
-                  },
-                  "response": []
-                },
-                {
-                  "name": "Delete Documents",
-                  "request": {
-                    "method": "DELETE",
-                    "header": [],
-                    "url": {
-                      "raw": "{{base_url}}/vendor/business/documents/delete",
-                      "host": [
-                        "{{base_url}}"
-                      ],
-                      "path": [
-                        "vendor",
-                        "business",
-                        "documents",
-                        "delete"
-                      ]
-                    }
-                  },
-                  "response": []
                 }
               ],
               "description": "Securely upload and manage KYC documents such as Aadhaar, PAN Card, and GST Registration files."
             },
             {
-              "name": "Closures",
+              "name": "Business Closures",
               "item": [
                 {
                   "name": "Get Business Closures",
@@ -1050,6 +1084,1332 @@
                           "key": "id",
                           "value": "69d0de478d723ccde7399cfd"
                         }
+                      ]
+                    }
+                  },
+                  "response": []
+                }
+              ]
+            },
+            {
+              "name": "Business Category",
+              "item": [
+                {
+                  "name": "Business Category Document",
+                  "item": [
+                    {
+                      "name": "Category Documents",
+                      "item": [
+                        {
+                          "name": "Category Documents (Homestay)",
+                          "request": {
+                            "method": "POST",
+                            "header": [],
+                            "body": {
+                              "mode": "formdata",
+                              "formdata": [
+                                {
+                                  "key": "document_slug[0]",
+                                  "value": "vehicle-registration-certificate-rc",
+                                  "type": "text",
+                                  "uuid": "ebf0c39c-558d-490c-9dcb-8f5ec760eadf"
+                                },
+                                {
+                                  "key": "image[0]",
+                                  "type": "file",
+                                  "uuid": "537eb853-2f91-45de-a378-6e740de97937",
+                                  "src": "postman-cloud:///1f0fd1d4-73f3-4910-914e-6cdbc2063428"
+                                },
+                                {
+                                  "key": "document_slug[1]",
+                                  "value": "business-license-2",
+                                  "type": "text",
+                                  "uuid": "911891fa-1e59-45b4-9b2c-38927331b2af"
+                                },
+                                {
+                                  "key": "image[1]",
+                                  "type": "file",
+                                  "uuid": "2c1ba738-78e5-499e-bab7-9253e4ef1978",
+                                  "src": "postman-cloud:///1f0f82ee-a24a-46e0-8e87-7449c73edf64"
+                                },
+                                {
+                                  "key": "document_slug[2]",
+                                  "value": "rto-permit",
+                                  "type": "text",
+                                  "uuid": "a0767b80-eb32-4c84-8d06-0a24e9ae044c"
+                                },
+                                {
+                                  "key": "image[2]",
+                                  "type": "file",
+                                  "uuid": "942d58c1-d546-4c0d-a22b-bdbbe6974966",
+                                  "src": "postman-cloud:///1f0f7c26-da68-40f0-b5e0-9ae8962c64a0"
+                                },
+                                {
+                                  "key": "document_slug[3]",
+                                  "value": "insurance-tax-receipt",
+                                  "type": "text",
+                                  "uuid": "ade8c8de-8b67-4d16-b15b-0ce4d2ef9290"
+                                },
+                                {
+                                  "key": "image[3]",
+                                  "type": "file",
+                                  "uuid": "fe4e4ee4-0a1c-43db-8b0d-2aeac039d4fe",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "commercial-permit",
+                                  "type": "text",
+                                  "uuid": "52fea8a9-63e9-45c1-88a7-b49834e265a3"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "53ae362e-2c84-4c24-b25c-142efbce5adf",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "puc-certificate",
+                                  "type": "text",
+                                  "uuid": "c06ab742-acd9-435b-acc0-1961ab11583b"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "e479bea9-0384-4e15-9706-38fd78feaa88",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                },
+                                {
+                                  "key": "document_slug[5]",
+                                  "value": "rental-agreement-format",
+                                  "type": "text",
+                                  "uuid": "4d34246c-65f9-47f1-836d-ab625778dfd9"
+                                },
+                                {
+                                  "key": "image[5]",
+                                  "type": "file",
+                                  "uuid": "df1ef2e9-3088-4bcb-bdbe-cc0b461244ef",
+                                  "src": "postman-cloud:///1f0f7c25-3ac6-4b10-9221-bcc9835580a2"
+                                },
+                                {
+                                  "key": "document_slug[6]",
+                                  "value": "customer-id-verification-policy",
+                                  "type": "text",
+                                  "uuid": "33aafbc3-2af7-4943-a587-3f31a6bcad6b"
+                                },
+                                {
+                                  "key": "image[6]",
+                                  "type": "file",
+                                  "uuid": "1b5ed90f-46ea-4750-850a-cfcaf74a0e17",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                }
+                              ]
+                            },
+                            "url": {
+                              "raw": "{{base_url}}/vendor/business/category/documents/upload/:slug",
+                              "host": [
+                                "{{base_url}}"
+                              ],
+                              "path": [
+                                "vendor",
+                                "business",
+                                "category",
+                                "documents",
+                                "upload",
+                                ":slug"
+                              ],
+                              "variable": [
+                                {
+                                  "key": "slug",
+                                  "value": "bike-scooter-rental"
+                                }
+                              ]
+                            }
+                          },
+                          "response": []
+                        },
+                        {
+                          "name": "Category Documents (Hotel)",
+                          "request": {
+                            "method": "POST",
+                            "header": [],
+                            "body": {
+                              "mode": "formdata",
+                              "formdata": [
+                                {
+                                  "key": "document_slug[0]",
+                                  "value": "vehicle-registration-certificate-rc",
+                                  "type": "text",
+                                  "uuid": "ebf0c39c-558d-490c-9dcb-8f5ec760eadf"
+                                },
+                                {
+                                  "key": "image[0]",
+                                  "type": "file",
+                                  "uuid": "537eb853-2f91-45de-a378-6e740de97937",
+                                  "src": "postman-cloud:///1f0fd1d4-73f3-4910-914e-6cdbc2063428"
+                                },
+                                {
+                                  "key": "document_slug[1]",
+                                  "value": "business-license-2",
+                                  "type": "text",
+                                  "uuid": "911891fa-1e59-45b4-9b2c-38927331b2af"
+                                },
+                                {
+                                  "key": "image[1]",
+                                  "type": "file",
+                                  "uuid": "2c1ba738-78e5-499e-bab7-9253e4ef1978",
+                                  "src": "postman-cloud:///1f0f82ee-a24a-46e0-8e87-7449c73edf64"
+                                },
+                                {
+                                  "key": "document_slug[2]",
+                                  "value": "rto-permit",
+                                  "type": "text",
+                                  "uuid": "a0767b80-eb32-4c84-8d06-0a24e9ae044c"
+                                },
+                                {
+                                  "key": "image[2]",
+                                  "type": "file",
+                                  "uuid": "942d58c1-d546-4c0d-a22b-bdbbe6974966",
+                                  "src": "postman-cloud:///1f0f7c26-da68-40f0-b5e0-9ae8962c64a0"
+                                },
+                                {
+                                  "key": "document_slug[3]",
+                                  "value": "insurance-tax-receipt",
+                                  "type": "text",
+                                  "uuid": "ade8c8de-8b67-4d16-b15b-0ce4d2ef9290"
+                                },
+                                {
+                                  "key": "image[3]",
+                                  "type": "file",
+                                  "uuid": "fe4e4ee4-0a1c-43db-8b0d-2aeac039d4fe",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "commercial-permit",
+                                  "type": "text",
+                                  "uuid": "52fea8a9-63e9-45c1-88a7-b49834e265a3"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "53ae362e-2c84-4c24-b25c-142efbce5adf",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "puc-certificate",
+                                  "type": "text",
+                                  "uuid": "c06ab742-acd9-435b-acc0-1961ab11583b"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "e479bea9-0384-4e15-9706-38fd78feaa88",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                },
+                                {
+                                  "key": "document_slug[5]",
+                                  "value": "rental-agreement-format",
+                                  "type": "text",
+                                  "uuid": "4d34246c-65f9-47f1-836d-ab625778dfd9"
+                                },
+                                {
+                                  "key": "image[5]",
+                                  "type": "file",
+                                  "uuid": "df1ef2e9-3088-4bcb-bdbe-cc0b461244ef",
+                                  "src": "postman-cloud:///1f0f7c25-3ac6-4b10-9221-bcc9835580a2"
+                                },
+                                {
+                                  "key": "document_slug[6]",
+                                  "value": "customer-id-verification-policy",
+                                  "type": "text",
+                                  "uuid": "33aafbc3-2af7-4943-a587-3f31a6bcad6b"
+                                },
+                                {
+                                  "key": "image[6]",
+                                  "type": "file",
+                                  "uuid": "1b5ed90f-46ea-4750-850a-cfcaf74a0e17",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                }
+                              ]
+                            },
+                            "url": {
+                              "raw": "{{base_url}}/vendor/business/category/documents/upload/:slug",
+                              "host": [
+                                "{{base_url}}"
+                              ],
+                              "path": [
+                                "vendor",
+                                "business",
+                                "category",
+                                "documents",
+                                "upload",
+                                ":slug"
+                              ],
+                              "variable": [
+                                {
+                                  "key": "slug",
+                                  "value": "bike-scooter-rental"
+                                }
+                              ]
+                            }
+                          },
+                          "response": []
+                        },
+                        {
+                          "name": "Category Documents (Camping)",
+                          "request": {
+                            "method": "POST",
+                            "header": [],
+                            "body": {
+                              "mode": "formdata",
+                              "formdata": [
+                                {
+                                  "key": "document_slug[0]",
+                                  "value": "vehicle-registration-certificate-rc",
+                                  "type": "text",
+                                  "uuid": "ebf0c39c-558d-490c-9dcb-8f5ec760eadf"
+                                },
+                                {
+                                  "key": "image[0]",
+                                  "type": "file",
+                                  "uuid": "537eb853-2f91-45de-a378-6e740de97937",
+                                  "src": "postman-cloud:///1f0fd1d4-73f3-4910-914e-6cdbc2063428"
+                                },
+                                {
+                                  "key": "document_slug[1]",
+                                  "value": "business-license-2",
+                                  "type": "text",
+                                  "uuid": "911891fa-1e59-45b4-9b2c-38927331b2af"
+                                },
+                                {
+                                  "key": "image[1]",
+                                  "type": "file",
+                                  "uuid": "2c1ba738-78e5-499e-bab7-9253e4ef1978",
+                                  "src": "postman-cloud:///1f0f82ee-a24a-46e0-8e87-7449c73edf64"
+                                },
+                                {
+                                  "key": "document_slug[2]",
+                                  "value": "rto-permit",
+                                  "type": "text",
+                                  "uuid": "a0767b80-eb32-4c84-8d06-0a24e9ae044c"
+                                },
+                                {
+                                  "key": "image[2]",
+                                  "type": "file",
+                                  "uuid": "942d58c1-d546-4c0d-a22b-bdbbe6974966",
+                                  "src": "postman-cloud:///1f0f7c26-da68-40f0-b5e0-9ae8962c64a0"
+                                },
+                                {
+                                  "key": "document_slug[3]",
+                                  "value": "insurance-tax-receipt",
+                                  "type": "text",
+                                  "uuid": "ade8c8de-8b67-4d16-b15b-0ce4d2ef9290"
+                                },
+                                {
+                                  "key": "image[3]",
+                                  "type": "file",
+                                  "uuid": "fe4e4ee4-0a1c-43db-8b0d-2aeac039d4fe",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "commercial-permit",
+                                  "type": "text",
+                                  "uuid": "52fea8a9-63e9-45c1-88a7-b49834e265a3"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "53ae362e-2c84-4c24-b25c-142efbce5adf",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "puc-certificate",
+                                  "type": "text",
+                                  "uuid": "c06ab742-acd9-435b-acc0-1961ab11583b"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "e479bea9-0384-4e15-9706-38fd78feaa88",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                },
+                                {
+                                  "key": "document_slug[5]",
+                                  "value": "rental-agreement-format",
+                                  "type": "text",
+                                  "uuid": "4d34246c-65f9-47f1-836d-ab625778dfd9"
+                                },
+                                {
+                                  "key": "image[5]",
+                                  "type": "file",
+                                  "uuid": "df1ef2e9-3088-4bcb-bdbe-cc0b461244ef",
+                                  "src": "postman-cloud:///1f0f7c25-3ac6-4b10-9221-bcc9835580a2"
+                                },
+                                {
+                                  "key": "document_slug[6]",
+                                  "value": "customer-id-verification-policy",
+                                  "type": "text",
+                                  "uuid": "33aafbc3-2af7-4943-a587-3f31a6bcad6b"
+                                },
+                                {
+                                  "key": "image[6]",
+                                  "type": "file",
+                                  "uuid": "1b5ed90f-46ea-4750-850a-cfcaf74a0e17",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                }
+                              ]
+                            },
+                            "url": {
+                              "raw": "{{base_url}}/vendor/business/category/documents/upload/:slug",
+                              "host": [
+                                "{{base_url}}"
+                              ],
+                              "path": [
+                                "vendor",
+                                "business",
+                                "category",
+                                "documents",
+                                "upload",
+                                ":slug"
+                              ],
+                              "variable": [
+                                {
+                                  "key": "slug",
+                                  "value": "bike-scooter-rental"
+                                }
+                              ]
+                            }
+                          },
+                          "response": []
+                        },
+                        {
+                          "name": "Category Documents (Trekking)",
+                          "request": {
+                            "method": "POST",
+                            "header": [],
+                            "body": {
+                              "mode": "formdata",
+                              "formdata": [
+                                {
+                                  "key": "document_slug[0]",
+                                  "value": "vehicle-registration-certificate-rc",
+                                  "type": "text",
+                                  "uuid": "ebf0c39c-558d-490c-9dcb-8f5ec760eadf"
+                                },
+                                {
+                                  "key": "image[0]",
+                                  "type": "file",
+                                  "uuid": "537eb853-2f91-45de-a378-6e740de97937",
+                                  "src": "postman-cloud:///1f0fd1d4-73f3-4910-914e-6cdbc2063428"
+                                },
+                                {
+                                  "key": "document_slug[1]",
+                                  "value": "business-license-2",
+                                  "type": "text",
+                                  "uuid": "911891fa-1e59-45b4-9b2c-38927331b2af"
+                                },
+                                {
+                                  "key": "image[1]",
+                                  "type": "file",
+                                  "uuid": "2c1ba738-78e5-499e-bab7-9253e4ef1978",
+                                  "src": "postman-cloud:///1f0f82ee-a24a-46e0-8e87-7449c73edf64"
+                                },
+                                {
+                                  "key": "document_slug[2]",
+                                  "value": "rto-permit",
+                                  "type": "text",
+                                  "uuid": "a0767b80-eb32-4c84-8d06-0a24e9ae044c"
+                                },
+                                {
+                                  "key": "image[2]",
+                                  "type": "file",
+                                  "uuid": "942d58c1-d546-4c0d-a22b-bdbbe6974966",
+                                  "src": "postman-cloud:///1f0f7c26-da68-40f0-b5e0-9ae8962c64a0"
+                                },
+                                {
+                                  "key": "document_slug[3]",
+                                  "value": "insurance-tax-receipt",
+                                  "type": "text",
+                                  "uuid": "ade8c8de-8b67-4d16-b15b-0ce4d2ef9290"
+                                },
+                                {
+                                  "key": "image[3]",
+                                  "type": "file",
+                                  "uuid": "fe4e4ee4-0a1c-43db-8b0d-2aeac039d4fe",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "commercial-permit",
+                                  "type": "text",
+                                  "uuid": "52fea8a9-63e9-45c1-88a7-b49834e265a3"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "53ae362e-2c84-4c24-b25c-142efbce5adf",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "puc-certificate",
+                                  "type": "text",
+                                  "uuid": "c06ab742-acd9-435b-acc0-1961ab11583b"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "e479bea9-0384-4e15-9706-38fd78feaa88",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                },
+                                {
+                                  "key": "document_slug[5]",
+                                  "value": "rental-agreement-format",
+                                  "type": "text",
+                                  "uuid": "4d34246c-65f9-47f1-836d-ab625778dfd9"
+                                },
+                                {
+                                  "key": "image[5]",
+                                  "type": "file",
+                                  "uuid": "df1ef2e9-3088-4bcb-bdbe-cc0b461244ef",
+                                  "src": "postman-cloud:///1f0f7c25-3ac6-4b10-9221-bcc9835580a2"
+                                },
+                                {
+                                  "key": "document_slug[6]",
+                                  "value": "customer-id-verification-policy",
+                                  "type": "text",
+                                  "uuid": "33aafbc3-2af7-4943-a587-3f31a6bcad6b"
+                                },
+                                {
+                                  "key": "image[6]",
+                                  "type": "file",
+                                  "uuid": "1b5ed90f-46ea-4750-850a-cfcaf74a0e17",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                }
+                              ]
+                            },
+                            "url": {
+                              "raw": "{{base_url}}/vendor/business/category/documents/upload/:slug",
+                              "host": [
+                                "{{base_url}}"
+                              ],
+                              "path": [
+                                "vendor",
+                                "business",
+                                "category",
+                                "documents",
+                                "upload",
+                                ":slug"
+                              ],
+                              "variable": [
+                                {
+                                  "key": "slug",
+                                  "value": "bike-scooter-rental"
+                                }
+                              ]
+                            }
+                          },
+                          "response": []
+                        },
+                        {
+                          "name": "Category Documents (Rafting)",
+                          "request": {
+                            "method": "POST",
+                            "header": [],
+                            "body": {
+                              "mode": "formdata",
+                              "formdata": [
+                                {
+                                  "key": "document_slug[0]",
+                                  "value": "vehicle-registration-certificate-rc",
+                                  "type": "text",
+                                  "uuid": "ebf0c39c-558d-490c-9dcb-8f5ec760eadf"
+                                },
+                                {
+                                  "key": "image[0]",
+                                  "type": "file",
+                                  "uuid": "537eb853-2f91-45de-a378-6e740de97937",
+                                  "src": "postman-cloud:///1f0fd1d4-73f3-4910-914e-6cdbc2063428"
+                                },
+                                {
+                                  "key": "document_slug[1]",
+                                  "value": "business-license-2",
+                                  "type": "text",
+                                  "uuid": "911891fa-1e59-45b4-9b2c-38927331b2af"
+                                },
+                                {
+                                  "key": "image[1]",
+                                  "type": "file",
+                                  "uuid": "2c1ba738-78e5-499e-bab7-9253e4ef1978",
+                                  "src": "postman-cloud:///1f0f82ee-a24a-46e0-8e87-7449c73edf64"
+                                },
+                                {
+                                  "key": "document_slug[2]",
+                                  "value": "rto-permit",
+                                  "type": "text",
+                                  "uuid": "a0767b80-eb32-4c84-8d06-0a24e9ae044c"
+                                },
+                                {
+                                  "key": "image[2]",
+                                  "type": "file",
+                                  "uuid": "942d58c1-d546-4c0d-a22b-bdbbe6974966",
+                                  "src": "postman-cloud:///1f0f7c26-da68-40f0-b5e0-9ae8962c64a0"
+                                },
+                                {
+                                  "key": "document_slug[3]",
+                                  "value": "insurance-tax-receipt",
+                                  "type": "text",
+                                  "uuid": "ade8c8de-8b67-4d16-b15b-0ce4d2ef9290"
+                                },
+                                {
+                                  "key": "image[3]",
+                                  "type": "file",
+                                  "uuid": "fe4e4ee4-0a1c-43db-8b0d-2aeac039d4fe",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "commercial-permit",
+                                  "type": "text",
+                                  "uuid": "52fea8a9-63e9-45c1-88a7-b49834e265a3"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "53ae362e-2c84-4c24-b25c-142efbce5adf",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "puc-certificate",
+                                  "type": "text",
+                                  "uuid": "c06ab742-acd9-435b-acc0-1961ab11583b"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "e479bea9-0384-4e15-9706-38fd78feaa88",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                },
+                                {
+                                  "key": "document_slug[5]",
+                                  "value": "rental-agreement-format",
+                                  "type": "text",
+                                  "uuid": "4d34246c-65f9-47f1-836d-ab625778dfd9"
+                                },
+                                {
+                                  "key": "image[5]",
+                                  "type": "file",
+                                  "uuid": "df1ef2e9-3088-4bcb-bdbe-cc0b461244ef",
+                                  "src": "postman-cloud:///1f0f7c25-3ac6-4b10-9221-bcc9835580a2"
+                                },
+                                {
+                                  "key": "document_slug[6]",
+                                  "value": "customer-id-verification-policy",
+                                  "type": "text",
+                                  "uuid": "33aafbc3-2af7-4943-a587-3f31a6bcad6b"
+                                },
+                                {
+                                  "key": "image[6]",
+                                  "type": "file",
+                                  "uuid": "1b5ed90f-46ea-4750-850a-cfcaf74a0e17",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                }
+                              ]
+                            },
+                            "url": {
+                              "raw": "{{base_url}}/vendor/business/category/documents/upload/:slug",
+                              "host": [
+                                "{{base_url}}"
+                              ],
+                              "path": [
+                                "vendor",
+                                "business",
+                                "category",
+                                "documents",
+                                "upload",
+                                ":slug"
+                              ],
+                              "variable": [
+                                {
+                                  "key": "slug",
+                                  "value": "bike-scooter-rental"
+                                }
+                              ]
+                            }
+                          },
+                          "response": []
+                        },
+                        {
+                          "name": "Category Documents (Bungee Jumping)",
+                          "request": {
+                            "method": "POST",
+                            "header": [],
+                            "body": {
+                              "mode": "formdata",
+                              "formdata": [
+                                {
+                                  "key": "document_slug[0]",
+                                  "value": "vehicle-registration-certificate-rc",
+                                  "type": "text",
+                                  "uuid": "ebf0c39c-558d-490c-9dcb-8f5ec760eadf"
+                                },
+                                {
+                                  "key": "image[0]",
+                                  "type": "file",
+                                  "uuid": "537eb853-2f91-45de-a378-6e740de97937",
+                                  "src": "postman-cloud:///1f0fd1d4-73f3-4910-914e-6cdbc2063428"
+                                },
+                                {
+                                  "key": "document_slug[1]",
+                                  "value": "business-license-2",
+                                  "type": "text",
+                                  "uuid": "911891fa-1e59-45b4-9b2c-38927331b2af"
+                                },
+                                {
+                                  "key": "image[1]",
+                                  "type": "file",
+                                  "uuid": "2c1ba738-78e5-499e-bab7-9253e4ef1978",
+                                  "src": "postman-cloud:///1f0f82ee-a24a-46e0-8e87-7449c73edf64"
+                                },
+                                {
+                                  "key": "document_slug[2]",
+                                  "value": "rto-permit",
+                                  "type": "text",
+                                  "uuid": "a0767b80-eb32-4c84-8d06-0a24e9ae044c"
+                                },
+                                {
+                                  "key": "image[2]",
+                                  "type": "file",
+                                  "uuid": "942d58c1-d546-4c0d-a22b-bdbbe6974966",
+                                  "src": "postman-cloud:///1f0f7c26-da68-40f0-b5e0-9ae8962c64a0"
+                                },
+                                {
+                                  "key": "document_slug[3]",
+                                  "value": "insurance-tax-receipt",
+                                  "type": "text",
+                                  "uuid": "ade8c8de-8b67-4d16-b15b-0ce4d2ef9290"
+                                },
+                                {
+                                  "key": "image[3]",
+                                  "type": "file",
+                                  "uuid": "fe4e4ee4-0a1c-43db-8b0d-2aeac039d4fe",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "commercial-permit",
+                                  "type": "text",
+                                  "uuid": "52fea8a9-63e9-45c1-88a7-b49834e265a3"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "53ae362e-2c84-4c24-b25c-142efbce5adf",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "puc-certificate",
+                                  "type": "text",
+                                  "uuid": "c06ab742-acd9-435b-acc0-1961ab11583b"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "e479bea9-0384-4e15-9706-38fd78feaa88",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                },
+                                {
+                                  "key": "document_slug[5]",
+                                  "value": "rental-agreement-format",
+                                  "type": "text",
+                                  "uuid": "4d34246c-65f9-47f1-836d-ab625778dfd9"
+                                },
+                                {
+                                  "key": "image[5]",
+                                  "type": "file",
+                                  "uuid": "df1ef2e9-3088-4bcb-bdbe-cc0b461244ef",
+                                  "src": "postman-cloud:///1f0f7c25-3ac6-4b10-9221-bcc9835580a2"
+                                },
+                                {
+                                  "key": "document_slug[6]",
+                                  "value": "customer-id-verification-policy",
+                                  "type": "text",
+                                  "uuid": "33aafbc3-2af7-4943-a587-3f31a6bcad6b"
+                                },
+                                {
+                                  "key": "image[6]",
+                                  "type": "file",
+                                  "uuid": "1b5ed90f-46ea-4750-850a-cfcaf74a0e17",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                }
+                              ]
+                            },
+                            "url": {
+                              "raw": "{{base_url}}/vendor/business/category/documents/upload/:slug",
+                              "host": [
+                                "{{base_url}}"
+                              ],
+                              "path": [
+                                "vendor",
+                                "business",
+                                "category",
+                                "documents",
+                                "upload",
+                                ":slug"
+                              ],
+                              "variable": [
+                                {
+                                  "key": "slug",
+                                  "value": "bike-scooter-rental"
+                                }
+                              ]
+                            }
+                          },
+                          "response": []
+                        },
+                        {
+                          "name": "Category Documents (Vehicle Rental)",
+                          "request": {
+                            "method": "POST",
+                            "header": [],
+                            "body": {
+                              "mode": "formdata",
+                              "formdata": [
+                                {
+                                  "key": "document_slug[0]",
+                                  "value": "vehicle-registration-certificate-rc",
+                                  "type": "text",
+                                  "uuid": "ebf0c39c-558d-490c-9dcb-8f5ec760eadf"
+                                },
+                                {
+                                  "key": "image[0]",
+                                  "type": "file",
+                                  "uuid": "537eb853-2f91-45de-a378-6e740de97937",
+                                  "src": "postman-cloud:///1f0fd1d4-73f3-4910-914e-6cdbc2063428"
+                                },
+                                {
+                                  "key": "document_slug[1]",
+                                  "value": "business-license-2",
+                                  "type": "text",
+                                  "uuid": "911891fa-1e59-45b4-9b2c-38927331b2af"
+                                },
+                                {
+                                  "key": "image[1]",
+                                  "type": "file",
+                                  "uuid": "2c1ba738-78e5-499e-bab7-9253e4ef1978",
+                                  "src": "postman-cloud:///1f0f82ee-a24a-46e0-8e87-7449c73edf64"
+                                },
+                                {
+                                  "key": "document_slug[2]",
+                                  "value": "rto-permit",
+                                  "type": "text",
+                                  "uuid": "a0767b80-eb32-4c84-8d06-0a24e9ae044c"
+                                },
+                                {
+                                  "key": "image[2]",
+                                  "type": "file",
+                                  "uuid": "942d58c1-d546-4c0d-a22b-bdbbe6974966",
+                                  "src": "postman-cloud:///1f0f7c26-da68-40f0-b5e0-9ae8962c64a0"
+                                },
+                                {
+                                  "key": "document_slug[3]",
+                                  "value": "insurance-tax-receipt",
+                                  "type": "text",
+                                  "uuid": "ade8c8de-8b67-4d16-b15b-0ce4d2ef9290"
+                                },
+                                {
+                                  "key": "image[3]",
+                                  "type": "file",
+                                  "uuid": "fe4e4ee4-0a1c-43db-8b0d-2aeac039d4fe",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "commercial-permit",
+                                  "type": "text",
+                                  "uuid": "52fea8a9-63e9-45c1-88a7-b49834e265a3"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "53ae362e-2c84-4c24-b25c-142efbce5adf",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "puc-certificate",
+                                  "type": "text",
+                                  "uuid": "c06ab742-acd9-435b-acc0-1961ab11583b"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "e479bea9-0384-4e15-9706-38fd78feaa88",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                },
+                                {
+                                  "key": "document_slug[5]",
+                                  "value": "rental-agreement-format",
+                                  "type": "text",
+                                  "uuid": "4d34246c-65f9-47f1-836d-ab625778dfd9"
+                                },
+                                {
+                                  "key": "image[5]",
+                                  "type": "file",
+                                  "uuid": "df1ef2e9-3088-4bcb-bdbe-cc0b461244ef",
+                                  "src": "postman-cloud:///1f0f7c25-3ac6-4b10-9221-bcc9835580a2"
+                                },
+                                {
+                                  "key": "document_slug[6]",
+                                  "value": "customer-id-verification-policy",
+                                  "type": "text",
+                                  "uuid": "33aafbc3-2af7-4943-a587-3f31a6bcad6b"
+                                },
+                                {
+                                  "key": "image[6]",
+                                  "type": "file",
+                                  "uuid": "1b5ed90f-46ea-4750-850a-cfcaf74a0e17",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                }
+                              ]
+                            },
+                            "url": {
+                              "raw": "{{base_url}}/vendor/business/category/documents/upload/:slug",
+                              "host": [
+                                "{{base_url}}"
+                              ],
+                              "path": [
+                                "vendor",
+                                "business",
+                                "category",
+                                "documents",
+                                "upload",
+                                ":slug"
+                              ],
+                              "variable": [
+                                {
+                                  "key": "slug",
+                                  "value": "bike-scooter-rental"
+                                }
+                              ]
+                            }
+                          },
+                          "response": []
+                        },
+                        {
+                          "name": "Category Documents (Chardham)",
+                          "request": {
+                            "method": "POST",
+                            "header": [],
+                            "body": {
+                              "mode": "formdata",
+                              "formdata": [
+                                {
+                                  "key": "document_slug[0]",
+                                  "value": "vehicle-registration-certificate-rc",
+                                  "type": "text",
+                                  "uuid": "ebf0c39c-558d-490c-9dcb-8f5ec760eadf"
+                                },
+                                {
+                                  "key": "image[0]",
+                                  "type": "file",
+                                  "uuid": "537eb853-2f91-45de-a378-6e740de97937",
+                                  "src": "postman-cloud:///1f0fd1d4-73f3-4910-914e-6cdbc2063428"
+                                },
+                                {
+                                  "key": "document_slug[1]",
+                                  "value": "business-license-2",
+                                  "type": "text",
+                                  "uuid": "911891fa-1e59-45b4-9b2c-38927331b2af"
+                                },
+                                {
+                                  "key": "image[1]",
+                                  "type": "file",
+                                  "uuid": "2c1ba738-78e5-499e-bab7-9253e4ef1978",
+                                  "src": "postman-cloud:///1f0f82ee-a24a-46e0-8e87-7449c73edf64"
+                                },
+                                {
+                                  "key": "document_slug[2]",
+                                  "value": "rto-permit",
+                                  "type": "text",
+                                  "uuid": "a0767b80-eb32-4c84-8d06-0a24e9ae044c"
+                                },
+                                {
+                                  "key": "image[2]",
+                                  "type": "file",
+                                  "uuid": "942d58c1-d546-4c0d-a22b-bdbbe6974966",
+                                  "src": "postman-cloud:///1f0f7c26-da68-40f0-b5e0-9ae8962c64a0"
+                                },
+                                {
+                                  "key": "document_slug[3]",
+                                  "value": "insurance-tax-receipt",
+                                  "type": "text",
+                                  "uuid": "ade8c8de-8b67-4d16-b15b-0ce4d2ef9290"
+                                },
+                                {
+                                  "key": "image[3]",
+                                  "type": "file",
+                                  "uuid": "fe4e4ee4-0a1c-43db-8b0d-2aeac039d4fe",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "commercial-permit",
+                                  "type": "text",
+                                  "uuid": "52fea8a9-63e9-45c1-88a7-b49834e265a3"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "53ae362e-2c84-4c24-b25c-142efbce5adf",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "puc-certificate",
+                                  "type": "text",
+                                  "uuid": "c06ab742-acd9-435b-acc0-1961ab11583b"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "e479bea9-0384-4e15-9706-38fd78feaa88",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                },
+                                {
+                                  "key": "document_slug[5]",
+                                  "value": "rental-agreement-format",
+                                  "type": "text",
+                                  "uuid": "4d34246c-65f9-47f1-836d-ab625778dfd9"
+                                },
+                                {
+                                  "key": "image[5]",
+                                  "type": "file",
+                                  "uuid": "df1ef2e9-3088-4bcb-bdbe-cc0b461244ef",
+                                  "src": "postman-cloud:///1f0f7c25-3ac6-4b10-9221-bcc9835580a2"
+                                },
+                                {
+                                  "key": "document_slug[6]",
+                                  "value": "customer-id-verification-policy",
+                                  "type": "text",
+                                  "uuid": "33aafbc3-2af7-4943-a587-3f31a6bcad6b"
+                                },
+                                {
+                                  "key": "image[6]",
+                                  "type": "file",
+                                  "uuid": "1b5ed90f-46ea-4750-850a-cfcaf74a0e17",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                }
+                              ]
+                            },
+                            "url": {
+                              "raw": "{{base_url}}/vendor/business/category/documents/upload/:slug",
+                              "host": [
+                                "{{base_url}}"
+                              ],
+                              "path": [
+                                "vendor",
+                                "business",
+                                "category",
+                                "documents",
+                                "upload",
+                                ":slug"
+                              ],
+                              "variable": [
+                                {
+                                  "key": "slug",
+                                  "value": "bike-scooter-rental"
+                                }
+                              ]
+                            }
+                          },
+                          "response": []
+                        },
+                        {
+                          "name": "Category Documents (Custom Trip)",
+                          "request": {
+                            "method": "POST",
+                            "header": [],
+                            "body": {
+                              "mode": "formdata",
+                              "formdata": [
+                                {
+                                  "key": "document_slug[0]",
+                                  "value": "vehicle-registration-certificate-rc",
+                                  "type": "text",
+                                  "uuid": "ebf0c39c-558d-490c-9dcb-8f5ec760eadf"
+                                },
+                                {
+                                  "key": "image[0]",
+                                  "type": "file",
+                                  "uuid": "537eb853-2f91-45de-a378-6e740de97937",
+                                  "src": "postman-cloud:///1f0fd1d4-73f3-4910-914e-6cdbc2063428"
+                                },
+                                {
+                                  "key": "document_slug[1]",
+                                  "value": "business-license-2",
+                                  "type": "text",
+                                  "uuid": "911891fa-1e59-45b4-9b2c-38927331b2af"
+                                },
+                                {
+                                  "key": "image[1]",
+                                  "type": "file",
+                                  "uuid": "2c1ba738-78e5-499e-bab7-9253e4ef1978",
+                                  "src": "postman-cloud:///1f0f82ee-a24a-46e0-8e87-7449c73edf64"
+                                },
+                                {
+                                  "key": "document_slug[2]",
+                                  "value": "rto-permit",
+                                  "type": "text",
+                                  "uuid": "a0767b80-eb32-4c84-8d06-0a24e9ae044c"
+                                },
+                                {
+                                  "key": "image[2]",
+                                  "type": "file",
+                                  "uuid": "942d58c1-d546-4c0d-a22b-bdbbe6974966",
+                                  "src": "postman-cloud:///1f0f7c26-da68-40f0-b5e0-9ae8962c64a0"
+                                },
+                                {
+                                  "key": "document_slug[3]",
+                                  "value": "insurance-tax-receipt",
+                                  "type": "text",
+                                  "uuid": "ade8c8de-8b67-4d16-b15b-0ce4d2ef9290"
+                                },
+                                {
+                                  "key": "image[3]",
+                                  "type": "file",
+                                  "uuid": "fe4e4ee4-0a1c-43db-8b0d-2aeac039d4fe",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "commercial-permit",
+                                  "type": "text",
+                                  "uuid": "52fea8a9-63e9-45c1-88a7-b49834e265a3"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "53ae362e-2c84-4c24-b25c-142efbce5adf",
+                                  "src": "postman-cloud:///1f0f7c25-5405-4180-ba12-6cdd6224c3ed"
+                                },
+                                {
+                                  "key": "document_slug[4]",
+                                  "value": "puc-certificate",
+                                  "type": "text",
+                                  "uuid": "c06ab742-acd9-435b-acc0-1961ab11583b"
+                                },
+                                {
+                                  "key": "image[4]",
+                                  "type": "file",
+                                  "uuid": "e479bea9-0384-4e15-9706-38fd78feaa88",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                },
+                                {
+                                  "key": "document_slug[5]",
+                                  "value": "rental-agreement-format",
+                                  "type": "text",
+                                  "uuid": "4d34246c-65f9-47f1-836d-ab625778dfd9"
+                                },
+                                {
+                                  "key": "image[5]",
+                                  "type": "file",
+                                  "uuid": "df1ef2e9-3088-4bcb-bdbe-cc0b461244ef",
+                                  "src": "postman-cloud:///1f0f7c25-3ac6-4b10-9221-bcc9835580a2"
+                                },
+                                {
+                                  "key": "document_slug[6]",
+                                  "value": "customer-id-verification-policy",
+                                  "type": "text",
+                                  "uuid": "33aafbc3-2af7-4943-a587-3f31a6bcad6b"
+                                },
+                                {
+                                  "key": "image[6]",
+                                  "type": "file",
+                                  "uuid": "1b5ed90f-46ea-4750-850a-cfcaf74a0e17",
+                                  "src": "postman-cloud:///1f0f7c23-4a04-4480-88f5-bd969d95ec5b"
+                                }
+                              ]
+                            },
+                            "url": {
+                              "raw": "{{base_url}}/vendor/business/category/documents/upload/:slug",
+                              "host": [
+                                "{{base_url}}"
+                              ],
+                              "path": [
+                                "vendor",
+                                "business",
+                                "category",
+                                "documents",
+                                "upload",
+                                ":slug"
+                              ],
+                              "variable": [
+                                {
+                                  "key": "slug",
+                                  "value": "bike-scooter-rental"
+                                }
+                              ]
+                            }
+                          },
+                          "response": []
+                        }
+                      ]
+                    },
+                    {
+                      "name": "Get Business Category Document",
+                      "protocolProfileBehavior": {
+                        "disableBodyPruning": true
+                      },
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "body": {
+                          "mode": "formdata",
+                          "formdata": []
+                        },
+                        "url": {
+                          "raw": "{{base_url}}/vendor/business/category/documents/:slug",
+                          "host": [
+                            "{{base_url}}"
+                          ],
+                          "path": [
+                            "vendor",
+                            "business",
+                            "category",
+                            "documents",
+                            ":slug"
+                          ],
+                          "variable": [
+                            {
+                              "key": "slug",
+                              "value": "hotel"
+                            }
+                          ]
+                        }
+                      },
+                      "response": []
+                    },
+                    {
+                      "name": "Get Uploaded Business Category Documents",
+                      "request": {
+                        "method": "GET",
+                        "header": [],
+                        "url": {
+                          "raw": "{{base_url}}/vendor/business/category/documents/uploaded",
+                          "host": [
+                            "{{base_url}}"
+                          ],
+                          "path": [
+                            "vendor",
+                            "business",
+                            "category",
+                            "documents",
+                            "uploaded"
+                          ]
+                        }
+                      },
+                      "response": []
+                    }
+                  ]
+                },
+                {
+                  "name": "get Business Category",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/vendor/business/category",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "vendor",
+                        "business",
+                        "category"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Add Business Category",
+                  "request": {
+                    "method": "POST",
+                    "header": [],
+                    "body": {
+                      "mode": "formdata",
+                      "formdata": [
+                        {
+                          "key": "slug",
+                          "value": "homestay",
+                          "type": "text",
+                          "uuid": "4d7c34ce-fbc4-4cc4-96f4-540bb8350f7a"
+                        }
+                      ]
+                    },
+                    "url": {
+                      "raw": "{{base_url}}/vendor/business/category",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "vendor",
+                        "business",
+                        "category"
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Delete Business Category",
+                  "request": {
+                    "method": "DELETE",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/vendor/business/category/:slug",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "vendor",
+                        "business",
+                        "category",
+                        ":slug"
+                      ],
+                      "variable": [
+                        {
+                          "key": "slug",
+                          "value": "homestay"
+                        }
+                      ]
+                    }
+                  },
+                  "response": []
+                },
+                {
+                  "name": "Eligible business Category",
+                  "request": {
+                    "method": "GET",
+                    "header": [],
+                    "url": {
+                      "raw": "{{base_url}}/vendor/business/category/eligible",
+                      "host": [
+                        "{{base_url}}"
+                      ],
+                      "path": [
+                        "vendor",
+                        "business",
+                        "category",
+                        "eligible"
                       ]
                     }
                   },
@@ -1200,10 +2560,10 @@
           "name": "Packages",
           "item": [
             {
-              "name": "Package Items",
+              "name": "Add Package Items",
               "item": [
                 {
-                  "name": "Add Homestay Item",
+                  "name": "Package Items (Homestay)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -1540,7 +2900,7 @@
                   "response": []
                 },
                 {
-                  "name": "Add Hotel Item",
+                  "name": "Package Items (Hotel)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -1623,7 +2983,7 @@
                       "formdata": [
                         {
                           "key": "category",
-                          "value": " hotel",
+                          "value": "hotel",
                           "type": "text"
                         },
                         {
@@ -1854,7 +3214,7 @@
                   "response": []
                 },
                 {
-                  "name": "Add Camping Item",
+                  "name": "Package Items (Camping)",
                   "request": {
                     "method": "POST",
                     "header": [
@@ -2089,7 +3449,7 @@
                   "response": []
                 },
                 {
-                  "name": "Add Trekking Item",
+                  "name": "Package Items (Trekking)",
                   "request": {
                     "method": "POST",
                     "header": [
@@ -2373,7 +3733,7 @@
                   "response": []
                 },
                 {
-                  "name": "Add Rafting Item",
+                  "name": "Package Items (Rafting)",
                   "request": {
                     "method": "POST",
                     "header": [
@@ -2447,12 +3807,12 @@
                         },
                         {
                           "key": "item[0][details][difficultyLevel]",
-                          "value": " Moderate",
+                          "value": "moderate",
                           "type": "text"
                         },
                         {
                           "key": "item[0][details][rapidGrade]",
-                          "value": " III",
+                          "value": "Grade III",
                           "type": "text"
                         },
                         {
@@ -2572,7 +3932,7 @@
                         },
                         {
                           "key": "item[0][mealType]",
-                          "value": " No Meals",
+                          "value": "No Meals Included",
                           "type": "text"
                         },
                         {
@@ -2612,7 +3972,7 @@
                   "response": []
                 },
                 {
-                  "name": "Add Bungee Jumping Item",
+                  "name": "Package Items (Bungee Jumping)",
                   "request": {
                     "method": "POST",
                     "header": [
@@ -2761,7 +4121,7 @@
                         },
                         {
                           "key": "item[0][mealType]",
-                          "value": " No Meals",
+                          "value": "No Meals Included",
                           "type": "text"
                         },
                         {
@@ -2801,7 +4161,7 @@
                   "response": []
                 },
                 {
-                  "name": "Add Vehicle Rental Item",
+                  "name": "Package Items (Vehicle Rental)",
                   "request": {
                     "method": "POST",
                     "header": [
@@ -2905,7 +4265,7 @@
                         },
                         {
                           "key": "item[0][vehicleDetails][fuelPolicy]",
-                          "value": " Full to Full",
+                          "value": "full_to_empty",
                           "type": "text"
                         },
                         {
@@ -3010,7 +4370,7 @@
                   "response": []
                 },
                 {
-                  "name": "Add Chardham Item",
+                  "name": "Package Items (Chardham)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -3324,7 +4684,7 @@
                   "response": []
                 },
                 {
-                  "name": "Add Skiing Item",
+                  "name": "Package Items (Skiing)",
                   "request": {
                     "method": "POST",
                     "header": [
@@ -3503,7 +4863,7 @@
                   "response": []
                 },
                 {
-                  "name": "Add Paragliding Item",
+                  "name": "Package Items (Paragliding)",
                   "request": {
                     "method": "POST",
                     "header": [
@@ -3697,7 +5057,7 @@
                   "response": []
                 },
                 {
-                  "name": "Add Custom Trip Item",
+                  "name": "Package Items (Custom Trip)",
                   "request": {
                     "method": "POST",
                     "header": [
@@ -3881,7 +5241,7 @@
               "name": "Edit Package Items",
               "item": [
                 {
-                  "name": "Update Homestay Item",
+                  "name": "Package Items (Homestay)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -4224,7 +5584,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Hotel Item",
+                  "name": "Package Items (Hotel)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -4307,7 +5667,7 @@
                       "formdata": [
                         {
                           "key": "category",
-                          "value": " hotel",
+                          "value": "hotel",
                           "type": "text"
                         },
                         {
@@ -4523,7 +5883,7 @@
                         },
                         {
                           "key": "itemId",
-                          "value": "",
+                          "value": "69d3733746432c1a62aba84a",
                           "type": "text",
                           "uuid": "c9888d76-d51b-4e0e-a7ae-cfe455487761"
                         }
@@ -4544,7 +5904,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Camping Item",
+                  "name": "Package Items (Camping)",
                   "request": {
                     "method": "PUT",
                     "header": [
@@ -4785,7 +6145,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Trekking Item",
+                  "name": "Package Items (Trekking)",
                   "request": {
                     "method": "PUT",
                     "header": [
@@ -5075,7 +6435,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Rafting Item",
+                  "name": "Package Items (Rafting)",
                   "request": {
                     "method": "PUT",
                     "header": [
@@ -5320,7 +6680,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Bungee Jumping Item",
+                  "name": "Package Items (Bungee Jumping)",
                   "request": {
                     "method": "PUT",
                     "header": [
@@ -5515,7 +6875,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Vehicle Rental Item",
+                  "name": "Package Items (Vehicle Rental)",
                   "request": {
                     "method": "PUT",
                     "header": [
@@ -5730,7 +7090,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Chardham Item",
+                  "name": "Package Items (Chardham)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -6050,7 +7410,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Skiing Item",
+                  "name": "Package Items (Skiing)",
                   "request": {
                     "method": "PUT",
                     "header": [
@@ -6235,7 +7595,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Paragliding Item",
+                  "name": "Package Items (Paragliding)",
                   "request": {
                     "method": "PUT",
                     "header": [
@@ -6435,7 +7795,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Custom Trip Item",
+                  "name": "Package Items (Custom Trip)",
                   "request": {
                     "method": "PUT",
                     "header": [
@@ -6625,7 +7985,7 @@
               "name": "Edit Package By ItemId",
               "item": [
                 {
-                  "name": "Update Homestay Item",
+                  "name": "Package Items (Homestay)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -6969,7 +8329,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Hotel Item",
+                  "name": "Package Items (Hotel)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -7282,7 +8642,7 @@
                       "variable": [
                         {
                           "key": "itemId",
-                          "value": "69ba19aa9ba2b2eab635d19f"
+                          "value": "69d3733746432c1a62aba84a"
                         }
                       ]
                     }
@@ -7290,7 +8650,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Camping Item",
+                  "name": "Package Items (Camping)",
                   "request": {
                     "method": "PUT",
                     "header": [
@@ -7532,7 +8892,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Trekking Item",
+                  "name": "Package Items (Trekking)",
                   "request": {
                     "method": "PUT",
                     "header": [
@@ -7823,7 +9183,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Rafting Item",
+                  "name": "Package Items (Rafting)",
                   "request": {
                     "method": "PUT",
                     "header": [
@@ -8069,7 +9429,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Bungee Jumping Item",
+                  "name": "Package Items (Bungee Jumping)",
                   "request": {
                     "method": "PUT",
                     "header": [
@@ -8265,7 +9625,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Vehicle Rental Item",
+                  "name": "Package Items (Vehicle Rental)",
                   "request": {
                     "method": "PUT",
                     "header": [
@@ -8481,7 +9841,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Chardham Item",
+                  "name": "Package Items (Chardham)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -8802,7 +10162,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Skiing Item",
+                  "name": "Package Items (Skiing)",
                   "request": {
                     "method": "PUT",
                     "header": [
@@ -8994,7 +10354,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Paragliding Item",
+                  "name": "Package Items (Paragliding)",
                   "request": {
                     "method": "PUT",
                     "header": [
@@ -9201,7 +10561,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update Custom Trip Item",
+                  "name": "Package Items (Custom Trip)",
                   "request": {
                     "method": "PUT",
                     "header": [
@@ -9600,11 +10960,11 @@
                   "variable": [
                     {
                       "key": "category",
-                      "value": "chardham-tour"
+                      "value": "hotel"
                     },
                     {
                       "key": "itemId",
-                      "value": "69b9a58f898f6eb04ad1a3d6"
+                      "value": "69d3733746432c1a62aba84a"
                     }
                   ]
                 }
@@ -9658,7 +11018,7 @@
                   "formdata": [
                     {
                       "key": "category",
-                      "value": "homestay",
+                      "value": "hotel",
                       "type": "text"
                     },
                     {
@@ -9682,7 +11042,7 @@
                   "variable": [
                     {
                       "key": "itemId",
-                      "value": "69be4e7af64c9dd236d2dcfb"
+                      "value": "69d3739246432c1a62aba864"
                     }
                   ]
                 }
@@ -9704,12 +11064,12 @@
                   "formdata": [
                     {
                       "key": "category",
-                      "value": "homestay",
+                      "value": "hotel",
                       "type": "text"
                     },
                     {
                       "key": "itemId",
-                      "value": "ITEM_ID_HERE",
+                      "value": "69d3733746432c1a62aba84a",
                       "type": "text"
                     }
                   ]
@@ -9773,7 +11133,8 @@
                     {
                       "key": "phone",
                       "value": "{{$randomPhoneNumber}}",
-                      "type": "text"
+                      "type": "text",
+                      "disabled": true
                     },
                     {
                       "key": "gender",
@@ -9948,7 +11309,7 @@
               "response": []
             },
             {
-              "name": "Delete Vendor",
+              "name": "Delete Profile",
               "request": {
                 "method": "DELETE",
                 "header": [],
@@ -9960,6 +11321,35 @@
                   "path": [
                     "vendor",
                     "delete"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "Deactive Profile",
+              "request": {
+                "method": "PATCH",
+                "header": [],
+                "body": {
+                  "mode": "formdata",
+                  "formdata": [
+                    {
+                      "key": "status",
+                      "value": "true",
+                      "type": "text",
+                      "uuid": "48f65e7b-b5ff-4e25-b5a1-294bc0f14030"
+                    }
+                  ]
+                },
+                "url": {
+                  "raw": "{{base_url}}/vendor/status",
+                  "host": [
+                    "{{base_url}}"
+                  ],
+                  "path": [
+                    "vendor",
+                    "status"
                   ]
                 }
               },
@@ -10019,7 +11409,7 @@
               "name": "Update Baseline items",
               "item": [
                 {
-                  "name": "Update item Baseline For Homestay",
+                  "name": "Baseline items (Homestay)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -10157,7 +11547,7 @@
                       "variable": [
                         {
                           "key": "itemId",
-                          "value": "69ba18ca9ba2b2eab635d166"
+                          "value": "69d4fc73df97870d0d28befb"
                         }
                       ]
                     }
@@ -10165,7 +11555,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update item Baseline For Hotel",
+                  "name": "Baseline items (Hotel)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -10302,7 +11692,7 @@
                       "variable": [
                         {
                           "key": "itemId",
-                          "value": "69ba19aa9ba2b2eab635d19f"
+                          "value": "69d3739246432c1a62aba864"
                         }
                       ]
                     }
@@ -10310,7 +11700,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update item Baseline For Camping",
+                  "name": "Baseline items (Camping)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -10445,7 +11835,7 @@
                       "variable": [
                         {
                           "key": "itemId",
-                          "value": "69be4e09f64c9dd236d2db3a"
+                          "value": "69d3742d46432c1a62aba894"
                         }
                       ]
                     }
@@ -10453,7 +11843,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update item Baseline For Trekking",
+                  "name": "Baseline items (Trekking)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -10561,7 +11951,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update item Baseline For Rafting",
+                  "name": "Baseline items (Rafting)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -10664,7 +12054,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update item Baseline For Bungee Jumping",
+                  "name": "Baseline items (Bungee Jumping)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -10767,7 +12157,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update item Baseline For Vehicle Rental",
+                  "name": "Baseline items (Vehicle Rental)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -10885,7 +12275,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update item Baseline For Chardham",
+                  "name": "Baseline items (Chardham)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -11004,7 +12394,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update item Baseline For Skiing",
+                  "name": "Baseline items (Skiing)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -11102,7 +12492,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update item Baseline For Paragliding",
+                  "name": "Baseline items (Paragliding)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -11205,7 +12595,7 @@
                   "response": []
                 },
                 {
-                  "name": "Update item Baseline For Custom Trip",
+                  "name": "Baseline items (Custom Trip)",
                   "event": [
                     {
                       "listen": "prerequest",
@@ -12318,7 +13708,7 @@
             "method": "GET",
             "header": [],
             "url": {
-              "raw": "{{base_url}}/packages?page=1&limit=3",
+              "raw": "{{base_url}}/packages?page=1&limit=10",
               "host": [
                 "{{base_url}}"
               ],
@@ -12332,7 +13722,7 @@
                 },
                 {
                   "key": "limit",
-                  "value": "3"
+                  "value": "10"
                 }
               ]
             }
@@ -12359,7 +13749,7 @@
               "variable": [
                 {
                   "key": "id",
-                  "value": "69be4e37f64c9dd236d2dc02"
+                  "value": "69d38b0046432c1a62ababb6"
                 }
               ]
             }

@@ -3,7 +3,7 @@ import PackageService from '@/services/PackageService.js';
 import BookingService from '@/services/BookingService.js';
 import Vendor from '@/models/Vendor.js';
 import OCRService from '@/services/OCRService.js';
-import VendorService from '@/services/VendorService.js';
+import BusinessService from '@/services/Vendor/BusinessService.js';
 import VendorDocument from '@/models/VendorDocument.js';
 import VerifiedIdentity from '@/models/VerifiedIdentity.js';
 import NotificationService from '@/services/NotificationService.js';
@@ -191,7 +191,7 @@ class AdminController {
 
       await Vendor.findByIdAndUpdate(vendorId, updateData);
 
-      await VendorService.evaluateVendorTrustBadge(vendorId);
+      await BusinessService.evaluateVendorTrustBadge(vendorId);
 
       return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.STATUS_UPDATED, {});
     } catch (error) {
@@ -363,7 +363,7 @@ class AdminController {
 
       NotificationService.notifyDocumentVerification(vendorId, documentField, status === 'verified' || status === 'approved');
 
-      await VendorService.evaluateVendorTrustBadge(vendorId);
+      await BusinessService.evaluateVendorTrustBadge(vendorId);
 
       return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.DOCUMENT_STATUS_UPDATED, {});
     } catch (error) {

@@ -38,8 +38,8 @@ describe('PackageService Test Suite', () => {
     });
 
     it('should update an existing service item using pricing schema', async () => {
-        const initialItem = await PackageService.addServiceItem(vendorId, 'trekking', { 
-            title: 'EBC', description: 'desc', pricing: { pricePerPerson: 100 }, location: { address: 'test' } 
+        const initialItem = await PackageService.addServiceItem(vendorId, 'trekking', {
+            title: 'EBC', description: 'desc', pricing: { pricePerPerson: 100 }, location: { address: 'test' }
         });
         const itemId = initialItem.id;
 
@@ -48,11 +48,11 @@ describe('PackageService Test Suite', () => {
     });
 
     it('should format vendor catalog into flattened items array', async () => {
-        await PackageService.addServiceItem(vendorId, 'trekking', { 
-            title: 'Base Camp', description: 'desc', pricing: { pricePerPerson: 100 }, location: { address: 'test' } 
+        await PackageService.addServiceItem(vendorId, 'trekking', {
+            title: 'Base Camp', description: 'desc', pricing: { pricePerPerson: 100 }, location: { address: 'test' }
         });
         const formatted = await PackageService.getFormattedVendorCatalog(vendorId);
-        
+
         expect(Array.isArray(formatted.items)).toBe(true);
         expect(formatted.items[0].category_slug).toBe('trekking');
         expect(formatted.items[0].title).toBe('Base Camp');
@@ -81,7 +81,7 @@ describe('PackageService Test Suite', () => {
         });
 
         it('should support partially updating pricing using dot-notation', async () => {
-             const initialItem = await PackageService.addServiceItem(vendorId, 'trekking', {
+            const initialItem = await PackageService.addServiceItem(vendorId, 'trekking', {
                 title: 'Trek One', description: 'desc', pricing: { pricePerPerson: 100, porterPricePerDay: 50 },
                 location: { address: 'test' }
             });

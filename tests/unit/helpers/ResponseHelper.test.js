@@ -19,4 +19,12 @@ describe('Response Helper Test Suite', () => {
         expect(body.message).toBe('Fail');
         expect(body.data.error).toBe('Invalid');
     });
+
+    it('should mask detailed messages for 500 Internal Server Errors', async () => {
+        const response = errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Root Password Leaked!');
+        expect(response.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        const body = await response.json();
+        expect(body.message).not.toBe('Root Password Leaked!');
+        expect(body.message).toBe('Internal Server Error');
+    });
 });

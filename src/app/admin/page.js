@@ -11,7 +11,7 @@ import {
 } from 'lucide-react';
 import {
   AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
-  BarChart, Bar, PieChart, Pie, Cell, Legend
+  LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, Legend, ReferenceLine
 } from 'recharts';
 import PackageCard from '@/components/admin/PackageCard';
 
@@ -37,6 +37,14 @@ export default function AdminDashboard() {
   const [period, setPeriod] = useState('monthly');
   const [analyticsData, setAnalyticsData] = useState(null);
   const [analyticsLoading, setAnalyticsLoading] = useState(true);
+  const [hiddenLines, setHiddenLines] = useState([]);
+
+  const toggleLine = (e) => {
+    const { dataKey } = e;
+    setHiddenLines(prev =>
+      prev.includes(dataKey) ? prev.filter(k => k !== dataKey) : [...prev, dataKey]
+    );
+  };
 
   useEffect(() => {
     const fetchAnalytics = async () => {
@@ -311,13 +319,65 @@ export default function AdminDashboard() {
                 <h3 className="text-sm font-mono tracking-widest text-blue-400 uppercase mb-6 flex items-center gap-2"><Users className="w-4 h-4" /> New User Registrations</h3>
                 <div className="h-64">
                   <ResponsiveContainer width="100%" height={256}>
-                    <BarChart data={analyticsData.userGrowth}>
+                    <LineChart data={analyticsData.userGrowth} margin={{ top: 10, right: 10, left: -20, bottom: 0 }}>
                       <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#ffffff1a" />
-                      <XAxis dataKey="_id" tick={{ fill: '#64748b', fontSize: 10 }} tickLine={false} axisLine={false} />
-                      <YAxis tick={{ fill: '#64748b', fontSize: 10 }} tickLine={false} axisLine={false} />
-                      <RechartsTooltip cursor={{ fill: 'rgba(255,255,255,0.05)' }} contentStyle={{ borderRadius: '8px', border: '1px solid rgba(255,255,255,0.1)', backgroundColor: '#0a0a0c', color: '#cbd5e1' }} itemStyle={{ color: '#60a5fa' }} />
-                      <Bar dataKey="users" fill="#60a5fa" radius={[4, 4, 0, 0]} name="New Users" barSize={30} />
-                    </BarChart>
+                      <XAxis dataKey="_id" tickFormatter={(val) => new Date(val).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} tick={{ fill: '#64748b', fontSize: 10 }} tickLine={true} axisLine={true} />
+                      <YAxis allowDecimals={false} tick={{ fill: '#64748b', fontSize: 10 }} tickLine={true} axisLine={true} />
+                      <RechartsTooltip
+                        cursor={{ stroke: '#ffffff1a', strokeWidth: 1 }}
+                        labelFormatter={(label) => new Date(label).toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })}
+                        contentStyle={{
+                          borderRadius: '12px',
+                          border: '1px solid rgba(255,255,255,0.1)',
+                          backgroundColor: '#0a0a0c',
+                          color: '#cbd5e1',
+                          boxShadow: '0 10px 15px -3px rgba(0,0,0,0.5)'
+                        }}
+                      />
+                      <Legend
+                        verticalAlign="top"
+                        align="right"
+                        iconType="circle"
+                        onClick={toggleLine}
+                        wrapperStyle={{
+                          paddingBottom: '20px',
+                          fontSize: '10px',
+                          textTransform: 'uppercase',
+                          letterSpacing: '0.1em',
+                          cursor: 'pointer'
+                        }}
+                      />
+                      <Line
+                        type="linear"
+                        dataKey="travellers"
+                        stroke="#60a5fa"
+                        strokeWidth={2}
+                        hide={hiddenLines.includes('travellers')}
+                        dot={{ r: 3, fill: '#60a5fa', strokeWidth: 0 }}
+                        activeDot={{ r: 5, strokeWidth: 0, fill: '#60a5fa', stroke: '#fff', strokeWidth: 2 }}
+                        name="Travellers"
+                        animationDuration={1000}
+                      />
+                      <Line
+                        type="linear"
+                        dataKey="vendors"
+                        stroke="#10b981"
+                        strokeWidth={2}
+                        hide={hiddenLines.includes('vendors')}
+                        dot={{ r: 3, fill: '#10b981', strokeWidth: 0 }}
+                        activeDot={{ r: 5, strokeWidth: 0, fill: '#10b981', stroke: '#fff', strokeWidth: 2 }}
+                        name="Vendors"
+                        animationDuration={1000}
+                      />
+                      <ReferenceLine 
+                        y={80} 
+                        label={{ value: 'GOAL', position: 'insideRight', fill: '#fb923c', fontSize: 10, fontStyle: 'italic' }} 
+                        stroke="#fb923c" 
+                        strokeDasharray="10 10" 
+                        strokeWidth={1}
+                        opacity={0.3}
+                      />
+                    </LineChart>
                   </ResponsiveContainer>
                 </div>
               </div>

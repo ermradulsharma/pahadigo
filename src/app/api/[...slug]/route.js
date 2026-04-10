@@ -10,9 +10,13 @@ import { errorResponse, successResponse } from '@/helpers/response.js';
 import { parseNestedFormData } from '@/helpers/parseNestedFormData.js';
 import { validate } from '@/helpers/validation.js';
 
+// Resolve the modular routes array from the aggregate hub
 const routes = Array.isArray(routesImport) ? routesImport : (routesImport.default || []);
 const authRateLimiter = rateLimit({ limit: 5, windowMs: 60 * 1000 }); // 5 requests per minute
 
+/**
+ * Route Matching Engine - Finds the correct modular handler based on method and slug.
+ */
 function findRoute(method, slug) {
     const path = '/' + slug.join('/').replace(/\/$/, '');
     for (const route of routes) {
@@ -36,28 +40,31 @@ function findRoute(method, slug) {
     return null;
 }
 
+/**
+ * Universal API Handler - The single entry point for all PahadiGo role-based APIs.
+ */
 async function handler(req, { params }) {
     try {
         await dbConnect();
         const { slug } = await params;
         const method = req.method;
         const match = findRoute(method, slug);
-
+        
         if (!match) {
             return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.NOT_FOUND, { method, path: '/' + slug.join('/') });
         }
+
         const { routeDef, params: routeParams } = match;
         const path = '/' + slug.join('/').replace(/\/$/, '');
-
-        // --- Rate Limiting ---
+        
+        // Rate Limiting for Auth Endpoints
         const authLimitPaths = ['/auth/otp', '/auth/login', '/auth/verify', '/auth/forget-password', '/auth/reset-password'];
         if (authLimitPaths.some(p => path.startsWith(p))) {
             const limitResponse = await authRateLimiter(req, { params });
-            if (limitResponse instanceof Response) {
-                return limitResponse; // Blocked by rate limit
-            }
+            if (limitResponse instanceof Response) return limitResponse;
         }
 
+        // Middleware Pipeline (Auth & Roles)
         let userContext = null;
         if (routeDef.middleware) {
             if (routeDef.middleware.includes('auth')) {
@@ -68,15 +75,11 @@ async function handler(req, { params }) {
                 userContext = authResult.user;
             } else if (routeDef.middleware.includes('optionalAuth')) {
                 const authResult = await authMiddleware(req);
-                if (authResult.authorized) {
-                    userContext = authResult.user;
-                }
+                if (authResult.authorized) userContext = authResult.user;
             }
         }
 
-        if (userContext) {
-            req.user = userContext;
-        }
+        if (userContext) req.user = userContext;
 
         if (routeDef.roles && routeDef.roles.length > 0) {
             const roleResult = roleMiddleware({ user: userContext }, routeDef.roles);
@@ -85,6 +88,7 @@ async function handler(req, { params }) {
             }
         }
 
+        // Body Parsing & Validation
         const contentType = req.headers.get('content-type') || '';
         try {
             let bodyToValidate = null;
@@ -107,43 +111,24 @@ async function handler(req, { params }) {
                 }
             }
 
-            // [VALIDATION] Unified Schema Validation
             if (routeDef.schema && bodyToValidate) {
                 const validationResult = validate(routeDef.schema, bodyToValidate);
                 if (!validationResult.success) {
                     return errorResponse(HTTP_STATUS.BAD_REQUEST, validationResult.error, {});
                 }
-                // Attach validated data to request for controller use
                 req.validData = validationResult.data;
             }
         } catch (parseError) {
-            console.error("Body Parse Error:", parseError);
+            console.error("[BODY PARSE ERROR]", parseError);
             return errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.BAD_REQUEST, {});
         }
 
-        // Pass extracted route params as second argument
-        const result = await routeDef.handler(req, { params: routeParams });
-
-        // Support standard Response objects (New Standard)
-        if (result instanceof Response) {
-            return result;
-        }
-
-        // Support Legacy Format { status, data }
-        if (result && typeof result === 'object' && result.data !== undefined && (result.success !== undefined)) {
-            if (result.success === false) {
-                return errorResponse(result.status || HTTP_STATUS.BAD_REQUEST, result.message || RESPONSE_MESSAGES.ERROR.GENERIC, result.data);
-            }
-            return successResponse(result.status || HTTP_STATUS.OK, result.message || RESPONSE_MESSAGES.SUCCESS.GENERIC, result.data);
-        }
-
-        // Ensure legacy format is wrapped correctly if just arbitrary data is returned
-        return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.GENERIC, result);
-    } catch (error) {
-        console.error("API Handler Error:", error);
-        const errorData = process.env.NODE_ENV === 'development' ? { stack: error.stack } : {};
-        return NextResponse.json({ success: false, message: error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR, data: errorData }, { status: HTTP_STATUS.INTERNAL_SERVER_ERROR });
-    }
+        // Execute Modular Controller Handler (Standardized by centralized apiHandler helper)
+        return await routeDef.handler(req, { params: routeParams });
+ 
+     } catch (error) {
+         return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {});
+     }
 }
 
 export { handler as GET, handler as POST, handler as PUT, handler as DELETE, handler as PATCH };
