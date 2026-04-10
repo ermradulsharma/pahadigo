@@ -206,7 +206,7 @@ class PackageService {
     }
     return this._formatItem(newItem, category, vendor.category);
   }
-  
+
   async addServiceItem(vendorId, category, itemData) { return this.addItem(vendorId, category, itemData); }
 
   // Update Item
@@ -227,17 +227,17 @@ class PackageService {
 
     // Support nested dot-notation for pricing updates etc.
     Object.keys(updates).forEach(key => {
-        if (key.includes('.')) {
-            const parts = key.split('.');
-            let current = item;
-            for (let i = 0; i < parts.length - 1; i++) {
-                if (!current[parts[i]]) current[parts[i]] = {};
-                current = current[parts[i]];
-            }
-            current[parts[parts.length - 1]] = updates[key];
-        } else {
-            item.set(key, updates[key]);
+      if (key.includes('.')) {
+        const parts = key.split('.');
+        let current = item;
+        for (let i = 0; i < parts.length - 1; i++) {
+          if (!current[parts[i]]) current[parts[i]] = {};
+          current = current[parts[i]];
         }
+        current[parts[parts.length - 1]] = updates[key];
+      } else {
+        item.set(key, updates[key]);
+      }
     });
 
     if (item.location) {
@@ -247,7 +247,7 @@ class PackageService {
     const updatedItem = saved[schemaKey].id(itemId);
     return this._formatItem(updatedItem, category, vendor.category);
   }
-  
+
   async updateServiceItem(vendorId, category, itemId, updates) { return this.updateItem(vendorId, category, itemId, updates); }
 
   // Remove Item
@@ -341,7 +341,7 @@ class PackageService {
     }
     return null;
   }
-  
+
   async getPackageItem(itemId) { return this.findItem(itemId); }
 
   // Helper for controller

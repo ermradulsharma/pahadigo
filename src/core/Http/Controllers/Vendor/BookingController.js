@@ -4,7 +4,7 @@ import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 import Controller from '../Controller.js';
 
 /**
- * BookingController (Vendor Role) - Comprehensive management of Business Timeline, 
+ * BookingController (Vendor Role) - Comprehensive management of Business Timeline,
  * Customer Enrollments, and Operational Fulfillment.
  */
 class BookingController extends Controller {
@@ -27,7 +27,7 @@ class BookingController extends Controller {
         try {
             const vendor = await BusinessService.getBusinessByUserId(req.user.id);
             const booking = await BookingService.getBookingById(params.id);
-            
+
             if (!booking || String(booking.vendor) !== String(vendor._id)) {
                 return this.error(HTTP_STATUS.NOT_FOUND, "Booking not found or unauthorized");
             }
@@ -42,7 +42,7 @@ class BookingController extends Controller {
         try {
             const body = req.payload;
             const vendor = await BusinessService.getBusinessByUserId(req.user.id);
-            
+
             const result = await BookingService.updateBookingStatus(params.id, vendor._id, body.status);
             return this.success(HTTP_STATUS.OK, "Booking status updated", result);
         } catch (error) {
@@ -55,7 +55,7 @@ class BookingController extends Controller {
         try {
             const body = req.payload;
             const vendor = await BusinessService.getBusinessByUserId(req.user.id);
-            
+
             const result = await BookingService.logTimelineEvent(params.id, body.title, body.description, vendor.user);
             return this.success(HTTP_STATUS.OK, "Timeline event added", result);
         } catch (error) {

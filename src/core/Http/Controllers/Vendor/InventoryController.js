@@ -9,28 +9,28 @@ import Controller from '../Controller.js';
  */
 class InventoryController extends Controller {
 
-    // GET /vendor/inventory/
-    async getInventory(req) {
-        try {
-            const vendor = await BusinessService.getBusinessByUserId(req.user.id);
-            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-            const catalog = await PackageService.getInventory(vendor._id);
-            return this.success(HTTP_STATUS.OK, 'Packages retrieved successfully', catalog);
+  // GET /vendor/inventory/
+  async getInventory(req) {
+    try {
+      const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+      if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+      const catalog = await PackageService.getInventory(vendor._id);
+      return this.success(HTTP_STATUS.OK, 'Packages retrieved successfully', catalog);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
   }
 
-    // GET /vendor/inventory/:itemId
-    async getInventoryItem(req, { params } = {}) {
-        try {
-            const vendor = await BusinessService.getBusinessByUserId(req.user.id);
-            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+  // GET /vendor/inventory/:itemId
+  async getInventoryItem(req, { params } = {}) {
+    try {
+      const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+      if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
       const url = new URL(req.url, 'http://localhost');
       const itemId = params.itemId || url.searchParams.get('itemId');
       let serviceType = params.serviceType || url.searchParams.get('serviceType');
-      
+
       const startDate = url.searchParams.get('startDate') || new Date().toISOString();
       const endDate = url.searchParams.get('endDate') || new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString();
 
@@ -49,11 +49,11 @@ class InventoryController extends Controller {
     }
   }
 
-    // POST /vendor/inventory/:itemId/update
-    async updateInventory(req, { params } = {}) {
-        try {
-            const vendor = await BusinessService.getBusinessByUserId(req.user.id);
-            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+  // POST /vendor/inventory/:itemId/update
+  async updateInventory(req, { params } = {}) {
+    try {
+      const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+      if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
       const body = req.payload;
       const itemId = params.itemId || body.itemId;
@@ -81,11 +81,11 @@ class InventoryController extends Controller {
     }
   }
 
-    // PATCH /vendor/inventory/:itemId/baseline
-    async updateBasePrice(req, { params } = {}) {
-        try {
-            const vendor = await BusinessService.getBusinessByUserId(req.user.id);
-            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+  // PATCH /vendor/inventory/:itemId/baseline
+  async updateBasePrice(req, { params } = {}) {
+    try {
+      const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+      if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
       const body = req.payload;
       const itemId = params.itemId || body.itemId;
