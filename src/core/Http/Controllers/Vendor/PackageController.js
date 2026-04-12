@@ -150,9 +150,10 @@ class PackageController extends Controller {
       const vendor = await BusinessService.getBusinessByUserId(req.user.id);
       if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
       const { category, itemId } = params;
+      const schemaKey = CATEGORY_MAP[category] || category;
       const pkg = await PackageService.ensureCatalog(vendor.user);
-      if (!pkg[category]) return this.error(HTTP_STATUS.BAD_REQUEST, "Invalid category");
-      const item = pkg[category].id(itemId);
+      if (pkg[schemaKey] === undefined) return this.error(HTTP_STATUS.BAD_REQUEST, "Invalid category");
+      const item = pkg[schemaKey].id(itemId);
       if (!item) return this.error(HTTP_STATUS.NOT_FOUND, "Item not found");
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, item);
     } catch (error) {

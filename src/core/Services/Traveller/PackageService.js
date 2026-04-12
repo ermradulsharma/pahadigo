@@ -3,15 +3,15 @@ import Package from '@/models/Package.js';
 import Vendor from '@/models/Vendor.js';
 import Category from '@/models/Category.js';
 import { CATEGORY_MAP, SCHEMA_KEYS } from '@/constants/categories.js';
-import VendorStatusService from '@/services/Vendor/VendorStatusService.js';
+import MasterService from '@/services/MasterService.js';
 
 /**
  * PackageService (Traveller Role)
  * Focuses on retrieval, search, and availability for the customer-facing side.
  */
 class PackageService {
-    constructor(vendorStatusService = VendorStatusService) {
-        this.vendorStatusService = vendorStatusService;
+    constructor(masterService = MasterService) {
+        this.masterService = masterService;
     }
 
     async getPackageById(id) {
@@ -22,8 +22,17 @@ class PackageService {
         const item = await this.getPackageItem(itemId);
         if (!item) return null;
 
-        const pkg = await Package.findById(item.catalogId).lean();
-        if (!pkg || !(await this.vendorStatusService.isVendorAvailable(pkg.vendor))) return null;
+        const pkg = await Package.findById(item.catalogId).populate('business').lean();
+        if (!pkg || !(await this.masterService.isVendorActive(pkg.business))) return null;
+
+        // Check category specific verification for single item
+        const slug = Object.keys(CATEGORY_MAP).find(k => CATEGORY_MAP[k] === item.category) || item.category;
+        const isCategoryVerified = await mongoose.model('VendorDocument').findOne({
+            vendor_id: pkg.business._id,
+            category_slug: slug,
+            status: 'verified'
+        });
+        if (!isCategoryVerified) return null;
 
         if (item.isActive === false) return null;
         return item;
@@ -106,7 +115,15 @@ class PackageService {
                                 $map: {
                                     input: { $ifNull: [`$${key}`, []] },
                                     as: "item",
-                                    in: { $mergeObjects: ["$$item", { category: key, catalogId: "$_id" }] }
+                                in: { 
+                                    $mergeObjects: [
+                                        "$$item", 
+                                        { 
+                                            category: key, 
+                                            catalogId: "$_id" 
+                                        }
+                                    ] 
+                                }
                                 }
                             };
                         })
@@ -125,14 +142,26 @@ class PackageService {
             {
                 $lookup: {
                     from: 'vendors',
-                    localField: 'vendor',
-                    foreignField: 'user',
+                    let: { packageVendor: "$vendor" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $eq: [
+                                        { $toString: "$user" },
+                                        { $toString: "$$packageVendor" }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
                     as: 'vendorProfile'
                 }
             },
             { $unwind: { path: '$vendorProfile', preserveNullAndEmptyArrays: true } },
+            ...this.masterService.getVendorActiveAggregationStages('vendorProfile'),
+            ...this.masterService.getCategoryVerificationStages('items', 'vendorProfile._id'),
             { $match: { "items.isActive": true } },
-            ...this.vendorStatusService.getVendorClosureFilterStages('vendorProfile'),
             {
                 $project: {
                     _id: "$items._id",
@@ -189,7 +218,9 @@ class PackageService {
                     $maxDistance: parseFloat(radiusKm) * 1000
                 }
             },
-            ...this.vendorStatusService.getVendorClosureQuery()
+            status: 'active',
+            isOperating: true,
+            isApproved: true
         }).lean();
 
         if (nearbyVendors.length === 0) return [];

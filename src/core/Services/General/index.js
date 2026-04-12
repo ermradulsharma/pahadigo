@@ -5,17 +5,17 @@ import RazorpayService from './RazorpayService.js';
 import NotificationService from './NotificationService.js';
 
 export {
-    BookingService,
-    CategoryService,
-    InventoryService,
-    RazorpayService,
-    NotificationService
+  BookingService,
+  CategoryService,
+  InventoryService,
+  RazorpayService,
+  NotificationService
 };
 
 export default {
-    booking: BookingService,
-    category: CategoryService,
-    inventory: InventoryService,
-    razorpay: RazorpayService,
-    notification: NotificationService
+  booking: BookingService,
+  category: CategoryService,
+  inventory: InventoryService,
+  razorpay: RazorpayService,
+  notification: NotificationService
 };

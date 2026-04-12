@@ -26,6 +26,8 @@ const VendorPackageSchema = new mongoose.Schema({
   paragliding: [ParaglidingSchema],
   customTrip: [CustomTripSchema],
   createdAt: { type: Date, default: Date.now }
+}, {
+  collection: 'packages'
 });
 
 // [PERFORMANCE] Compound Text Index for global search
@@ -51,5 +53,5 @@ VendorPackageSchema.index({
 });
 
 // Avoid re-compilation of the model during HMR or multiple imports
-const VendorPackage = mongoose.models.VendorPackage || mongoose.model("VendorPackage", VendorPackageSchema);
+const VendorPackage = mongoose.models.VendorPackageV2 || mongoose.model("VendorPackageV2", VendorPackageSchema, "packages");
 export default VendorPackage;

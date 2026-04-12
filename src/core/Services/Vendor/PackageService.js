@@ -4,18 +4,16 @@ import Vendor from '@/models/Vendor.js';
 import Category from '@/models/Category.js';
 import { CATEGORY_MAP, SCHEMA_KEYS } from '@/constants/categories.js';
 import InventoryService from '@/services/Vendor/InventoryService.js';
-import VendorStatusService from '@/services/Vendor/VendorStatusService.js';
 import { formatInventoryItem } from '@/helpers/InventoryHelper.js';
 import { mapToGeoJSON } from '@/helpers/geoUtils.js';
 import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 class PackageService {
-  constructor(vendorStatusService = VendorStatusService) {
-    this.vendorStatusService = vendorStatusService;
+  constructor() {
   }
 
   // Helper: Find or Create Catalog for Vendor
-  async synchronizeVendorCatalog(id) {
+  async ensureCatalog(id) {
     const vendor = await Vendor.findOne({ $or: [{ user: id }, { _id: id }] });
     if (!vendor) throw new Error("Complete business profile (Business ID) not found in database. Please complete your registration.");
     const userId = vendor.user;
@@ -37,12 +35,12 @@ class PackageService {
 
   // Get Catalog
   async getCatalog(vendorId) {
-    return await this.synchronizeVendorCatalog(vendorId);
+    return await this.ensureCatalog(vendorId);
   }
 
   // Get Inventory
   async getInventory(vendorId) {
-    const catalog = await this.synchronizeVendorCatalog(vendorId);
+    const catalog = await this.ensureCatalog(vendorId);
     const vendor = await Vendor.findById(vendorId);
     const result = {};
     if (vendor && vendor.category && Array.isArray(vendor.category)) {
@@ -66,7 +64,7 @@ class PackageService {
 
   // Find All Paginated
   async findAllPaginated(vendorId, page = 1, limit = 10) {
-    const catalog = await this.synchronizeVendorCatalog(vendorId);
+    const catalog = await this.ensureCatalog(vendorId);
     const vendor = await Vendor.findById(vendorId);
     const result = {
       catalogId: catalog._id,
@@ -107,7 +105,7 @@ class PackageService {
 
   // Create Package
   async initializeVendorPackage(vendorId, data = {}) {
-    return await this.synchronizeVendorCatalog(vendorId);
+    return await this.ensureCatalog(vendorId);
   }
 
   // Update Package
@@ -185,7 +183,7 @@ class PackageService {
     if (!allowedCategories.includes(category)) {
       throw new Error(`Vendor not authorized to create items in category: ${category}`);
     }
-    const pkg = await this.synchronizeVendorCatalog(vendor.user);
+    const pkg = await this.ensureCatalog(vendor.user);
     const schemaKey = CATEGORY_MAP[category] || category;
     if (pkg[schemaKey] === undefined) {
       throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
@@ -217,7 +215,7 @@ class PackageService {
     if (!allowedCategories.includes(category)) {
       throw new Error(`Vendor not authorized to update items in category: ${category}`);
     }
-    const pkg = await this.synchronizeVendorCatalog(vendor.user);
+    const pkg = await this.ensureCatalog(vendor.user);
     const schemaKey = CATEGORY_MAP[category] || category;
     if (pkg[schemaKey] === undefined) {
       throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
@@ -254,7 +252,7 @@ class PackageService {
   async removeItem(vendorId, category, itemId) {
     const vendor = await Vendor.findById(vendorId);
     if (!vendor) throw new Error("Vendor not found");
-    const pkg = await this.synchronizeVendorCatalog(vendor.user);
+    const pkg = await this.ensureCatalog(vendor.user);
     const schemaKey = CATEGORY_MAP[category] || category;
     if (pkg[schemaKey] === undefined) {
       throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
@@ -302,7 +300,7 @@ class PackageService {
   async toggleCategoryStatus(vendorId, category, isActive) {
     const vendor = await Vendor.findById(vendorId);
     if (!vendor) throw new Error("Vendor not found");
-    const pkg = await this.synchronizeVendorCatalog(vendor.user);
+    const pkg = await this.ensureCatalog(vendor.user);
     const schemaKey = CATEGORY_MAP[category] || category;
     if (pkg[schemaKey] === undefined) throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
 

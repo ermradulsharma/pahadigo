@@ -102,7 +102,7 @@ class VendorController extends Controller {
     async verifyDocument(req) {
         try {
             const data = req.validData || req.jsonBody || await req.json();
-            await VendorService.verifyManualDocument(data, req);
+            await VendorService.verifyManualDocument(data);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.DOCUMENT_STATUS_UPDATED);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);

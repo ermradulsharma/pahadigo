@@ -7,7 +7,7 @@ import VendorTabs from '@/components/admin/VendorTabs';
 import { DetailItem, StatusBadge, MainPanelCard, SidebarCard, VendorHeader, Modal, UnifiedStatusMenu } from '@/components/admin/VendorUIFragments';
 import { Building2, Landmark, ShieldCheck, MapPin, User, Check as CheckIcon, Layers, Share2, Briefcase, Camera, Play, Hash, MessageSquare, Phone, Globe, Music2 } from 'lucide-react';
 
-export default function BusinessTab({ vendor, setVendor, id, activeTab, setActiveTab }) {
+export default function BusinessTab({ vendor, setVendor, id, activeTab, setActiveTab, onRefresh }) {
   const router = useRouter();
   const [showMapModal, setShowMapModal] = useState(false);
   const [showStatusMenu, setShowStatusMenu] = useState(false);
@@ -94,7 +94,7 @@ export default function BusinessTab({ vendor, setVendor, id, activeTab, setActiv
     }
   };
 
-  const verifyDocument = async (documentField, status, reason = null, index = null) => {
+  const verifyDocument = async (field, status, reason = '', index = null) => {
     setSaving(true);
     try {
       const token = getToken();
@@ -104,16 +104,10 @@ export default function BusinessTab({ vendor, setVendor, id, activeTab, setActiv
           'Authorization': 'Bearer ' + token,
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify({ vendorId: id, documentField, status, reason, index })
+        body: JSON.stringify({ vendorId: id, documentField: field, status, reason, index })
       });
       if (res.ok) {
-        // Refresh vendor data
-        const refreshRes = await fetch(`/api/admin/vendors`, {
-          headers: { 'Authorization': 'Bearer ' + token }
-        });
-        const refreshData = await refreshRes.json();
-        const updated = refreshData.data?.vendors?.find(v => v._id === id);
-        if (updated) setVendor(updated);
+        if (onRefresh) onRefresh();
       } else {
         alert("Verification failed.");
       }

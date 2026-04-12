@@ -3,19 +3,22 @@ import AuthServices from './Auth/index.js';
 import GeneralServices from './General/index.js';
 import TravellerServices from './Traveller/index.js';
 import VendorServices from './Vendor/index.js';
+import MasterService from './MasterService.js';
 
 export {
-    AdminServices,
-    AuthServices,
-    GeneralServices,
-    TravellerServices,
-    VendorServices
+  AdminServices,
+  AuthServices,
+  GeneralServices,
+  TravellerServices,
+  VendorServices,
+  MasterService
 };
 
 export default {
-    admin: AdminServices,
-    auth: AuthServices,
-    general: GeneralServices,
-    traveller: TravellerServices,
-    vendor: VendorServices
+  admin: AdminServices,
+  auth: AuthServices,
+  general: GeneralServices,
+  traveller: TravellerServices,
+  vendor: VendorServices,
+  master: MasterService
 };

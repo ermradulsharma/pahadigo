@@ -12,7 +12,7 @@ import { wrap } from '../helpers.js';
  * Public Routes - Accessible without authentication.
  */
 const publicRoutes = [
-  
+
   // Browsing Packages
   ...Router.group({ prefix: '/packages' }, [
     { method: 'GET', path: '/', handler: wrap(() => PackageController, 'browsePackages') },
@@ -55,7 +55,7 @@ const publicRoutes = [
 
   // General Capture Hub
   { method: 'POST', path: '/inquiries', handler: wrap(() => InquiryController, 'submitInquiry') },
-  
+
   // Payment Gateway Capture
   ...Router.group({ prefix: '/payment' }, [
     { method: 'POST', path: '/webhook', handler: wrap(() => PaymentController, 'webhook') },
