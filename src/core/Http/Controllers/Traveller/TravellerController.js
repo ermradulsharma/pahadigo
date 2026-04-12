@@ -78,7 +78,7 @@ class TravellerController extends Controller {
   // POST /traveller/wishlist
   async addToWishlist(req) {
     try {
-      const body = req.validData || req.jsonBody || {};
+      const body = req.payload || {};
       if (!body.itemId) return this.error(HTTP_STATUS.BAD_REQUEST, "Item ID is required");
 
       const item = await PackageService.getAvailablePackageItem(body.itemId);

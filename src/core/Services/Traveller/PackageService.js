@@ -205,52 +205,105 @@ class PackageService {
         return result;
     }
 
-    async searchNearbyPackages(lat, lng, categorySlug = '', radiusKm = 50) {
+    async searchPackages(lat, lng, categorySlug = '', radiusKm = 50) {
         const longitude = parseFloat(lng);
         const latitude = parseFloat(lat);
+        const hasCoords = !isNaN(longitude) && !isNaN(latitude);
 
-        if (isNaN(longitude) || isNaN(latitude)) throw new Error("Invalid coordinates");
-
-        const nearbyVendors = await Vendor.find({
-            'address.location': {
-                $near: {
-                    $geometry: { type: "Point", coordinates: [longitude, latitude] },
-                    $maxDistance: parseFloat(radiusKm) * 1000
-                }
-            },
-            status: 'active',
-            isOperating: true,
-            isApproved: true
-        }).lean();
-
-        if (nearbyVendors.length === 0) return [];
-
-        const vendorUserIds = nearbyVendors.map(v => v.user.toString());
-        const catalogs = await Package.find({ vendor: { $in: vendorUserIds } }).lean();
-        const results = [];
         const targetSchemaKey = categorySlug ? (CATEGORY_MAP[categorySlug] || categorySlug).toLowerCase() : null;
 
-        catalogs.forEach(cat => {
-            Object.keys(cat).forEach(key => {
-                const lowerKey = key.toLowerCase();
-                if (targetSchemaKey && lowerKey !== targetSchemaKey) return;
-                if (['_id', 'vendor', 'createdAt', 'updatedAt', '__v'].includes(key)) return;
+        const pipeline = [];
 
-                if (Array.isArray(cat[key])) {
-                    cat[key].forEach(item => {
-                        if (item.isActive !== false) {
-                            results.push({
-                                ...item,
-                                category: key,
-                                catalogId: cat._id.toString(),
-                            });
-                        }
-                    });
+        // 1. Initial Match or GeoNear
+        if (hasCoords) {
+            pipeline.push({
+                $geoNear: {
+                    near: { type: "Point", coordinates: [longitude, latitude] },
+                    distanceField: "distance",
+                    maxDistance: parseFloat(radiusKm) * 1000,
+                    spherical: true,
+                    query: {
+                        status: 'active',
+                        isOperating: true,
+                        isApproved: true
+                    }
                 }
             });
+            pipeline.push({ $replaceRoot: { newRoot: { vendorProfile: "$$ROOT" } } });
+        } else {
+            pipeline.push({
+                $match: {
+                    status: 'active',
+                    isOperating: true,
+                    isApproved: true
+                }
+            });
+            pipeline.push({ $addFields: { distance: null } });
+            pipeline.push({ $replaceRoot: { newRoot: { vendorProfile: "$$ROOT" } } });
+        }
+
+        // 2. Compliance Stages
+        pipeline.push(...this.masterService.getVendorActiveAggregationStages('vendorProfile'));
+
+        // 3. Joins & Flattening
+        pipeline.push({
+            $lookup: {
+                from: 'packages',
+                let: { vendorUserId: "$vendorProfile.user" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $eq: [{ $toString: "$vendor" }, { $toString: "$$vendorUserId" }]
+                            }
+                        }
+                    }
+                ],
+                as: 'catalog'
+            }
+        });
+        pipeline.push({ $unwind: "$catalog" });
+        pipeline.push({
+            $project: {
+                vendorProfile: 1,
+                items: {
+                    $concatArrays: SCHEMA_KEYS.map(key => ({
+                        $map: {
+                            input: { $ifNull: [`$catalog.${key}`, []] },
+                            as: "item",
+                            in: { $mergeObjects: ["$$item", { category: key, catalogId: "$catalog._id" }] }
+                        }
+                    }))
+                }
+            }
+        });
+        pipeline.push({ $unwind: "$items" });
+
+        // 4. Verification & Filtering
+        pipeline.push(...this.masterService.getCategoryVerificationStages('items', 'vendorProfile._id'));
+        
+        const finalMatch = { "items.isActive": true };
+        if (targetSchemaKey) {
+            finalMatch["items.category"] = { $regex: new RegExp(`^${targetSchemaKey}$`, 'i') };
+        }
+        pipeline.push({ $match: finalMatch });
+
+        // 5. Final Projection
+        pipeline.push({
+            $project: {
+                _id: "$items._id",
+                title: "$items.title",
+                isActive: "$items.isActive",
+                pricing: "$items.pricing",
+                location: "$items.location",
+                photos: "$items.photos",
+                category: "$items.category",
+                catalogId: "$items.catalogId",
+                distance: "$vendorProfile.distance"
+            }
         });
 
-        return results;
+        return await Vendor.aggregate(pipeline);
     }
 }
 
