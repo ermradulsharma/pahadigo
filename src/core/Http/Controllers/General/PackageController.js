@@ -80,9 +80,7 @@ class PackageController extends Controller {
       const page = parseInt(url.searchParams.get('page')) || 1;
       const limit = url.searchParams.get('limit') === 'all' ? 0 : parseInt(url.searchParams.get('limit')) || 10;
 
-      if (!lat || !lng) return this.error(HTTP_STATUS.BAD_REQUEST, "Latitude and Longitude are required");
-
-      const rawResults = await PackageService.searchNearbyPackages(lat, lng, category, radius || 50);
+      const rawResults = await PackageService.searchPackages(lat, lng, category, radius || 50);
 
       const results = {};
       const wishlistSet = new Set();
