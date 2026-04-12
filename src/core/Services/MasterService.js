@@ -44,7 +44,7 @@ class MasterService {
         }
 
         // 3. Operational/Closure Check
-        return await this.isVendorOperational(vendorId);
+        return await this.isVendorOperational(vendor._id);
     }
 
     /**
