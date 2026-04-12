@@ -108,4 +108,8 @@ UserSchema.index({ "address.location": "2dsphere" });
 UserSchema.index({ status: 1 });
 UserSchema.index({ role: 1 });
 
-export default mongoose.models.User || mongoose.model('User', UserSchema);
+if (mongoose.models.User) {
+  delete mongoose.models.User;
+}
+
+export default mongoose.model('User', UserSchema);

@@ -29,6 +29,16 @@ class NotificationService {
         console.log(`[Notify] Booking ${bookingId} status changed to ${status}`);
         return true;
     }
+
+    async notifyVendorApproval(vendorId, isApproved) {
+        console.log(`[Notify] Vendor ${vendorId} approval status: ${isApproved ? 'Approved' : 'Rejected'}`);
+        return true;
+    }
+
+    async notifyDocumentVerification(vendorId, field, isVerified) {
+        console.log(`[Notify] Document ${field} for vendor ${vendorId} verification state: ${isVerified ? 'Verified' : 'Rejected'}`);
+        return true;
+    }
 }
 
 export default new NotificationService();

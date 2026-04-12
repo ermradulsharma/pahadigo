@@ -72,6 +72,53 @@ class VendorStatusService {
 
         return true;
     }
+
+    /**
+     * Returns MongoDB aggregation stages to filter out vendors that are currently closed.
+     */
+    getVendorClosureFilterStages(vendorProfileField = 'vendorProfile') {
+        const now = new Date();
+        return [
+            {
+                $lookup: {
+                    from: 'vendorclosures',
+                    let: { vendorId: `$${vendorProfileField}._id` },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ['$vendor', '$$vendorId'] },
+                                        { $eq: ['$isActive', true] },
+                                        { $lte: ['$startDate', now] },
+                                        { $gte: ['$endDate', now] }
+                                    ]
+                                }
+                            }
+                        }
+                    ],
+                    as: 'currentClosures'
+                }
+            },
+            {
+                $match: {
+                    currentClosures: { $size: 0 },
+                    [`${vendorProfileField}.status`]: this.activeStatus,
+                    [`${vendorProfileField}.isOperating`]: true
+                }
+            }
+        ];
+    }
+
+    /**
+     * Returns a MongoDB query object to filter out closed vendors.
+     */
+    getVendorClosureQuery() {
+        return {
+            status: this.activeStatus,
+            isOperating: true
+        };
+    }
 }
 
 export default new VendorStatusService();

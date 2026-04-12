@@ -115,7 +115,7 @@ export default function VendorsPage() {
       });
       if (res.ok) {
         const data = await res.json();
-        return data.data?.vendors || [];
+        return data.data || [];
       }
       return [];
     } catch (e) { }
@@ -125,7 +125,6 @@ export default function VendorsPage() {
     let mounted = true;
     const load = async () => {
       const data = await getVendors();
-      console.log(data);
       if (mounted) {
         setVendors(data);
         setLoading(false);

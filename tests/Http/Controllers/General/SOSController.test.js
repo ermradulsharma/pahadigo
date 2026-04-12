@@ -1,5 +1,6 @@
 import { jest } from '@jest/globals';
 import SOSController from '@/controllers/General/SOSController.js';
+import SOSService from '@/services/General/SOSService.js';
 import { HTTP_STATUS } from '@/constants/index.js';
 
 describe('SOSController (Root)', () => {
@@ -8,8 +9,8 @@ describe('SOSController (Root)', () => {
 
     beforeEach(() => {
         mockUser = {
-            emergencyContacts: [],
-            save: jest.fn().mockResolvedValue(true)
+            id: 'user123',
+            emergencyContacts: []
         };
         mockReq = {
             jsonBody: {},
@@ -26,12 +27,16 @@ describe('SOSController (Root)', () => {
         const contacts = [{ name: 'Test', phone: '123' }];
         mockReq.jsonBody = { emergencyContacts: contacts };
 
+        const spy = jest.spyOn(SOSService, 'updateEmergencyContacts').mockResolvedValue({
+            emergencyContacts: contacts
+        });
+
         const response = await SOSController.updateEmergencyContacts(mockReq);
         const body = await response.json();
 
         expect(response.status).toBe(HTTP_STATUS.OK);
         expect(body.data.emergencyContacts).toEqual(contacts);
-        expect(mockUser.save).toHaveBeenCalled();
+        expect(spy).toHaveBeenCalledWith(mockUser.id, contacts);
     });
 
     test('updateEmergencyContacts should return 400 if emergencyContacts is missing', async () => {
@@ -56,7 +61,7 @@ describe('SOSController (Root)', () => {
 
     test('updateEmergencyContacts should return 500 on server error', async () => {
         mockReq.jsonBody = { emergencyContacts: [] };
-        mockUser.save.mockRejectedValue(new Error('DB Error'));
+        jest.spyOn(SOSService, 'updateEmergencyContacts').mockRejectedValue(new Error('DB Error'));
 
         const response = await SOSController.updateEmergencyContacts(mockReq);
 

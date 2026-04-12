@@ -25,14 +25,13 @@ class PackageController extends Controller {
   async updateServiceStatus(req, { params }) {
     try {
       const body = req.validData || req.jsonBody || await req.json();
-      const { vendorId, serviceType, status } = body;
+      const { vendorId, userId, serviceType, status } = body;
       const serviceId = params?.id || body.serviceId;
 
-      if (!vendorId || !serviceType || !serviceId || status === undefined) {
-         return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
+      if (!serviceId || status === undefined) {
+        return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
       }
-
-      const updated = await PackageService.toggleServiceStatus(vendorId, serviceType, serviceId, status);
+      const updated = await PackageService.toggleServiceStatus(serviceId, status, serviceType, vendorId, userId);
       return this.success(HTTP_STATUS.OK, "Status updated", { updated });
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);

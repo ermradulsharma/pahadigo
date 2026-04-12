@@ -5,6 +5,7 @@ import { seedUsers } from './userSeeder.js';
 import { seedSettings } from './SettingSeeder.js';
 import { seedLocations } from './locationSeeder.js';
 import { seedPolicies } from './policySeeder.js';
+import { seedPackages } from './PackageSeeder.js';
 import { loadEnv } from '../../Helpers/env.js';
 import connectDB from '../../Config/db.js';
 
@@ -21,6 +22,7 @@ const resetAndSeed = async () => {
         await seedSettings();
         await seedLocations();
         await seedPolicies();
+        await seedPackages();
         process.exit(0);
     } catch (error) {
         console.error("Seeding failed:", error);

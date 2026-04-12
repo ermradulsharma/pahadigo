@@ -5,7 +5,8 @@ import Link from 'next/link';
 import { getToken } from '@/helpers/authUtils';
 import Image from 'next/image';
 import VendorTabs from '@/components/admin/VendorTabs';
-import { StatusBadge } from '@/components/admin/VendorUIFragments';
+import { StatusBadge, MainPanelCard, VendorHeader } from '@/components/admin/VendorUIFragments';
+import { FileText, ShieldCheck, Eye, Check as CheckIcon, X } from 'lucide-react';
 
 export default function DocumentsTab({ vendor, setVendor, id, activeTab, setActiveTab, onRefresh }) {
   const router = useRouter();
@@ -41,41 +42,11 @@ export default function DocumentsTab({ vendor, setVendor, id, activeTab, setActi
 
   return (
     <div className="min-h-screen bg-transparent pb-24 relative">
-      {/* Header Section */}
-      <header className="sticky top-0 z-40 bg-black/95 backdrop-blur-md border-b border-white/10 px-8 py-4">
-        <div className="max-w-[1600px] mx-auto flex items-center justify-between">
-          <div className="flex items-center gap-6">
-            <button onClick={() => router.back()} className="p-2 hover:bg-white/5 rounded-lg transition-colors text-slate-400 border border-transparent hover:border-white/10">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" /></svg>
-            </button>
-            <div>
-              <div className="flex items-center gap-2 text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest mb-1">
-                <Link href="/admin/vendors" className="hover:text-cyan-400 transition-colors">Vendor DB</Link>
-                <span className="text-slate-700">/</span>
-                <span className="text-white">Clearance Docs</span>
-              </div>
-              <h1 className="text-2xl font-bold font-mono text-cyan-50 tracking-tight text-shadow-glow-cyan leading-none">{vendor.businessName}</h1>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <VendorTabs activeTab={activeTab} setActiveTab={setActiveTab} />
+      <VendorHeader vendor={vendor} onBack={() => router.back()} id={id} activeTab={activeTab} setActiveTab={setActiveTab} />
 
       <main className="max-w-[1600px] mx-auto p-8 relative z-10">
-        <div className="bg-[#111116] rounded-xl border border-white/10 shadow-[0_0_20px_rgba(0,0,0,0.5)] p-8 relative overflow-hidden">
-          <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] bg-[length:20px_20px] bg-fixed opacity-5 pointer-events-none"></div>
+        <MainPanelCard title="Certified Node Data" icon={ShieldCheck} colorClass="text-indigo-400">
           <div className="relative z-10">
-            <div className="flex items-center justify-between mb-8 pb-6 border-b border-white/5">
-              <div>
-                <h2 className="text-xl font-bold font-mono text-cyan-50 tracking-tight uppercase flex items-center gap-3">
-                  <svg className="w-5 h-5 text-indigo-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
-                  Certified Node Data
-                </h2>
-                <p className="text-slate-500 text-[10px] font-mono font-bold uppercase tracking-[0.2em] mt-2">Verify clearance vectors attached to active network categories.</p>
-              </div>
-            </div>
-
             {!vendor.categoryDocuments || vendor.categoryDocuments.length === 0 ? (
               <div className="text-center py-20 px-4 border border-white/5 border-dashed rounded-xl bg-black/40">
                 <h3 className="text-lg font-bold font-mono text-slate-400 uppercase tracking-widest">Null Reference</h3>
@@ -95,7 +66,7 @@ export default function DocumentsTab({ vendor, setVendor, id, activeTab, setActi
               </div>
             )}
           </div>
-        </div>
+        </MainPanelCard>
       </main>
 
       {/* Premium SaaS Ultra Lightbox Preview */}

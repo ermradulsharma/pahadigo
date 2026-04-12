@@ -51,4 +51,5 @@ VendorPackageSchema.index({
 });
 
 // Avoid re-compilation of the model during HMR or multiple imports
-export default mongoose.models.Package || mongoose.model('Package', VendorPackageSchema);
+const VendorPackage = mongoose.models.VendorPackage || mongoose.model("VendorPackage", VendorPackageSchema);
+export default VendorPackage;

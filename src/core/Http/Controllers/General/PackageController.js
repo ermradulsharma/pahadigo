@@ -1,5 +1,5 @@
 import User from '@/models/User.js';
-import PackageService from '@/services/Traveller/PackageService.js';
+import PackageService from '@/services/General/PackageService.js';
 import SearchLog from '@/models/SearchLog.js';
 import Category from '@/models/Category.js';
 import Wishlist from '@/models/Wishlist.js';
@@ -13,7 +13,7 @@ import Controller from '@/controllers/Controller.js';
  */
 class PackageController extends Controller {
 
-  // GET /packages/browse
+  // GET /packages (Public)
   async browsePackages(req) {
     try {
       const url = new URL(req.url);
@@ -29,12 +29,18 @@ class PackageController extends Controller {
         userWishlist.forEach(w => wishlistSet.add(w.itemId.toString()));
       }
 
-      const paginatedData = {};
+      const categoryData = {};
       for (const [slug, items] of Object.entries(packages)) {
         if (Array.isArray(items)) {
+          // Sort items by creation (descending ID as proxy for newest first)
           items.sort((a, b) => (b.id || b._id).toString().localeCompare((a.id || a._id).toString()));
-          const itemsWithWishlist = items.map(item => ({ ...item, wishlist: wishlistSet.has((item.id || item._id).toString()) }));
-          paginatedData[slug] = paginateArray(itemsWithWishlist, page, limit);
+          
+          const itemsWithWishlist = items.map(item => ({ 
+            ...item, 
+            wishlist: wishlistSet.has((item.id || item._id).toString()) 
+          }));
+
+          categoryData[slug] = paginateArray(itemsWithWishlist, page, limit);
         }
       }
 
@@ -43,8 +49,9 @@ class PackageController extends Controller {
         await this._logSearch(query, req.user, total);
       }
 
-      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, paginatedData);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED || "Packages retrieved successfully", categoryData);
     } catch (error) {
+      console.error("[PackageController] browsePackages error:", error);
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
   }

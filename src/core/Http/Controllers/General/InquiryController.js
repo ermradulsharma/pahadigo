@@ -1,4 +1,4 @@
-import PolicyService from '@/services/Admin/PolicyService.js';
+import PolicyService from '@/services/General/PolicyService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 import Controller from '@/controllers/Controller.js';
 

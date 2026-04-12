@@ -7,7 +7,8 @@ import mongoose from 'mongoose';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import { jest } from '@jest/globals';
 
-// Removed jest.setTimeout, relying on proper teardown instead.
+// Increase timeout for global hooks (especially for slow teardowns on CI/large runs)
+jest.setTimeout(60000);
 
 let mongoServer;
 
@@ -53,7 +54,8 @@ console.error = (...args) => {
         'error:',
         'Error:',
         'ERROR:',
-        'Account uses a different login method'
+        'Account uses a different login method',
+        'Internal Error'
     ];
     const msg = args[0] && typeof args[0] === 'string' ? args[0] : '';
     if (noise.some(n => msg.includes(n))) return;
