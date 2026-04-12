@@ -12,8 +12,8 @@ class BusinessClosuresController extends Controller {
     // GET /vendor/business/closures
     async getClosures(req) {
         try {
-            const vendor = await BusinessService.getBusinessByUserId(req.user.id);
-            return this.success(HTTP_STATUS.OK, "Closure periods fetched", vendor.closurePeriods);
+            const closures = await ClosureService.getClosurePeriods(req.user.id);
+            return this.success(HTTP_STATUS.OK, "Closure periods fetched", closures);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
         }
