@@ -22,7 +22,7 @@ class PackageController extends Controller {
       const limit = url.searchParams.get('limit') === 'all' ? 0 : parseInt(url.searchParams.get('limit')) || 10;
 
       const packages = await PackageService.getAvailablePackagesByCategory(query);
-      
+
       const wishlistSet = new Set();
       if (req.user?.id) {
         const userWishlist = await Wishlist.find({ user: req.user.id }).select('itemId').lean();
@@ -34,10 +34,10 @@ class PackageController extends Controller {
         if (Array.isArray(items)) {
           // Sort items by creation (descending ID as proxy for newest first)
           items.sort((a, b) => (b.id || b._id).toString().localeCompare((a.id || a._id).toString()));
-          
-          const itemsWithWishlist = items.map(item => ({ 
-            ...item, 
-            wishlist: wishlistSet.has((item.id || item._id).toString()) 
+
+          const itemsWithWishlist = items.map(item => ({
+            ...item,
+            wishlist: wishlistSet.has((item.id || item._id).toString())
           }));
 
           categoryData[slug] = paginateArray(itemsWithWishlist, page, limit);
@@ -83,7 +83,7 @@ class PackageController extends Controller {
       if (!lat || !lng) return this.error(HTTP_STATUS.BAD_REQUEST, "Latitude and Longitude are required");
 
       const rawResults = await PackageService.searchNearbyPackages(lat, lng, category, radius || 50);
-      
+
       const results = {};
       const wishlistSet = new Set();
       if (req.user?.id) {
@@ -97,7 +97,7 @@ class PackageController extends Controller {
         if (category && slug !== category.toLowerCase()) return;
         const schemaKey = (CATEGORY_MAP[slug] || slug).toLowerCase();
         const categoryItems = rawResults.filter(item => item.category.toLowerCase() === schemaKey || item.category.toLowerCase() === slug);
-        
+
         if (categoryItems.length > 0) {
           const formatted = categoryItems.map(item => ({
             id: item._id,
@@ -126,7 +126,7 @@ class PackageController extends Controller {
       const q = query.toLowerCase();
       await SearchLog.findOneAndUpdate({ query: q, user: null }, { $inc: { count: 1 }, $set: { lastSearched: new Date(), resultsCount } }, { upsert: true });
       if (user?.id) await SearchLog.findOneAndUpdate({ query: q, user: user.id }, { $inc: { count: 1 }, $set: { lastSearched: new Date(), resultsCount } }, { upsert: true });
-    } catch (e) {}
+    } catch (e) { }
   }
 }
 

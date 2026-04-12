@@ -41,7 +41,7 @@ export function apiHandler(handler) {
 
             // Standardize Response: If handler returns a raw object, wrap it correctly
             if (response instanceof Response) return response;
-            
+
             if (response && typeof response === 'object' && response.data !== undefined && response.success !== undefined) {
                 if (response.success === false) {
                     return errorResponse(response.status || HTTP_STATUS.BAD_REQUEST, response.message || RESPONSE_MESSAGES.ERROR.GENERIC, response.data);

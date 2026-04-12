@@ -6,7 +6,7 @@ import Controller from '@/controllers/Controller.js';
  * SOSController (Traveller Role)
  */
 class SOSController extends Controller {
-    
+
     // PATCH /traveller/emergency-contacts
     async updateEmergencyContacts(req) {
         try {

@@ -20,7 +20,6 @@ export default function PackageTab({ vendor, packages, setPackages, id, activeTa
   const [previewImage, setPreviewImage] = useState(null);
 
   const vendorProfile = vendor?.vendorProfile || vendor;
-  console.log(vendorProfile);
   const vendorCategories = vendorProfile?.category || [];
   const vendorPackages = vendor?.VendorPackage || {};
 

@@ -35,7 +35,7 @@ class PolicyController extends Controller {
 
             const normalizedType = typeMap[type] || (type && type.replace ? type.replace(/-/g, '_') : type);
             const policy = await PolicyService.getPolicy(target, normalizedType);
-            
+
             if (!policy) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.POLICY_NOT_FOUND);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.POLICY.FETCHED, { policy });
         } catch (error) {

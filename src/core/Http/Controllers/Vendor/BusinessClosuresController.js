@@ -4,7 +4,7 @@ import { HTTP_STATUS } from '@/constants/index.js';
 import Controller from '@/controllers/Controller.js';
 
 /**
- * BusinessClosuresController (Vendor Role) - Specialized management of 
+ * BusinessClosuresController (Vendor Role) - Specialized management of
  * business shutdown periods and operational availability.
  */
 class BusinessClosuresController extends Controller {

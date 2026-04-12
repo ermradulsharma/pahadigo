@@ -165,7 +165,6 @@ export default function BusinessTab({ vendor, setVendor, id, activeTab, setActiv
   );
 
   const isBusiness = vendor?.profileType === 'business';
-  console.log(isBusiness);
   return (
     <div className="min-h-screen bg-transparent pb-24 relative">
       <VendorHeader vendor={vendor} onBack={() => router.back()} id={id} activeTab={activeTab} setActiveTab={setActiveTab} actions={headerActions} />

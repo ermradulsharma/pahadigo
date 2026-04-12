@@ -12,7 +12,7 @@ class InquiryController extends Controller {
     try {
       const body = req.validData || req.jsonBody || await req.json();
       if (!body.name || !body.email || !body.message) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
-      
+
       const inquiry = await PolicyService.submitInquiry(body);
       return this.success(HTTP_STATUS.CREATED, "Inquiry submitted successfully", inquiry);
     } catch (error) {

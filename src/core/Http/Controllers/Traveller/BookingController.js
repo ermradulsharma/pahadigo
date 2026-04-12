@@ -5,7 +5,7 @@ import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 import Controller from '@/controllers/Controller.js';
 
 /**
- * BookingController (Traveller Role) - Specialized management of customer-facing 
+ * BookingController (Traveller Role) - Specialized management of customer-facing
  * reservations and transaction lifecycle.
  */
 class BookingController extends Controller {
