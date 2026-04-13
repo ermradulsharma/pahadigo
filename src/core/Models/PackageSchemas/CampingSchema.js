@@ -1,15 +1,13 @@
-import { calculateAvailability } from '../../Helpers/availability.js';
-import { mapToGeoJSON } from '../../Helpers/geoUtils.js';
 import mongoose from 'mongoose';
-import { PACKAGE } from '@/constants/index.js';
+import { PACKAGE, DEFAULTS } from '../../Constants/index.js';
 
 const optionalPriceWithDecimal = { type: Number, default: 0, min: 0, get: (v) => (Math.round(v * 100) / 100).toFixed(2), set: (v) => Math.round(v * 100) / 100 };
 
 const CampingSchema = new mongoose.Schema({
 
-  title: { type: String, required: true, default: '' },
-  description: { type: String, required: true, default: '' },
-  isActive: { type: Boolean, default: true },
+  title: { type: String, required: DEFAULTS.TRUE, default: DEFAULTS.NULL },
+  description: { type: String, required: DEFAULTS.TRUE, default: DEFAULTS.NULL },
+  isActive: { type: Boolean, default: DEFAULTS.TRUE },
 
   availability: {
     totalTents: { type: Number, default: 0 },
@@ -25,15 +23,15 @@ const CampingSchema = new mongoose.Schema({
     maxAdults: { type: Number, default: 2 },
     maxChildren: { type: Number, default: 1 },
     childPrice: optionalPriceWithDecimal,
-    extraBedAvailable: { type: Boolean, default: false },
+    extraBedAvailable: { type: Boolean, default: DEFAULTS.FALSE },
     extraBedPrice: optionalPriceWithDecimal,
   },
 
   details: {
     campingType: { type: String, enum: Object.values(PACKAGE.ACTIVITY.CAMPING_TYPES), default: PACKAGE.ACTIVITY.CAMPING_TYPES.RIVERSIDE },
     bathroomType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.BATHROOM_TYPES), default: PACKAGE.ACCOMMODATION.BATHROOM_TYPES.SHARED },
-    electricityAvailable: { type: Boolean, default: false },
-    activitiesIncluded: { type: String, default: '' },
+    electricityAvailable: { type: Boolean, default: DEFAULTS.FALSE },
+    activitiesIncluded: { type: String, default: DEFAULTS.NULL },
   },
 
   timings: {
@@ -42,56 +40,40 @@ const CampingSchema = new mongoose.Schema({
   },
 
   policies: {
-    campingRules: { type: String, default: '' },
-    campingSafetyRules: { type: String, default: '' },
-    cancellationPolicy: { type: String, default: '' },
-    isCouplesFriendly: { type: Boolean, default: false },
-    isPetFriendly: { type: Boolean, default: false },
-    isSmokingAllowed: { type: Boolean, default: false },
-    isCampfireAllowed: { type: Boolean, default: false },
-    isMusicAllowed: { type: Boolean, default: false }
+    campingRules: { type: String, default: DEFAULTS.NULL },
+    campingSafetyRules: { type: String, default: DEFAULTS.NULL },
+    cancellationPolicy: { type: String, default: DEFAULTS.NULL },
+    isCouplesFriendly: { type: Boolean, default: DEFAULTS.FALSE },
+    isPetFriendly: { type: Boolean, default: DEFAULTS.FALSE },
+    isSmokingAllowed: { type: Boolean, default: DEFAULTS.FALSE },
+    isCampfireAllowed: { type: Boolean, default: DEFAULTS.FALSE },
+    isMusicAllowed: { type: Boolean, default: DEFAULTS.FALSE }
   },
 
   location: {
-    address: { type: String, required: true, default: '' },
-    latitude: { type: String, default: null },
-    longitude: { type: String, default: null },
+    address: { type: String, required: DEFAULTS.TRUE, default: DEFAULTS.NULL },
+    latitude: { type: String, default: DEFAULTS.NULL },
+    longitude: { type: String, default: DEFAULTS.NULL },
     coordinates: {
       type: { type: String, default: 'Point' },
       coordinates: { type: [Number], default: [0, 0] }
     }
   },
 
-  amenities: { type: String, default: '' },
-  mealsIncluded: { type: Boolean, default: true },
+  amenities: { type: String, default: DEFAULTS.NULL },
+  mealsIncluded: { type: Boolean, default: DEFAULTS.TRUE },
   mealType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.MEAL_TYPES), default: PACKAGE.ACCOMMODATION.MEAL_TYPES.NO_MEALS },
 
-  photos: [{ url: { type: String, default: '' }, type: { type: String, default: '' } }],
+  photos: [{ url: { type: String, default: DEFAULTS.NULL }, type: { type: String, default: DEFAULTS.NULL } }],
   seoMetadata: {
-    metaTitle: { type: String, default: '' },
-    metaDescription: { type: String, default: '' },
-    keywords: { type: String, default: '' }
+    metaTitle: { type: String, default: DEFAULTS.NULL },
+    metaDescription: { type: String, default: DEFAULTS.NULL },
+    keywords: { type: String, default: DEFAULTS.NULL }
   }
-}, { toJSON: { getters: true }, toObject: { getters: true } });
-
-
-
-
-
-
-
-
-
-
-
-// --- Dynamic Schema Sync Hooks ---
-CampingSchema.pre('save', function () {
-  if (this.availability) calculateAvailability(this.availability);
-  if (this.fleetAvailability) calculateAvailability(this.fleetAvailability);
-  if (this.location) {
-    mapToGeoJSON(this.location);
-    if (typeof this.markModified === 'function') this.markModified('location');
-  }
+}, {
+  timestamps: DEFAULTS.TRUE,
+  toJSON: { getters: DEFAULTS.TRUE, virtuals: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE },
+  toObject: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE }
 });
 
 export default CampingSchema;

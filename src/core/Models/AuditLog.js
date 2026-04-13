@@ -1,38 +1,20 @@
 import mongoose from 'mongoose';
+import { DEFAULTS } from '../Constants/index.js';
 
 const AuditLogSchema = new mongoose.Schema({
-    userId: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true
-    },
-    action: {
-        type: String,
-        required: true,
-        uppercase: true,
-        trim: true
-    },
-    target: {
-        type: String,
-        required: true,
-        uppercase: true,
-        trim: true
-    },
-    targetId: {
-        type: String
-    },
-    details: {
-        type: mongoose.Schema.Types.Mixed // Flexible to store changes
-    },
-    ipAddress: {
-        type: String
-    },
-    userAgent: {
-        type: String
-    }
-}, { timestamps: true });
+  userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: DEFAULTS.TRUE },
+  action: { type: String, required: DEFAULTS.TRUE, uppercase: DEFAULTS.TRUE, trim: DEFAULTS.TRUE },
+  target: { type: String, required: DEFAULTS.TRUE, uppercase: DEFAULTS.TRUE, trim: DEFAULTS.TRUE },
+  targetId: { type: String },
+  details: { type: mongoose.Schema.Types.Mixed, default: DEFAULTS.NULL },
+  ipAddress: { type: String },
+  userAgent: { type: String }
+}, {
+  timestamps: DEFAULTS.TRUE,
+  toJSON: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE },
+  toObject: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE }
+});
 
-// Optimize for recent logs and filtering by admin/action
 AuditLogSchema.index({ createdAt: -1 });
 AuditLogSchema.index({ userId: 1 });
 AuditLogSchema.index({ action: 1 });

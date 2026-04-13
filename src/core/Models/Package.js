@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { DEFAULTS } from '../Constants/index.js';
 import HomestaySchema from './PackageSchemas/HomestaySchema.js';
 import HotelSchema from './PackageSchemas/HotelSchema.js';
 import CampingSchema from './PackageSchemas/CampingSchema.js';
@@ -12,8 +13,8 @@ import ParaglidingSchema from './PackageSchemas/ParaglidingSchema.js';
 import CustomTripSchema from './PackageSchemas/CustomTripSchema.js';
 
 const VendorPackageSchema = new mongoose.Schema({
-  vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true, unique: true },
-  business: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: true, unique: true },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: DEFAULTS.TRUE, unique: DEFAULTS.TRUE },
+  vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: DEFAULTS.TRUE, unique: DEFAULTS.TRUE },
   homestay: [HomestaySchema],
   hotel: [HotelSchema],
   camping: [CampingSchema],
@@ -27,7 +28,10 @@ const VendorPackageSchema = new mongoose.Schema({
   customTrip: [CustomTripSchema],
   createdAt: { type: Date, default: Date.now }
 }, {
-  collection: 'packages'
+  collection: 'packages',
+  timestamps: DEFAULTS.TRUE,
+  toJSON: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE },
+  toObject: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE }
 });
 
 // [PERFORMANCE] Compound Text Index for global search
@@ -53,5 +57,5 @@ VendorPackageSchema.index({
 });
 
 // Avoid re-compilation of the model during HMR or multiple imports
-const VendorPackage = mongoose.models.VendorPackageV2 || mongoose.model("VendorPackageV2", VendorPackageSchema, "packages");
+const VendorPackage = mongoose.models.VendorPackage || mongoose.model("VendorPackage", VendorPackageSchema);
 export default VendorPackage;

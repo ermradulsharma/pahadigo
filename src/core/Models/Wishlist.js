@@ -1,26 +1,19 @@
 import mongoose from 'mongoose';
+import { DEFAULTS } from '../Constants/index.js';
 
 const wishlistSchema = new mongoose.Schema({
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-        index: true
-    },
-    // The ID of the specific package item (e.g. from homestay, hotel etc arrays)
-    itemId: {
-        type: mongoose.Schema.Types.ObjectId,
-        required: true,
-        index: true
-    },
-    // Optional category to help in display or identification
-    category: {
-        type: String,
-        default: ''
-    }
-}, { timestamps: true });
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: DEFAULTS.TRUE, index: DEFAULTS.TRUE },
+  itemId: { type: mongoose.Schema.Types.ObjectId, required: DEFAULTS.TRUE, index: DEFAULTS.TRUE },
+  category: { type: String, default: DEFAULTS.NULL }
+}, {
+  timestamps: DEFAULTS.TRUE,
+  toJSON: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE },
+  toObject: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE }
+});
 
-// Prevent duplicate entries for the same user and item
-wishlistSchema.index({ user: 1, itemId: 1 }, { unique: true });
+wishlistSchema.index({ user: 1, itemId: 1 }, { unique: DEFAULTS.TRUE });
 
-export default mongoose.models.Wishlist || mongoose.model('Wishlist', wishlistSchema);
+if (mongoose.models.Wishlist) {
+  delete mongoose.models.Wishlist;
+}
+export default mongoose.model('Wishlist', wishlistSchema);

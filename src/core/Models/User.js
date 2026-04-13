@@ -3,11 +3,11 @@ import bcrypt from 'bcryptjs';
 import { USER_ROLES, AUTH_PROVIDERS, STATUS, DEFAULTS } from '../Constants/index.js';
 
 const UserSchema = new mongoose.Schema({
-  name: { type: String, trim: true, default: DEFAULTS.NULL },
-  email: { type: String, lowercase: true, trim: true, default: DEFAULTS.NULL },
-  phone: { type: String, trim: true, default: DEFAULTS.NULL },
+  name: { type: String, trim: DEFAULTS.TRUE, default: DEFAULTS.NULL },
+  email: { type: String, lowercase: DEFAULTS.TRUE, trim: DEFAULTS.TRUE, default: DEFAULTS.NULL },
+  phone: { type: String, trim: DEFAULTS.TRUE, default: DEFAULTS.NULL },
   role: { type: String, enum: Object.values(USER_ROLES), default: DEFAULTS.USER_ROLE },
-  password: { type: String, select: false, default: DEFAULTS.NULL },
+  password: { type: String, select: DEFAULTS.FALSE, default: DEFAULTS.NULL },
   authProvider: { type: String, enum: Object.values(AUTH_PROVIDERS), default: DEFAULTS.AUTH_PROVIDER },
   googleId: { type: String, default: DEFAULTS.NULL },
   facebookId: { type: String, default: DEFAULTS.NULL },
@@ -34,8 +34,8 @@ const UserSchema = new mongoose.Schema({
   },
   expertise: [{ type: String, default: DEFAULTS.NULL }],
   emergencyContacts: [{
-    name: { type: String, required: true, default: DEFAULTS.NULL },
-    phone: { type: String, required: true, default: DEFAULTS.NULL },
+    name: { type: String, required: DEFAULTS.TRUE, default: DEFAULTS.NULL },
+    phone: { type: String, required: DEFAULTS.TRUE, default: DEFAULTS.NULL },
     relationship: { type: String, default: DEFAULTS.NULL }
   }],
   address: {
@@ -63,27 +63,27 @@ const UserSchema = new mongoose.Schema({
     tempRole: { type: String, default: DEFAULTS.NULL },
     tempExtraData: { type: mongoose.Schema.Types.Mixed, default: DEFAULTS.NULL }
   },
-  isVendorVerified: { type: Boolean, default: false },
+  isVendorVerified: { type: Boolean, default: DEFAULTS.FALSE },
   vendorProfile: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', default: DEFAULTS.NULL },
   rating: {
     average: { type: Number, default: 0 },
     count: { type: Number, default: 0 }
   },
   fcmTokens: { type: [String], default: DEFAULTS.ARRAY },
-  otp: { type: String, select: false, default: DEFAULTS.NULL },
-  otpExpires: { type: Date, select: false, default: DEFAULTS.NULL },
-  isVerified: { type: Boolean, default: false },
+  otp: { type: String, select: DEFAULTS.FALSE, default: DEFAULTS.NULL },
+  otpExpires: { type: Date, select: DEFAULTS.FALSE, default: DEFAULTS.NULL },
+  isVerified: { type: Boolean, default: DEFAULTS.FALSE },
   status: { type: String, enum: Object.values(STATUS), default: DEFAULTS.STATUS },
   lastLoginAt: { type: Date, default: DEFAULTS.NULL },
-  termsAccepted: { type: Boolean, default: false },
+  termsAccepted: { type: Boolean, default: DEFAULTS.FALSE },
   termsAcceptedAt: { type: Date, default: DEFAULTS.NULL },
   deletedAt: { type: Date, default: DEFAULTS.NULL },
   deletedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: DEFAULTS.NULL },
   deletedReason: { type: String, default: DEFAULTS.NULL },
 }, {
-  timestamps: true,
-  toJSON: { virtuals: true, getters: true, minimize: false },
-  toObject: { virtuals: true, getters: true, minimize: false }
+  timestamps: DEFAULTS.TRUE,
+  toJSON: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE },
+  toObject: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE }
 });
 
 UserSchema.pre('save', async function () {

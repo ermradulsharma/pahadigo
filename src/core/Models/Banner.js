@@ -1,14 +1,18 @@
 import mongoose from 'mongoose';
+import { DEFAULTS } from '../Constants/index.js';
 
 const BannerSchema = new mongoose.Schema({
-    title: { type: String, trim: true },
-    imageUrl: { type: String, required: true },
-    link: { type: String }, // Optional deep link or external URL
-    position: { type: Number, default: 0 },
-    isActive: { type: Boolean, default: true }
-}, { timestamps: true });
+  title: { type: String, trim: DEFAULTS.TRUE },
+  imageUrl: { type: String, required: DEFAULTS.TRUE },
+  link: { type: String, default: DEFAULTS.NULL },
+  position: { type: Number, default: 0 },
+  isActive: { type: Boolean, default: DEFAULTS.TRUE }
+}, {
+  timestamps: DEFAULTS.TRUE,
+  toJSON: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE },
+  toObject: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE }
+});
 
-// Ensure banners render in correct order
 BannerSchema.index({ position: 1 });
 
 export default mongoose.models.Banner || mongoose.model('Banner', BannerSchema);

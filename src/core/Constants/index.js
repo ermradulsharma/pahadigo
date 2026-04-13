@@ -135,6 +135,8 @@ export const DEFAULTS = {
   NULL: null,
   ARRAY: [],
   STRING: '',
+  TRUE: true,
+  FALSE: false,
 
   BLOOD_GROUP: null,
   MEDICAL_CONDITIONS: []

@@ -6,8 +6,9 @@ import { RESPONSE_MESSAGES } from '@/constants/index.js';
  * Focuses on public-facing category discovery.
  */
 class CategoryService {
+
     async getAllCategories() {
-        return await Category.find({ isActive: true }).sort({ name: 1 }).lean();
+        return await Category.find({ isActive: true }).sort({ id: 1 }).lean();
     }
 
     async getCategoryById(id) {
@@ -17,7 +18,7 @@ class CategoryService {
     }
 
     async getCategoryBySlug(slug) {
-        return await Category.findOne({ slug: slug.toLowerCase(), isActive: true }).lean();
+        return await Category.findOne({ slug: slug.toLowerCase() }).lean();
     }
 }
 

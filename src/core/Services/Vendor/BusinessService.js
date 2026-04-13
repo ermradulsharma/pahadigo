@@ -43,7 +43,6 @@ class BusinessService {
       }));
       delete updateData.businessCategory;
     }
-
     if (updateData.address) {
       mapToGeoJSON(updateData.address, 'location');
     }
@@ -58,7 +57,7 @@ class BusinessService {
       },
       { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true, runValidators: true }
     );
-    await User.findByIdAndUpdate(userId, { vendorProfile: vendor._id });
+    await User.findByIdAndUpdate(userId, { vendorProfile: vendor._id, name: vendor.ownerName });
     return await vendor.populate('user', 'email phone role');
   }
 

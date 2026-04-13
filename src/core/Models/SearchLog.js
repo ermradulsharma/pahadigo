@@ -1,32 +1,18 @@
 import mongoose from 'mongoose';
+import { DEFAULTS } from '../Constants/index.js';
 
 const searchLogSchema = new mongoose.Schema({
-    query: {
-        type: String,
-        required: true,
-        trim: true,
-        lowercase: true
-    },
-    count: {
-        type: Number,
-        default: 1
-    },
-    lastSearched: {
-        type: Date,
-        default: Date.now
-    },
-    resultsCount: {
-        type: Number,
-        default: 0
-    },
-    user: {
-        type: mongoose.Schema.Types.ObjectId,
-        ref: 'User',
-        default: null
-    }
-}, { timestamps: true });
+  query: { type: String, required: DEFAULTS.TRUE, trim: DEFAULTS.TRUE, lowercase: DEFAULTS.TRUE },
+  count: { type: Number, default: 1 },
+  lastSearched: { type: Date, default: Date.now },
+  resultsCount: { type: Number, default: 0 },
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: DEFAULTS.NULL }
+}, {
+  timestamps: DEFAULTS.TRUE,
+  toJSON: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE },
+  toObject: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE }
+});
 
-// Index for efficient querying of popular searches
 searchLogSchema.index({ count: -1 });
 searchLogSchema.index({ lastSearched: -1 });
 
