@@ -69,7 +69,13 @@ class CategoryService {
     if (!isAssigned) {
       throw new Error("This category is not yet part of your business profile. Please add it first.");
     }
-    return await CategoryDocument.find({ category_slug: categorySlug, isActive: true }).select('name slug isMandatory');
+    return await this.getRequirementsBySlug(categorySlug);
+  }
+
+  // Get list of required documents for any category (Bypasses assignment check)
+  async getRequirementsBySlug(categorySlug) {
+    const dbDocs = await CategoryDocument.find({ category_slug: categorySlug, isActive: true }).select('name slug isMandatory');
+    return dbDocs;
   }
 
   // Submit/Upload documents for a specific category

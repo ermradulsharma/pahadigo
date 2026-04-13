@@ -63,6 +63,19 @@ class CategoryController extends Controller {
     }
   }
 
+  // GET /vendor/category/requirements/:slug (Fetch documents without assignment check)
+  async getCategoryRequirements(req, { params }) {
+    try {
+      const slug = params.slug;
+      if (!slug) throw new Error("Category slug is required");
+
+      const docs = await CategoryService.getRequirementsBySlug(slug);
+      return this.success(HTTP_STATUS.OK, "Category document list fetched", docs);
+    } catch (error) {
+      return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
+    }
+  }
+
   // POST /vendor/category/documents/upload
   async uploadDocuments(req, { params } = {}) {
     try {
