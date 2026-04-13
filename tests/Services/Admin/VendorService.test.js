@@ -36,8 +36,8 @@ describe('VendorService: Integration Tests', () => {
 
         // Create a dummy vendor document
         const document = await VendorDocument.create({
-            user_id: mockUserId,
-            vendor_id: mockVendorId,
+            user: mockUserId,
+            vendor: mockVendorId,
             category_slug: "trekking",
             document_slug: "license",
             url: "http://test.com/doc.jpg",

@@ -47,8 +47,8 @@ describe('VendorController: Integration Tests', () => {
         mockVendorId = vendor._id;
 
         const document = await VendorDocument.create({
-            user_id: mockUserId,
-            vendor_id: mockVendorId,
+            user: mockUserId,
+            vendor: mockVendorId,
             category_slug: "trekking",
             document_slug: "license",
             url: "http://test.com/doc.jpg",

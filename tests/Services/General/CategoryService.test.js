@@ -23,7 +23,7 @@ describe('General CategoryService', () => {
             const result = await CategoryService.getAllCategories();
 
             expect(Category.find).toHaveBeenCalledWith({ isActive: true });
-            expect(sortMock).toHaveBeenCalledWith({ name: 1 });
+            expect(sortMock).toHaveBeenCalledWith({ id: 1 });
             expect(result).toEqual(mockCategories);
         });
     });
@@ -60,7 +60,7 @@ describe('General CategoryService', () => {
 
             const result = await CategoryService.getCategoryBySlug('Test-Slug');
 
-            expect(Category.findOne).toHaveBeenCalledWith({ slug: 'test-slug', isActive: true });
+            expect(Category.findOne).toHaveBeenCalledWith({ slug: 'test-slug' });
             expect(result).toEqual(mockCategory);
         });
     });

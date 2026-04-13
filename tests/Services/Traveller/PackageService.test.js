@@ -31,7 +31,7 @@ describe('Industry Standard: PackageService Business Logic Service', () => {
 
     it('[Feature] should search nearby packages without erroring', async () => {
         try {
-            const result = await PackageService.searchNearbyPackages(30.3165, 78.0322); // Dehradun coords
+            const result = await PackageService.searchPackages(30.3165, 78.0322); // Dehradun coords
             expect(Array.isArray(result)).toBe(true);
         } catch (error) {
             if (error.message.includes('not a function')) {

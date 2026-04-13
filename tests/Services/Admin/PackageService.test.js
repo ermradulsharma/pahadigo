@@ -11,8 +11,8 @@ describe('PackageService: toggleServiceStatus Integration Tests', () => {
     beforeEach(async () => {
         // Create a dummy package document in the memory DB with required fields
         await Package.create({
-            vendor: mockUserId,
-            business: mockVendorId,
+            user: mockUserId,
+            vendor: mockVendorId,
             vehicleRental: [
                 {
                     _id: mockServiceId,
@@ -43,7 +43,7 @@ describe('PackageService: toggleServiceStatus Integration Tests', () => {
         expect(result.isActive).toBe(false);
 
         // Verify in DB
-        const updatedDoc = await Package.findOne({ business: mockVendorId });
+        const updatedDoc = await Package.findOne({ vendor: mockVendorId });
         expect(updatedDoc.vehicleRental[0].isActive).toBe(false);
     });
 
