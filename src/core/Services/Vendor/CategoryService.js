@@ -104,11 +104,14 @@ class CategoryService {
       // 2. Persist to VendorDocument (Identify by Vendor + Doc Slug, update User ID if missing)
       return await VendorDocument.findOneAndUpdate(
         {
-          vendor_id: vendor._id,
-          document_slug: docSlug
+          user: userId,
+          vendor: vendor._id,
+          document_slug: docSlug,
+          category_slug: categorySlug,
         },
         {
-          user_id: userId, // Ensure user_id is updated/set
+          user: userId,
+          vendor: vendor._id,
           category_slug: categorySlug,
           url: uploadResult.url,
           status: VERIFICATION_STATUS.PENDING

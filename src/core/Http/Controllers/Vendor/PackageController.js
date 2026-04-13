@@ -4,6 +4,8 @@ import { CATEGORY_MAP } from '@/constants/categories.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 import Controller from '@/controllers/Controller.js';
 import { uploadToCloudinary } from '@/helpers/cloudinary.js';
+import { VendorService } from '@/services/Admin';
+import Vendor from '@/models/Vendor.js';
 
 /**
  * PackageController (Vendor Role) - Comprehensive management of vendor catalogs and service items.
@@ -17,11 +19,12 @@ class PackageController extends Controller {
       const url = new URL(req.url, 'http://localhost');
       const page = parseInt(url.searchParams.get('page')) || 1;
       const limit = parseInt(url.searchParams.get('limit')) || 10;
+      const userId = req.user.id;
 
-      const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+      const vendor = await Vendor.findOne({ user: userId }).select("_id");
       if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-      const packages = await PackageService.getPackages(vendor._id, page, limit);
+      const packages = await PackageService.getPackages(userId, vendor._id, page, limit);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, packages);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -32,10 +35,11 @@ class PackageController extends Controller {
   async createPackage(req) {
     try {
       const body = req.payload;
-      const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+      const userId = req.user.id;
+      const vendor = await Vendor.findOne({ user: userId }).select("_id");
       if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-      const pkg = await PackageService.initializeVendorPackage(vendor._id, body);
+      const pkg = await PackageService.initializeVendorPackage(userId, vendor._id, body);
       return this.success(HTTP_STATUS.CREATED, "Package created successfully", pkg);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -45,7 +49,10 @@ class PackageController extends Controller {
   // GET /vendor/packages/:id
   async getPackageById(req, { params }) {
     try {
-      const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+      const userId = req.user.id;
+      const vendor = await Vendor.findOne({ user: userId }).select("_id");
+      if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+      
       const pkg = await PackageService.getPackageById(params.id);
 
       if (!pkg || pkg.vendor.toString() !== vendor._id.toString()) {
@@ -61,8 +68,11 @@ class PackageController extends Controller {
   async updatePackage(req, { params }) {
     try {
       const body = req.payload;
-      const vendor = await BusinessService.getBusinessByUserId(req.user.id);
-      const pkg = await PackageService.updatePackage(params.id, vendor._id, body);
+      const userId = req.user.id;
+      const vendor = await Vendor.findOne({ user: userId }).select("_id");
+      if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+
+      const pkg = await PackageService.updatePackage(params.id, userId, vendor._id, body);
       return this.success(HTTP_STATUS.OK, "Package updated successfully", pkg);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -72,8 +82,11 @@ class PackageController extends Controller {
   // DELETE /vendor/packages/:id
   async deletePackage(req, { params }) {
     try {
-      const vendor = await BusinessService.getBusinessByUserId(req.user.id);
-      await PackageService.deletePackage(params.id, vendor._id);
+      const userId = req.user.id;
+      const vendor = await Vendor.findOne({ user: userId }).select("_id");
+      if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+
+      await PackageService.deletePackage(params.id, userId, vendor._id);
       return this.success(HTTP_STATUS.OK, "Package deleted successfully");
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -84,8 +97,11 @@ class PackageController extends Controller {
   async togglePackageStatus(req, { params }) {
     try {
       const body = req.payload;
-      const vendor = await BusinessService.getBusinessByUserId(req.user.id);
-      const pkg = await PackageService.updatePackageStatus(params.id, vendor._id, body.isActive);
+      const userId = req.user.id;
+      const vendor = await Vendor.findOne({ user: userId }).select("_id");
+      if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+
+      const pkg = await PackageService.updatePackageStatus(params.id, userId, vendor._id, body.isActive);
       return this.success(HTTP_STATUS.OK, "Package status updated", pkg);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -98,9 +114,11 @@ class PackageController extends Controller {
   async addPackageItem(req, { params } = {}) {
     try {
       const body = req.payload;
-      const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+      const userId = req.user.id;
+      const vendor = await Vendor.findOne({ user: userId }).select("_id");
       if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
+      const vendorId = vendor._id;
       const category = (body.category?._id || body.category || '').trim();
 
       // Handle item[0][key] style format from Postman/CURL
@@ -119,7 +137,7 @@ class PackageController extends Controller {
           // Detect if it's a File object from multipart/form-data
           if (photo && typeof photo === 'object' && (photo instanceof File || photo.size > 0)) {
             try {
-              const uploaded = await uploadToCloudinary(photo, `packages/${vendor._id}/${category}`);
+              const uploaded = await uploadToCloudinary(photo, `packages/${vendorId}/${category}`);
               uploadResults.push({ url: uploaded.url, type: 'image' });
             } catch (err) {
               console.error(`[PACKAGE_CONTROLLER] Item image upload failed:`, err);
@@ -136,7 +154,7 @@ class PackageController extends Controller {
         else delete itemData.photos;
       }
 
-      const item = await PackageService.addItem(vendor._id, category, itemData);
+      const item = await PackageService.addItem(userId, vendorId, category, itemData);
       return this.success(HTTP_STATUS.CREATED, "Service item added", item);
     } catch (error) {
       const status = error.message.toLowerCase().includes('authorized') ? HTTP_STATUS.FORBIDDEN : HTTP_STATUS.BAD_REQUEST;
@@ -147,11 +165,12 @@ class PackageController extends Controller {
   // GET /vendor/package/item/:category/:itemId
   async getPackageItem(req, { params } = {}) {
     try {
-      const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+      const userId = req.user.id;
+      const vendor = await Vendor.findOne({ user: userId }).select("_id");
       if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
       const { category, itemId } = params;
       const schemaKey = CATEGORY_MAP[category] || category;
-      const pkg = await PackageService.ensureCatalog(vendor.user);
+      const pkg = await PackageService.ensureCatalog(userId, vendor._id);
       if (pkg[schemaKey] === undefined) return this.error(HTTP_STATUS.BAD_REQUEST, "Invalid category");
       const item = pkg[schemaKey].id(itemId);
       if (!item) return this.error(HTTP_STATUS.NOT_FOUND, "Item not found");
@@ -165,7 +184,8 @@ class PackageController extends Controller {
   async updatePackageItem(req, { params } = {}) {
     try {
       const body = req.payload;
-      const vendor = await BusinessService.findByUserId(req.user.id);
+      const userId = req.user.id;
+      const vendor = await Vendor.findOne({ user: userId }).select("_id");
       if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
       const itemId = params.itemId || body.itemId;
@@ -194,7 +214,7 @@ class PackageController extends Controller {
         if (uploadResults.length > 0) updates.photos = uploadResults;
       }
 
-      const result = await PackageService.updateItem(vendor._id, category, itemId, updates);
+      const result = await PackageService.updateItem(userId, vendor._id, category, itemId, updates);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, result);
     } catch (error) {
       const status = error.message.toLowerCase().includes('authorized') ? HTTP_STATUS.FORBIDDEN : HTTP_STATUS.BAD_REQUEST;
@@ -206,11 +226,13 @@ class PackageController extends Controller {
   async removePackageItem(req, { params } = {}) {
     try {
       const body = req.payload;
-      const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+      const userId = req.user.id;
+      const vendor = await Vendor.findOne({ user: userId }).select("_id");
+      if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
       const itemId = params.itemId || body.itemId;
       const category = (body.category || params.category || '').trim();
 
-      await PackageService.removeItem(vendor._id, category, itemId);
+      await PackageService.removeItem(userId, vendor._id, category, itemId);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED);
     } catch (error) {
       const status = error.message.toLowerCase().includes('authorized') ? HTTP_STATUS.FORBIDDEN : HTTP_STATUS.BAD_REQUEST;
@@ -222,7 +244,8 @@ class PackageController extends Controller {
   async togglePackageItemStatus(req, { params } = {}) {
     try {
       const body = req.payload;
-      const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+      const userId = req.user.id;
+      const vendor = await Vendor.findOne({ user: userId }).select("_id");
       if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
       const itemId = params.itemId || body.itemId;
@@ -231,7 +254,7 @@ class PackageController extends Controller {
       if (typeof isActive === 'string') {
         isActive = isActive.trim().toLowerCase() === 'true';
       }
-      const result = await PackageService.toggleItemStatus(vendor._id, category, itemId, isActive);
+      const result = await PackageService.toggleItemStatus(userId, vendor._id, category, itemId, isActive);
       return this.success(HTTP_STATUS.OK, "Item status updated", result);
     } catch (error) {
       const status = error.message.toLowerCase().includes('authorized') ? HTTP_STATUS.FORBIDDEN : HTTP_STATUS.BAD_REQUEST;
@@ -243,11 +266,14 @@ class PackageController extends Controller {
   async toggleCategoryStatus(req) {
     try {
       const body = req.payload;
-      const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+      const userId = req.user.id;
+      const vendor = await Vendor.findOne({ user: userId }).select("_id");
+      if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+      
       const category = (body.category || '').trim();
       const { isActive } = body;
 
-      await PackageService.toggleCategoryStatus(vendor._id, category, isActive);
+      await PackageService.toggleCategoryStatus(userId, vendor._id, category, isActive);
       return this.success(HTTP_STATUS.OK, "Category status updated");
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);

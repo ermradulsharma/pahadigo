@@ -22,7 +22,7 @@ const TrekkingSchema = new mongoose.Schema({
 
   details: {
     trekType: { type: String, enum: Object.values(PACKAGE.ACTIVITY.TREK_TYPES), default: PACKAGE.ACTIVITY.TREK_TYPES.DAY_TREK },
-    difficultyLevel: { type: String, enum: Object.values(PACKAGE.DIFFICULTY), default: PACKAGE.DIFFICULTY.EASY },
+    difficultyLevel: { type: String, enum: ['Easy', 'Moderate', 'Hard', 'easy', 'moderate', 'hard'], default: 'Easy' },
     bestSeason: { type: String, enum: Object.values(PACKAGE.SEASONS), default: PACKAGE.SEASONS.ALL_YEAR },
     duration: { type: String, default: DEFAULTS.NULL },
     maxAltitude: { type: String, default: DEFAULTS.NULL },

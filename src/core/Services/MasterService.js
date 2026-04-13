@@ -121,12 +121,8 @@ class MasterService {
                             $match: {
                                 $expr: {
                                     $and: [
-                                        { 
-                                            $eq: [
-                                                { $toString: '$vendor_id' }, 
-                                                { $toString: '$$vendorId' }
-                                            ] 
-                                        },
+                                        { $eq: [ { $toString: '$vendor' }, { $toString: '$$vendorId' } ] },
+                                        { $eq: ['$status', 'verified'] },
                                         {
                                             $eq: [
                                                 '$category_slug',
@@ -151,20 +147,7 @@ class MasterService {
             },
             {
                 $match: {
-                    $expr: {
-                        $and: [
-                            { $gt: [{ $size: '$categoryDocs' }, 0] },
-                            {
-                                $allElementsTrue: {
-                                    $map: {
-                                        input: '$categoryDocs',
-                                        as: 'doc',
-                                        in: { $eq: ['$$doc.status', 'verified'] }
-                                    }
-                                }
-                            }
-                        ]
-                    }
+                    categoryDocs: { $not: { $size: 0 } }
                 }
             }
         ];

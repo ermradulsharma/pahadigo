@@ -34,6 +34,7 @@ export default function VendorDetailsPage({ params }) {
         const profile = await fetch(`/api/admin/vendors/${id}`, { headers: { 'Authorization': 'Bearer ' + token } });
         if (profile.ok) {
           const data = await profile.json();
+          console.log(data);
           if (data.data) setVendor(data.data);
         }
       } catch (e) {
