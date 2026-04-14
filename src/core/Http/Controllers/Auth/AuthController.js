@@ -22,7 +22,7 @@ class AuthController extends Controller {
     try {
       const body = await parseBody(req);
       const { email, phone, role, termsAccepted } = body;
-      
+
       if (!email && !phone) {
         return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.EITHER_IDENTIFIER_REQUIRED);
       }
@@ -32,7 +32,7 @@ class AuthController extends Controller {
 
       const identifier = email ? email.toLowerCase().trim() : phone.trim();
       const termsAndConditionsAccepted = termsAccepted === 'true' || termsAccepted === true;
-      
+
       const otp = await UserAuthService.initiateOTP({
         identifier,
         role: role ? role.toLowerCase() : 'traveller',
@@ -56,11 +56,11 @@ class AuthController extends Controller {
       const body = req.validData || req.jsonBody || await parseBody(req);
       const { email, password, rememberMe } = body;
       const result = await AdminAuthService.authenticateWithPassword({ email, password, rememberMe });
-      
+
       const ip = req.headers.get('x-forwarded-for') || req.socket?.remoteAddress;
       const device = req.headers.get('user-agent');
       AuthEvents.emit('auth.login_success', { user: result.user, metadata: { ip, device, identifier: email } });
-      
+
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, transformAuthResponse(result));
     } catch (error) {
       return this.error(HTTP_STATUS.UNAUTHORIZED, error.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
@@ -72,8 +72,9 @@ class AuthController extends Controller {
   async confirmOTP(req) {
     try {
       const body = await parseBody(req);
+      console.log('Confirm OTP body:', body);
       const rawPayload = { identifier: body.email || body.phone, otp: body.otp, targetRole: body.role || body.targetRole };
-      
+
       const validationResult = validate(schemas.otpLogin, rawPayload);
       if (!validationResult.success) {
         return this.error(HTTP_STATUS.BAD_REQUEST, validationResult.error);
@@ -81,11 +82,11 @@ class AuthController extends Controller {
 
       const { identifier, otp, targetRole } = validationResult.data;
       const result = await UserAuthService.authenticateWithOTP({ identifier, otp, targetRole });
-      
+
       const ip = req.headers.get('x-forwarded-for') || req.socket?.remoteAddress;
       const device = req.headers.get('user-agent');
       AuthEvents.emit('auth.login_success', { user: result.user, metadata: { ip, device, identifier } });
-      
+
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, transformAuthResponse(result));
     } catch (error) {
       return this.error(HTTP_STATUS.UNAUTHORIZED, error.message || RESPONSE_MESSAGES.AUTH.INVALID_OTP);
@@ -213,7 +214,7 @@ class AuthController extends Controller {
 
       const user = await User.findById(req.user.id);
       if (!user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.NOT_FOUND);
-      
+
       // Verification logic...
       const otpRecord = await OTPService.verifyOTP(user.email || user.phone, body.otp);
       if (!otpRecord) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.AUTH.INVALID_OTP);
@@ -248,7 +249,7 @@ class AuthController extends Controller {
     try {
       if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
       let body = req.formDataBody ? parseNestedFormData(req.formDataBody) : (req.validData || req.jsonBody || await parseBody(req));
-      
+
       if (req.formDataBody?.get('profileImage') instanceof File) {
         const result = await uploadToCloudinary(req.formDataBody.get('profileImage'), `profile/${req.user.id}`);
         body.profileImage = result.url;
@@ -266,7 +267,7 @@ class AuthController extends Controller {
     try {
       if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
       let reason = null;
-      try { reason = (await parseBody(req)).reason; } catch (e) {}
+      try { reason = (await parseBody(req)).reason; } catch (e) { }
 
       await BaseAuthService.deactivateUserAccount(req.user.id, reason);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED);
