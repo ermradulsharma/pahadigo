@@ -24,7 +24,7 @@
         "lucide-react": "^1.8.0",
         "mongoose": "^9.4.1",
         "msg91-api": "^1.1.0",
-        "next": "^16.2.3",
+        "next": "^16.2.4",
         "next-cloudinary": "^6.17.5",
         "nodemailer": "^8.0.5",
         "razorpay": "^2.9.6",
