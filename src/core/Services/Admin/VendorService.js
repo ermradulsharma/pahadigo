@@ -228,7 +228,7 @@ class VendorService {
     doc.rejection_reason = status === 'rejected' ? reason : null;
     await doc.save();
 
-    NotificationService.notifyDocumentVerification(doc.vendor_id, "A Category Specific Document", status === 'approved' || status === 'verified');
+    NotificationService.notifyDocumentVerification(doc.vendor, "A Category Specific Document", status === 'approved' || status === 'verified');
     if (req && req.user) await AuditService.logAction(req.user.id, 'VERIFY', 'CATEGORY_DOCUMENT', documentId, { status }, req);
     return doc;
   }

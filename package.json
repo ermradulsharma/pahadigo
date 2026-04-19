@@ -24,7 +24,7 @@
         "lucide-react": "^1.8.0",
         "mongoose": "^9.4.1",
         "msg91-api": "^1.1.0",
-        "next": "^16.2.3",
+        "next": "^16.2.4",
         "next-cloudinary": "^6.17.5",
         "nodemailer": "^8.0.5",
         "razorpay": "^2.9.6",
@@ -37,13 +37,13 @@
     },
     "devDependencies": {
         "@tailwindcss/postcss": "^4.2.2",
-        "autoprefixer": "^10.4.27",
-        "eslint": "^10.2.0",
-        "eslint-config-next": "16.2.3",
+        "autoprefixer": "^10.5.0",
+        "eslint": "^10.2.1",
+        "eslint-config-next": "16.2.4",
         "gcp-metadata": "^8.1.2",
         "jest": "^30.3.0",
         "mongodb-memory-server": "^11.0.1",
-        "postcss": "^8.5.9",
+        "postcss": "^8.5.10",
         "supertest": "^7.2.2",
         "tailwindcss": "^4.2.2"
     },
@@ -60,7 +60,7 @@
         "eslint-plugin-react-hooks": {
             "eslint": "$eslint"
         },
-        "eslint": "^10.2.0",
+        "eslint": "$eslint",
         "@tootallnate/once": "^3.0.1"
     }
 }

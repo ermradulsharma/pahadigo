@@ -17,6 +17,7 @@ const UserSchema = new mongoose.Schema({
   dateOfBirth: { type: Date, default: DEFAULTS.NULL },
   bloodGroup: { type: String, default: DEFAULTS.NULL },
   medicalConditions: { type: [String], default: DEFAULTS.ARRAY },
+  experience: { type: Number, default: 0 },
   designation: { type: String, default: DEFAULTS.NULL },
   bio: { type: String, maxlength: 500, default: DEFAULTS.NULL },
   website: { type: String, default: DEFAULTS.NULL },

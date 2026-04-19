@@ -33,12 +33,8 @@ class ClosureService {
         return await closure.save();
     }
 
-    async deleteClosurePeriod(closureId) {
-        return await VendorClosure.findOneAndUpdate(
-            { _id: closureId },
-            { isActive: false },
-            { new: true }
-        );
+    async deleteClosurePeriod(userId, closureId) {
+        return await VendorClosure.findOneAndDelete({ _id: closureId, user: userId });
     }
 
     // --- INDUSTRY STANDARD ALIASES ---

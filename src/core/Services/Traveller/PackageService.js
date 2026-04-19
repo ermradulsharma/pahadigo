@@ -22,13 +22,13 @@ class PackageService {
         const item = await this.getPackageItem(itemId);
         if (!item) return null;
 
-        const pkg = await Package.findById(item.catalogId).populate('business').lean();
-        if (!pkg || !(await this.masterService.isVendorActive(pkg.business))) return null;
+        const pkg = await Package.findById(item.catalogId).populate('vendor').lean();
+        if (!pkg || !(await this.masterService.isVendorActive(pkg.vendor))) return null;
 
         // Check category specific verification for single item
         const slug = Object.keys(CATEGORY_MAP).find(k => CATEGORY_MAP[k] === item.category) || item.category;
         const isCategoryVerified = await mongoose.model('VendorDocument').findOne({
-            vendor_id: pkg.business._id,
+            vendor: pkg.vendor._id,
             category_slug: slug,
             status: 'verified'
         });
@@ -249,12 +249,12 @@ class PackageService {
         pipeline.push({
             $lookup: {
                 from: 'packages',
-                let: { vendorUserId: "$vendorProfile.user" },
+                let: { vendorId: "$vendorProfile._id" },
                 pipeline: [
                     {
                         $match: {
                             $expr: {
-                                $eq: [{ $toString: "$vendor" }, { $toString: "$$vendorUserId" }]
+                                $eq: [{ $toString: "$vendor" }, { $toString: "$$vendorId" }]
                             }
                         }
                     }

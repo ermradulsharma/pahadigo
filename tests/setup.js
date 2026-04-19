@@ -13,7 +13,11 @@ jest.setTimeout(60000);
 let mongoServer;
 
 beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create();
+    mongoServer = await MongoMemoryServer.create({
+        instance: {
+            launchTimeoutMS: 30000
+        }
+    });
     const uri = mongoServer.getUri();
 
     // Ensure we are not using the real DB

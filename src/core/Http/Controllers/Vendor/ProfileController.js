@@ -4,6 +4,7 @@ import { BaseAuthService } from '@/services/Auth/index.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, STATUS } from '@/constants/index.js';
 import { uploadToCloudinary } from '@/helpers/cloudinary.js';
 import { transformAuthResponse } from '@/helpers/index.js';
+import { mapToGeoJSON } from '@/helpers/geoUtils.js';
 import Controller from '@/controllers/Controller.js';
 
 /**
@@ -55,11 +56,7 @@ class ProfileController extends Controller {
         const res = await uploadToCloudinary(req.formDataBody.get('profileImage'), `profile/${req.user.id}`);
         body.profileImage = res.url;
       }
-      const allowedFields = [
-        'name', 'gender', 'dateOfBirth', 'bloodGroup',
-        'designation', 'bio', 'website', 'socialLinks',
-        'emergencyContacts', 'address', 'preferences', 'profileImage'
-      ];
+      const allowedFields = ['gender', 'dateOfBirth', 'bloodGroup', 'designation', 'bio', 'website', 'socialLinks', 'emergencyContacts', 'address', 'preferences', 'profileImage', 'expertise', 'medicalConditions', 'experience'];
       const updates = {};
       Object.keys(body).forEach(key => {
         if (allowedFields.includes(key)) updates[key] = body[key];
@@ -67,6 +64,17 @@ class ProfileController extends Controller {
       if (body.emergencyContact && !body.emergencyContacts) {
         updates.emergencyContacts = [body.emergencyContact];
       }
+      if (updates.expertise && typeof updates.expertise === 'string') {
+        updates.expertise = updates.expertise.split(',').map(item => item.trim()).filter(Boolean);
+      }
+      if (updates.medicalConditions && typeof updates.medicalConditions === 'string') {
+        updates.medicalConditions = updates.medicalConditions.split(',').map(item => item.trim()).filter(Boolean);
+      }
+      
+      if (updates.address) {
+        mapToGeoJSON(updates.address, 'location');
+      }
+
       const user = await User.findByIdAndUpdate(
         req.user.id,
         { $set: updates },

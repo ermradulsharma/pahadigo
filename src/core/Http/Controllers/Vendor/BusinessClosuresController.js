@@ -44,8 +44,8 @@ class BusinessClosuresController extends Controller {
     // DELETE /vendor/business/closures/:id
     async deleteClosure(req, { params }) {
         try {
-            const result = await ClosureService.removeClosurePeriod(req.user.id, params.id);
-            return this.success(HTTP_STATUS.OK, "Closure deleted", result);
+            await ClosureService.removeClosurePeriod(req.user.id, params.id);
+            return this.success(HTTP_STATUS.OK, "Closure deleted");
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
         }

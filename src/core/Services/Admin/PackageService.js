@@ -11,7 +11,7 @@ class PackageService {
   async getAllServices() {
     const packages = await Package.find()
       .populate('vendor', 'name email')
-      .populate('business', 'businessName ownerName phone')
+      .populate('vendor', 'businessName ownerName phone')
       .lean();
 
     const services = [];
@@ -43,8 +43,8 @@ class PackageService {
 
   async toggleServiceStatus(serviceId, status, serviceType, vendorId, userId) {
     const pkg = await Package.findOne({
-      business: new mongoose.Types.ObjectId(String(vendorId)),
-      vendor: new mongoose.Types.ObjectId(String(userId))
+      vendor: new mongoose.Types.ObjectId(String(vendorId)),
+      user: new mongoose.Types.ObjectId(String(userId))
     });
     if (!pkg) throw new Error(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
 

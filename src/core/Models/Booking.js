@@ -1,60 +1,99 @@
 import mongoose from 'mongoose';
 import { DEFAULTS } from '../Constants/index.js';
 
+/**
+ * Booking Model
+ * Orchestrates the relationship between Travellers, Vendors, and specific Items.
+ */
 const BookingSchema = new mongoose.Schema({
-  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: DEFAULTS.TRUE, index: DEFAULTS.TRUE },
-  traveller: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: DEFAULTS.TRUE, index: DEFAULTS.TRUE },
-  vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: DEFAULTS.TRUE, index: DEFAULTS.TRUE },
-  package: { type: mongoose.Schema.Types.ObjectId, ref: 'Package', required: DEFAULTS.TRUE },
-  bookingDate: { type: Date, default: Date.now },
-  travelStartTime: { type: Date, required: DEFAULTS.TRUE }, // Full Date + Time (Precision based)
-  travelEndTime: { type: Date, required: DEFAULTS.TRUE }, // Full Date + Time (Precision based)
+  // --- Core Relationships ---
+  user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: DEFAULTS.TRUE, index: DEFAULTS.TRUE }, // The person who made the booking
+  traveller: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: DEFAULTS.TRUE, index: DEFAULTS.TRUE }, // Final traveller identity
+  vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: DEFAULTS.TRUE, index: DEFAULTS.TRUE }, // The service provider
+  package: { type: mongoose.Schema.Types.ObjectId, ref: 'Package', required: DEFAULTS.TRUE }, // The catalog document
 
-  // Traveler Breakdown
+  // --- Item Specifics ---
+  bookingDetails: {
+    category: { type: String, required: DEFAULTS.TRUE }, // homestay, trekking, hotel, etc.
+    itemId: { type: mongoose.Schema.Types.ObjectId, required: DEFAULTS.TRUE }, // ID of the specific item inside the package
+    itemTitle: { type: String }, // Snapshot of the title at booking time
+  },
+
+  // --- Schedule ---
+  startDate: { type: Date, required: DEFAULTS.TRUE },
+  endDate: { type: Date, required: DEFAULTS.TRUE },
+  checkInTime: { type: String },
+  checkOutTime: { type: String },
+
+  // --- Capacity Breakdown ---
   adultCount: { type: Number, default: 1, min: 1 },
   childCount: { type: Number, default: 0, min: 0 },
-  units: { type: Number, default: 1, min: 1 }, // Total slots (adults + children)
+  infantCount: { type: Number, default: 0, min: 0 },
+  totalTravellers: { type: Number, required: DEFAULTS.TRUE }, // Total units/people
 
-  status: { type: String, enum: ['pending', 'confirmed', 'cancelled', 'completed'], default: 'pending' },
-  paymentStatus: { type: String, enum: ['pending', 'paid', 'failed'], default: 'pending' },
-
-  // Group Booking Details
-  includeBooker: { type: Boolean, default: DEFAULTS.TRUE },
-  travelerDetails: [{
+  // --- Detailed Traveller List ---
+  travellerList: [{
     name: { type: String, required: DEFAULTS.TRUE },
+    age: { type: Number },
+    gender: { type: String },
+    idProof: { type: String }, // URL to ID proof if collected
     phone: { type: String }
   }],
 
-  razorpay: {
-    orderId: String,
-    paymentId: String,
-    signature: String
+  // --- Financials ---
+  basePrice: { type: Number, required: DEFAULTS.TRUE },
+  taxAmount: { type: Number, default: 0 },
+  discountAmount: { type: Number, default: 0 },
+  totalPrice: { type: Number, required: DEFAULTS.TRUE },
+  currency: { type: String, default: 'INR' },
+
+  // --- Status & Lifecycle ---
+  status: { 
+    type: String, 
+    enum: ['pending', 'confirmed', 'cancelled', 'completed', 'expired'], 
+    default: 'pending',
+    index: DEFAULTS.TRUE
   },
-  payoutStatus: { type: String, enum: ['pending', 'paid'], default: 'pending' }, // Admin to Vendor
-  refundStatus: { type: String, enum: ['none', 'refunded'], default: 'none' },
-  refundAmount: { type: Number, default: 0, min: 0 },
-  totalPrice: { type: Number, min: 0 },
-  preferences: {
-    category: { type: String }, // homestay, trekking, etc.
-    itemId: { type: mongoose.Schema.Types.ObjectId }
+  paymentStatus: { 
+    type: String, 
+    enum: ['unpaid', 'partially_paid', 'paid', 'refunded', 'failed'], 
+    default: 'unpaid' 
   },
+
+  // --- Integration Data ---
+  paymentGateway: {
+    name: { type: String, default: 'razorpay' },
+    orderId: { type: String, index: DEFAULTS.TRUE },
+    paymentId: { type: String },
+    signature: { type: String }
+  },
+
+  // --- Operations ---
   timeline: [{
-    title: { type: String, required: DEFAULTS.TRUE },
-    description: { type: String },
+    status: { type: String },
+    remarks: { type: String },
     timestamp: { type: Date, default: Date.now },
-    updatedBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' }
+    actor: { type: mongoose.Schema.Types.ObjectId, ref: 'User' } // Who made the update (System/Admin/Vendor)
   }],
-  isDisputed: { type: Boolean, default: DEFAULTS.FALSE }
+
+  cancellationReason: { type: String },
+  cancellationDate: { Date },
+  
+  isDisputed: { type: Boolean, default: DEFAULTS.FALSE },
+  specialRequests: { type: String } // Extra notes from user
 }, {
   timestamps: DEFAULTS.TRUE,
-  toJSON: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE },
-  toObject: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE }
+  toJSON: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE },
+  toObject: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE }
 });
 
-BookingSchema.index({ user: 1 });
-BookingSchema.index({ package: 1 });
-BookingSchema.index({ status: 1 });
-BookingSchema.index({ 'razorpay.orderId': 1 });
+// Optimized Indexes
+BookingSchema.index({ 'bookingDetails.itemId': 1 });
 BookingSchema.index({ createdAt: -1 });
 
-export default mongoose.models.Booking || mongoose.model('Booking', BookingSchema);
+// Ensure any existing models are cleared (preventing re-definition errors in dev)
+if (mongoose.models.Booking) {
+  delete mongoose.models.Booking;
+}
+
+export default mongoose.model('Booking', BookingSchema);
