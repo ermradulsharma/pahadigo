@@ -43,7 +43,7 @@
         "gcp-metadata": "^8.1.2",
         "jest": "^30.3.0",
         "mongodb-memory-server": "^11.0.1",
-        "postcss": "^8.5.9",
+        "postcss": "^8.5.10",
         "supertest": "^7.2.2",
         "tailwindcss": "^4.2.2"
     },
