@@ -39,7 +39,7 @@
         "@tailwindcss/postcss": "^4.2.2",
         "autoprefixer": "^10.4.27",
         "eslint": "^10.2.0",
-        "eslint-config-next": "16.2.3",
+        "eslint-config-next": "16.2.4",
         "gcp-metadata": "^8.1.2",
         "jest": "^30.3.0",
         "mongodb-memory-server": "^11.0.1",
