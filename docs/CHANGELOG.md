@@ -5,6 +5,19 @@ All notable changes to the PahadiGo project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.5.0] - 2026-04-20
+
+### Added
+- **Vendor Profile Schema Extension**: Added tracking for vendor professional `experience` into the schema and dynamic form parsers for `expertise` array mapping.
+- **GeoSpatial Data Handling**: Fully integrated `geoUtils.mapToGeoJSON` into vendor profiles ensuring accurate GeoJSON Point formatting for MongoDB spatial queries.
+- **Improved Testing Verification**: Rolled out new Jest validation logic enforcing hard deletes and restricted API return payloads for `ClosureService` ensuring robust vendor business continuity.
+
+### Fixed
+- **Dependency Version Conflicts**: Resolved NPM `EOVERRIDE` installation conflicts by streamlining ESLint override definitions inside `package.json` using reference `$eslint`.
+- **Vendor Closure Integrity**: Fixed parameter mismatch in `BusinessClosuresController` resulting in inactive user references, and enforced Hard Deletion over Soft Deletes to properly manage business availability.
+- **API Payload Security**: Removed the deleted data payload from the API responses on successful DELETE requests for vendor closures.
+
+
 ## [2.4.0] - 2026-04-04
 
 ### Changed
