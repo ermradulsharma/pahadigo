@@ -14,7 +14,7 @@ class InquiryController extends Controller {
       if (!body.name || !body.email || !body.message) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
 
       const inquiry = await PolicyService.submitInquiry(body);
-      return this.success(HTTP_STATUS.CREATED, "Inquiry submitted successfully", inquiry);
+      return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.INQUIRY.SUBMITTED, inquiry);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }

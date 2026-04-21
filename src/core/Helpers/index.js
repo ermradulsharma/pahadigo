@@ -7,6 +7,7 @@ export * from './dateUtils.js';
 export * from './env.js';
 export * from './geoUtils.js';
 export * from './jwt.js';
+export * from './location.js';
 export { default as parseBody } from './parseBody.js';
 export { default as parseNestedFormData } from './parseNestedFormData.js';
 export * from './queryUtils.js';

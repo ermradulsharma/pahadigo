@@ -31,7 +31,7 @@ class CategoryDocumentController extends Controller {
             const document = await categoryDocumentService.getById(params.id);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, document);
         } catch (error) {
-            return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.DOCUMENT_NOT_FOUND);
+            return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.DOCUMENT_NOT_FOUND);
         }
     }
 

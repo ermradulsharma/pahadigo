@@ -6,7 +6,7 @@ import VerifiedIdentity from '@/models/VerifiedIdentity.js';
 import OCRService from '@/services/Admin/OCRService.js';
 import NotificationService from '@/services/General/NotificationService.js';
 import BusinessService from '@/services/Vendor/BusinessService.js';
-import { RESPONSE_MESSAGES } from '@/constants/index.js';
+import { RESPONSE_MESSAGES, USER_ROLES, STATUS, VERIFICATION_STATUS } from '@/constants/index.js';
 import { mapToGeoJSON } from '@/helpers/geoUtils.js';
 import AuditService from './AuditService.js';
 import crypto from 'crypto';
@@ -19,7 +19,7 @@ import mongoose from 'mongoose';
 class VendorService {
   async getAllVendors() {
     return await User.aggregate([
-      { $match: { role: 'vendor' } },
+      { $match: { role: USER_ROLES.VENDOR } },
       { $sort: { createdAt: -1 } },
       {
         $lookup: {
@@ -98,19 +98,19 @@ class VendorService {
   async createVendor(data, req = null) {
     let existingUser = await User.findOne({ email: data.email });
     if (existingUser) {
-      if (existingUser.role !== 'vendor') throw new Error("Email registered with different role.");
+      if (existingUser.role !== USER_ROLES.VENDOR) throw new Error(RESPONSE_MESSAGES.AUTH.ROLE_MISMATCH);
     } else {
       existingUser = await User.create({
         email: data.email,
         phone: data.phone,
         name: data.ownerName || data.businessName,
         password: data.password || crypto.randomBytes(8).toString('hex'),
-        role: 'vendor', isVerified: true
+        role: USER_ROLES.VENDOR, isVerified: true
       });
     }
 
     const existingVendor = await Vendor.findOne({ user: existingUser._id });
-    if (existingVendor) throw new Error("Vendor profile already exists.");
+    if (existingVendor) throw new Error(RESPONSE_MESSAGES.VENDOR.ALREADY_EXISTS);
 
     const vendor = await Vendor.create({
       user: existingUser._id,
@@ -175,8 +175,8 @@ class VendorService {
   }
 
   async updateVendorStatus(vendorId, status, req = null) {
-    const isApproved = status !== 'rejected' && status !== 'suspended';
-    const userStatus = isApproved ? 'active' : 'suspended';
+    const isApproved = status !== VERIFICATION_STATUS.REJECTED && status !== STATUS.SUSPENDED;
+    const userStatus = isApproved ? STATUS.ACTIVE : STATUS.SUSPENDED;
 
     // Flexibility: Try finding by Profile ID first, then by User ID
     let vendor = await Vendor.findById(vendorId);
@@ -185,6 +185,7 @@ class VendorService {
     if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
     vendor.isApproved = isApproved;
+    vendor.status = isApproved ? STATUS.ACTIVE : STATUS.SUSPENDED;
     await vendor.save();
 
     // Update User Status
@@ -202,16 +203,30 @@ class VendorService {
     return await User.findById(vendor.user).populate('vendorProfile');
   }
 
-  async deleteVendor(id) {
+  async deleteVendor(id, deletedBy = null) {
+    // Soft delete — preserves audit trail and allows recovery
+    const now = new Date();
+
     const vendor = await Vendor.findById(id);
     if (vendor) {
-      await User.findByIdAndDelete(vendor.user);
-      await Vendor.findByIdAndDelete(id);
+      await User.findByIdAndUpdate(vendor.user, {
+        status: STATUS.DELETED,
+        deletedAt: now,
+        deletedBy: deletedBy || null,
+        deletedReason: 'Admin initiated deletion'
+      });
+      await Vendor.findByIdAndUpdate(id, { isApproved: false });
     } else {
       const user = await User.findById(id);
       if (user) {
-        await Vendor.findOneAndDelete({ user: id });
-        await User.findByIdAndDelete(id);
+        await User.findByIdAndUpdate(id, {
+          status: STATUS.DELETED,
+          deletedAt: now,
+          deletedBy: deletedBy || null,
+          deletedReason: 'Admin initiated deletion'
+        });
+        const vendorProfile = await Vendor.findOne({ user: id });
+        if (vendorProfile) await Vendor.findByIdAndUpdate(vendorProfile._id, { isApproved: false });
       }
     }
     return true;
@@ -222,7 +237,7 @@ class VendorService {
   async verifyCategoryDocument(data, req = null) {
     const { documentId, status, reason } = data;
     const doc = await VendorDocument.findById(documentId);
-    if (!doc) throw new Error(RESPONSE_MESSAGES.ERROR.DOCUMENT_NOT_FOUND);
+    if (!doc) throw new Error(RESPONSE_MESSAGES.VENDOR.DOCUMENT_NOT_FOUND);
 
     doc.status = status;
     doc.rejection_reason = status === 'rejected' ? reason : null;
@@ -246,7 +261,7 @@ class VendorService {
       doc = vendor.documents[documentField];
     }
 
-    if (!doc || !doc.url) throw new Error(RESPONSE_MESSAGES.ERROR.DOCUMENT_NOT_FOUND);
+    if (!doc || !doc.url) throw new Error(RESPONSE_MESSAGES.VENDOR.DOCUMENT_NOT_FOUND);
 
     // Fetch and process image (Cloudinary optimization if available)
     const optimizedUrl = doc.url.includes('cloudinary') ? doc.url.replace('/upload/', '/upload/f_jpg,q_auto/') : doc.url;
@@ -254,7 +269,7 @@ class VendorService {
     if (!imgRes.ok) throw new Error(`Failed to fetch document image (Status: ${imgRes.status})`);
 
     const buffer = Buffer.from(await imgRes.arrayBuffer());
-    if (buffer.length < 100) throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_IMAGE);
+    if (buffer.length < 100) throw new Error(RESPONSE_MESSAGES.VENDOR.INVALID_IMAGE);
 
     const ocrResult = await OCRService.processDocument(buffer);
     if (ocrResult.error) throw new Error(RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -286,7 +301,9 @@ class VendorService {
 
     vendor.markModified('documents');
     vendor.isApproved = true;
+    vendor.status = STATUS.ACTIVE;
     await vendor.save();
+    await User.findByIdAndUpdate(vendor.user, { status: STATUS.ACTIVE });
     await BusinessService.calculateTrustBadge(vendorId);
 
     if (req && req.user) await AuditService.logAction(req.user.id, 'OCR_VERIFY', 'DOCUMENT', vendorId, { docType: ocrResult.idType }, req);
@@ -308,19 +325,19 @@ class VendorService {
 
     for (let i = 0; i < pathParts.length - 1; i++) {
       parent = parent[pathParts[i]];
-      if (!parent) throw new Error(RESPONSE_MESSAGES.ERROR.DOCUMENT_NOT_FOUND);
+      if (!parent) throw new Error(RESPONSE_MESSAGES.VENDOR.DOCUMENT_NOT_FOUND);
     }
 
     const fieldName = pathParts[pathParts.length - 1];
     let doc = parent[fieldName];
 
     if (!doc) {
-      throw new Error(RESPONSE_MESSAGES.ERROR.DOCUMENT_NOT_FOUND);
+      throw new Error(RESPONSE_MESSAGES.VENDOR.DOCUMENT_NOT_FOUND);
     }
 
     if (Array.isArray(doc)) {
       if (typeof index !== 'number') throw new Error(RESPONSE_MESSAGES.ERROR.INDEX_REQUIRED);
-      if (!doc[index]) throw new Error(RESPONSE_MESSAGES.ERROR.DOCUMENT_NOT_FOUND);
+      if (!doc[index]) throw new Error(RESPONSE_MESSAGES.VENDOR.DOCUMENT_NOT_FOUND);
 
       doc[index].status = status;
       doc[index].reason = status === 'rejected' ? reason : null;

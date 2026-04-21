@@ -11,7 +11,7 @@ class ReviewController extends Controller {
     async getMyReviews(req) {
         try {
             const reviews = await ReviewService.getMyReviews(req.user.id);
-            return this.success(HTTP_STATUS.OK, "Historical reviews retrieved", { reviews });
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.REVIEW.FETCHED, { reviews });
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -22,7 +22,7 @@ class ReviewController extends Controller {
         try {
             const body = req.validData || req.jsonBody || await req.json();
             const review = await ReviewService.submitReview(req.user.id, body);
-            return this.success(HTTP_STATUS.CREATED, "Feedback submitted successfully", { review });
+            return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.REVIEW.SUBMITTED, { review });
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -32,8 +32,8 @@ class ReviewController extends Controller {
     async deleteReview(req, { params }) {
         try {
             const result = await ReviewService.deleteReview(req.user.id, params.id);
-            if (!result) return this.error(HTTP_STATUS.NOT_FOUND, "Review not found or unauthorized");
-            return this.success(HTTP_STATUS.OK, "Review retracted successfully");
+            if (!result) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.REVIEW.NOT_FOUND_OR_UNAUTHORIZED);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.REVIEW.RETRACTED);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }

@@ -29,7 +29,7 @@ class BookingController extends Controller {
             const booking = await BookingService.getBookingById(params.id);
 
             if (!booking || String(booking.vendor) !== String(vendor._id)) {
-                return this.error(HTTP_STATUS.NOT_FOUND, "Booking not found or unauthorized");
+                return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
             }
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, booking);
         } catch (error) {
@@ -44,7 +44,7 @@ class BookingController extends Controller {
             const vendor = await BusinessService.getBusinessByUserId(req.user.id);
 
             const result = await BookingService.updateBookingStatus(params.id, vendor._id, body.status);
-            return this.success(HTTP_STATUS.OK, "Booking status updated", result);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.STATUS_UPDATED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -57,7 +57,7 @@ class BookingController extends Controller {
             const vendor = await BusinessService.getBusinessByUserId(req.user.id);
 
             const result = await BookingService.logTimelineEvent(params.id, body.title, body.description, vendor.user);
-            return this.success(HTTP_STATUS.OK, "Timeline event added", result);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.TIMELINE_ADDED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }

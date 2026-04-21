@@ -13,7 +13,7 @@ class CategoryService {
 
     async getCategoryById(id) {
         const category = await Category.findById(id).lean();
-        if (!category) throw new Error(RESPONSE_MESSAGES.ERROR.CATEGORY_NOT_FOUND);
+        if (!category) throw new Error(RESPONSE_MESSAGES.CATEGORY.NOT_FOUND);
         return category;
     }
 

@@ -45,7 +45,7 @@ export const sanitizeHTML = (html) => {
  */
 export const redactSensitiveData = (details) => {
     const sanitizedDetails = JSON.parse(JSON.stringify(details || {}));
-    const sensitiveKeys = ['password', 'token', 'otp', 'cardNumber', 'cvv', 'key_secret', 'accountNumber'];
+    const sensitiveKeys = ['password', 'token', 'otp', 'cardNumber', 'cvv', 'key_secret', 'accountNumber', 'razorpay_signature', 'panNumber', 'aadharNumber'];
 
     const redact = (obj) => {
         for (const key in obj) {

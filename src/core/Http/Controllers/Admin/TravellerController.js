@@ -34,7 +34,7 @@ class TravellerController extends Controller {
     try {
       const body = req.validData || req.jsonBody || await req.json();
       const traveller = await TravellerService.updateTraveller(params.id, body, req);
-      return this.success(HTTP_STATUS.OK, "Traveller updated successfully", { traveller });
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.TRAVELLER.UPDATED, { traveller });
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -44,7 +44,7 @@ class TravellerController extends Controller {
   async deleteTraveller(req, { params }) {
     try {
       await TravellerService.deleteTraveller(params.id);
-      return this.success(HTTP_STATUS.OK, "Traveller deleted successfully");
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.TRAVELLER.DELETED);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }

@@ -47,7 +47,7 @@ class VendorController extends Controller {
         try {
             const body = req.validData || req.jsonBody || await req.json();
             const result = await VendorService.createVendor(body, req);
-            return this.success(HTTP_STATUS.CREATED, "Vendor created successfully", result);
+            return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.CREATED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -68,7 +68,7 @@ class VendorController extends Controller {
     async deleteVendor(req, { params }) {
         try {
             await VendorService.deleteVendor(params.id);
-            return this.success(HTTP_STATUS.OK, "Vendor deleted successfully");
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.DELETED);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -92,7 +92,7 @@ class VendorController extends Controller {
         try {
             const data = req.validData || req.jsonBody || await req.json();
             const result = await VendorService.verifyDocumentOCR(data, req);
-            return this.success(HTTP_STATUS.OK, "OCR verification successful", result);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.ADMIN.OCR_SUCCESS, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -114,7 +114,7 @@ class VendorController extends Controller {
         try {
             const data = req.validData || req.jsonBody || await req.json();
             const result = await VendorService.verifyCategoryDocument(data, req);
-            return this.success(HTTP_STATUS.OK, "Category document status updated", result);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CATEGORY.STATUS_UPDATED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }

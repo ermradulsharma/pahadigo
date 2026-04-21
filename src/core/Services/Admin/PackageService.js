@@ -81,7 +81,7 @@ class PackageService {
         if (item) return { ...item, serviceType: key, vendor: pkg.vendor };
       }
     }
-    throw new Error("Item not found");
+    throw new Error(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
   }
 
   async updatePackageItem(itemId, data) {
@@ -106,7 +106,7 @@ class PackageService {
         return item;
       }
     }
-    throw new Error("Item not found");
+    throw new Error(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
   }
 
   async createPackage(vendorId, data) {

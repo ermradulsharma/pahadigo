@@ -44,9 +44,9 @@ class OTPService {
    * Verify an OTP against the stored value for a user identifier
    */
   async verifyOTP(identifier, otp) {
-    console.log('Verifying OTP for user:', identifier, otp);
-    if (otp === '888888') {
-      console.log('OTP verified for user:', identifier);
+    const isDev = process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'test';
+    if (isDev && otp === '888888') {
+      console.log('[DevMode] OTP bypass used for user:', identifier);
       return await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
     }
 

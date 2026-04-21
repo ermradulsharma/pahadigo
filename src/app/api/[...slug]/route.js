@@ -70,7 +70,7 @@ async function handler(req, { params }) {
             if (routeDef.middleware.includes('auth')) {
                 const authResult = await authMiddleware(req);
                 if (!authResult.authorized) {
-                    return errorResponse(HTTP_STATUS.UNAUTHORIZED, authResult.message || RESPONSE_MESSAGES.ERROR.UNAUTHORIZED, {});
+                    return errorResponse(HTTP_STATUS.UNAUTHORIZED, authResult.message || RESPONSE_MESSAGES.AUTH.UNAUTHORIZED, {});
                 }
                 userContext = authResult.user;
             } else if (routeDef.middleware.includes('optionalAuth')) {

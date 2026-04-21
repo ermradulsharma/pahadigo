@@ -13,21 +13,23 @@ class BookingService {
 
     async updatePaymentStatus(orderId, paymentId, signatureOrStatus) {
         // Find booking by Razorpay Order ID
-        const booking = await Booking.findOne({ 'razorpay.orderId': orderId });
+        const booking = await Booking.findOne({ 'paymentGateway.orderId': orderId });
         if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
 
         booking.paymentStatus = 'paid';
         booking.status = 'confirmed';
-        booking.razorpay.paymentId = paymentId;
+        
+        if (!booking.paymentGateway) booking.paymentGateway = {};
+        booking.paymentGateway.paymentId = paymentId;
         
         if (signatureOrStatus !== 'WEBHOOK_VERIFIED') {
-            booking.razorpay.signature = signatureOrStatus;
+            booking.paymentGateway.signature = signatureOrStatus;
         }
 
         booking.timeline.push({
-            title: 'Payment Verified',
-            description: `Payment ID: ${paymentId}. Status updated to confirmed.`,
-            timestamp: new Date()
+            status: 'Payment Verified',
+            remarks: `Payment ID: ${paymentId}. Status updated to confirmed.`,
+            actor: 'SYSTEM'
         });
 
         await booking.save();

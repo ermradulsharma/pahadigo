@@ -24,7 +24,7 @@ class CategoryController extends Controller {
       const category = await CategoryService.getCategoryById(params.id);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CATEGORY.FETCHED, { category });
     } catch (error) {
-      return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.CATEGORY_NOT_FOUND);
+      return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.CATEGORY.NOT_FOUND);
     }
   }
 }

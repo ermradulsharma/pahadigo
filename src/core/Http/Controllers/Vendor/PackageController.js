@@ -40,7 +40,7 @@ class PackageController extends Controller {
       if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
       const pkg = await PackageService.initializeVendorPackage(userId, vendor._id, body);
-      return this.success(HTTP_STATUS.CREATED, "Package created successfully", pkg);
+      return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.PACKAGE.CREATED, pkg);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -56,7 +56,7 @@ class PackageController extends Controller {
       const pkg = await PackageService.getPackageById(params.id);
 
       if (!pkg || pkg.vendor.toString() !== vendor._id.toString()) {
-        return this.error(HTTP_STATUS.NOT_FOUND, "Package not found or unauthorized");
+        return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.PACKAGE.NOT_FOUND_OR_UNAUTHORIZED);
       }
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, pkg);
     } catch (error) {
@@ -73,7 +73,7 @@ class PackageController extends Controller {
       if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
       const pkg = await PackageService.updatePackage(params.id, userId, vendor._id, body);
-      return this.success(HTTP_STATUS.OK, "Package updated successfully", pkg);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.UPDATED, pkg);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -87,7 +87,7 @@ class PackageController extends Controller {
       if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
       await PackageService.deletePackage(params.id, userId, vendor._id);
-      return this.success(HTTP_STATUS.OK, "Package deleted successfully");
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.DELETED);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -102,7 +102,7 @@ class PackageController extends Controller {
       if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
       const pkg = await PackageService.updatePackageStatus(params.id, userId, vendor._id, body.isActive);
-      return this.success(HTTP_STATUS.OK, "Package status updated", pkg);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.STATUS_UPDATED, pkg);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -155,7 +155,7 @@ class PackageController extends Controller {
       }
 
       const item = await PackageService.addItem(userId, vendorId, category, itemData);
-      return this.success(HTTP_STATUS.CREATED, "Service item added", item);
+      return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.ITEM.ADDED, item);
     } catch (error) {
       const status = error.message.toLowerCase().includes('authorized') ? HTTP_STATUS.FORBIDDEN : HTTP_STATUS.BAD_REQUEST;
       return this.error(status, error.message);
@@ -171,9 +171,9 @@ class PackageController extends Controller {
       const { category, itemId } = params;
       const schemaKey = CATEGORY_MAP[category] || category;
       const pkg = await PackageService.ensureCatalog(userId, vendor._id);
-      if (pkg[schemaKey] === undefined) return this.error(HTTP_STATUS.BAD_REQUEST, "Invalid category");
+      if (pkg[schemaKey] === undefined) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.CATEGORY.INVALID);
       const item = pkg[schemaKey].id(itemId);
-      if (!item) return this.error(HTTP_STATUS.NOT_FOUND, "Item not found");
+      if (!item) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ITEM.NOT_FOUND);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, item);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -255,7 +255,7 @@ class PackageController extends Controller {
         isActive = isActive.trim().toLowerCase() === 'true';
       }
       const result = await PackageService.toggleItemStatus(userId, vendor._id, category, itemId, isActive);
-      return this.success(HTTP_STATUS.OK, "Item status updated", result);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.ITEM.STATUS_UPDATED, result);
     } catch (error) {
       const status = error.message.toLowerCase().includes('authorized') ? HTTP_STATUS.FORBIDDEN : HTTP_STATUS.BAD_REQUEST;
       return this.error(status, error.message);
@@ -274,7 +274,7 @@ class PackageController extends Controller {
       const { isActive } = body;
 
       await PackageService.toggleCategoryStatus(userId, vendor._id, category, isActive);
-      return this.success(HTTP_STATUS.OK, "Category status updated");
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.CATEGORY_STATUS_UPDATED);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }

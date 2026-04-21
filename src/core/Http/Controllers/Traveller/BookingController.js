@@ -18,7 +18,7 @@ class BookingController extends Controller {
                 .populate('vendor', 'businessName')
                 .sort({ createdAt: -1 });
 
-            return this.success(HTTP_STATUS.OK, "Historical bookings retrieved", { bookings });
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.FETCHED_HISTORICAL, { bookings });
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -28,9 +28,9 @@ class BookingController extends Controller {
     async initiateBooking(req) {
         try {
             const body = req.validData || req.jsonBody || await req.json();
-            const { catalogId, category, itemId, travelDate, slots = 1 } = body;
+            const { catalogId, category, itemId, startDate, endDate, totalTravellers = 1 } = body;
 
-            const item = await PackageService.getGranularItem(catalogId, category, itemId);
+            const item = await PackageService.getAvailablePackageItem(itemId);
             if (!item) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
 
             const price = item.pricing?.pricePerNight || item.pricing?.pricePerPerson || item.pricing?.price || 0;
@@ -40,9 +40,10 @@ class BookingController extends Controller {
                 catalogId,
                 category,
                 itemId,
-                travelDate: new Date(travelDate),
+                startDate: new Date(startDate),
+                endDate: new Date(endDate || startDate),
                 price,
-                slots
+                totalTravellers
             });
 
             return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.BOOKING.CREATED, { booking });
@@ -58,9 +59,9 @@ class BookingController extends Controller {
                 .populate('package')
                 .populate('vendor', 'businessName contactEmail supportPhone');
 
-            if (!booking) return this.error(HTTP_STATUS.NOT_FOUND, "Booking not found or unauthorized");
+            if (!booking) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
 
-            return this.success(HTTP_STATUS.OK, "Booking details retrieved", { booking });
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.FETCHED_DETAIL, { booking });
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -70,12 +71,12 @@ class BookingController extends Controller {
     async cancelBooking(req, { params }) {
         try {
             const booking = await Booking.findOne({ _id: params.id, user: req.user.id });
-            if (!booking) return this.error(HTTP_STATUS.NOT_FOUND, "Booking not found or unauthorized");
+            if (!booking) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
 
-            if (booking.status === 'cancelled') return this.error(HTTP_STATUS.BAD_REQUEST, "Booking is already cancelled");
+            if (booking.status === 'cancelled') return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.BOOKING.ALREADY_CANCELLED);
 
             const cancelledBooking = await BookingService.refundBooking(params.id, req);
-            return this.success(HTTP_STATUS.OK, "Booking cancelled successfully", { booking: cancelledBooking });
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.CANCELLED, { booking: cancelledBooking });
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -86,7 +87,7 @@ class BookingController extends Controller {
         try {
             const body = req.validData || req.jsonBody || await req.json();
             const dispute = await BookingService.reportDispute(params.id, req.user.id, body);
-            return this.success(HTTP_STATUS.CREATED, "Dispute raised successfully", { dispute });
+            return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.DISPUTE.RAISED, { dispute });
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }

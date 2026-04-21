@@ -1,10 +1,10 @@
-import Vendor from '@/models/Vendor.js';
 import VendorClosure from '@/models/VendorClosure.js';
+import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 class ClosureService {
     async addClosurePeriod(userId, closureData) {
         const vendor = await Vendor.findOne({ user: userId, deletedAt: null });
-        if (!vendor) throw new Error("Vendor not found");
+        if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
         const closure = await VendorClosure.create({
             vendor: vendor._id,
@@ -24,7 +24,7 @@ class ClosureService {
 
     async updateClosurePeriod(userId, closureId, updateData) {
         const closure = await VendorClosure.findOne({ _id: closureId, user: userId });
-        if (!closure) throw new Error("Closure period not found");
+        if (!closure) throw new Error(RESPONSE_MESSAGES.CLOSURE.NOT_FOUND);
 
         if (updateData.startDate) closure.startDate = updateData.startDate;
         if (updateData.endDate) closure.endDate = updateData.endDate;

@@ -1,5 +1,6 @@
 import mongoose from 'mongoose';
 import { CATEGORY_MAP } from '@/constants/categories.js';
+import { STATUS, VERIFICATION_STATUS, VENDOR_PROFILE_TYPES } from '@/constants/index.js';
 
 /**
  * MasterService (Universal Role)
@@ -19,7 +20,7 @@ class MasterService {
 
         // 1. Basic Status Checks
         const isBasicActive = (
-            vendor.status === 'active' &&
+            vendor.status === STATUS.ACTIVE &&
             vendor.isOperating === true &&
             vendor.isApproved === true
         );
@@ -28,17 +29,17 @@ class MasterService {
         // 2. Document Verification Checks (Conditional based on Profile Type)
         const docs = vendor.documents || {};
         const isIndividualVerified = (
-            docs.panCard?.status === 'verified' &&
-            (docs.aadharCard && Array.isArray(docs.aadharCard) && docs.aadharCard.every(d => d.status === 'verified'))
+            docs.panCard?.status === VERIFICATION_STATUS.VERIFIED &&
+            (docs.aadharCard && Array.isArray(docs.aadharCard) && docs.aadharCard.every(d => d.status === VERIFICATION_STATUS.VERIFIED))
         );
 
         if (!isIndividualVerified) return false;
 
         // If Business, check additional registrations
-        if (vendor.profileType === 'business') {
+        if (vendor.profileType === VENDOR_PROFILE_TYPES.BUSINESS) {
             const isBusinessVerified = (
-                docs.businessRegistration?.status === 'verified' &&
-                (!docs.gstRegistration?.url || docs.gstRegistration?.status === 'verified')
+                docs.businessRegistration?.status === VERIFICATION_STATUS.VERIFIED &&
+                (!docs.gstRegistration?.url || docs.gstRegistration?.status === VERIFICATION_STATUS.VERIFIED)
             );
             if (!isBusinessVerified) return false;
         }
@@ -64,13 +65,13 @@ class MasterService {
                 $match: {
                     $or: [
                         {
-                            [`${vendorProfileField}.profileType`]: 'individual',
-                            [`${vendorProfileField}.documents.panCard.status`]: 'verified'
+                            [`${vendorProfileField}.profileType`]: VENDOR_PROFILE_TYPES.INDIVIDUAL,
+                            [`${vendorProfileField}.documents.panCard.status`]: VERIFICATION_STATUS.VERIFIED
                         },
                         {
-                            [`${vendorProfileField}.profileType`]: 'business',
-                            [`${vendorProfileField}.documents.panCard.status`]: 'verified',
-                            [`${vendorProfileField}.documents.businessRegistration.status`]: 'verified'
+                            [`${vendorProfileField}.profileType`]: VENDOR_PROFILE_TYPES.BUSINESS,
+                            [`${vendorProfileField}.documents.panCard.status`]: VERIFICATION_STATUS.VERIFIED,
+                            [`${vendorProfileField}.documents.businessRegistration.status`]: VERIFICATION_STATUS.VERIFIED
                         }
                     ]
                 }

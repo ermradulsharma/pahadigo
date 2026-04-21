@@ -15,14 +15,14 @@ class InventoryService {
     const isExclusive = serviceType === 'customTrip';
     const bookingQuery = {
       status: { $in: ['confirmed', 'pending'] },
-      travelStartTime: { $lt: new Date(new Date(targetDate).setHours(23, 59, 59, 999)) },
-      travelEndTime: { $gt: targetDate }
+      startDate: { $lt: new Date(new Date(targetDate).setHours(23, 59, 59, 999)) },
+      endDate: { $gt: targetDate }
     };
 
     if (isExclusive) {
       bookingQuery.vendor = vendorId;
     } else {
-      bookingQuery['preferences.itemId'] = itemId;
+      bookingQuery['bookingDetails.itemId'] = itemId;
     }
 
     const liveBookings = await Booking.find(bookingQuery).lean();
@@ -39,7 +39,7 @@ class InventoryService {
     if (isExclusive && liveBookings.length > 0) {
       liveBookedUnits = totalUnits;
     } else {
-      liveBookedUnits = liveBookings.reduce((sum, b) => sum + (b.units || 1), 0);
+      liveBookedUnits = liveBookings.reduce((sum, b) => sum + (b.totalTravellers || 1), 0);
     }
 
     const baseItemPrice = item.pricing?.pricePerNight || item.pricing?.pricePerPerson || item.pricing?.pricePerDay || item.pricing?.price || 0;

@@ -1,6 +1,6 @@
 import ClosureService from '@/services/Vendor/ClosureService.js';
 import BusinessService from '@/services/Vendor/BusinessService.js';
-import { HTTP_STATUS } from '@/constants/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 import Controller from '@/controllers/Controller.js';
 
 /**
@@ -13,7 +13,7 @@ class BusinessClosuresController extends Controller {
     async getClosures(req) {
         try {
             const closures = await ClosureService.getClosurePeriods(req.user.id);
-            return this.success(HTTP_STATUS.OK, "Closure periods fetched", closures);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CLOSURE.FETCHED, closures);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
         }
@@ -24,7 +24,7 @@ class BusinessClosuresController extends Controller {
         try {
             const body = req.payload;
             const result = await ClosureService.createClosurePeriod(req.user.id, body);
-            return this.success(HTTP_STATUS.CREATED, "Closure added", result);
+            return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.CLOSURE.CREATED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
         }
@@ -35,7 +35,7 @@ class BusinessClosuresController extends Controller {
         try {
             const body = req.payload;
             const result = await ClosureService.updateClosurePeriod(req.user.id, params.id, body);
-            return this.success(HTTP_STATUS.OK, "Closure updated", result);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CLOSURE.UPDATED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
         }
@@ -45,7 +45,7 @@ class BusinessClosuresController extends Controller {
     async deleteClosure(req, { params }) {
         try {
             await ClosureService.removeClosurePeriod(req.user.id, params.id);
-            return this.success(HTTP_STATUS.OK, "Closure deleted");
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CLOSURE.DELETED);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
         }

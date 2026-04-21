@@ -2,7 +2,7 @@ import User from '@/models/User.js';
 import Vendor from '@/models/Vendor.js';
 import OTPService from './OTPService.js';
 import { generateToken } from '@/helpers/jwt.js';
-import { USER_ROLES, AUTH_PROVIDERS, STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
+import { USER_ROLES, AUTH_PROVIDERS, STATUS, RESPONSE_MESSAGES, VENDOR_STATUS } from '@/constants/index.js';
 import googleAuthLib from 'google-auth-library';
 const { OAuth2Client } = googleAuthLib;
 import jwt from 'jsonwebtoken';
@@ -109,13 +109,13 @@ class AuthService {
       const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
       const userRole = (targetRole && validRoles.includes(targetRole)) ? targetRole : USER_ROLES.TRAVELLER;
       user = await User.create({
-        email, name, googleId, role: userRole, isVerified: true, authProvider: 'google'
+        email, name, googleId, role: userRole, isVerified: true, authProvider: AUTH_PROVIDERS.GOOGLE
       });
       isNewUser = true;
     } else {
       if (!user.googleId) {
         user.googleId = googleId;
-        user.authProvider = 'google';
+        user.authProvider = AUTH_PROVIDERS.GOOGLE;
       }
       const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
       if (targetRole && validRoles.includes(targetRole)) user.role = targetRole;
@@ -131,9 +131,9 @@ class AuthService {
   // Helper methods from old code
   async _getVendorStatus(user) {
     const businessProfile = await Vendor.findOne({ user: user._id });
-    let status = businessProfile ? "uploadDocuments" : "setBusinessProfile";
+    let status = businessProfile ? VENDOR_STATUS.UPLOAD_DOCUMENTS : VENDOR_STATUS.SET_PROFILE;
     if (businessProfile?.documents?.aadharCard?.length > 0 && businessProfile.documents.panCard?.url) {
-      status = "profileCompleted";
+      status = VENDOR_STATUS.COMPLETED;
     }
     return { businessProfileStatus: status, businessProfile };
   }
@@ -156,7 +156,7 @@ class AuthService {
     if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
 
     if (user.role === USER_ROLES.ADMIN) {
-      throw new Error("Admins cannot switch roles.");
+      throw new Error(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
     }
 
     const newRole = user.role === USER_ROLES.VENDOR ? USER_ROLES.TRAVELLER : USER_ROLES.VENDOR;
@@ -175,8 +175,8 @@ class AuthService {
   async upgradeToVendor(userId) {
     const user = await User.findById(userId);
     if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
-    if (user.role === USER_ROLES.ADMIN) throw new Error("Admins cannot switch roles.");
-    if (user.role === USER_ROLES.VENDOR) throw new Error("Access denied: You are already a vendor.");
+    if (user.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
+    if (user.role === USER_ROLES.VENDOR) throw new Error(RESPONSE_MESSAGES.AUTH.ALREADY_VENDOR);
 
     user.role = USER_ROLES.VENDOR;
     await user.save();
@@ -188,8 +188,8 @@ class AuthService {
   async downgradeToTraveller(userId) {
     const user = await User.findById(userId);
     if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
-    if (user.role === USER_ROLES.ADMIN) throw new Error("Admins cannot switch roles.");
-    if (user.role === USER_ROLES.TRAVELLER) throw new Error("Access denied: You are already a traveller.");
+    if (user.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
+    if (user.role === USER_ROLES.TRAVELLER) throw new Error(RESPONSE_MESSAGES.AUTH.ALREADY_TRAVELLER);
 
     user.role = USER_ROLES.TRAVELLER;
     await user.save();

@@ -34,7 +34,7 @@ class PaymentController extends Controller {
          const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = body;
 
          const isValid = RazorpayService.verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature);
-         if (!isValid) return this.error(HTTP_STATUS.BAD_REQUEST, 'Signature verification failed');
+         if (!isValid) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.PAYMENT.FAILED);
 
          await BookingService.updatePaymentStatus(razorpay_order_id, razorpay_payment_id, razorpay_signature);
          return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PAYMENT.VERIFIED, { success: true });

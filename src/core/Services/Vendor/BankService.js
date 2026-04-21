@@ -1,12 +1,12 @@
-import Vendor from '@/models/Vendor.js';
 import { uploadToCloudinary } from '@/helpers/cloudinary.js';
+import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 class BankService {
     // Update Bank Details
     // Synchronize and update payout credentials
     async updateBankDetails(userId, bankData) {
         const vendor = await Vendor.findOne({ user: userId, deletedAt: null });
-        if (!vendor) throw new Error("Vendor not found");
+        if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
         const updatePayload = { ...vendor.bankDetails };
         if (bankData.accountHolderName) updatePayload.accountHolderName = bankData.accountHolderName;
         if (bankData.accountNumber) updatePayload.accountNumber = bankData.accountNumber;

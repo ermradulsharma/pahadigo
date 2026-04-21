@@ -15,7 +15,7 @@ class InventoryController extends Controller {
       const vendor = await BusinessService.getBusinessByUserId(req.user.id);
       if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
       const catalog = await PackageService.getInventory(vendor._id);
-      return this.success(HTTP_STATUS.OK, 'Packages retrieved successfully', catalog);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.INVENTORY_FETCHED, catalog);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -40,10 +40,10 @@ class InventoryController extends Controller {
         if (itemInfo) serviceType = itemInfo.category;
       }
 
-      if (!serviceType) return this.error(HTTP_STATUS.BAD_REQUEST, 'Service category (serviceType) is missing or could not be identified');
+      if (!serviceType) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.CATEGORY.MISSING_SERVICE_TYPE);
 
       const result = await InventoryService.getCategoryInventory(vendor._id, serviceType, startDate, endDate, itemId);
-      return this.success(HTTP_STATUS.OK, 'Inventory fetched successfully', result);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.INVENTORY_ITEM_FETCHED, result);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -66,7 +66,7 @@ class InventoryController extends Controller {
         if (itemInfo) serviceType = itemInfo.category;
       }
 
-      if (!serviceType) return this.error(HTTP_STATUS.BAD_REQUEST, 'Category (serviceType) could not be identified');
+      if (!serviceType) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.CATEGORY.MISSING_SERVICE_TYPE);
 
       let inventory;
       if (applyToService === 'true' || applyToService === true) {
@@ -75,7 +75,7 @@ class InventoryController extends Controller {
         inventory = await InventoryService.updateInventoryRange(vendor._id, itemId, serviceType, startDate, endDate, body);
       }
 
-      return this.success(HTTP_STATUS.OK, 'Inventory updated successfully', inventory);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.INVENTORY_UPDATED, inventory);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -89,17 +89,17 @@ class InventoryController extends Controller {
 
       const body = req.payload;
       const itemId = params.itemId || body.itemId;
-      if (!itemId) return this.error(HTTP_STATUS.BAD_REQUEST, 'Item ID is required');
+      if (!itemId) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ITEM_ID_REQUIRED);
 
       // Find category automatically via Item ID
       const itemInfo = await PackageService.getPackageItem(itemId);
-      if (!itemInfo || !itemInfo.category) return this.error(HTTP_STATUS.NOT_FOUND, 'Item not found in any category');
+      if (!itemInfo || !itemInfo.category) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ITEM.NOT_FOUND_IN_CATEGORY);
 
       const category = itemInfo.category;
       const updates = body.updates || body;
 
       const updated = await PackageService.updateServiceItem(vendor._id, category, itemId, updates);
-      return this.success(HTTP_STATUS.OK, 'Item baseline updated successfully', updated);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.ITEM.BASELINE_UPDATED, updated);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }

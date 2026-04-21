@@ -19,7 +19,7 @@ class TravellerController extends Controller {
         .limit(20)
         .lean();
 
-      return this.success(HTTP_STATUS.OK, "Recent searches retrieved", searches);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SEARCH.FETCHED, searches);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }
@@ -29,7 +29,7 @@ class TravellerController extends Controller {
   async clearRecentSearches(req) {
     try {
       await SearchLog.deleteMany({ user: req.user.id });
-      return this.success(HTTP_STATUS.OK, "Search history cleared");
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SEARCH.CLEARED);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }
@@ -43,7 +43,7 @@ class TravellerController extends Controller {
       const limit = parseInt(url.searchParams.get('limit')) || 5;
 
       const wishlistEntries = await Wishlist.find({ user: req.user.id }).sort({ _id: -1 }).lean();
-      if (!wishlistEntries.length) return this.success(HTTP_STATUS.OK, "Wishlist is empty", paginateArray([], page, limit));
+      if (!wishlistEntries.length) return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.WISHLIST.EMPTY, paginateArray([], page, limit));
 
       const itemIds = wishlistEntries.map(e => e.itemId.toString());
       const packageItems = await PackageService.getMultiplePackageItems(itemIds);
@@ -69,7 +69,7 @@ class TravellerController extends Controller {
         };
       }).filter(Boolean);
 
-      return this.success(HTTP_STATUS.OK, "Wishlist retrieved", paginateArray(items, page, limit));
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.WISHLIST.FETCHED, paginateArray(items, page, limit));
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }
@@ -79,10 +79,10 @@ class TravellerController extends Controller {
   async addToWishlist(req) {
     try {
       const body = req.payload || {};
-      if (!body.itemId) return this.error(HTTP_STATUS.BAD_REQUEST, "Item ID is required");
+      if (!body.itemId) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ITEM_ID_REQUIRED);
 
       const item = await PackageService.getAvailablePackageItem(body.itemId);
-      if (!item) return this.error(HTTP_STATUS.NOT_FOUND, "Package item not found");
+      if (!item) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.WISHLIST.ITEM_NOT_FOUND);
 
       const wishlistEntry = await Wishlist.findOneAndUpdate(
         { user: req.user.id, itemId: body.itemId },
@@ -90,7 +90,7 @@ class TravellerController extends Controller {
         { upsert: true, returnDocument: 'after' }
       );
 
-      return this.success(HTTP_STATUS.CREATED, "Added to wishlist", wishlistEntry);
+      return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.WISHLIST.ADDED, wishlistEntry);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }
@@ -99,7 +99,7 @@ class TravellerController extends Controller {
   async removeFromWishlist(req, { params }) {
     try {
       await Wishlist.deleteOne({ user: req.user.id, itemId: params.itemId });
-      return this.success(HTTP_STATUS.OK, "Removed from wishlist");
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.WISHLIST.REMOVED);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }

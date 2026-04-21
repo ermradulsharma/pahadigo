@@ -23,7 +23,7 @@ class ProfileController extends Controller {
         try {
             const body = req.validData || req.jsonBody || await req.json();
             const user = await ProfileService.updateProfile(req.user.id, body);
-            return this.success(HTTP_STATUS.OK, "Profile updated successfully", { user });
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.PROFILE_UPDATED, { user });
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -34,13 +34,13 @@ class ProfileController extends Controller {
         try {
             const formDataBody = req.formDataBody;
             if (!formDataBody || !formDataBody.get('avatar')) {
-                return this.error(HTTP_STATUS.BAD_REQUEST, "Avatar file is required");
+                return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
             }
 
             const avatarFile = formDataBody.get('avatar');
             const user = await ProfileService.updateAvatar(req.user.id, avatarFile);
 
-            return this.success(HTTP_STATUS.OK, "Avatar updated successfully", { user });
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.AVATAR_UPDATED, { user });
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }

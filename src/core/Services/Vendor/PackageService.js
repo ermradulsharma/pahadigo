@@ -9,12 +9,10 @@ import { mapToGeoJSON } from '@/helpers/geoUtils.js';
 import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 class PackageService {
-    constructor() {
-    }
 
     // Helper: Find or Create Catalog for Vendor (Composite lookup)
     async ensureCatalog(userId, vendorId) {
-        if (!userId || !vendorId) throw new Error("Both User ID and Vendor ID are required to resolve catalog.");
+        if (!userId || !vendorId) throw new Error(RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
 
         let pkg = await Package.findOne({ user: userId, vendor: vendorId });
         if (!pkg) {
@@ -106,9 +104,9 @@ class PackageService {
     // Update Package
     async updatePackage(id, userId, vendorId, data) {
         const pkg = await Package.findById(id);
-        if (!pkg) throw new Error("Package catalog not found");
+        if (!pkg) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         if (pkg.vendor.toString() !== vendorId.toString() || pkg.user.toString() !== userId.toString()) {
-            throw new Error("Unauthorized access to this package catalog");
+            throw new Error(RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
         }
         Object.assign(pkg, data);
         return await pkg.save();
@@ -117,9 +115,9 @@ class PackageService {
     // Delete Package
     async deletePackage(id, userId, vendorId) {
         const pkg = await Package.findById(id);
-        if (!pkg) throw new Error("Package catalog not found");
+        if (!pkg) throw new Error(RESPONSE_MESSAGES.PACKAGE.CATALOG_NOT_FOUND);
         if (pkg.vendor.toString() !== vendorId.toString() || pkg.user.toString() !== userId.toString()) {
-            throw new Error("Unauthorized access to this package catalog");
+            throw new Error(RESPONSE_MESSAGES.PACKAGE.CATALOG_UNAUTHORIZED);
         }
         return await Package.findByIdAndDelete(id);
     }
@@ -127,9 +125,9 @@ class PackageService {
     // Update Package Status
     async updatePackageStatus(id, userId, vendorId, isActive) {
         const pkg = await Package.findById(id);
-        if (!pkg) throw new Error("Package catalog not found");
+        if (!pkg) throw new Error(RESPONSE_MESSAGES.PACKAGE.CATALOG_NOT_FOUND);
         if (pkg.vendor.toString() !== vendorId.toString() || pkg.user.toString() !== userId.toString()) {
-            throw new Error("Unauthorized access to this package catalog");
+            throw new Error(RESPONSE_MESSAGES.PACKAGE.CATALOG_UNAUTHORIZED);
         }
         pkg.isActive = isActive;
         return await pkg.save();
@@ -173,7 +171,7 @@ class PackageService {
     // Add Item
     async addItem(userId, vendorId, category, itemData) {
         const vendor = await Vendor.findById(vendorId);
-        if (!vendor || !vendor.category) throw new Error("Vendor profile or categories not found.");
+        if (!vendor || !vendor.category) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
         const allowedCategories = await this._getAllowedCategories(vendorId);
         if (!allowedCategories.includes(category)) {
@@ -183,7 +181,7 @@ class PackageService {
         const pkg = await this.ensureCatalog(userId, vendorId);
         const schemaKey = CATEGORY_MAP[category] || category;
         if (pkg[schemaKey] === undefined) {
-            throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
+            throw new Error(RESPONSE_MESSAGES.CATEGORY.INVALID);
         }
         const index = pkg[schemaKey].push(itemData) - 1;
         const newItemDoc = pkg[schemaKey][index];
@@ -202,12 +200,12 @@ class PackageService {
         return this._formatItem(newItem, category, vendor.category);
     }
 
-    async addServiceItem(vendorId, category, itemData) { return this.addItem(vendorId, category, itemData); }
+    async addServiceItem(userId, vendorId, category, itemData) { return this.addItem(userId, vendorId, category, itemData); }
 
     // Update Item
     async updateItem(userId, vendorId, category, itemId, updates) {
         const vendor = await Vendor.findById(vendorId);
-        if (!vendor || !vendor.category) throw new Error("Vendor profile not found.");
+        if (!vendor || !vendor.category) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
         const allowedCategories = await this._getAllowedCategories(vendorId);
         if (!allowedCategories.includes(category)) {
@@ -216,7 +214,7 @@ class PackageService {
         const pkg = await this.ensureCatalog(userId, vendorId);
         const schemaKey = CATEGORY_MAP[category] || category;
         if (pkg[schemaKey] === undefined) {
-            throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
+            throw new Error(RESPONSE_MESSAGES.CATEGORY.INVALID);
         }
         const item = pkg[schemaKey].id(itemId);
         if (!item) throw new Error(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
@@ -249,11 +247,11 @@ class PackageService {
     // Remove Item
     async removeItem(userId, vendorId, category, itemId) {
         const vendor = await Vendor.findById(vendorId);
-        if (!vendor) throw new Error("Vendor not found");
+        if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
         const pkg = await this.ensureCatalog(userId, vendorId);
         const schemaKey = CATEGORY_MAP[category] || category;
         if (pkg[schemaKey] === undefined) {
-            throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
+            throw new Error(RESPONSE_MESSAGES.CATEGORY.INVALID);
         }
 
         pkg[schemaKey].pull({ _id: itemId });
@@ -297,7 +295,7 @@ class PackageService {
     // Toggle Category Status (Bulk)
     async toggleCategoryStatus(userId, vendorId, category, isActive) {
         const vendor = await Vendor.findById(vendorId);
-        if (!vendor) throw new Error("Vendor not found");
+        if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
         const pkg = await this.ensureCatalog(userId, vendorId);
         const schemaKey = CATEGORY_MAP[category] || category;
         if (pkg[schemaKey] === undefined) throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);

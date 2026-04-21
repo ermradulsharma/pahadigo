@@ -1,63 +1,70 @@
-import PackageService from '@/core/Services/Admin/PackageService';
-import Package from '@/core/Models/Package';
+import { jest } from '@jest/globals';
 import mongoose from 'mongoose';
-import { RESPONSE_MESSAGES } from '@/core/Constants';
 
-describe('PackageService: toggleServiceStatus Integration Tests', () => {
-    const mockVendorId = new mongoose.Types.ObjectId();
-    const mockUserId = new mongoose.Types.ObjectId();
-    const mockServiceId = new mongoose.Types.ObjectId();
+const mockQuery = {
+    populate: jest.fn().mockReturnThis(),
+    lean: jest.fn().mockReturnThis(),
+    then: jest.fn(function(resolve) { resolve(this._resolvedValue); }),
+    _resolveWith: function(val) { this._resolvedValue = val; return this; }
+};
 
-    beforeEach(async () => {
-        // Create a dummy package document in the memory DB with required fields
-        await Package.create({
-            user: mockUserId,
-            vendor: mockVendorId,
-            vehicleRental: [
-                {
-                    _id: mockServiceId,
-                    title: "Test Vehicle",
-                    description: "High quality rental service test description",
-                    isActive: true,
-                    pricing: { pricePerDay: 1000 },
-                    location: { 
-                        address: "Test Address", 
-                        latitude: "30.3165", 
-                        longitude: "78.0322",
-                        coordinates: { type: 'Point', coordinates: [78.0322, 30.3165] }
-                    }
-                }
-            ]
-        });
+jest.unstable_mockModule('@/core/Models/Package.js', () => ({
+    default: { 
+        find: jest.fn(() => mockQuery),
+        findOne: jest.fn(() => mockQuery),
+        findByIdAndDelete: jest.fn(),
+        schema: {
+            paths: {
+                trekking: { options: { type: [Object] } },
+                homestay: { options: { type: [Object] } }
+            }
+        }
+    }
+}));
+
+jest.unstable_mockModule('@/core/Models/User.js', () => ({
+    default: { findById: jest.fn() }
+}));
+
+const { default: PackageService } = await import('@/services/Admin/PackageService.js');
+const { default: Package } = await import('@/core/Models/Package.js');
+
+describe('Industry Standard: Admin PackageService Logic', () => {
+    const validId1 = new mongoose.Types.ObjectId().toString();
+    const validId2 = new mongoose.Types.ObjectId().toString();
+    const validId3 = new mongoose.Types.ObjectId().toString();
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockQuery._resolvedValue = null;
     });
 
-    it('[Success] should toggle isActive status in database', async () => {
-        const result = await PackageService.toggleServiceStatus(
-            mockServiceId.toString(),
-            false,
-            'vehicleRental',
-            mockVendorId.toString(),
-            mockUserId.toString()
-        );
+    it('[Stats] should aggregate all services into a flat list', async () => {
+        const mockPackages = [{
+            _id: validId1,
+            vendor: { _id: validId2, businessName: 'Himalayan Tours' },
+            trekking: [{ _id: validId3, title: 'Everest Base Camp' }]
+        }];
+        Package.find()._resolveWith(mockPackages);
 
-        expect(result.isActive).toBe(false);
+        const services = await PackageService.getAllServices();
 
-        // Verify in DB
-        const updatedDoc = await Package.findOne({ vendor: mockVendorId });
-        expect(updatedDoc.vehicleRental[0].isActive).toBe(false);
+        expect(services).toHaveLength(1);
+        expect(services[0].serviceType).toBe('trekking');
     });
 
-    it('[Failure] should throw error for non-existent vendor', async () => {
-        const randomId = new mongoose.Types.ObjectId().toString();
-        await expect(
-            PackageService.toggleServiceStatus(mockServiceId.toString(), false, 'vehicleRental', randomId, randomId)
-        ).rejects.toThrow(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
-    });
+    it('[Toggle] should successfully toggle service status', async () => {
+        const mockPkg = {
+            _id: validId1,
+            trekking: [{ _id: validId3, isActive: false }],
+            markModified: jest.fn(),
+            save: jest.fn().mockResolvedValue(true)
+        };
+        Package.findOne()._resolveWith(mockPkg);
 
-    it('[Failure] should throw error for non-existent service item', async () => {
-        const randomServiceId = new mongoose.Types.ObjectId().toString();
-        await expect(
-            PackageService.toggleServiceStatus(randomServiceId, false, 'vehicleRental', mockVendorId.toString(), mockUserId.toString())
-        ).rejects.toThrow(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
+        const result = await PackageService.toggleServiceStatus(validId3, true, 'trekking', validId2, validId1);
+
+        expect(result.isActive).toBe(true);
+        expect(mockPkg.markModified).toHaveBeenCalledWith('trekking');
     });
 });

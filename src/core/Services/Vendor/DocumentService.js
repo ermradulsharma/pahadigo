@@ -1,5 +1,5 @@
-import Vendor from '@/models/Vendor.js';
 import { uploadToCloudinary } from '@/helpers/cloudinary.js';
+import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 class DocumentService {
     /**
@@ -7,7 +7,7 @@ class DocumentService {
      */
     async uploadVerificationFiles(userId, files) {
         const vendor = await Vendor.findOne({ user: userId, deletedAt: null });
-        if (!vendor) throw new Error("Vendor not found");
+        if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
         const updatePayload = {};
 

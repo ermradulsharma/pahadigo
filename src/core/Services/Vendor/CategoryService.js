@@ -24,7 +24,7 @@ class CategoryService {
     // Fetch category from database instead of constants
     const categoryDoc = await Category.findOne({ slug, isActive: true });
     if (!categoryDoc) {
-      throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
+      throw new Error(RESPONSE_MESSAGES.CATEGORY.INVALID);
     }
 
     // Check if vendor profile exists
@@ -67,7 +67,7 @@ class CategoryService {
     const vendor = await Vendor.findOne({ user: userId, deletedAt: null });
     const isAssigned = vendor?.category?.some(c => c.slug === categorySlug);
     if (!isAssigned) {
-      throw new Error("This category is not yet part of your business profile. Please add it first.");
+      throw new Error(RESPONSE_MESSAGES.CATEGORY.NOT_ASSIGNED);
     }
     return await this.getRequirementsBySlug(categorySlug);
   }
@@ -83,7 +83,7 @@ class CategoryService {
     const vendor = await Vendor.findOne({ user: userId, deletedAt: null });
     const isAssigned = vendor?.category?.some(c => c.slug === categorySlug);
     if (!isAssigned) {
-      throw new Error("This category is not yet part of your business profile. Please add it first.");
+      throw new Error(RESPONSE_MESSAGES.CATEGORY.NOT_ASSIGNED);
     }
 
     const payload = req.payload;
@@ -91,7 +91,7 @@ class CategoryService {
     const images = Array.isArray(payload.image) ? payload.image : (payload.image ? [payload.image] : []);
 
     if (documentSlugs.length === 0 || images.length === 0 || documentSlugs.length !== images.length) {
-      throw new Error("Mismatch between document identifiers and files provided.");
+      throw new Error(RESPONSE_MESSAGES.CATEGORY.DOC_MISMATCH);
     }
 
     const uploadPromises = documentSlugs.map(async (docSlug, index) => {
@@ -129,8 +129,8 @@ class CategoryService {
     const vendor = await Vendor.findOne({ user: userId, deletedAt: null });
     if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
     return await VendorDocument.find({
-      user_id: userId,
-      vendor_id: vendor._id
+      user: userId,
+      vendor: vendor._id
     }).select('category_slug document_slug url status rejection_reason createdAt');
   }
 }

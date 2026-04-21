@@ -25,8 +25,13 @@ export const rateLimit = ({ limit = 5, windowMs = 60000, message = 'Too many req
                 count: 1,
                 resetAt: new Date(Date.now() + windowMs)
             });
+        } else if (rateLimitData.resetAt <= new Date()) {
+            // Window has expired — reset the counter for a fresh window
+            rateLimitData.count = 1;
+            rateLimitData.resetAt = new Date(Date.now() + windowMs);
+            await rateLimitData.save();
         } else {
-            // Increment existing
+            // Within window — increment existing count
             rateLimitData.count += 1;
             await rateLimitData.save();
         }
@@ -36,7 +41,7 @@ export const rateLimit = ({ limit = 5, windowMs = 60000, message = 'Too many req
                 success: false,
                 message: message
             }), {
-                status: HTTP_STATUS.TOO_MANY_REQUESTS || 429,
+                status: HTTP_STATUS.TOO_MANY_REQUESTS,
                 headers: {
                     'Content-Type': 'application/json',
                     'X-RateLimit-Limit': limit,

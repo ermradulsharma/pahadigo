@@ -32,7 +32,7 @@ class PackageController extends Controller {
         return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
       }
       const updated = await PackageService.toggleServiceStatus(serviceId, status, serviceType, vendorId, userId);
-      return this.success(HTTP_STATUS.OK, "Status updated", { updated });
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.STATUS_UPDATED, { updated });
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -55,7 +55,7 @@ class PackageController extends Controller {
     try {
       const body = req.validData || req.jsonBody || await req.json();
       const updatedItem = await PackageService.updatePackageItem(params.id, body || {});
-      return this.success(HTTP_STATUS.OK, "Item updated successfully", { item: updatedItem });
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.ITEM.UPDATED, { item: updatedItem });
     } catch (error) {
       const status = error.message === "Item not found" ? HTTP_STATUS.NOT_FOUND : HTTP_STATUS.INTERNAL_SERVER_ERROR;
       const msg = error.message === "Item not found" ? RESPONSE_MESSAGES.ERROR.NOT_FOUND : error.message;

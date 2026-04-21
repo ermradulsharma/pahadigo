@@ -1,6 +1,7 @@
 import Review from '@/models/Review.js';
 import Booking from '@/models/Booking.js';
 import BusinessService from '@/services/Vendor/BusinessService.js';
+import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 /**
  * ReviewService (Traveller Role)
@@ -17,10 +18,10 @@ class ReviewService {
         const { bookingId, rating, comment } = data;
 
         const booking = await Booking.findOne({ _id: bookingId, user: userId });
-        if (!booking) throw new Error("Associated booking not found");
+        if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
 
         const existingReview = await Review.findOne({ user: userId, booking: bookingId });
-        if (existingReview) throw new Error("Feedback already provided for this service");
+        if (existingReview) throw new Error(RESPONSE_MESSAGES.REVIEW.ALREADY_SUBMITTED);
 
         const review = await Review.create({
             user: userId,

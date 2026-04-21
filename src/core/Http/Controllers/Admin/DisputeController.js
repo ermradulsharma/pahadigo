@@ -32,7 +32,7 @@ class DisputeController extends Controller {
       const body = req.validData || req.jsonBody || await req.json();
       const { decision, adminNotes } = body;
       const updated = await BookingService.resolveDispute(req.user.id, params.id, decision, adminNotes, req);
-      return this.success(HTTP_STATUS.OK, "Dispute resolved", { dispute: updated });
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.DISPUTE.RESOLVED, { dispute: updated });
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }

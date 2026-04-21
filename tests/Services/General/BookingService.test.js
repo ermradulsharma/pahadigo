@@ -38,7 +38,7 @@ describe('General BookingService', () => {
                 _id: 'booking123',
                 paymentStatus: 'pending',
                 status: 'pending',
-                razorpay: {},
+                paymentGateway: {},
                 timeline: [],
                 save: jest.fn().mockResolvedValue(true)
             };
@@ -46,11 +46,11 @@ describe('General BookingService', () => {
 
             const result = await BookingService.updatePaymentStatus('order123', 'pay123', 'sig123');
 
-            expect(Booking.findOne).toHaveBeenCalledWith({ 'razorpay.orderId': 'order123' });
+            expect(Booking.findOne).toHaveBeenCalledWith({ 'paymentGateway.orderId': 'order123' });
             expect(mockBooking.paymentStatus).toBe('paid');
             expect(mockBooking.status).toBe('confirmed');
-            expect(mockBooking.razorpay.paymentId).toBe('pay123');
-            expect(mockBooking.razorpay.signature).toBe('sig123');
+            expect(mockBooking.paymentGateway.paymentId).toBe('pay123');
+            expect(mockBooking.paymentGateway.signature).toBe('sig123');
             expect(mockBooking.timeline.length).toBe(1);
             expect(mockBooking.save).toHaveBeenCalled();
             expect(NotificationService.notifyBookingStatus).toHaveBeenCalledWith('booking123', 'confirmed');
@@ -62,13 +62,13 @@ describe('General BookingService', () => {
                 _id: 'booking123',
                 save: jest.fn(),
                 timeline: [],
-                razorpay: {}
+                paymentGateway: {}
             };
             Booking.findOne.mockResolvedValue(mockBooking);
 
             await BookingService.updatePaymentStatus('order123', 'pay123', 'WEBHOOK_VERIFIED');
 
-            expect(mockBooking.razorpay.signature).toBeUndefined();
+            expect(mockBooking.paymentGateway.signature).toBeUndefined();
         });
 
         test('should throw error if booking not found', async () => {

@@ -1,4 +1,5 @@
 import User from '@/models/User.js';
+import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 /**
  * SOSService (General Role)
@@ -7,7 +8,7 @@ import User from '@/models/User.js';
 class SOSService {
     async updateEmergencyContacts(userId, emergencyContacts = []) {
         if (!Array.isArray(emergencyContacts) || emergencyContacts.length > 5) { // Adjusted limit for general use
-            throw new Error('Must be an array of max 5 contacts');
+            throw new Error(RESPONSE_MESSAGES.SOS.LIMIT_EXCEEDED);
         }
 
         return await User.findByIdAndUpdate(

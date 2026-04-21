@@ -96,7 +96,16 @@ class PackageService {
                     pricing: "$items.pricing",
                     location: "$items.location",
                     photos: "$items.photos",
-                    category_slug: "$items.category",
+                    category_key: "$items.category",
+                    category_slug: {
+                        $switch: {
+                            branches: Object.keys(CATEGORY_MAP).map(slug => ({
+                                case: { $eq: ["$items.category", CATEGORY_MAP[slug]] },
+                                then: slug
+                            })),
+                            default: "$items.category"
+                        }
+                    },
                     catalogId: "$items.catalogId"
                 }
             }
@@ -148,7 +157,7 @@ class PackageService {
                             $match: {
                                 $expr: {
                                     $eq: [
-                                        { $toString: "$user" },
+                                        { $toString: "$_id" },
                                         { $toString: "$$packageVendor" }
                                     ]
                                 }

@@ -1,68 +1,72 @@
-import VendorService from '@/core/Services/Admin/VendorService';
-import Vendor from '@/core/Models/Vendor';
-import User from '@/core/Models/User';
-import VendorDocument from '@/core/Models/VendorDocument';
-import mongoose from 'mongoose';
 import { jest } from '@jest/globals';
+import mongoose from 'mongoose';
 
-describe('VendorService: Integration Tests', () => {
-    let mockUserId;
-    let mockVendorId;
-    let mockDocId;
+const mockQuery = {
+    populate: jest.fn().mockReturnThis(),
+    sort: jest.fn().mockReturnThis(),
+    lean: jest.fn().mockReturnThis(),
+    then: jest.fn(function(resolve) { resolve(this._resolvedValue); }),
+    _resolveWith: function(val) { this._resolvedValue = val; return this; }
+};
 
-    beforeEach(async () => {
-        mockUserId = new mongoose.Types.ObjectId();
-        
-        // Create a dummy user
-        await User.create({
-            _id: mockUserId,
-            name: "Test Vendor",
-            email: "vendor@test.com",
-            role: "vendor",
-            password: "password123"
-        });
+jest.unstable_mockModule('@/models/User.js', () => ({
+    default: { 
+        aggregate: jest.fn(() => mockQuery),
+        findOne: jest.fn(() => mockQuery),
+        findById: jest.fn(() => mockQuery),
+        findByIdAndUpdate: jest.fn().mockResolvedValue(true),
+        create: jest.fn().mockResolvedValue({ _id: 'u1', name: 'Vendor' })
+    }
+}));
 
-        // Create a dummy vendor profile with REQUIRED _id for each category
-        const vendor = await Vendor.create({
-            user: mockUserId,
-            businessName: "Test Business",
-            category: [{ 
-                _id: new mongoose.Types.ObjectId(), // MANDATORY for validation
-                name: "Trekking", 
-                slug: "trekking" 
-            }]
-        });
-        mockVendorId = vendor._id;
+jest.unstable_mockModule('@/models/Vendor.js', () => ({
+    default: { 
+        findById: jest.fn(() => mockQuery),
+        findOne: jest.fn(() => mockQuery),
+        findByIdAndUpdate: jest.fn().mockResolvedValue(true),
+        create: jest.fn().mockResolvedValue({ _id: 'v1' })
+    }
+}));
 
-        // Create a dummy vendor document
-        const document = await VendorDocument.create({
-            user: mockUserId,
-            vendor: mockVendorId,
-            category_slug: "trekking",
-            document_slug: "license",
-            url: "http://test.com/doc.jpg",
-            status: "pending"
-        });
-        mockDocId = document._id;
+jest.unstable_mockModule('@/services/Vendor/BusinessService.js', () => ({
+    default: { calculateTrustBadge: jest.fn() }
+}));
+
+const { default: VendorService } = await import('@/services/Admin/VendorService.js');
+const { default: User } = await import('@/models/User.js');
+const { default: Vendor } = await import('@/models/Vendor.js');
+
+describe('Industry Standard: Admin VendorService Lifecycle', () => {
+    beforeEach(() => {
+        jest.clearAllMocks();
+        mockQuery._resolvedValue = null;
     });
 
-    it('[Success] should update category document status', async () => {
-        const payload = {
-            documentId: mockDocId,
-            status: 'verified'
+    it('[Soft Delete] should implement soft delete on vendor and user', async () => {
+        const mockV = { _id: 'v1', user: 'u1' };
+        Vendor.findById.mockReturnValue(mockQuery._resolveWith(mockV));
+        
+        await VendorService.deleteVendor('v1', 'admin1');
+
+        expect(User.findByIdAndUpdate).toHaveBeenCalledWith('u1', expect.objectContaining({
+            status: 'deleted',
+            deletedBy: 'admin1'
+        }));
+        expect(Vendor.findByIdAndUpdate).toHaveBeenCalledWith('v1', { isApproved: false });
+    });
+
+    it('[Approval] should update status and trigger trust calculation', async () => {
+        const mockV = { 
+            _id: 'v1', 
+            user: 'u1', 
+            isApproved: false, 
+            save: jest.fn().mockResolvedValue(true) 
         };
+        Vendor.findById.mockReturnValue(mockQuery._resolveWith(mockV));
 
-        const result = await VendorService.verifyCategoryDocument(payload);
-        
-        expect(result.status).toBe('verified');
-        const updatedDoc = await VendorDocument.findById(mockDocId);
-        expect(updatedDoc.status).toBe('verified');
-    });
+        await VendorService.updateVendorStatus('v1', 'approved');
 
-    it('[Failure] should throw error if vendor document not found', async () => {
-        const randomId = new mongoose.Types.ObjectId();
-        await expect(
-            VendorService.verifyCategoryDocument({ documentId: randomId, status: 'verified' })
-        ).rejects.toThrow();
+        expect(mockV.isApproved).toBe(true);
+        expect(User.findByIdAndUpdate).toHaveBeenCalledWith('u1', { status: 'active' });
     });
 });

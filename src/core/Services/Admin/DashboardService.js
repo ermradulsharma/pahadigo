@@ -4,7 +4,9 @@ import Booking from '@/models/Booking.js';
 import Package from '@/models/Package.js';
 import Category from '@/models/Category.js';
 import Dispute from '@/models/Dispute.js';
+import SearchLog from '@/models/SearchLog.js';
 import { getStartDateByPeriod } from '@/helpers/dateUtils.js';
+import { STATUS, USER_ROLES } from '@/constants/index.js';
 
 /**
  * DashboardService (Admin Role)
@@ -15,33 +17,46 @@ class DashboardService {
         return {
             status: 'healthy',
             uptime: process.uptime(),
-            activeUsers: await User.countDocuments({ status: 'active' }),
-            errorRate24h: '0.05%'
+            activeUsers: await User.countDocuments({ status: STATUS.ACTIVE })
         };
     }
 
     async getDashboardStats() {
-        const [users, totalVendors, pendingVendors, categories, bookings, confirmedBookings] = await Promise.all([
-            User.countDocuments({ role: 'traveller' }),
+        const [users, totalVendors, pendingVendors, categories, bookings, confirmedBookings, packageStats] = await Promise.all([
+            User.countDocuments({ role: USER_ROLES.TRAVELLER }),
             Vendor.countDocuments(),
             Vendor.countDocuments({ isApproved: false }),
             Category.countDocuments(),
             Booking.countDocuments(),
-            Booking.find({ paymentStatus: 'paid' }).select('totalPrice')
+            Booking.aggregate([
+                { $match: { paymentStatus: 'paid' } },
+                { $group: { _id: null, total: { $sum: "$totalPrice" } } }
+            ]),
+            Package.aggregate([
+                {
+                    $project: {
+                        items: {
+                            $concatArrays: [
+                                { $ifNull: ["$homestay", []] },
+                                { $ifNull: ["$trekking", []] },
+                                { $ifNull: ["$hotel", []] },
+                                { $ifNull: ["$camping", []] },
+                                { $ifNull: ["$paragliding", []] },
+                                { $ifNull: ["$rafting", []] },
+                                { $ifNull: ["$skating", []] },
+                                { $ifNull: ["$vehicleRental", []] }
+                            ]
+                        }
+                    }
+                },
+                { $unwind: "$items" },
+                { $match: { "items.isActive": true } },
+                { $count: "count" }
+            ])
         ]);
 
-        const allCatalogs = await Package.find().lean();
-        const metadataKeys = ['_id', 'vendor', 'business', 'createdAt', 'updatedAt', '__v'];
-        let activeItemsCount = 0;
-
-        allCatalogs.forEach(cat => {
-            Object.keys(cat).forEach(key => {
-                if (metadataKeys.includes(key)) return;
-                if (Array.isArray(cat[key])) {
-                    activeItemsCount += cat[key].filter(item => item && item.isActive).length;
-                }
-            });
-        });
+        const revenue = confirmedBookings[0]?.total || 0;
+        const activeItemsCount = packageStats[0]?.count || 0;
 
         return {
             users,
@@ -49,7 +64,7 @@ class DashboardService {
             pendingVendors,
             packages: activeItemsCount,
             categories,
-            revenue: confirmedBookings.reduce((sum, b) => sum + (b.totalPrice || 0), 0),
+            revenue,
             recentBookings: await Booking.find().populate('user', 'name').populate('package', 'title').sort({ createdAt: -1 }).limit(5),
             recentVendors: await Vendor.find().populate('user', 'name email').sort({ createdAt: -1 }).limit(5),
             activeDisputes: await Dispute.find({ status: 'open' }).limit(3)
@@ -112,7 +127,7 @@ class DashboardService {
         // Resolve vendor names
         const vendorIds = topVendors.map(v => v._id);
         const vendors = await Vendor.find({ _id: { $in: vendorIds } }).lean();
-        const vendorMap = vendors.reduce((acc, v) => ({ ...acc, [v._id.toString()]: v.businessName }), {});
+        const vendorMap = vendors.reduce((acc, v) => { acc[v._id.toString()] = v.businessName; return acc; }, {});
 
         const formattedTopVendors = topVendors.map(v => ({
             name: vendorMap[v._id?.toString()] || 'Unknown Vendor',
@@ -137,28 +152,32 @@ class DashboardService {
 
     async getCalendarEvents(start, end) {
         const bookings = await Booking.find({
-            travelDate: { $gte: start, $lte: end }
-        }).populate('user', 'name').populate('package', 'title');
+            startDate: { $gte: start },
+            endDate: { $lte: end }
+        }).populate('user', 'name').populate('vendor', 'businessName');
 
         return bookings.map(b => ({
             id: b._id,
-            title: b.package?.title || 'Booking',
-            start: b.travelDate,
+            title: b.bookingDetails?.category || 'Booking',
+            start: b.startDate,
+            end: b.endDate,
             user: b.user?.name,
             type: 'booking'
         }));
     }
 
     async getSearchAnalytics() {
-        return {
-            topSearches: [
-                { query: 'Trekking', count: 1240 },
-                { query: 'Homestays in Goa', count: 850 }
-            ],
-            zeroResultSearches: [
-                { query: 'Skiing in Chennai', count: 12 }
-            ]
-        };
+        const topSearches = await SearchLog.find()
+            .sort({ count: -1 })
+            .limit(10)
+            .select('query count lastSearched resultsCount');
+
+        const zeroResultSearches = await SearchLog.find({ resultsCount: 0 })
+            .sort({ count: -1 })
+            .limit(5)
+            .select('query count lastSearched');
+
+        return { topSearches, zeroResultSearches };
     }
 }
 

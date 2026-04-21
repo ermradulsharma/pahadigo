@@ -1,5 +1,5 @@
 import CategoryService from '@/services/Vendor/CategoryService.js';
-import { HTTP_STATUS } from '@/constants/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 import Controller from '@/controllers/Controller.js';
 
 /**
@@ -12,7 +12,7 @@ class CategoryController extends Controller {
   async getCategories(req) {
     try {
       const categories = await CategoryService.getAssignedCategories(req.user.id);
-      return this.success(HTTP_STATUS.OK, "Vendor categories fetched", categories);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.CATEGORIES_FETCHED, categories);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }
@@ -23,7 +23,7 @@ class CategoryController extends Controller {
     try {
       const body = req.payload;
       const updatedVendor = await CategoryService.assignCategoryToVendor(req.user.id, body);
-      return this.success(HTTP_STATUS.OK, "Category added successfully", updatedVendor.category);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CATEGORY.ADDED, updatedVendor.category);
     } catch (error) {
       return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
     }
@@ -34,7 +34,7 @@ class CategoryController extends Controller {
     try {
       const slug = params.slug || req.payload.slug;
       const updatedVendor = await CategoryService.removeCategoryFromVendor(req.user.id, slug);
-      return this.success(HTTP_STATUS.OK, "Category removed successfully", updatedVendor.category);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CATEGORY.REMOVED, updatedVendor.category);
     } catch (error) {
       return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
     }
@@ -44,7 +44,7 @@ class CategoryController extends Controller {
   async getEligibleCategories(req) {
     try {
       const categories = await CategoryService.getEligibleCategories(req.user.id);
-      return this.success(HTTP_STATUS.OK, "Eligible categories fetched", categories);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.ELIGIBLE_CATEGORIES_FETCHED, categories);
     } catch (error) {
       return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
     }
@@ -54,10 +54,10 @@ class CategoryController extends Controller {
   async getCategoryDocuments(req, { params } = {}) {
     try {
       const slug = params.slug || (req.payload && (req.payload.slug || req.payload.category_slug));
-      if (!slug) throw new Error("Category slug is required");
+      if (!slug) throw new Error(RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
 
       const docs = await CategoryService.getDocuments(req.user.id, slug);
-      return this.success(HTTP_STATUS.OK, "Category document requirements fetched", docs);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.CATEGORY_DOCS_FETCHED, docs);
     } catch (error) {
       return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
     }
@@ -67,10 +67,10 @@ class CategoryController extends Controller {
   async getCategoryRequirements(req, { params }) {
     try {
       const slug = params.slug;
-      if (!slug) throw new Error("Category slug is required");
+      if (!slug) throw new Error(RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
 
       const docs = await CategoryService.getRequirementsBySlug(slug);
-      return this.success(HTTP_STATUS.OK, "Category document list fetched", docs);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.CATEGORY_DOCS_LIST_FETCHED, docs);
     } catch (error) {
       return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
     }
@@ -80,9 +80,9 @@ class CategoryController extends Controller {
   async uploadDocuments(req, { params } = {}) {
     try {
       const slug = params.slug || (req.payload && (req.payload.slug || req.payload.category_slug));
-      if (!slug) throw new Error("Category slug is required");
+      if (!slug) throw new Error(RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
       const result = await CategoryService.uploadDocuments(req.user.id, slug, req);
-      return this.success(HTTP_STATUS.OK, "Category documents uploaded successfully", result);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.CATEGORY_DOCS_UPLOADED, result);
     } catch (error) {
       return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
     }
@@ -92,7 +92,7 @@ class CategoryController extends Controller {
   async getUploadedDocuments(req) {
     try {
       const docs = await CategoryService.getUploadedDocuments(req.user.id);
-      return this.success(HTTP_STATUS.OK, "Vendor's profile-wide uploaded documents fetched", docs);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.CATEGORY_DOCS_ALL_FETCHED, docs);
     } catch (error) {
       return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
     }

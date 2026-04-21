@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { DEFAULTS } from '../Constants/index.js';
+import { DEFAULTS, PAYMENT_GATEWAYS } from '../Constants/index.js';
 
 /**
  * Booking Model
@@ -57,7 +57,8 @@ const BookingSchema = new mongoose.Schema({
   paymentStatus: { 
     type: String, 
     enum: ['unpaid', 'partially_paid', 'paid', 'refunded', 'failed'], 
-    default: 'unpaid' 
+    default: 'unpaid',
+    index: DEFAULTS.TRUE
   },
 
   // --- Integration Data ---
@@ -77,7 +78,7 @@ const BookingSchema = new mongoose.Schema({
   }],
 
   cancellationReason: { type: String },
-  cancellationDate: { Date },
+  cancellationDate: { type: Date },
   
   isDisputed: { type: Boolean, default: DEFAULTS.FALSE },
   specialRequests: { type: String } // Extra notes from user

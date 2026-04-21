@@ -72,7 +72,6 @@ class AuthController extends Controller {
   async confirmOTP(req) {
     try {
       const body = await parseBody(req);
-      console.log('Confirm OTP body:', body);
       const rawPayload = { identifier: body.email || body.phone, otp: body.otp, targetRole: body.role || body.targetRole };
 
       const validationResult = validate(schemas.otpLogin, rawPayload);
@@ -159,7 +158,7 @@ class AuthController extends Controller {
     try {
       if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
       const result = await UserAuthService.toggleRole(req.user.id);
-      return this.success(HTTP_STATUS.OK, "Role switched successfully", result);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.ROLE_SWITCHED, result);
     } catch (error) {
       return this.error(HTTP_STATUS.BAD_REQUEST, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -169,7 +168,7 @@ class AuthController extends Controller {
     try {
       if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
       const result = await UserAuthService.upgradeToVendor(req.user.id);
-      return this.success(HTTP_STATUS.OK, "Account upgraded to vendor successfully", result);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.UPGRADED, result);
     } catch (error) {
       return this.error(HTTP_STATUS.BAD_REQUEST, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -179,7 +178,7 @@ class AuthController extends Controller {
     try {
       if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
       const result = await UserAuthService.downgradeToTraveller(req.user.id);
-      return this.success(HTTP_STATUS.OK, "Account downgraded to traveller successfully", result);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.DOWNGRADED, result);
     } catch (error) {
       return this.error(HTTP_STATUS.BAD_REQUEST, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -255,7 +254,7 @@ class AuthController extends Controller {
         body.profileImage = result.url;
       }
 
-      const { email, password, role, _id, ...updates } = body;
+      const { password, role, _id, ...updates } = body;
       const updatedUser = await BaseAuthService.updateUserProfile(req.user.id, updates);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.PROFILE_UPDATED, updatedUser);
     } catch (error) {

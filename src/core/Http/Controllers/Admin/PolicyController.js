@@ -14,7 +14,7 @@ class PolicyController extends Controller {
       const url = new URL(req.url, 'http://localhost');
       const target = url.searchParams.get('target');
       const policies = await PolicyService.getPolicies(target);
-      return this.success(HTTP_STATUS.OK, "Policies retrieved", { policies });
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.POLICY.FETCHED, { policies });
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -28,7 +28,7 @@ class PolicyController extends Controller {
       if (!target || !type || !content) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
 
       const policy = await PolicyService.updatePolicy(target, type, content, req.user.id);
-      return this.success(HTTP_STATUS.OK, "Policy updated successfully", { policy });
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.POLICY.UPDATED, { policy });
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -38,7 +38,7 @@ class PolicyController extends Controller {
   async seed(req) {
     try {
       await PolicyService.seedPolicies();
-      return this.success(HTTP_STATUS.OK, "Initial policies seeded successfully");
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.SEED);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }

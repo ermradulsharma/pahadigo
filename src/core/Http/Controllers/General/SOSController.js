@@ -1,10 +1,11 @@
 import SOSService from '@/services/General/SOSService.js';
+import TravellerSOSService from '@/services/Traveller/SOSService.js';
 import { successResponse, errorResponse } from '@/helpers/response.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 
 /**
- * SOSController (General/Public Role)
- * Handles emergency contact management for authenticated users.
+ * SOSController (General/Shared Role)
+ * Handles SOS and emergency contact management for any authenticated user (Traveller or Vendor).
  */
 class SOSController {
   /**
@@ -21,16 +22,31 @@ class SOSController {
 
       const user = req.user;
       if (!user) {
-        return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.ERROR.UNAUTHORIZED);
+        return errorResponse(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
       }
 
       const updatedUser = await SOSService.updateEmergencyContacts(user.id, emergencyContacts);
 
-      return successResponse(HTTP_STATUS.OK, 'Emergency contacts updated successfully.', {
+      return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SOS.CONTACTS_UPDATED, {
         emergencyContacts: updatedUser.emergencyContacts,
       });
     } catch (error) {
       console.error('[SOSController] updateEmergencyContacts error:', error);
+      return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+    }
+  }
+
+  /**
+   * POST /traveller/sos or /vendor/sos
+   * Triggers an SOS emergency alert for any authenticated user.
+   */
+  async triggerSOS(req) {
+    try {
+      const location = req.validData || req.jsonBody || {};
+      const alert = await TravellerSOSService.triggerSOS(req.user.id, location);
+      return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SOS.ALERT_TRIGGERED, { alertId: alert._id });
+    } catch (error) {
+      console.error('[SOSController] triggerSOS error:', error);
       return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
   }

@@ -1,5 +1,6 @@
 import User from '@/models/User.js';
 import { uploadToCloudinary } from '@/helpers/cloudinary.js';
+import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 /**
  * ProfileService (Traveller Role)
@@ -26,7 +27,7 @@ class ProfileService {
     }
 
     async updateAvatar(userId, avatarFile) {
-        if (!avatarFile) throw new Error("Avatar file is required");
+        if (!avatarFile) throw new Error(RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
 
         const result = await uploadToCloudinary(avatarFile, `avatars/${userId}`);
         

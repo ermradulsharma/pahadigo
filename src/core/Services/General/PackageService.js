@@ -104,41 +104,50 @@ class PackageService {
   }
 
   async getAvailablePackages(query = '') {
-    const regex = new RegExp(query, 'i');
-    const results = await Package.aggregate([
-      {
+    const pipeline = [];
+    
+    // 1. Initial Match using Text Index (High Performance)
+    if (query) {
+      pipeline.push({ $match: { $text: { $search: query } } });
+    }
+
+    // 2. Formatting & Unwinding
+    pipeline.push({
         $project: {
           vendor: 1,
           items: {
-            $concatArrays: SCHEMA_KEYS.map(key => {
-              return {
+            $concatArrays: SCHEMA_KEYS.map(key => ({
                 $map: {
                   input: { $ifNull: [`$${key}`, []] },
                   as: "item",
                   in: { 
                     $mergeObjects: [
                       "$$item", 
-                    { 
-                      category: key, 
-                      catalogId: "$_id" 
-                    }
-                  ] 
+                      { category: key, catalogId: "$_id" }
+                    ] 
+                  }
                 }
-                }
-              };
-            })
+            }))
           }
         }
-      },
-      { $unwind: "$items" },
-      {
-        $match: query ? {
+    });
+    pipeline.push({ $unwind: "$items" });
+
+    // 3. Post-unwind filtering (if text search was too broad or needs regex refinement)
+    if (query) {
+      const regex = new RegExp(query, 'i');
+      pipeline.push({
+        $match: {
           $or: [
             { "items.title": regex },
             { "items.description": regex }
           ]
-        } : {}
-      },
+        }
+      });
+    }
+
+    const results = await Package.aggregate([
+      ...pipeline,
       {
         $lookup: {
           from: 'vendors',

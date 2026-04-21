@@ -51,9 +51,14 @@ export const schemas = {
         catalogId: z.string().min(1, RESPONSE_MESSAGES.VALIDATION.CATALOG_ID_REQUIRED),
         category: z.string().min(1, RESPONSE_MESSAGES.VALIDATION.CATEGORY_REQUIRED),
         itemId: z.string().min(1, RESPONSE_MESSAGES.VALIDATION.ITEM_ID_REQUIRED),
-        travelDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
+        startDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
             message: RESPONSE_MESSAGES.VALIDATION.INVALID_DATE,
-        })
+        }),
+        endDate: z.string().refine((val) => !isNaN(Date.parse(val)), {
+            message: RESPONSE_MESSAGES.VALIDATION.INVALID_DATE,
+        }),
+        price: z.number().positive('Price must be a positive number'),
+        totalTravellers: z.number().int().min(1, 'Minimum 1 traveller required').optional().default(1),
     }),
 
     // User Profile Schemas

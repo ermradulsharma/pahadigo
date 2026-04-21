@@ -26,7 +26,7 @@ class BusinessController extends Controller {
       console.log(req.payload);
       const existingProfile = await BusinessService.getBusinessByUserId(req.user.id);
       if (existingProfile) {
-        return this.error(HTTP_STATUS.BAD_REQUEST, "A business profile already exists for this vendor. Please use the update endpoint.");
+        return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.PROFILE_ALREADY_EXISTS);
       }
       const body = req.payload;
       if (req.formDataBody?.get('profile_image')) {
@@ -34,7 +34,7 @@ class BusinessController extends Controller {
         body.profileImage = res.url;
       }
       const vendor = await BusinessService.syncBusinessProfile(req.user.id, body);
-      return this.success(HTTP_STATUS.CREATED, "Business profile initiated successfully", vendor);
+      return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.PROFILE_INITIATED, vendor);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -49,7 +49,7 @@ class BusinessController extends Controller {
         body.profileImage = res.url;
       }
       const vendor = await BusinessService.syncBusinessProfile(req.user.id, body);
-      return this.success(HTTP_STATUS.OK, "Business profile updated successfully", vendor);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PROFILE_UPDATED, vendor);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -59,7 +59,7 @@ class BusinessController extends Controller {
   async deleteProfile(req, { params }) {
     try {
       const result = await BusinessService.removeBusinessProfile(req.user.id);
-      return this.success(HTTP_STATUS.OK, "Business profile deleted successfully", result);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PROFILE_DELETED, result);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -70,12 +70,12 @@ class BusinessController extends Controller {
     try {
       const body = req.payload;
       if (body.isOperating === undefined) {
-        return this.error(HTTP_STATUS.BAD_REQUEST, "isOperating field is required");
+        return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.OPERATING_STATUS_REQUIRED);
       }
 
       const isOperating = body.isOperating === 'true' || body.isOperating === true;
       const result = await BusinessService.toggleOperatingStatus(req.user.id, isOperating);
-      return this.success(HTTP_STATUS.OK, "Business operational status updated", result);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.OPERATING_STATUS_UPDATED, result);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }

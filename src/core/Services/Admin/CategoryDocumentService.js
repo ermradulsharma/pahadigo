@@ -42,7 +42,7 @@ class CategoryDocumentService {
     async getById(id) {
         try {
             const document = await CategoryDocument.findById(id);
-            if (!document) throw new Error(RESPONSE_MESSAGES.ERROR.DOCUMENT_NOT_FOUND);
+            if (!document) throw new Error(RESPONSE_MESSAGES.VENDOR.DOCUMENT_NOT_FOUND);
             return document;
         } catch (error) {
             throw error;
@@ -52,7 +52,7 @@ class CategoryDocumentService {
     async update(id, data) {
         try {
             const document = await CategoryDocument.findById(id);
-            if (!document) throw new Error(RESPONSE_MESSAGES.ERROR.DOCUMENT_NOT_FOUND);
+            if (!document) throw new Error(RESPONSE_MESSAGES.VENDOR.DOCUMENT_NOT_FOUND);
 
             Object.assign(document, data);
             return await document.save();

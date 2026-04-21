@@ -38,7 +38,11 @@ class AuditService {
         if (filter.adminId) query.userId = filter.adminId; // Backwards compatibility
         if (filter.action) query.action = filter.action.toUpperCase();
         if (filter.target) query.target = filter.target.toUpperCase();
-        if (filter.startDate) query.createdAt = { $gte: new Date(filter.startDate) };
+        if (filter.startDate || filter.endDate) {
+            query.createdAt = {};
+            if (filter.startDate) query.createdAt.$gte = new Date(filter.startDate);
+            if (filter.endDate) query.createdAt.$lte = new Date(filter.endDate);
+        }
 
         const total = await AuditLog.countDocuments(query);
         const logs = await AuditLog.find(query)

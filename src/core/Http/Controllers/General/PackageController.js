@@ -112,7 +112,7 @@ class PackageController extends Controller {
         }
       });
 
-      return this.success(HTTP_STATUS.OK, "Nearby packages retrieved", results);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.NEARBY_FETCHED, results);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }

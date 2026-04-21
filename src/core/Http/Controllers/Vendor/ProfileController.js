@@ -33,7 +33,7 @@ class ProfileController extends Controller {
       const user = await User.findById(req.user.id);
       if (!user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.NOT_FOUND);
       if (status === true && (user.status === STATUS.BLOCKED || user.status === STATUS.SUSPENDED)) {
-        return this.error(HTTP_STATUS.FORBIDDEN, "This account is restricted by administration.");
+        return this.error(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.VENDOR.ACCOUNT_RESTRICTED);
       }
       if (status === true) {
         user.status = user.isVerified === true ? STATUS.ACTIVE : STATUS.PENDING;
@@ -41,7 +41,7 @@ class ProfileController extends Controller {
         user.status = STATUS.INACTIVE;
       }
       await user.save();
-      const message = `Account ${status ? 'activated' : 'deactivated'} successfully`;
+      const message = status ? RESPONSE_MESSAGES.AUTH.ACTIVATED : RESPONSE_MESSAGES.AUTH.DEACTIVATED;
       return this.success(HTTP_STATUS.OK, message, { status: user.status });
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
@@ -80,7 +80,7 @@ class ProfileController extends Controller {
         { $set: updates },
         { returnDocument: 'after', runValidators: true }
       ).select('-password');
-      return this.success(HTTP_STATUS.OK, "Personal profile updated successfully", user);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PERSONAL_UPDATED, user);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -91,14 +91,14 @@ class ProfileController extends Controller {
     try {
       const formDataBody = req.formDataBody;
       if (!formDataBody || !formDataBody.get('avatar')) {
-        return this.error(HTTP_STATUS.BAD_REQUEST, "Avatar file is required");
+        return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
       }
       const avatarFile = formDataBody.get('avatar');
       const result = await uploadToCloudinary(avatarFile, `vendor_avatars/${req.user.id}`);
       const user = await User.findByIdAndUpdate(req.user.id, {
         $set: { avatar: result.url }
       }, { returnDocument: 'after' }).select('-password');
-      return this.success(HTTP_STATUS.OK, "Personal avatar updated successfully", user);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PERSONAL_AVATAR_UPDATED, user);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }

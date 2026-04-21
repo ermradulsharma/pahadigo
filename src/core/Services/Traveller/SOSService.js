@@ -1,6 +1,5 @@
-import User from '@/models/User.js';
-import EmergencyAlert from '@/models/EmergencyAlert.js';
 import NotificationService from '@/services/General/NotificationService.js';
+import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 /**
  * SOSService (Traveller Role)
@@ -8,7 +7,7 @@ import NotificationService from '@/services/General/NotificationService.js';
 class SOSService {
     async updateEmergencyContacts(userId, emergencyContacts = []) {
         if (!Array.isArray(emergencyContacts) || emergencyContacts.length > 3) {
-            throw new Error('Must be an array of max 3 contacts');
+            throw new Error(RESPONSE_MESSAGES.SOS.LIMIT_EXCEEDED);
         }
 
         return await User.findByIdAndUpdate(
@@ -21,7 +20,7 @@ class SOSService {
     async triggerSOS(userId, location) {
         const { latitude, longitude, address } = location;
         const user = await User.findById(userId);
-        if (!user) throw new Error("User not found");
+        if (!user) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
 
         const alert = await EmergencyAlert.create({
             userId,

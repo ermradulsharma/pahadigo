@@ -63,7 +63,7 @@ class BookingController extends Controller {
       const limit = parseInt(url.searchParams.get('limit') || '20');
 
       const result = await BookingService.getDisputes(filter, page, limit);
-      return this.success(HTTP_STATUS.OK, "Customer disputes retrieved", result);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.DISPUTE.FETCHED, result);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -75,7 +75,7 @@ class BookingController extends Controller {
       const body = req.validData || req.jsonBody || await req.json();
       const { decision, adminNotes } = body;
       const dispute = await BookingService.resolveDispute(req.user.id, params.id, decision, adminNotes, req);
-      return this.success(HTTP_STATUS.OK, "Dispute resolution recorded", { dispute });
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.DISPUTE.RESOLVED, { dispute });
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
