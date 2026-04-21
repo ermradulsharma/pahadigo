@@ -54,7 +54,7 @@ class CategoryController extends Controller {
   async getCategoryDocuments(req, { params } = {}) {
     try {
       const slug = params.slug || (req.payload && (req.payload.slug || req.payload.category_slug));
-      if (!slug) throw new Error(RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
+      if (!slug) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
 
       const docs = await CategoryService.getDocuments(req.user.id, slug);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.CATEGORY_DOCS_FETCHED, docs);
@@ -67,7 +67,7 @@ class CategoryController extends Controller {
   async getCategoryRequirements(req, { params }) {
     try {
       const slug = params.slug;
-      if (!slug) throw new Error(RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
+      if (!slug) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
 
       const docs = await CategoryService.getRequirementsBySlug(slug);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.CATEGORY_DOCS_LIST_FETCHED, docs);
@@ -80,7 +80,7 @@ class CategoryController extends Controller {
   async uploadDocuments(req, { params } = {}) {
     try {
       const slug = params.slug || (req.payload && (req.payload.slug || req.payload.category_slug));
-      if (!slug) throw new Error(RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
+      if (!slug) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
       const result = await CategoryService.uploadDocuments(req.user.id, slug, req);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.CATEGORY_DOCS_UPLOADED, result);
     } catch (error) {
