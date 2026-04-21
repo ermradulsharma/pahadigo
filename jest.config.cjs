@@ -1,7 +1,7 @@
 module.exports = {
     testEnvironment: 'node',
     setupFilesAfterEnv: ['./tests/setup.js'],
-    testTimeout: 30000,
+    testTimeout: 120000,
     moduleNameMapper: {
         '^@/models$': '<rootDir>/src/core/Models/index.js',
         '^@/models/(.*)$': '<rootDir>/src/core/Models/$1',

@@ -1,5 +1,5 @@
 import { jest } from '@jest/globals';
-import { HTTP_STATUS } from '@/constants/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
 
 jest.unstable_mockModule('@/services/Vendor/ClosureService.js', () => ({
     default: { removeClosurePeriod: jest.fn() }
@@ -37,7 +37,7 @@ describe('Industry Standard: BusinessClosuresController API Controller', () => {
         expect(res.status).toBe(HTTP_STATUS.OK);
         expect(responseData).toEqual(expect.objectContaining({
             success: true,
-            message: "Closure deleted"
+            message: RESPONSE_MESSAGES.CLOSURE.DELETED
         }));
         
         // Assert that 'data' property is null since no payload is returned

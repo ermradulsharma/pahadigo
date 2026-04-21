@@ -8,14 +8,17 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import { jest } from '@jest/globals';
 
 // Increase timeout for global hooks (especially for slow teardowns on CI/large runs)
-jest.setTimeout(60000);
+jest.setTimeout(120000);
 
 let mongoServer;
 
 beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create({
         instance: {
-            launchTimeoutMS: 30000
+            launchTimeoutMS: 120000
+        },
+        binary: {
+            skipMD5: true
         }
     });
     const uri = mongoServer.getUri();

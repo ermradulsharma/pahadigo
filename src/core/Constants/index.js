@@ -388,6 +388,7 @@ export const RESPONSE_MESSAGES = {
         NOT_FOUND: 'Booking record not found.',
         NOT_FOUND_OR_UNAUTHORIZED: 'Booking not found or access denied.',
         ALREADY_CANCELLED: 'This booking is already cancelled.',
+        SLOTS_NOT_AVAILABLE: 'Requested slots are not available for this date.',
         TIMELINE_ADDED: 'Operational event logged to booking timeline.',
         REFUND_INITIATED: 'Refund process has been initiated.',
         REFUNDED: 'Refund processed successfully.',

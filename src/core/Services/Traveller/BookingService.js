@@ -37,7 +37,7 @@ class BookingService {
             );
 
             if (!availability.available) {
-                throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
+                throw new Error(RESPONSE_MESSAGES.BOOKING.SLOTS_NOT_AVAILABLE);
             }
 
             // 3. Create Razorpay Order

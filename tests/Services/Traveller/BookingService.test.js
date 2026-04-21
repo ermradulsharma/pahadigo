@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
 const mockQuery = {
     session: jest.fn().mockReturnThis(),
@@ -35,6 +36,10 @@ jest.unstable_mockModule('@/services/General/NotificationService.js', () => ({
     default: { notifyBookingStatus: jest.fn() }
 }));
 
+jest.unstable_mockModule('@/services/General/RazorpayService.js', () => ({
+    default: { createOrder: jest.fn().mockResolvedValue({ id: 'order123' }) }
+}));
+
 jest.unstable_mockModule('mongoose', () => ({
     default: {
         startSession: jest.fn(() => ({
@@ -56,6 +61,7 @@ const { default: BookingService } = await import('@/services/Traveller/BookingSe
 const { default: Booking } = await import('@/models/Booking.js');
 const { default: Package } = await import('@/models/Package.js');
 const { default: InventoryService } = await import('@/services/Traveller/InventoryService.js');
+const { default: RazorpayService } = await import('@/services/General/RazorpayService.js');
 
 describe('Industry Standard: BookingService Business Logic', () => {
     beforeEach(() => {
@@ -90,7 +96,7 @@ describe('Industry Standard: BookingService Business Logic', () => {
             Package.findById.mockResolvedValue(null);
             
             await expect(BookingService.initiateBooking({ catalogId: 'none' }))
-                .rejects.toThrow("Package not found.");
+                .rejects.toThrow(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
         });
 
         it('[Failure] should throw error if slots not available', async () => {
@@ -98,7 +104,7 @@ describe('Industry Standard: BookingService Business Logic', () => {
             InventoryService.checkAvailabilityRange.mockResolvedValue({ available: false });
 
             await expect(BookingService.initiateBooking({ slots: 100 }))
-                .rejects.toThrow("Requested slots are not available for this date.");
+                .rejects.toThrow(RESPONSE_MESSAGES.BOOKING.SLOTS_NOT_AVAILABLE);
         });
     });
 
