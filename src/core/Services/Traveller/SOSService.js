@@ -6,7 +6,7 @@ import { RESPONSE_MESSAGES } from '@/constants/index.js';
  */
 class SOSService {
     async updateEmergencyContacts(userId, emergencyContacts = []) {
-        if (!Array.isArray(emergencyContacts) || emergencyContacts.length > 3) {
+        if (!Array.isArray(emergencyContacts) || emergencyContacts.length > 5) {
             throw new Error(RESPONSE_MESSAGES.SOS.LIMIT_EXCEEDED);
         }
 
