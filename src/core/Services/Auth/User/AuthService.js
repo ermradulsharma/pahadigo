@@ -1,12 +1,12 @@
-import User from '@/core/models/User.js';
-import Vendor from '@/core/models/Vendor.js';
+import User from '@/models/User.js';
+import Vendor from '@/models/Vendor.js';
 import OTPService from './OTPService.js';
-import { generateToken } from '@/core/helpers/jwt.js';
-import { USER_ROLES, AUTH_PROVIDERS, STATUS, RESPONSE_MESSAGES, VENDOR_STATUS } from '@/core/constants/index.js';
+import { generateToken } from '@/helpers/jwt.js';
+import { USER_ROLES, AUTH_PROVIDERS, STATUS, RESPONSE_MESSAGES, VENDOR_STATUS } from '@/constants/index.js';
 import googleAuthLib from 'google-auth-library';
 const { OAuth2Client } = googleAuthLib;
 import jwt from 'jsonwebtoken';
-import { getAppConfig } from '@/core/lib/appConfig';
+import { getAppConfig } from '@/lib/appConfig';
 
 class AuthService {
   async initiateOTP({ identifier, role, termsAndConditionsAccepted }) {

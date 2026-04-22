@@ -1,13 +1,18 @@
-import User from '@/core/models/User.js';
-import Vendor from '@/core/models/Vendor.js';
-import { verifyToken, generateToken } from '@/core/helpers/jwt.js';
-import { RESPONSE_MESSAGES, USER_ROLES, STATUS } from '@/core/constants/index.js';
+import User from '@/models/User.js';
+import Vendor from '@/models/Vendor.js';
+import { verifyToken, generateToken } from '@/helpers/jwt.js';
+import { RESPONSE_MESSAGES, USER_ROLES, STATUS } from '@/constants/index.js';
 
 class BaseAuthService {
   async verifyToken(token) {
     const decoded = await verifyToken(token);
     const user = await User.findById(decoded.id).select('-password');
-    if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+    if (!user) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
+
+    if (user.deletedAt || user.status === STATUS.DELETED) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_DELETED);
+    if (user.status === STATUS.BLOCKED) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_BLOCKED);
+    if (user.status === STATUS.SUSPENDED) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_SUSPENDED);
+    if (user.status === STATUS.INACTIVE) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_INACTIVE);
 
     let vendorData = {};
     if (user.role === USER_ROLES.VENDOR) {
@@ -25,7 +30,12 @@ class BaseAuthService {
 
   async getUserProfile(userId) {
     const user = await User.findById(userId).select('-password');
-    if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+    if (!user) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
+
+    if (user.deletedAt || user.status === STATUS.DELETED) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_DELETED);
+    if (user.status === STATUS.BLOCKED) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_BLOCKED);
+    if (user.status === STATUS.SUSPENDED) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_SUSPENDED);
+    if (user.status === STATUS.INACTIVE) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_INACTIVE);
 
     let vendorData = {};
     if (user.role === USER_ROLES.VENDOR) {
