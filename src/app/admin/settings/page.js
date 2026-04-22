@@ -6,7 +6,7 @@ import { Settings as SettingsIcon, Mail, BellRing, Smartphone, Key, CreditCard, 
 
 const Card = ({ title, icon: Icon, children }) => (
   <div className="bg-[#111116] rounded-xl border border-white/10 relative overflow-hidden group hover:border-indigo-500/50 transition-all shadow-[0_0_20px_rgba(0,0,0,0.5)] flex flex-col">
-    <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] bg-[length:20px_20px] bg-fixed opacity-10 pointer-events-none transition-opacity group-hover:opacity-20"></div>
+    <div className="absolute inset-0 opacity-[0.03] pointer-events-none transition-opacity group-hover:opacity-10" style={{ backgroundImage: `radial-gradient(circle at 2px 2px, white 1px, transparent 0)`, backgroundSize: '24px 24px' }}></div>
     <div className="absolute top-0 inset-x-0 h-[2px] bg-gradient-to-r from-transparent via-indigo-500/50 group-hover:via-cyan-400 to-transparent transition-all"></div>
 
     <div className="px-5 py-4 border-b border-white/10 bg-black/40 flex items-center gap-3 relative z-10 shrink-0">
@@ -37,8 +37,9 @@ const Input = ({ type = "text", placeholder, className = "", ...props }) => (
   />
 );
 
-const Button = ({ children, loading }) => (
+const Button = ({ children, loading, type = "submit" }) => (
   <button
+    type={type}
     disabled={loading}
     className={`mt-auto w-full flex items-center justify-center px-4 py-2.5 border rounded-lg text-xs font-mono font-bold tracking-widest uppercase transition-all
             ${loading
@@ -61,7 +62,7 @@ const Button = ({ children, loading }) => (
 );
 
 export default function SettingsPage() {
-  const [loading, setLoading] = useState(false);
+  const [syncingSection, setSyncingSection] = useState(null);
   const [fetching, setFetching] = useState(true);
   const [statusMessage, setStatusMessage] = useState(null);
   const [showSmtpPassword, setShowSmtpPassword] = useState(false);
@@ -76,38 +77,13 @@ export default function SettingsPage() {
   };
 
   const [formData, setFormData] = useState({
-    smtp_email: '',
-    smtp_password: '',
-    smtp_host: '',
-    smtp_port: '',
-    smtp_from_address: '',
-    smtp_from_name: '',
-    push_notification_server_key: '',
-    msg91_auth_key: '',
-    msg91_template_id: '',
-    razorpay_key_id: '',
-    razorpay_key_secret: '',
-    mongodb_uri: '',
-    api_url: '',
-    jwt_secret: '',
-    google_client_id: '',
-    google_client_secret: '',
-    facebook_app_id: '',
-    facebook_app_secret: '',
-    apple_client_id: '',
-    apple_team_id: '',
-    apple_key_id: '',
-    apple_private_key: '',
-    app_name: '',
-    terms_conditions: '',
-    privacy_policy: '',
-    rate_on_apple_store: '',
-    rate_on_google_store: '',
-    cloudinary_url: '',
-    social_pass: '',
-    other_account_pass: '',
-    master_otp: '',
-    debug_mode: false
+    smtp_email: '', smtp_password: '', smtp_host: '', smtp_port: '', smtp_from_address: '', smtp_from_name: '',
+    push_notification_server_key: '', msg91_auth_key: '', msg91_template_id: '', razorpay_key_id: '',
+    razorpay_key_secret: '', mongodb_uri: '', api_url: '', jwt_secret: '', google_client_id: '',
+    google_client_secret: '', facebook_app_id: '', facebook_app_secret: '', apple_client_id: '',
+    apple_team_id: '', apple_key_id: '', apple_private_key: '', app_name: '', terms_conditions: '',
+    privacy_policy: '', rate_on_apple_store: '', rate_on_google_store: '', cloudinary_url: '',
+    social_pass: '', other_account_pass: '', master_otp: '', debug_mode: false
   });
 
   useEffect(() => {
@@ -173,7 +149,7 @@ export default function SettingsPage() {
         setFormData(newFormData);
       }
     } catch (error) {
-      console.error("Failed to load environment clusters:", error);
+      console.error("[Settings] Fetch failed:", error);
     } finally {
       setFetching(false);
     }
@@ -181,35 +157,38 @@ export default function SettingsPage() {
 
   const handleChange = (e) => {
     const { name, value, type, checked } = e.target;
-    setFormData(prev => ({ 
-      ...prev, 
-      [name]: type === 'checkbox' ? checked : value 
+    setFormData(prev => ({
+      ...prev,
+      [name]: type === 'checkbox' ? checked : value
     }));
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (section, keys) => async (e) => {
     e.preventDefault();
-    setLoading(true);
+    setSyncingSection(section);
     try {
       const token = getToken();
+      const dataToSync = {};
+      keys.forEach(key => { dataToSync[key] = formData[key]; });
+
       const res = await fetch('/api/admin/settings', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'Authorization': 'Bearer ' + token
         },
-        body: JSON.stringify(formData)
+        body: JSON.stringify(dataToSync)
       });
       const data = await res.json();
       if (data.success) {
-        showMessage('success', 'Environment parameters synchronized with core matrix.');
+        showMessage('success', `${section} parameters synchronized with core matrix.`);
       } else {
-        showMessage('error', 'Failed to push configuration: ' + data.error);
+        showMessage('error', `Rejected: ${data.error}`);
       }
     } catch (error) {
-      showMessage('error', 'Critical failure during parameter sync.');
+      showMessage('error', `Sync failure at ${section}.`);
     } finally {
-      setLoading(false);
+      setSyncingSection(null);
     }
   };
 
@@ -227,11 +206,11 @@ export default function SettingsPage() {
   }
 
   return (
-    <div className="p-8 max-w-[1600px] mx-auto pb-24 relative">
+    <div className="p-8 max-w-[1600px] mx-auto pb-24 relative font-mono">
 
       {statusMessage && (
         <div className="fixed top-24 right-8 z-50 animate-in fade-in slide-in-from-top-5 duration-300">
-          <div className={`p-4 rounded-lg border flex items-center gap-3 text-sm font-mono tracking-wide shadow-2xl backdrop-blur-md
+          <div className={`p-4 rounded-lg border flex items-center gap-3 text-sm tracking-wide shadow-2xl backdrop-blur-md
                         ${statusMessage.type === 'success'
               ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20 shadow-emerald-500/10'
               : 'bg-rose-500/10 text-rose-400 border-rose-500/20 shadow-rose-500/10'}`}>
@@ -241,21 +220,20 @@ export default function SettingsPage() {
         </div>
       )}
 
-      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4 border-b border-white/10 pb-6">
+      <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-8 gap-4 border-b border-white/10 pb-6 text-white">
         <div>
-          <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3">
+          <h1 className="text-2xl font-bold tracking-tight flex items-center gap-3 uppercase">
             <SettingsIcon className="w-7 h-7 text-indigo-400 opacity-80" /> Global Environment
           </h1>
-          <p className="text-xs font-mono text-slate-500 tracking-widest uppercase mt-2">Manage System Variables & API Integration Nodes</p>
+          <p className="text-xs text-slate-500 tracking-widest uppercase mt-2">Manage System Variables & API Integration Nodes</p>
         </div>
       </div>
 
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
-
         {/* Column 1 - Comms */}
         <div className="space-y-6 flex flex-col">
           <Card title="SMTP Protocol (Email)" icon={Mail}>
-            <form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <form onSubmit={handleSubmit('SMTP', ['smtp_email', 'smtp_password', 'smtp_host', 'smtp_port', 'smtp_from_name', 'smtp_from_address'])} className="flex flex-col h-full">
               <FormGroup label="Auth Link (Email)"><Input type="email" placeholder="root@domain.com" name="smtp_email" value={formData.smtp_email} onChange={handleChange} /></FormGroup>
               <FormGroup label="Auth Key (Password)">
                 <div className="relative">
@@ -269,65 +247,29 @@ export default function SettingsPage() {
               <FormGroup label="Node Port"><Input placeholder="587" name="smtp_port" value={formData.smtp_port} onChange={handleChange} /></FormGroup>
               <FormGroup label="Origin Alias (Name)"><Input placeholder="System Core" name="smtp_from_name" value={formData.smtp_from_name} onChange={handleChange} /></FormGroup>
               <FormGroup label="Origin Routing"><Input placeholder="no-reply@domain.com" name="smtp_from_address" value={formData.smtp_from_address} onChange={handleChange} /></FormGroup>
-              <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
+              <div className="mt-4"><Button loading={syncingSection === 'SMTP'}>Commit Config</Button></div>
             </form>
           </Card>
 
           <Card title="Notifications Cluster" icon={BellRing}>
-            <form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <form onSubmit={handleSubmit('Notifications', ['push_notification_server_key'])} className="flex flex-col h-full">
               <FormGroup label="PN Server Directive Key"><textarea className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm outline-none transition-all placeholder:text-slate-600 font-mono tracking-wide text-cyan-50 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 focus:bg-white/5 h-24 resize-none cyber-scrollbar" placeholder="Enter raw server key payload..." name="push_notification_server_key" value={formData.push_notification_server_key} onChange={handleChange}></textarea></FormGroup>
-              <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
+              <div className="mt-4"><Button loading={syncingSection === 'Notifications'}>Commit Config</Button></div>
             </form>
           </Card>
 
           <Card title="Cloud Assets Grid" icon={Cloud}>
-            <form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <form onSubmit={handleSubmit('Cloud', ['cloudinary_url'])} className="flex flex-col h-full">
               <FormGroup label="Cloudinary Vector URL"><Input placeholder="cloudinary://key:secret@name" name="cloudinary_url" type="password" value={formData.cloudinary_url} onChange={handleChange} /></FormGroup>
-              <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
+              <div className="mt-4"><Button loading={syncingSection === 'Cloud'}>Commit Config</Button></div>
             </form>
           </Card>
 
           <Card title="Telecom Router (MSG91)" icon={Smartphone}>
-            <form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <form onSubmit={handleSubmit('MSG91', ['msg91_auth_key', 'msg91_template_id'])} className="flex flex-col h-full">
               <FormGroup label="Access Token"><Input placeholder="Authentication Hash" name="msg91_auth_key" value={formData.msg91_auth_key} onChange={handleChange} /></FormGroup>
               <FormGroup label="Format Signature"><Input placeholder="Template ID String" name="msg91_template_id" value={formData.msg91_template_id} onChange={handleChange} /></FormGroup>
-              <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
-            </form>
-          </Card>
-
-          <Card title="Developer Diagnostics" icon={Bug}>
-            <form onSubmit={handleSubmit} className="flex flex-col h-full">
-              <div className="flex items-center gap-4 mb-4 bg-white/5 p-4 rounded-lg border border-white/5">
-                <div className="relative inline-block w-12 align-middle select-none transition duration-200 ease-in">
-                  <input type="checkbox" name="debug_mode" id="debug_mode" checked={formData.debug_mode} onChange={handleChange} className="toggle-checkbox absolute block w-6 h-6 rounded-full bg-[#111116] border-2 border-slate-600 appearance-none cursor-pointer transition-all" />
-                  <label htmlFor="debug_mode" className="toggle-label block overflow-hidden h-6 rounded-full bg-slate-800 cursor-pointer transition-colors shadow-[inset_0_0_5px_rgba(0,0,0,0.5)]"></label>
-                </div>
-                <div>
-                  <label htmlFor="debug_mode" className="text-sm font-mono tracking-wide text-white uppercase block">Verbose Output Logs</label>
-                  <span className="text-[10px] font-mono text-slate-500">Route all traces to standard out.</span>
-                </div>
-              </div>
-              <div className="mt-auto"><Button>Commit Config</Button></div>
-              <style dangerouslySetInnerHTML={{
-                __html: `
-                                .toggle-checkbox:checked {
-                                    right: 0;
-                                    border-color: #22d3ee;
-                                    background-color: #22d3ee;
-                                    box-shadow: 0 0 10px rgba(34,211,238,0.8);
-                                }
-                                .toggle-checkbox:checked + .toggle-label {
-                                    background-color: rgba(34,211,238,0.2);
-                                    border: 1px solid rgba(34,211,238,0.3);
-                                }
-                                .toggle-checkbox {
-                                    top: 0;
-                                    left: 0;
-                                }
-                                .toggle-checkbox:checked {
-                                    left: 1.5rem;
-                                }
-                            `}} />
+              <div className="mt-4"><Button loading={syncingSection === 'MSG91'}>Commit Config</Button></div>
             </form>
           </Card>
         </div>
@@ -365,96 +307,74 @@ export default function SettingsPage() {
           </Card>
 
           <Card title="Financial Link (Razorpay)" icon={CreditCard}>
-            <form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <form onSubmit={handleSubmit('Razorpay', ['razorpay_key_id', 'razorpay_key_secret'])} className="flex flex-col h-full">
               <FormGroup label="Public Identifier"><Input placeholder="rzp_live_..." name="razorpay_key_id" value={formData.razorpay_key_id} onChange={handleChange} /></FormGroup>
               <FormGroup label="Private Encrypt Key"><Input placeholder="Secret Hash..." name="razorpay_key_secret" type="password" value={formData.razorpay_key_secret} onChange={handleChange} /></FormGroup>
-              <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
+              <div className="mt-4"><Button loading={syncingSection === 'Razorpay'}>Commit Config</Button></div>
             </form>
           </Card>
 
           <Card title="Data Infrastructure" icon={Database}>
-            <form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <form onSubmit={handleSubmit('Infrastructure', ['mongodb_uri', 'api_url'])} className="flex flex-col h-full">
               <FormGroup label="NoSQL Connection Vector"><Input placeholder="mongodb+srv://..." name="mongodb_uri" type="password" value={formData.mongodb_uri} onChange={handleChange} /></FormGroup>
               <FormGroup label="API Gateway Locator"><Input placeholder="https://api.domain.com" name="api_url" value={formData.api_url} onChange={handleChange} /></FormGroup>
-              <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
+              <div className="mt-4"><Button loading={syncingSection === 'Infrastructure'}>Commit Config</Button></div>
             </form>
           </Card>
 
           <Card title="Authentication Tokens" icon={ShieldCheck}>
-            <form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <form onSubmit={handleSubmit('Tokens', ['jwt_secret'])} className="flex flex-col h-full">
               <FormGroup label="JWT Cipher Secret"><Input placeholder="Super Secret Hash" name="jwt_secret" type="password" value={formData.jwt_secret} onChange={handleChange} /></FormGroup>
-              <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
-            </form>
-          </Card>
-
-          <Card title="Client Terminals & Resources" icon={AppWindow}>
-            <form onSubmit={handleSubmit} className="flex flex-col h-full">
-              <FormGroup label="System Designation (App Name)"><Input placeholder="Nexus Travel Console" name="app_name" value={formData.app_name} onChange={handleChange} /></FormGroup>
-              <FormGroup label="Legal Agreement Routing (T&C)"><Input placeholder="URI Link" name="terms_conditions" value={formData.terms_conditions} onChange={handleChange} /></FormGroup>
-              <FormGroup label="Privacy Router"><Input placeholder="URI Link" name="privacy_policy" value={formData.privacy_policy} onChange={handleChange} /></FormGroup>
-              <FormGroup label="Apple Distribution Link"><Input placeholder="Store URI" name="rate_on_apple_store" value={formData.rate_on_apple_store} onChange={handleChange} /></FormGroup>
-              <FormGroup label="Google Distribution Link"><Input placeholder="Store URI" name="rate_on_google_store" value={formData.rate_on_google_store} onChange={handleChange} /></FormGroup>
-              <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
+              <div className="mt-4"><Button loading={syncingSection === 'Tokens'}>Commit Config</Button></div>
             </form>
           </Card>
         </div>
 
         {/* Column 3 - Integrations */}
         <div className="space-y-6 flex flex-col">
-
           <Card title="Apple Secure Auth" icon={Fingerprint}>
-            <form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <form onSubmit={handleSubmit('AppleAuth', ['apple_client_id', 'apple_team_id', 'apple_key_id', 'apple_private_key'])} className="flex flex-col h-full">
               <FormGroup label="Client Interface ID"><Input placeholder="Client ID" name="apple_client_id" value={formData.apple_client_id} onChange={handleChange} /></FormGroup>
               <FormGroup label="Developer Team Identifier"><Input placeholder="Team ID" name="apple_team_id" value={formData.apple_team_id} onChange={handleChange} /></FormGroup>
               <FormGroup label="Cryptographic Key Identifier"><Input placeholder="Key ID" name="apple_key_id" value={formData.apple_key_id} onChange={handleChange} /></FormGroup>
               <FormGroup label="Raw Private Signature"><textarea className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-3 text-sm outline-none transition-all placeholder:text-slate-600 font-mono tracking-wide text-cyan-50 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 focus:bg-white/5 h-20 resize-none cyber-scrollbar" placeholder="-----BEGIN PRIVATE KEY-----..." name="apple_private_key" value={formData.apple_private_key} onChange={handleChange}></textarea></FormGroup>
-              <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
+              <div className="mt-4"><Button loading={syncingSection === 'AppleAuth'}>Commit Config</Button></div>
             </form>
           </Card>
 
           <Card title="Google Mesh Auth" icon={Fingerprint}>
-            <form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <form onSubmit={handleSubmit('GoogleAuth', ['google_client_id', 'google_client_secret'])} className="flex flex-col h-full">
               <FormGroup label="Client Interface ID"><Input placeholder="Oauth Client ID" name="google_client_id" value={formData.google_client_id} onChange={handleChange} /></FormGroup>
               <FormGroup label="Client Encrypted Secret"><Input placeholder="Oauth Client Secret" type="password" name="google_client_secret" value={formData.google_client_secret} onChange={handleChange} /></FormGroup>
-              <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
+              <div className="mt-4"><Button loading={syncingSection === 'GoogleAuth'}>Commit Config</Button></div>
             </form>
           </Card>
 
           <Card title="Meta Graph Auth" icon={Fingerprint}>
-            <form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <form onSubmit={handleSubmit('MetaAuth', ['facebook_app_id', 'facebook_app_secret'])} className="flex flex-col h-full">
               <FormGroup label="Application Identifier"><Input placeholder="Graph App ID" name="facebook_app_id" value={formData.facebook_app_id} onChange={handleChange} /></FormGroup>
               <FormGroup label="Application Secret Hash"><Input placeholder="Graph App Secret" type="password" name="facebook_app_secret" value={formData.facebook_app_secret} onChange={handleChange} /></FormGroup>
-              <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
+              <div className="mt-4"><Button loading={syncingSection === 'MetaAuth'}>Commit Config</Button></div>
             </form>
           </Card>
 
           <Card title="System Core Secrets" icon={Lock}>
-            <form onSubmit={handleSubmit} className="flex flex-col h-full">
+            <form onSubmit={handleSubmit('Secrets', ['social_pass', 'other_account_pass', 'master_otp'])} className="flex flex-col h-full">
               <FormGroup label="Social Interface Pass"><Input placeholder="Internal secret string" name="social_pass" type="password" value={formData.social_pass} onChange={handleChange} /></FormGroup>
               <FormGroup label="Auxiliary Account Pass"><Input placeholder="Secondary internal secret" name="other_account_pass" type="password" value={formData.other_account_pass} onChange={handleChange} /></FormGroup>
               <FormGroup label="Review Master Bypass OTP"><Input placeholder="888888" name="master_otp" value={formData.master_otp} onChange={handleChange} /></FormGroup>
-              <div className="mt-4"><Button loading={loading}>Commit Config</Button></div>
+              <div className="mt-4"><Button loading={syncingSection === 'Secrets'}>Commit Config</Button></div>
             </form>
           </Card>
-
         </div>
       </div>
 
       <style dangerouslySetInnerHTML={{
         __html: `
-                .cyber-scrollbar::-webkit-scrollbar {
-                    width: 6px;
-                }
-                .cyber-scrollbar::-webkit-scrollbar-track {
-                    background: rgba(0, 0, 0, 0.2);
-                }
-                .cyber-scrollbar::-webkit-scrollbar-thumb {
-                    background: rgba(34, 211, 238, 0.2);
-                    border-radius: 10px;
-                }
-                .cyber-scrollbar::-webkit-scrollbar-thumb:hover {
-                    background: rgba(34, 211, 238, 0.4);
-                }
+                .cyber-scrollbar::-webkit-scrollbar { width: 6px; }
+                .cyber-scrollbar::-webkit-scrollbar-track { background: rgba(0, 0, 0, 0.2); }
+                .cyber-scrollbar::-webkit-scrollbar-thumb { background: rgba(34, 211, 238, 0.2); border-radius: 10px; }
+                .cyber-scrollbar::-webkit-scrollbar-thumb:hover { background: rgba(34, 211, 238, 0.4); }
             `}} />
     </div>
   );
