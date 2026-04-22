@@ -25,12 +25,6 @@ class BaseAuthService {
   async getUserProfile(userId) {
     const user = await User.findById(userId).select('-password');
     if (!user) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
-
-    if (user.deletedAt || user.status === STATUS.DELETED) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_DELETED);
-    if (user.status === STATUS.BLOCKED) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_BLOCKED);
-    if (user.status === STATUS.SUSPENDED) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_SUSPENDED);
-    if (user.status === STATUS.INACTIVE) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_INACTIVE);
-
     let vendorData = {};
     if (user.role === USER_ROLES.VENDOR) {
       const businessProfile = await Vendor.findOne({ user: user._id });
