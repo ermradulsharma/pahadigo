@@ -1,6 +1,6 @@
-import { verifyToken } from '@/helpers/jwt.js';
-import User from '@/models/User.js';
-import { STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
+import { verifyToken } from '@/core/helpers/jwt.js';
+import User from '@/core/models/User.js';
+import { STATUS, RESPONSE_MESSAGES } from '@/core/constants/index.js';
 
 const authMiddleware = async (req) => {
   try {

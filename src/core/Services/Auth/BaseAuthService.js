@@ -1,7 +1,7 @@
-import User from '@/models/User.js';
-import Vendor from '@/models/Vendor.js';
-import { verifyToken, generateToken } from '@/helpers/jwt.js';
-import { RESPONSE_MESSAGES, USER_ROLES, STATUS } from '@/constants/index.js';
+import User from '@/core/models/User.js';
+import Vendor from '@/core/models/Vendor.js';
+import { verifyToken, generateToken } from '@/core/helpers/jwt.js';
+import { RESPONSE_MESSAGES, USER_ROLES, STATUS } from '@/core/constants/index.js';
 
 class BaseAuthService {
   async verifyToken(token) {

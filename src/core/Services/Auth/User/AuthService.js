@@ -1,17 +1,17 @@
-import User from '@/models/User.js';
-import Vendor from '@/models/Vendor.js';
+import User from '@/core/models/User.js';
+import Vendor from '@/core/models/Vendor.js';
 import OTPService from './OTPService.js';
-import { generateToken } from '@/helpers/jwt.js';
-import { USER_ROLES, AUTH_PROVIDERS, STATUS, RESPONSE_MESSAGES, VENDOR_STATUS } from '@/constants/index.js';
+import { generateToken } from '@/core/helpers/jwt.js';
+import { USER_ROLES, AUTH_PROVIDERS, STATUS, RESPONSE_MESSAGES, VENDOR_STATUS } from '@/core/constants/index.js';
 import googleAuthLib from 'google-auth-library';
 const { OAuth2Client } = googleAuthLib;
 import jwt from 'jsonwebtoken';
-import { getAppConfig } from '@/lib/appConfig';
+import { getAppConfig } from '@/core/lib/appConfig';
 
 class AuthService {
   async initiateOTP({ identifier, role, termsAndConditionsAccepted }) {
     const existingUser = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
-    
+
     // Security: Admins cannot use OTP login
     if (existingUser && existingUser.role === USER_ROLES.ADMIN) {
       throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
@@ -96,15 +96,15 @@ class AuthService {
     const config = await getAppConfig();
     const googleClientId = config.google?.client_id;
     if (!googleClientId) throw new Error(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
-    
+
     const client = new OAuth2Client(googleClientId);
     const ticket = await client.verifyIdToken({ idToken, audience: googleClientId });
     const payload = ticket.getPayload();
     const { email, name, sub: googleId } = payload;
-    
+
     let user = await User.findOne({ email });
     let isNewUser = false;
-    
+
     if (!user) {
       const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
       const userRole = (targetRole && validRoles.includes(targetRole)) ? targetRole : USER_ROLES.TRAVELLER;
@@ -142,12 +142,12 @@ class AuthService {
     if (user.status === STATUS.SUSPENDED) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_SUSPENDED);
     if (user.status === STATUS.BLOCKED) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_BLOCKED);
     if (user.deletedAt || user.status === STATUS.DELETED) {
-        if (user.deletedBy?.toString() === user._id.toString()) {
-            user.deletedAt = null; user.deletedBy = null; user.status = STATUS.ACTIVE;
-            await user.save();
-        } else {
-            throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_DELETED);
-        }
+      if (user.deletedBy?.toString() === user._id.toString()) {
+        user.deletedAt = null; user.deletedBy = null; user.status = STATUS.ACTIVE;
+        await user.save();
+      } else {
+        throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_DELETED);
+      }
     }
   }
 
