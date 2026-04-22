@@ -141,9 +141,17 @@ class AuthService {
   async _handleDeactivation(user) {
     if (user.status === STATUS.SUSPENDED) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_SUSPENDED);
     if (user.status === STATUS.BLOCKED) throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_BLOCKED);
+    
+    // Auto-activate inactive accounts on login
+    if (user.status === STATUS.INACTIVE) {
+        user.status = STATUS.ACTIVE;
+        await user.save();
+    }
+
     if (user.deletedAt || user.status === STATUS.DELETED) {
-      if (user.deletedBy?.toString() === user._id.toString()) {
-        user.deletedAt = null; user.deletedBy = null; user.status = STATUS.ACTIVE;
+      const isSelfDeleted = !user.deletedBy || (user.deletedBy.toString() === user._id.toString());
+      if (isSelfDeleted) {
+        user.deletedAt = null; user.deletedBy = null; user.status = STATUS.ACTIVE; user.deletedReason = null;
         await user.save();
       } else {
         throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_DELETED);

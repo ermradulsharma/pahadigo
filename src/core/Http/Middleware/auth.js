@@ -16,7 +16,7 @@ const authMiddleware = async (req) => {
     }
 
     const user = await User.findById(decoded.id).select('status deletedAt role').lean();
-    const blockedStatuses = [STATUS.DELETED, STATUS.BLOCKED, STATUS.SUSPENDED, STATUS.INACTIVE];
+    const blockedStatuses = [STATUS.DELETED, STATUS.BLOCKED, STATUS.SUSPENDED];
     if (!user || user.deletedAt || blockedStatuses.includes(user.status)) {
       return { authorized: false, message: RESPONSE_MESSAGES.AUTH.ACCOUNT_DELETED };
     }
