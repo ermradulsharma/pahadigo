@@ -1,7 +1,7 @@
-import mongoose from 'mongoose';
+import mongoose, { Schema } from 'mongoose';
 import { DEFAULTS } from '../Constants/index.js';
 
-const CouponSchema = new mongoose.Schema({
+const CouponSchema = new Schema({
   code: { type: String, required: DEFAULTS.TRUE, unique: DEFAULTS.TRUE, uppercase: DEFAULTS.TRUE, trim: DEFAULTS.TRUE },
   discountType: { type: String, enum: ['percentage', 'fixed'], required: DEFAULTS.TRUE },
   value: { type: Number, required: DEFAULTS.TRUE },

@@ -1,6 +1,8 @@
 import { jest } from '@jest/globals';
 
 const createMockQuery = (val) => ({
+    session: jest.fn().mockReturnThis(),
+    populate: jest.fn().mockReturnThis(),
     lean: jest.fn().mockReturnThis(),
     _resolvedValue: val,
     then: jest.fn(function(resolve) { resolve(this._resolvedValue); })
@@ -50,7 +52,12 @@ describe('Industry Standard: InventoryService Business Logic', () => {
 
         Inventory.findOne.mockReturnValue(createMockQuery(mockInv));
         Package.findOne.mockReturnValue(createMockQuery(mockPkg));
-        Booking.find.mockReturnValue(createMockQuery([{ totalTravellers: 4 }]));
+        Booking.find.mockReturnValue(createMockQuery([{ 
+            occupancy: { adults: 4, children: 0 },
+            startDate: new Date('2023-12-31'), 
+            endDate: new Date('2024-01-02'),
+            status: 'confirmed'
+        }]));
 
         const date = new Date('2024-01-01');
         const check = await InventoryService.checkAvailabilityRange('v1', 'item1', 'trekking', date, date, 2);

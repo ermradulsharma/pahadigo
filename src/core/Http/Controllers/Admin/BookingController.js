@@ -11,10 +11,15 @@ class BookingController extends Controller {
   // GET /admin/bookings
   async getAllBookings(req) {
     try {
-      const bookings = await BookingService.getAllBookings();
-      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.FETCHED, { bookings });
+      const url = new URL(req.url, 'http://localhost');
+      const filter = { status: url.searchParams.get('status') || 'all' };
+      const page = parseInt(url.searchParams.get('page') || '1');
+      const limit = parseInt(url.searchParams.get('limit') || '10');
+
+      const result = await BookingService.getAllBookings(filter, page, limit);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.FETCHED, result);
     } catch (error) {
-      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
   }
 
@@ -76,6 +81,16 @@ class BookingController extends Controller {
       const { decision, adminNotes } = body;
       const dispute = await BookingService.resolveDispute(req.user.id, params.id, decision, adminNotes, req);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.DISPUTE.RESOLVED, { dispute });
+    } catch (error) {
+      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+    }
+  }
+
+  // POST /admin/bookings/:id/invoice
+  async sendInvoice(req, { params }) {
+    try {
+      const booking = await BookingService.generateAndSendInvoice(params.id);
+      return this.success(HTTP_STATUS.OK, "Audit: Invoice Pipeline Executed Successfully.", { booking });
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }

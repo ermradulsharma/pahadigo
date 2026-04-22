@@ -48,6 +48,11 @@ const SettingSchema = new mongoose.Schema({
   privacy_policy: { type: String, default: DEFAULTS.NULL },
   rate_on_apple_store: { type: String, default: DEFAULTS.NULL },
   rate_on_google_store: { type: String, default: DEFAULTS.NULL },
+
+  // Pricing Configuration
+  gst: { type: Number, default: 0 },
+  service_tax: { type: Number, default: 0 },
+
   // Cloudinary Configuration
   cloudinary_url: { type: String, default: DEFAULTS.NULL },
 

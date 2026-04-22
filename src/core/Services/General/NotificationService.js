@@ -37,6 +37,11 @@ class NotificationService {
     console.log(`[NotificationService] Document ${field} for vendor ${vendorId} verification: ${isVerified}`);
     return true;
   }
+
+  async sendInvoice(email, bookingId, role) {
+    console.log(`[NotificationService] Dispatched Invoice for Booking Node [${bookingId}] to ${role} at ${email}`);
+    return true;
+  }
 }
 
 export default new NotificationService();

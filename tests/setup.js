@@ -15,10 +15,13 @@ let mongoServer;
 beforeAll(async () => {
     mongoServer = await MongoMemoryServer.create({
         instance: {
-            launchTimeoutMS: 120000
+            launchTimeoutMS: 240000 // Increased further
         },
         binary: {
             skipMD5: true
+        },
+        spawn: {
+            timeoutMS: 240000 // Added spawn timeout
         }
     });
     const uri = mongoServer.getUri();

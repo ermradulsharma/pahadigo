@@ -5,6 +5,20 @@ All notable changes to the PahadiGo project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.6.0] - 2026-04-21
+
+### Added
+- **Standardization of Response Messages**: Migrated all hardcoded API response strings to a centralized `RESPONSE_MESSAGES` constant object in `src/core/Constants/index.js`.
+- **Industry-Standard Professional English**: Performed a comprehensive rewrite of all application messages to follow modern, professional API communication standards.
+- **Robustness in SOS Service**: Increased emergency contact limit from 3 to 5 (industry standard) and synchronized logic with standardized constants.
+
+### Changed
+- **Unified Error Handling Pattern**: Standardized controllers to use `this.error()` for direct validation failures instead of `throw new Error()`, maintaining architectural separation of concerns.
+- **Enhanced Test Environment Stability**: Significantly increased global and individual test timeouts (120s) and optimized MongoDB Memory Server startup (MD5 skip) to prevent infrastructure-related failures.
+
+### Fixed
+- **API Message Consistency**: Resolved inconsistencies where mismatched success/error strings were causing test failures and confusing client-side integrations.
+
 ## [2.5.0] - 2026-04-20
 
 ### Added

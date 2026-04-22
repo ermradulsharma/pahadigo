@@ -108,11 +108,15 @@ const vendorRoutes = [
     ]),
 
     // Operational Management
-    ...Router.group({ prefix: '/bookings' }, [
+    ...Router.group({ prefix: '/booking' }, [
       { method: 'GET', path: '/', handler: wrap(() => BookingController, 'getBookings') },
       { method: 'GET', path: '/:id', handler: wrap(() => BookingController, 'getBookingById') },
       { method: 'PATCH', path: '/:id/status', handler: wrap(() => BookingController, 'updateBookingStatus') },
       { method: 'POST', path: '/:id/timeline', handler: wrap(() => BookingController, 'addTimelineEvent') },
+      ...Router.group({ prefix: '/otp' }, [
+        { method: 'POST', path: '/:id/start', handler: wrap(() => BookingController, 'verifyStartOTP') },
+        { method: 'POST', path: '/:id/end', handler: wrap(() => BookingController, 'verifyEndOTP') },
+      ]),
     ]),
 
     ...Router.group({ prefix: '/inventory' }, [

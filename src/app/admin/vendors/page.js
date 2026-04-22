@@ -215,14 +215,7 @@ export default function VendorsPage() {
         </div>
       </div>
 
-      <CyberTable
-        data={vendors}
-        columns={columns}
-        itemsPerPage={10}
-        searchTerm={searchQuery}
-        searchKeys={['user.name', 'ownerName', 'user.email', 'businessName']}
-        emptyText="NULL OUTPUT: No nodes found in current vector."
-        exportFilename="vendor_nodes"
+      <CyberTable data={vendors} columns={columns} itemsPerPage={10} searchTerm={searchQuery} searchKeys={['user.name', 'ownerName', 'user.email', 'businessName']} emptyText="NULL OUTPUT: No nodes found in current vector." exportFilename="vendor_nodes"
         bulkActions={(selectedVendors) => (
           <div className="flex items-center gap-2">
             <button onClick={() => handleBulkDelete(selectedVendors)} disabled={bulkLoading} className="flex items-center gap-1.5 px-3 py-1.5 bg-rose-500/10 text-rose-400 hover:bg-rose-500/20 border border-rose-500/20 hover:border-rose-500/40 rounded-lg text-xs font-mono tracking-wider transition-all shadow-[0_0_10px_rgba(244,63,94,0.1)] disabled:opacity-50 disabled:cursor-not-allowed">

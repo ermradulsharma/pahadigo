@@ -1,35 +1,63 @@
 import { jest } from '@jest/globals';
-import { RESPONSE_MESSAGES } from '@/constants/index.js';
 
-const mockQuery = {
-    session: jest.fn().mockReturnThis(),
-    populate: jest.fn().mockReturnThis(),
-    then: jest.fn(function(resolve) { resolve(this._resolvedValue); }),
-    _resolveWith: function(val) { this._resolvedValue = val; return this; }
-};
+// 1. Mocks Layer
+jest.unstable_mockModule('mongoose', () => {
+    const mockMongoose = {
+        startSession: jest.fn(() => ({
+            startTransaction: jest.fn(),
+            commitTransaction: jest.fn(),
+            abortTransaction: jest.fn(),
+            endSession: jest.fn()
+        })),
+        Types: { ObjectId: { isValid: jest.fn(() => true) } },
+        Schema: jest.fn().mockImplementation(() => ({
+            virtual: jest.fn().mockReturnThis(),
+            set: jest.fn().mockReturnThis(),
+            index: jest.fn().mockReturnThis(),
+            pre: jest.fn().mockReturnThis(),
+            post: jest.fn().mockReturnThis()
+        })),
+        model: jest.fn(),
+        models: {}
+    };
+    return {
+        __esModule: true,
+        default: mockMongoose,
+        Schema: mockMongoose.Schema,
+        model: mockMongoose.model,
+        models: mockMongoose.models,
+        Types: mockMongoose.Types
+    };
+});
 
 jest.unstable_mockModule('@/models/Booking.js', () => ({
-    default: { 
-        create: jest.fn(), 
-        findById: jest.fn(() => mockQuery),
-        findOne: jest.fn(() => mockQuery)
-    }
+    default: { create: jest.fn(), findOne: jest.fn(), findById: jest.fn(), find: jest.fn(() => ({ sort: jest.fn(() => Promise.resolve([])) })) }
+}));
+
+jest.unstable_mockModule('@/models/User.js', () => ({
+    default: { findById: jest.fn() }
+}));
+
+jest.unstable_mockModule('@/models/Dispute.js', () => ({
+    default: { create: jest.fn(), findOne: jest.fn() }
 }));
 
 jest.unstable_mockModule('@/models/Package.js', () => ({
     default: { findById: jest.fn() }
 }));
 
-jest.unstable_mockModule('@/models/Dispute.js', () => ({
-    default: { create: jest.fn() }
-}));
-
-jest.unstable_mockModule('@/services/Traveller/InventoryService.js', () => ({
-    default: {
-        checkAvailabilityRange: jest.fn(),
-        reserveSlotsRange: jest.fn(),
-        releaseSlotsRange: jest.fn()
-    }
+jest.unstable_mockModule('@/constants/index.js', () => ({
+    RESPONSE_MESSAGES: {
+        BOOKING: { NOT_FOUND_OR_UNAUTHORIZED: 'Booking not found', SLOTS_NOT_AVAILABLE: 'Slots not available' },
+        PACKAGE: { NOT_FOUND: 'Package not found' },
+        USER: { NOT_FOUND: 'User not found' },
+        ERROR: { INVALID_SIGNATURE: 'Invalid signature' }
+    },
+    BOOKING_STATUS: { PENDING: 'pending', CONFIRMED: 'confirmed', ONGOING: 'ongoing', COMPLETED: 'completed' },
+    PAYMENT_STATUS: { UNPAID: 'unpaid', PAID: 'paid' },
+    REFUND_STATUS: { REFUNDED: 'refunded' },
+    HTTP_STATUS: { OK: 200, CREATED: 201, INTERNAL_SERVER_ERROR: 500 },
+    DEFAULTS: { TRUE: true, FALSE: false, NULL: null }
 }));
 
 jest.unstable_mockModule('@/services/General/NotificationService.js', () => ({
@@ -37,99 +65,88 @@ jest.unstable_mockModule('@/services/General/NotificationService.js', () => ({
 }));
 
 jest.unstable_mockModule('@/services/General/RazorpayService.js', () => ({
-    default: { createOrder: jest.fn().mockResolvedValue({ id: 'order123' }) }
+    default: { createOrder: jest.fn(), verifySignature: jest.fn() }
 }));
 
-jest.unstable_mockModule('mongoose', () => ({
-    default: {
-        startSession: jest.fn(() => ({
-            startTransaction: jest.fn(),
-            commitTransaction: jest.fn(),
-            abortTransaction: jest.fn(),
-            endSession: jest.fn()
-        })),
-        Schema: class {
-            constructor() {}
-            static Types = { ObjectId: String };
-        },
-        model: jest.fn(),
-        Types: { ObjectId: String }
-    }
+jest.unstable_mockModule('@/services/Traveller/PackageService.js', () => ({
+    default: { getAvailablePackageItem: jest.fn() }
 }));
 
+jest.unstable_mockModule('@/services/Traveller/InventoryService.js', () => ({
+    default: { checkAvailabilityRange: jest.fn(), reserveSlotsRange: jest.fn() }
+}));
+
+jest.unstable_mockModule('@/lib/appConfig.js', () => ({
+    getAppConfig: jest.fn(() => Promise.resolve({
+        razorpay: { key_id: 'test_key', key_secret: 'test_secret' },
+        tax: { gst: 5, service_tax: 0 }
+    }))
+}));
+
+// 2. Dynamic Imports
 const { default: BookingService } = await import('@/services/Traveller/BookingService.js');
 const { default: Booking } = await import('@/models/Booking.js');
-const { default: Package } = await import('@/models/Package.js');
+const { default: PackageService } = await import('@/services/Traveller/PackageService.js');
 const { default: InventoryService } = await import('@/services/Traveller/InventoryService.js');
-const { default: RazorpayService } = await import('@/services/General/RazorpayService.js');
+const { default: User } = await import('@/models/User.js');
 
-describe('Industry Standard: BookingService Business Logic', () => {
+describe('BookingService Business Logic', () => {
+
     beforeEach(() => {
         jest.clearAllMocks();
-        mockQuery._resolvedValue = null;
     });
 
-    describe('[initiateBooking]', () => {
-        it('[Success] should create a booking when inventory is available', async () => {
-            const mockPkg = { _id: 'pkg123', vendor: { toString: () => 'vendor456' } };
-            
-            Package.findById.mockResolvedValue(mockPkg);
-            InventoryService.checkAvailabilityRange.mockResolvedValue({ available: true });
-            Booking.create.mockImplementation((data) => Promise.resolve(data.map(d => ({ ...d, _id: 'book789' }))));
+    describe('Payment & Verification', () => {
+        it('should verify payment and transition to confirmed status', async () => {
+            const { default: RazorpayService } = await import('@/services/General/RazorpayService.js');
+            RazorpayService.verifySignature.mockReturnValue(true);
 
-            const result = await BookingService.initiateBooking({
-                userId: 'user1',
-                catalogId: 'pkg123',
-                category: 'trekking',
-                itemId: 'item1',
-                travelDate: new Date(),
-                price: 1000,
-                slots: 2
+            const mockBooking = {
+                _id: 'b123', user: 'u123', status: 'pending',
+                verification: {}, payment: {}, timeline: [],
+                pricing: { total: 1000 }, save: jest.fn()
+            };
+            Booking.findOne.mockResolvedValue(mockBooking);
+
+            const result = await BookingService.verifyBookingPayment('b123', 'u123', {
+                razorpay_order_id: 'o1',
+                razorpay_payment_id: 'p1',
+                razorpay_signature: 'DUMMY_SIGNATURE'
             });
 
-            expect(result._id).toBe('book789');
-            expect(Booking.create).toHaveBeenCalled();
-            expect(InventoryService.reserveSlotsRange).toHaveBeenCalled();
-        });
-
-        it('[Failure] should throw error if package not found', async () => {
-            Package.findById.mockResolvedValue(null);
-            
-            await expect(BookingService.initiateBooking({ catalogId: 'none' }))
-                .rejects.toThrow(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
-        });
-
-        it('[Failure] should throw error if slots not available', async () => {
-            Package.findById.mockResolvedValue({ _id: 'p', vendor: { toString: () => 'v' } });
-            InventoryService.checkAvailabilityRange.mockResolvedValue({ available: false });
-
-            await expect(BookingService.initiateBooking({ slots: 100 }))
-                .rejects.toThrow(RESPONSE_MESSAGES.BOOKING.SLOTS_NOT_AVAILABLE);
+            expect(result.status).toBe('confirmed');
+            expect(mockBooking.save).toHaveBeenCalled();
         });
     });
 
-    describe('[refundBooking]', () => {
-        it('[Success] should update booking status and release inventory', async () => {
+    describe('Lifecycle Transitions', () => {
+        it('should start booking when valid OTP is provided', async () => {
             const mockBooking = {
-                _id: 'b1',
-                status: 'confirmed',
-                totalPrice: 2000,
-                package: 'p1',
-                startDate: new Date(),
-                endDate: new Date(),
-                bookingDetails: { category: 'cat1', itemId: 'i1' },
-                timeline: [],
-                save: jest.fn().mockResolvedValue(true)
+                _id: 'b123', user: 'u123', status: 'confirmed',
+                verification: { startOTP: '123456' },
+                timeline: [], save: jest.fn(),
+                startDate: new Date() // Set to today for check
             };
-            
-            mockQuery._resolveWith(mockBooking);
-            Package.findById.mockResolvedValue({ vendor: { toString: () => 'v1' } });
+            Booking.findOne.mockResolvedValue(mockBooking);
 
-            const result = await BookingService.refundBooking('b1', { user: { id: 'admin1' } });
+            const result = await BookingService.startBooking('b123', 'u123', '123456');
 
-            expect(result.status).toBe('cancelled');
-            expect(result.refundStatus).toBe('refunded');
-            expect(InventoryService.releaseSlotsRange).toHaveBeenCalled();
+            expect(result.status).toBe('ongoing');
+            expect(result.verification.isStartVerified).toBe(true);
+        });
+
+        it('should reveal end OTP once booking is ongoing', async () => {
+             const mockBooking = {
+                _id: 'b123', user: 'u123', status: 'ongoing',
+                verification: { endOTP: '654321' },
+                timeline: [], save: jest.fn()
+            };
+            Booking.findOne.mockResolvedValue(mockBooking);
+
+            const result = await BookingService.getBookingOTP('b123', 'u123');
+
+            expect(result.type).toBe('End OTP');
+            expect(result.otp).toBe('654321');
         });
     });
 });

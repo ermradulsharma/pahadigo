@@ -14,47 +14,52 @@ import { wrap } from '../helpers.js';
  * Separated and Porto-Nested from the legacy api.js manifest.
  */
 const travellerRoutes = [
-  ...Router.group({ prefix: '/traveller', middleware: ['auth'], roles: [USER_ROLES.TRAVELLER] }, [
-    
-    // Core Identity & Lifecycle
-    { method: 'GET', path: '/me', handler: wrap(() => AuthController, 'getUserProfile') },
-    { method: 'PATCH', path: '/update', handler: wrap(() => AuthController, 'updateUserProfile') },
-    { method: 'DELETE', path: '/delete', handler: wrap(() => AuthController, 'deleteAccount') },
-    { method: 'POST', path: '/become-vendor', handler: wrap(() => AuthController, 'upgradeToVendor') },
+    ...Router.group({ prefix: '/traveller', middleware: ['auth'], roles: [USER_ROLES.TRAVELLER] }, [
 
-    // Primary Booking
-    { method: 'POST', path: '/book', handler: wrap(() => BookingController, 'initiateBooking') },
+        // Core Identity & Lifecycle
+        { method: 'GET', path: '/me', handler: wrap(() => AuthController, 'getUserProfile') },
+        { method: 'PATCH', path: '/update', handler: wrap(() => AuthController, 'updateUserProfile') },
+        { method: 'DELETE', path: '/delete', handler: wrap(() => AuthController, 'deleteAccount') },
+        { method: 'POST', path: '/become-vendor', handler: wrap(() => AuthController, 'upgradeToVendor') },
 
-    // Operational Bookings Group (Matches Line 87-91)
-    ...Router.group({ prefix: '/bookings' }, [
-      { method: 'GET', path: '/', handler: wrap(() => BookingController, 'getBookings') },
-      { method: 'GET', path: '/:id', handler: wrap(() => BookingController, 'getBookingById') },
-      { method: 'PATCH', path: '/:id/cancel', handler: wrap(() => BookingController, 'cancelBooking') },
-      { method: 'POST', path: '/:id/dispute', handler: wrap(() => BookingController, 'reportDispute') },
+        // Operational Bookings Group
+        ...Router.group({ prefix: '/booking' }, [
+            { method: 'GET', path: '/', handler: wrap(() => BookingController, 'getBookings') },
+            { method: 'POST', path: '/:id', handler: wrap(() => BookingController, 'initiateBooking') },
+            { method: 'GET', path: '/:id', handler: wrap(() => BookingController, 'getBookingById') },
+            { method: 'PATCH', path: '/:id/cancel', handler: wrap(() => BookingController, 'cancelBooking') },
+            { method: 'POST', path: '/:id/dispute', handler: wrap(() => BookingController, 'reportDispute') },
+            ...Router.group({ prefix: '/payment' }, [
+                { method: 'POST', path: '/:id', handler: wrap(() => BookingController, 'initializePayment') },
+                { method: 'POST', path: '/:id/verify', handler: wrap(() => BookingController, 'verifyPayment') },
+            ]),
+            ...Router.group({ prefix: '/otp' }, [
+                { method: 'GET', path: '/:id', handler: wrap(() => BookingController, 'getBookingOTP') },
+            ]),
+        ]),
+
+        // Specialized Modules
+        { method: 'POST', path: '/reviews', handler: wrap(() => ReviewController, 'submitReview') },
+        { method: 'POST', path: '/sos', handler: wrap(() => SOSController, 'triggerSOS') },
+        { method: 'GET', path: '/recent-searches', handler: wrap(() => TravellerController, 'getRecentSearches') },
+        { method: 'DELETE', path: '/recent-searches', handler: wrap(() => TravellerController, 'clearRecentSearches') },
+        { method: 'GET', path: '/wishlist', handler: wrap(() => TravellerController, 'getWishlist') },
+        { method: 'POST', path: '/wishlist', handler: wrap(() => TravellerController, 'addToWishlist') },
+        { method: 'DELETE', path: '/wishlist/:itemId', handler: wrap(() => TravellerController, 'removeFromWishlist') },
+
+        // Financial Payment Hub
+        ...Router.group({ prefix: '/payment' }, [
+            { method: 'POST', path: '/create-order', handler: wrap(() => PaymentController, 'createOrder') },
+            { method: 'POST', path: '/verify', handler: wrap(() => PaymentController, 'verifyPayment') },
+        ]),
+
+        // Profile Hub (Social & Personal)
+        ...Router.group({ prefix: '/profile' }, [
+            { method: 'GET', path: '/', handler: wrap(() => ProfileController, 'getProfile') },
+            { method: 'PUT', path: '/', handler: wrap(() => ProfileController, 'updateProfile') },
+            { method: 'POST', path: '/avatar', handler: wrap(() => ProfileController, 'updateProfileImage') },
+        ]),
     ]),
-
-    // Specialized Modules (Matches Line 92-101)
-    { method: 'POST', path: '/reviews', handler: wrap(() => ReviewController, 'submitReview') },
-    { method: 'POST', path: '/sos', handler: wrap(() => SOSController, 'triggerSOS') },
-    { method: 'GET', path: '/recent-searches', handler: wrap(() => TravellerController, 'getRecentSearches') },
-    { method: 'DELETE', path: '/recent-searches', handler: wrap(() => TravellerController, 'clearRecentSearches') },
-    { method: 'GET', path: '/wishlist', handler: wrap(() => TravellerController, 'getWishlist') },
-    { method: 'POST', path: '/wishlist', handler: wrap(() => TravellerController, 'addToWishlist') },
-    { method: 'DELETE', path: '/wishlist/:itemId', handler: wrap(() => TravellerController, 'removeFromWishlist') },
-
-    // Financial Payment Hub (Matches Line 102-105)
-    ...Router.group({ prefix: '/payment' }, [
-      { method: 'POST', path: '/create-order', handler: wrap(() => PaymentController, 'createOrder') },
-      { method: 'POST', path: '/verify', handler: wrap(() => PaymentController, 'verifyPayment') },
-    ]),
-
-    // Profile Hub (Social & Personal)
-    ...Router.group({ prefix: '/profile' }, [
-        { method: 'GET', path: '/', handler: wrap(() => ProfileController, 'getProfile') },
-        { method: 'PUT', path: '/', handler: wrap(() => ProfileController, 'updateProfile') },
-        { method: 'POST', path: '/avatar', handler: wrap(() => ProfileController, 'updateProfileImage') },
-    ]),
-  ]),
 ];
 
 export default travellerRoutes;
