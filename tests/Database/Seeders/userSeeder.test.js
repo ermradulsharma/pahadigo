@@ -7,7 +7,7 @@ jest.unstable_mockModule('@/core/Models/User.js', () => ({
     }
 }));
 
-const { default: seedUsers } = await import('@/database/Seeders/userSeeder.js');
+const { default: seedUsers } = await import('@/database/Seeders/UserSeeder.js');
 const { default: User } = await import('@/core/Models/User.js');
 
 describe('Industry Standard: userSeeder Logic', () => {

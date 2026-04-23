@@ -9,7 +9,7 @@
         "start": "next start",
         "lint": "eslint .",
         "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js --detectOpenHandles --runInBand",
-        "seed": "node src/core/Database/Seeders/resetAndSeed.js",
+        "seed": "node src/core/Database/Seeders/ResetAndSeed.js",
         "clean": "del *.txt && del *.log"
     },
     "dependencies": {
@@ -48,6 +48,7 @@
         "tailwindcss": "^4.2.4"
     },
     "overrides": {
+        "uuid": "^14.0.0",
         "eslint-plugin-import": {
             "eslint": "$eslint"
         },

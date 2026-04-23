@@ -7,7 +7,7 @@ jest.unstable_mockModule('@/core/Models/Category.js', () => ({
     }
 }));
 
-const { default: seedCategories } = await import('@/database/Seeders/categorySeeder.js');
+const { default: seedCategories } = await import('@/database/Seeders/CategorySeeder.js');
 const { default: Category } = await import('@/core/Models/Category.js');
 
 describe('Industry Standard: categorySeeder Logic', () => {

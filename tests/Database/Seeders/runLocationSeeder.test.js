@@ -1,13 +1,13 @@
 import { jest } from '@jest/globals';
 
-jest.unstable_mockModule('@/seeders/locationSeeder.js', () => ({ seedLocations: jest.fn() }));
+jest.unstable_mockModule('@/seeders/LocationSeeder.js', () => ({ seedLocations: jest.fn() }));
 jest.unstable_mockModule('mongoose', () => ({
     default: { connect: jest.fn() }
 }));
 
-const { seedLocations } = await import('@/seeders/locationSeeder.js');
+const { seedLocations } = await import('@/seeders/LocationSeeder.js');
 const { default: mongoose } = await import('mongoose');
-const { default: run } = await import('@/database/Seeders/runLocationSeeder.js');
+const { default: run } = await import('@/database/Seeders/RunLocationSeeder.js');
 
 describe('Industry Standard: runLocationSeeder Entry Point', () => {
     let mockExit;

@@ -4,7 +4,7 @@ jest.unstable_mockModule('@/core/Models/Policy.js', () => ({
     default: { bulkWrite: jest.fn() }
 }));
 
-const { default: seedPolicies } = await import('@/database/Seeders/policySeeder.js');
+const { default: seedPolicies } = await import('@/database/Seeders/PolicySeeder.js');
 const { default: Policy } = await import('@/core/Models/Policy.js');
 
 describe('Industry Standard: policySeeder Logic', () => {

@@ -13,7 +13,7 @@ jest.unstable_mockModule('country-state-city', () => ({
     State: { getStatesOfCountry: jest.fn(() => [{ name: 'Uttarakhand', isoCode: 'UK' }]) }
 }));
 
-const { default: seedLocations } = await import('@/database/Seeders/locationSeeder.js');
+const { default: seedLocations } = await import('@/database/Seeders/LocationSeeder.js');
 const { default: CountryModel } = await import('@/core/Models/Country.js');
 const { default: StateModel } = await import('@/core/Models/State.js');
 

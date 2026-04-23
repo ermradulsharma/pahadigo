@@ -1,7 +1,7 @@
 import mongoose from 'mongoose';
 import fs from 'fs';
 import path from 'path';
-import { seedLocations } from '@/core/Seeders/locationSeeder.js';
+import { seedLocations } from '@/core/Seeders/LocationSeeder.js';
 
 // Simple .env parser since we can't assume dotenv is installed/loadable in standalone script context easily without args
 const loadEnv = () => {

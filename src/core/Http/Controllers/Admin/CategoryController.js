@@ -1,5 +1,5 @@
 import CategoryService from '@/core/Services/Admin/CategoryService.js';
-import { seedCategories } from '@/core/Seeders/categorySeeder.js';
+import { seedCategories } from '@/core/Seeders/CategorySeeder.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
 

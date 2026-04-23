@@ -1,10 +1,10 @@
 import mongoose from 'mongoose';
-import { seedCategories } from '@/core/Seeders/categorySeeder.js';
+import { seedCategories } from '@/core/Seeders/CategorySeeder.js';
 import { seedCategoryDocuments } from '@/core/Seeders/CategoryDocumentSeeder.js';
-import { seedUsers } from '@/core/Seeders/userSeeder.js';
+import { seedUsers } from '@/core/Seeders/UserSeeder.js';
 import { seedSettings } from '@/core/Seeders/SettingSeeder.js';
-import { seedLocations } from '@/core/Seeders/locationSeeder.js';
-import { seedPolicies } from '@/core/Seeders/policySeeder.js';
+import { seedLocations } from '@/core/Seeders/LocationSeeder.js';
+import { seedPolicies } from '@/core/Seeders/PolicySeeder.js';
 import { loadEnv } from '@/core/Helpers/env.js';
 import connectDB from '@/core/Config/db.js';
 

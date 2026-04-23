@@ -4,17 +4,17 @@ jest.unstable_mockModule('mongoose', () => ({
         connection: { db: { dropDatabase: jest.fn() } }
     }
 }));
-jest.unstable_mockModule('@/core/Seeders/categorySeeder.js', () => ({ seedCategories: jest.fn() }));
+jest.unstable_mockModule('@/core/Seeders/CategorySeeder.js', () => ({ seedCategories: jest.fn() }));
 jest.unstable_mockModule('@/core/Seeders/CategoryDocumentSeeder.js', () => ({ seedCategoryDocuments: jest.fn() }));
-jest.unstable_mockModule('@/core/Seeders/userSeeder.js', () => ({ seedUsers: jest.fn() }));
+jest.unstable_mockModule('@/core/Seeders/UserSeeder.js', () => ({ seedUsers: jest.fn() }));
 jest.unstable_mockModule('@/core/Seeders/SettingSeeder.js', () => ({ seedSettings: jest.fn() }));
-jest.unstable_mockModule('@/core/Seeders/locationSeeder.js', () => ({ seedLocations: jest.fn() }));
-jest.unstable_mockModule('@/core/Seeders/policySeeder.js', () => ({ seedPolicies: jest.fn() }));
+jest.unstable_mockModule('@/core/Seeders/LocationSeeder.js', () => ({ seedLocations: jest.fn() }));
+jest.unstable_mockModule('@/core/Seeders/PolicySeeder.js', () => ({ seedPolicies: jest.fn() }));
 jest.unstable_mockModule('@/core/Config/db.js', () => ({ default: jest.fn() }));
 jest.unstable_mockModule('@/core/Helpers/env.js', () => ({ loadEnv: jest.fn() }));
 
 const { default: mongoose } = await import('mongoose');
-const { default: resetAndSeed } = await import('@/database/Seeders/resetAndSeed.js');
+const { default: resetAndSeed } = await import('@/database/Seeders/ResetAndSeed.js');
 
 describe('Industry Standard: Database Reset and Seed Logic', () => {
     let mockExit;
