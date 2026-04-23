@@ -65,15 +65,25 @@ console.error = (...args) => {
         'Error:',
         'ERROR:',
         'Account uses a different login method',
-        'Internal Error'
+        'Internal Error',
+        'Seeding failed:',
+        'Error seeding locations:',
+        'Drop Failed',
+        'Crashed'
     ];
-    const msg = args[0] && typeof args[0] === 'string' ? args[0] : '';
-    if (noise.some(n => msg.includes(n))) return;
+    const combinedMsg = args.map(arg => String(arg)).join(' ');
+    if (noise.some(n => combinedMsg.includes(n))) return;
     originalError(...args);
 };
 
 console.log = (...args) => {
-    const msg = args[0] && typeof args[0] === 'string' ? args[0] : '';
-    if (msg.includes('successfully')) return;
+    const noise = [
+        'successfully',
+        'Successfully',
+        '[NotificationService]',
+        'Location Seeder Completed'
+    ];
+    const combinedMsg = args.map(arg => String(arg)).join(' ');
+    if (noise.some(n => combinedMsg.includes(n))) return;
     originalLog(...args);
 };

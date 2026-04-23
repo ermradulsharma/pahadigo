@@ -22,7 +22,7 @@ const BungeeSchema = new mongoose.Schema({
 
   details: {
     jumpName: { type: String, default: DEFAULTS.NULL },
-    jumpType: { type: String, default: 'Forward' },
+    jumpType: { type: String, enum: Object.values(PACKAGE.ACTIVITY.JUMP_TYPES), default: PACKAGE.ACTIVITY.JUMP_TYPES.FORWARD },
     heightMeters: { type: Number, default: 0 },
     safetyStandards: { type: String, default: DEFAULTS.NULL },
     videoIncluded: { type: Boolean, default: DEFAULTS.FALSE },

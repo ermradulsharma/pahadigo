@@ -1,5 +1,5 @@
-import User from '../../Models/User.js';
-import { USER_ROLES, STATUS, AUTH_PROVIDERS, GENDER, SEED_ACCOUNTS, DEFAULTS } from '../../Constants/index.js';
+import User from '@/core/Models/User.js';
+import { USER_ROLES, STATUS, AUTH_PROVIDERS, GENDER, SEED_ACCOUNTS, DEFAULTS } from '@/core/Constants/index.js';
 
 export const seedUsers = async () => {
   try {
@@ -10,19 +10,19 @@ export const seedUsers = async () => {
         password: 'password', // Hooks will hash this
         role: USER_ROLES.ADMIN,
         authProvider: AUTH_PROVIDERS.LOCAL,
-        isVerified: true,
+        isVerified: DEFAULTS.TRUE,
         status: STATUS.ACTIVE,
         phone: '1111111111',
         gender: GENDER.OTHER,
         dateOfBirth: new Date('1990-01-01'),
-        termsAccepted: true,
+        termsAccepted: DEFAULTS.TRUE,
         termsAcceptedAt: new Date(),
         address: {
           addressLine1: 'Main HQ, Ground Floor',
           addressLine2: 'Civil Lines',
           city: 'Dehradun',
           state: 'Uttarakhand',
-          country: 'India',
+          country: DEFAULTS.COUNTRY,
           pincode: '248001',
           latitude: '30.3165',
           longitude: '78.0322',
@@ -35,7 +35,7 @@ export const seedUsers = async () => {
         password: 'password',
         role: USER_ROLES.ADMIN,
         authProvider: AUTH_PROVIDERS.LOCAL,
-        isVerified: true,
+        isVerified: DEFAULTS.TRUE,
         status: STATUS.ACTIVE,
         phone: '2222222222',
         gender: GENDER.MALE,
@@ -44,7 +44,7 @@ export const seedUsers = async () => {
           addressLine2: 'Outer Ring Road',
           city: 'Bangalore',
           state: 'Karnataka',
-          country: 'India',
+          country: DEFAULTS.COUNTRY,
           pincode: '560100',
           latitude: '12.9716',
           longitude: '77.5946',
@@ -58,8 +58,8 @@ export const seedUsers = async () => {
         phone: '9876543210',
         role: USER_ROLES.VENDOR,
         authProvider: AUTH_PROVIDERS.PHONE,
-        isVerified: true,
-        isVendorVerified: false,
+        isVerified: DEFAULTS.TRUE,
+        isVendorVerified: DEFAULTS.FALSE,
         status: STATUS.ACTIVE,
         gender: GENDER.FEMALE,
         address: {
@@ -67,7 +67,7 @@ export const seedUsers = async () => {
           addressLine2: 'Near Mall Road',
           city: 'Manali',
           state: 'Himachal Pradesh',
-          country: 'India',
+          country: DEFAULTS.COUNTRY,
           pincode: '175131',
           latitude: '32.2432',
           longitude: '77.1892',
@@ -81,22 +81,21 @@ export const seedUsers = async () => {
         email: 'traveller@gmail.com',
         role: USER_ROLES.TRAVELLER,
         authProvider: AUTH_PROVIDERS.PHONE,
-        isVerified: true,
+        isVerified: DEFAULTS.TRUE,
         status: STATUS.ACTIVE,
         phone: '9998887776',
         preferences: {
-          language: 'en',
+          language: DEFAULTS.LANGUAGE,
           notifications: {
-            email: true,
-            sms: false,
-            push: true,
-            whatsapp: true
+            email: DEFAULTS.TRUE,
+            sms: DEFAULTS.FALSE,
+            push: DEFAULTS.TRUE,
+            whatsapp: DEFAULTS.TRUE
           }
         }
       }
     ];
 
-    // Using loop with create to ensure pre-save hooks (password hashing) are executed
     for (const userData of users) {
       const query = [];
       if (userData.email) query.push({ email: userData.email });

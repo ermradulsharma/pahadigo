@@ -1,8 +1,8 @@
-import BookingService from './BookingService.js';
-import CategoryService from './CategoryService.js';
-import InventoryService from './InventoryService.js';
-import RazorpayService from './RazorpayService.js';
-import NotificationService from './NotificationService.js';
+import BookingService from '@/core/Services/General/BookingService.js';
+import CategoryService from '@/core/Services/General/CategoryService.js';
+import InventoryService from '@/core/Services/General/InventoryService.js';
+import RazorpayService from '@/core/Services/General/RazorpayService.js';
+import NotificationService from '@/core/Services/General/NotificationService.js';
 
 export {
   BookingService,

@@ -1,9 +1,9 @@
-import AdminServices from './Admin/index.js';
-import AuthServices from './Auth/index.js';
-import GeneralServices from './General/index.js';
-import TravellerServices from './Traveller/index.js';
-import VendorServices from './Vendor/index.js';
-import MasterService from './MasterService.js';
+import AdminServices from '@/core/Services/Admin/index.js';
+import AuthServices from '@/core/Services/Auth/index.js';
+import GeneralServices from '@/core/Services/General/index.js';
+import TravellerServices from '@/core/Services/Traveller/index.js';
+import VendorServices from '@/core/Services/Vendor/index.js';
+import MasterService from '@/core/Services/MasterService.js';
 
 export {
   AdminServices,

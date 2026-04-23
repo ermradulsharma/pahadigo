@@ -1,7 +1,7 @@
-import AuthController from '@/controllers/Auth/AuthController.js';
-import SOSController from '@/controllers/General/SOSController.js';
-import Router from '../Router.js';
-import { wrap } from '../helpers.js';
+import AuthController from '@/core/Controllers/Auth/AuthController.js';
+import SOSController from '@/core/Controllers/General/SOSController.js';
+import Router from '@/core/Routes/Router.js';
+import { wrap } from '@/core/Routes/helpers.js';
 
 /**
  * Auth Routes - Separated Out from legacy manifest.

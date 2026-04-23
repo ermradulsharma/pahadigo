@@ -1,6 +1,6 @@
-import BookingService from '../../../Services/Admin/BookingService.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '@/controllers/Controller.js';
+import BookingService from '@/core/Services/Admin/BookingService.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import Controller from '@/core/Controllers/Controller.js';
 
 /**
  * DisputeController (Admin Role) - Handles administrative dispute resolution.

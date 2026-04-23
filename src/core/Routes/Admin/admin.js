@@ -1,23 +1,23 @@
-import DashboardController from '@/controllers/Admin/DashboardController.js';
-import TravellerController from '@/controllers/Admin/TravellerController.js';
-import VendorController from '@/controllers/Admin/VendorController.js';
-import PackageController from '@/controllers/Admin/PackageController.js';
-import CategoryController from '@/controllers/Admin/CategoryController.js';
-import CategoryDocumentController from '@/controllers/Admin/CategoryDocumentController.js';
-import BookingController from '@/controllers/Admin/BookingController.js';
-import PaymentController from '@/controllers/Admin/PaymentController.js';
-import MarketingController from '@/controllers/Admin/MarketingController.js';
-import ReviewController from '@/controllers/Admin/ReviewController.js';
-import DisputeController from '@/controllers/Admin/DisputeController.js';
-import InquiryController from '@/controllers/Admin/InquiryController.js';
-import SettingsController from '@/controllers/Admin/SettingsController.js';
-import LocationController from '@/controllers/Admin/LocationController.js';
-import PolicyController from '@/controllers/Admin/PolicyController.js';
-import AuthController from '@/controllers/Auth/AuthController.js';
+import DashboardController from '@/core/Controllers/Admin/DashboardController.js';
+import TravellerController from '@/core/Controllers/Admin/TravellerController.js';
+import VendorController from '@/core/Controllers/Admin/VendorController.js';
+import PackageController from '@/core/Controllers/Admin/PackageController.js';
+import CategoryController from '@/core/Controllers/Admin/CategoryController.js';
+import CategoryDocumentController from '@/core/Controllers/Admin/CategoryDocumentController.js';
+import BookingController from '@/core/Controllers/Admin/BookingController.js';
+import PaymentController from '@/core/Controllers/Admin/PaymentController.js';
+import MarketingController from '@/core/Controllers/Admin/MarketingController.js';
+import ReviewController from '@/core/Controllers/Admin/ReviewController.js';
+import DisputeController from '@/core/Controllers/Admin/DisputeController.js';
+import InquiryController from '@/core/Controllers/Admin/InquiryController.js';
+import SettingsController from '@/core/Controllers/Admin/SettingsController.js';
+import LocationController from '@/core/Controllers/Admin/LocationController.js';
+import PolicyController from '@/core/Controllers/Admin/PolicyController.js';
+import AuthController from '@/core/Controllers/Auth/AuthController.js';
 
-import Router from '../Router.js';
-import { USER_ROLES } from '@/constants/index.js';
-import { wrap } from '../helpers.js';
+import Router from '@/core/Routes/Router.js';
+import { USER_ROLES } from '@/core/Constants/index.js';
+import { wrap } from '@/core/Routes/helpers.js';
 
 /**
  * Admin Routes - Full Enterprise Governance Hub.

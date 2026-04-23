@@ -16,6 +16,7 @@ jest.unstable_mockModule('@/constants/index.js', () => ({
     STATUS: { ACTIVE: 'active', DELETED: 'deleted', BLOCKED: 'blocked', SUSPENDED: 'suspended', INACTIVE: 'inactive', PENDING: 'pending', REJECT: 'reject' },
     VERIFICATION_STATUS: { PENDING: 'pending', VERIFIED: 'verified', REJECTED: 'rejected' },
     VENDOR_PROFILE_TYPES: { BUSINESS: 'business', INDIVIDUAL: 'individual' },
+    DEFAULTS: { TRUE: true, FALSE: false, NULL: null }
 }));
 
 const { default: MasterService } = await import('@/services/MasterService.js');

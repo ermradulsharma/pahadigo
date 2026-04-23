@@ -1,6 +1,6 @@
-import CategoryService from '@/services/Vendor/CategoryService.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '@/controllers/Controller.js';
+import CategoryService from '@/core/Services/Vendor/CategoryService.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import Controller from '@/core/Controllers/Controller.js';
 
 /**
  * CategoryController (Vendor Role) - Specialized management of

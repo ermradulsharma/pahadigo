@@ -1,7 +1,7 @@
-import LocationService from '../../../Services/Admin/LocationService.js';
-import { parseBody } from '@/helpers/parseBody.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '@/controllers/Controller.js';
+import LocationService from '@/core/Services/Admin/LocationService.js';
+import { parseBody } from '@/core/Helpers/parseBody.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import Controller from '@/core/Controllers/Controller.js';
 
 /**
  * LocationController (Admin Role)

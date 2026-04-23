@@ -20,10 +20,10 @@ const mockQuery = {
 };
 
 jest.unstable_mockModule('@/models/User.js', () => ({
-    default: { countDocuments: jest.fn(), aggregate: jest.fn() }
+    default: { countDocuments: jest.fn(), aggregate: jest.fn(), find: jest.fn(() => mockQuery) }
 }));
 jest.unstable_mockModule('@/models/Vendor.js', () => ({
-    default: { countDocuments: jest.fn(), find: jest.fn(() => mockQuery) }
+    default: { countDocuments: jest.fn(), find: jest.fn(() => mockQuery), aggregate: jest.fn() }
 }));
 jest.unstable_mockModule('@/models/Booking.js', () => ({
     default: { 
@@ -33,21 +33,26 @@ jest.unstable_mockModule('@/models/Booking.js', () => ({
     }
 }));
 jest.unstable_mockModule('@/models/SearchLog.js', () => ({
-    default: { find: jest.fn(() => mockQuery) }
+    default: { find: jest.fn(() => mockQuery), countDocuments: jest.fn(), aggregate: jest.fn() }
 }));
 jest.unstable_mockModule('@/models/Package.js', () => ({
-    default: { find: jest.fn(() => mockQuery) }
+    default: { find: jest.fn(() => mockQuery), countDocuments: jest.fn(), aggregate: jest.fn() }
 }));
 jest.unstable_mockModule('@/models/Category.js', () => ({
-    default: { countDocuments: jest.fn() }
+    default: { countDocuments: jest.fn(), find: jest.fn(() => mockQuery), aggregate: jest.fn() }
 }));
 jest.unstable_mockModule('@/models/Dispute.js', () => ({
-    default: { find: jest.fn(() => mockQuery), countDocuments: jest.fn() }
+    default: { find: jest.fn(() => mockQuery), countDocuments: jest.fn(), aggregate: jest.fn() }
 }));
 
 const { default: DashboardService } = await import('@/services/Admin/DashboardService.js');
 const { default: User } = await import('@/models/User.js');
 const { default: Booking } = await import('@/models/Booking.js');
+const { default: Vendor } = await import('@/models/Vendor.js');
+const { default: Package } = await import('@/models/Package.js');
+const { default: Category } = await import('@/models/Category.js');
+const { default: Dispute } = await import('@/models/Dispute.js');
+const { default: SearchLog } = await import('@/models/SearchLog.js');
 
 describe('Industry Standard: DashboardService Analytics Logic', () => {
     beforeEach(() => {
@@ -69,6 +74,45 @@ describe('Industry Standard: DashboardService Analytics Logic', () => {
         expect(stats.refundsProcessed).toBe(2000);
     });
 
+    it('[DashboardStats] should aggregate all counts and recent data', async () => {
+        User.countDocuments.mockResolvedValue(100);
+        Vendor.countDocuments.mockResolvedValue(50);
+        Category.countDocuments.mockResolvedValue(10);
+        Booking.countDocuments.mockResolvedValue(200);
+        Booking.aggregate.mockResolvedValue([{ total: 100000 }]);
+        Package.aggregate.mockResolvedValue([{ count: 25 }]);
+
+        const stats = await DashboardService.getDashboardStats();
+
+        expect(stats.users).toBe(100);
+        expect(stats.totalVendors).toBe(50);
+        expect(stats.packages).toBe(25);
+        expect(stats.revenue).toBe(100000);
+        expect(Vendor.find).toHaveBeenCalled();
+        expect(Booking.find).toHaveBeenCalled();
+    });
+
+    it('[Analytics] should aggregate data by period', async () => {
+        Booking.aggregate.mockResolvedValueOnce([{ _id: '2024-01-01', revenue: 5000 }]) // revenueData
+            .mockResolvedValueOnce([{ _id: 'confirmed', value: 10 }]) // bookingStatus
+            .mockResolvedValueOnce([{ _id: 'vendor1', totalRevenue: 10000, bookings: 5 }]); // topVendors
+        User.aggregate.mockResolvedValue([{ _id: '2024-01-01', travellers: 2, vendors: 1 }]);
+        Vendor.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([{ _id: 'vendor1', businessName: 'Test Vendor' }]) });
+
+        const data = await DashboardService.getAnalyticsData('monthly');
+
+        expect(data.revenueData).toBeDefined();
+        expect(data.bookingStatus[0].name).toBe('confirmed');
+        expect(data.userGrowth).toBeDefined();
+        expect(data.topVendors[0].name).toBe('Test Vendor');
+    });
+
+    it('[MapAnalytics] should get user distribution', async () => {
+        User.aggregate.mockResolvedValue([{ _id: 'Uttarakhand', count: 50 }]);
+        const data = await DashboardService.getMapAnalyticsData();
+        expect(data.userDistribution[0]._id).toBe('Uttarakhand');
+    });
+
     it('[Calendar] should query bookings within date range', async () => {
         const mockBooking = { _id: '1', startDate: new Date(), bookingDetails: { category: 'trekking' } };
         mockQuery._resolveWith([mockBooking]);
@@ -79,5 +123,12 @@ describe('Industry Standard: DashboardService Analytics Logic', () => {
         
         expect(Array.isArray(events)).toBe(true);
         expect(events[0].type).toBe('booking');
+    });
+
+    it('[SearchAnalytics] should fetch top and zero result searches', async () => {
+        mockQuery._resolveWith([{ query: 'trekking', count: 10 }]);
+        const data = await DashboardService.getSearchAnalytics();
+        expect(data.topSearches.length).toBe(1);
+        expect(data.zeroResultSearches).toBeDefined();
     });
 });

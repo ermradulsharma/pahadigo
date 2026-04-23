@@ -1,7 +1,7 @@
-import User from '@/models/User.js';
-import Vendor from '@/models/Vendor.js';
-import { verifyToken, generateToken } from '@/helpers/jwt.js';
-import { RESPONSE_MESSAGES, USER_ROLES, STATUS } from '@/constants/index.js';
+import { RESPONSE_MESSAGES, USER_ROLES, STATUS, DEFAULTS } from '@/core/Constants/index.js';
+import User from '@/core/Models/User.js';
+import Vendor from '@/core/Models/Vendor.js';
+import { verifyToken, generateToken } from '@/core/Helpers/jwt.js';
 
 class BaseAuthService {
     async verifyToken(token) {
@@ -40,7 +40,7 @@ class BaseAuthService {
         return user;
     }
 
-    async deactivateUserAccount(userId, reason = null) {
+    async deactivateUserAccount(userId, reason = DEFAULTS.NULL) {
         const updates = {
             deletedAt: new Date(),
             deletedBy: userId,
@@ -49,7 +49,7 @@ class BaseAuthService {
         };
         const user = await User.findByIdAndUpdate(userId, updates, { returnDocument: 'after' });
         if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
-        return true;
+        return DEFAULTS.TRUE;
     }
 }
 

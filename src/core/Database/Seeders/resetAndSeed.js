@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
-import { seedCategories } from './categorySeeder.js';
-import { seedCategoryDocuments } from './CategoryDocumentSeeder.js';
-import { seedUsers } from './userSeeder.js';
-import { seedSettings } from './SettingSeeder.js';
-import { seedLocations } from './locationSeeder.js';
-import { seedPolicies } from './policySeeder.js';
-import { loadEnv } from '../../Helpers/env.js';
-import connectDB from '../../Config/db.js';
+import { seedCategories } from '@/core/Seeders/categorySeeder.js';
+import { seedCategoryDocuments } from '@/core/Seeders/CategoryDocumentSeeder.js';
+import { seedUsers } from '@/core/Seeders/userSeeder.js';
+import { seedSettings } from '@/core/Seeders/SettingSeeder.js';
+import { seedLocations } from '@/core/Seeders/locationSeeder.js';
+import { seedPolicies } from '@/core/Seeders/policySeeder.js';
+import { loadEnv } from '@/core/Helpers/env.js';
+import connectDB from '@/core/Config/db.js';
 
 const resetAndSeed = async () => {
   try {

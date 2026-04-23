@@ -2,7 +2,7 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getToken } from '@/helpers/authUtils';
+import { getToken } from '@/core/Helpers/authUtils';
 import VendorTabs from '@/components/admin/VendorTabs';
 import { DetailItem, StatusBadge, MainPanelCard, SidebarCard, VendorHeader, Modal, UnifiedStatusMenu } from '@/components/admin/VendorUIFragments';
 import { Building2, Landmark, ShieldCheck, MapPin, User, Check as CheckIcon, Layers, Share2, Briefcase, Camera, Play, Hash, MessageSquare, Phone, Globe, Music2 } from 'lucide-react';

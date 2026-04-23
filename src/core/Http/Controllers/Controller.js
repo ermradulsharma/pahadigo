@@ -1,4 +1,4 @@
-import { successResponse, errorResponse } from '@/helpers/response.js';
+import { successResponse, errorResponse } from '@/core/Helpers/response.js';
 
 /**
  * Base Controller class for providing standardized response methods

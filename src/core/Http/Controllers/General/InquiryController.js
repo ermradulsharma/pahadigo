@@ -1,6 +1,6 @@
-import PolicyService from '@/services/General/PolicyService.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '@/controllers/Controller.js';
+import PolicyService from '@/core/Services/General/PolicyService.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import Controller from '@/core/Controllers/Controller.js';
 
 /**
  * InquiryController (General/Public Role) - Handles public submission of inquiries.

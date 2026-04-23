@@ -1,16 +1,16 @@
 import mongoose from 'mongoose';
-import Booking from '@/models/Booking.js';
-import Package from '@/models/Package.js';
-import User from '@/models/User.js';
-import Dispute from '@/models/Dispute.js';
-import Coupon from '@/models/Coupon.js';
+import Booking from '@/core/Models/Booking.js';
+import Package from '@/core/Models/Package.js';
+import User from '@/core/Models/User.js';
+import Dispute from '@/core/Models/Dispute.js';
+import Coupon from '@/core/Models/Coupon.js';
 
-import NotificationService from '@/services/General/NotificationService.js';
-import RazorpayService from '@/services/General/RazorpayService.js';
-import PackageService from '@/services/Traveller/PackageService.js';
-import InventoryService from './InventoryService.js';
-import { getAppConfig } from '@/lib/appConfig.js';
-import { RESPONSE_MESSAGES, BOOKING_STATUS, PAYMENT_STATUS, REFUND_STATUS } from '@/constants/index.js';
+import NotificationService from '@/core/Services/General/NotificationService.js';
+import RazorpayService from '@/core/Services/General/RazorpayService.js';
+import PackageService from '@/core/Services/Traveller/PackageService.js';
+import InventoryService from '@/core/Services/Traveller/InventoryService.js';
+import { getAppConfig } from '@/core/Lib/appConfig.js';
+import { RESPONSE_MESSAGES, BOOKING_STATUS, PAYMENT_STATUS, REFUND_STATUS } from '@/core/Constants/index.js';
 
 /**
  * BookingService (Traveller Role)
@@ -188,7 +188,7 @@ class BookingService {
         vendorId.toString(), itemId, category, checkInDate, checkOutDate, requiredUnits, session, newBooking._id
       );
       if (!finalCheck.available) {
-          throw new Error(`Inventory Conflict: Slots became unavailable.`);
+        throw new Error(`Inventory Conflict: Slots became unavailable.`);
       }
 
       await session.commitTransaction();

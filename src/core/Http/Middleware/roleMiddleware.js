@@ -1,4 +1,4 @@
-import { USER_ROLES, RESPONSE_MESSAGES } from '@/constants/index.js';
+import { USER_ROLES, RESPONSE_MESSAGES, DEFAULTS } from '@/core/Constants/index.js';
 
 /**
  * Validates if the authenticated user has the required role.
@@ -10,7 +10,7 @@ import { USER_ROLES, RESPONSE_MESSAGES } from '@/constants/index.js';
  */
 export const roleMiddleware = (req, allowedRoles = []) => {
     if (!req.user) {
-        return { authorized: false, message: RESPONSE_MESSAGES.AUTH.UNAUTHORIZED };
+        return { authorized: DEFAULTS.FALSE, message: RESPONSE_MESSAGES.AUTH.UNAUTHORIZED };
     }
     if (allowedRoles.length > 0 && !allowedRoles.includes(req.user.role)) {
         let errorMessage = RESPONSE_MESSAGES.ERROR.FORBIDDEN;
@@ -19,9 +19,9 @@ export const roleMiddleware = (req, allowedRoles = []) => {
         } else if (allowedRoles.includes(USER_ROLES.VENDOR) && allowedRoles.length === 1) {
             errorMessage = RESPONSE_MESSAGES.AUTH.VENDORS_ONLY;
         }
-        return { authorized: false, message: errorMessage };
+        return { authorized: DEFAULTS.FALSE, message: errorMessage };
     }
-    return { authorized: true };
+    return { authorized: DEFAULTS.TRUE };
 };
 
 export default roleMiddleware;

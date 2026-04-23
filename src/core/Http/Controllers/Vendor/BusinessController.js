@@ -1,7 +1,7 @@
-import BusinessService from '@/services/Vendor/BusinessService.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import { uploadToCloudinary } from '@/helpers/cloudinary.js';
-import Controller from '@/controllers/Controller.js';
+import BusinessService from '@/core/Services/Vendor/BusinessService.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
+import Controller from '@/core/Controllers/Controller.js';
 
 /**
  * BusinessController (Vendor Role) - Specialized management of

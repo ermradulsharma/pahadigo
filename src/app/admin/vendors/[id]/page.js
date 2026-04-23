@@ -2,7 +2,7 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getToken } from '@/helpers/authUtils';
+import { getToken } from '@/core/Helpers/authUtils';
 import Image from 'next/image';
 import VendorTabs from '@/components/admin/VendorTabs';
 import { DetailItem, StatusBadge, Badge, SidebarCard, UnifiedStatusMenu, ProgressItem, DocumentSection, MainPanelCard, VendorHeader } from '@/components/admin/VendorUIFragments';

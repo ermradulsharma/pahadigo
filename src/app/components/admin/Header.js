@@ -1,6 +1,6 @@
 'use client';
 import { useRouter } from 'next/navigation';
-import { removeToken, getRole } from '@/helpers/authUtils';
+import { removeToken, getRole } from '@/core/Helpers/authUtils';
 import { useEffect, useState, useRef } from 'react';
 import { Network, LogOut, Settings, User as UserIcon } from 'lucide-react';
 

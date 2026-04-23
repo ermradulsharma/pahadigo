@@ -1,17 +1,43 @@
-import LocationService from '@/services/Admin/LocationService';
 import { jest } from '@jest/globals';
 
-describe('Industry Standard: LocationService Business Logic Service', () => {
+jest.unstable_mockModule('@/core/Models/Country.js', () => ({
+    default: {
+        create: jest.fn(),
+        find: jest.fn(() => ({ sort: jest.fn().mockResolvedValue([]) }))
+    }
+}));
+
+jest.unstable_mockModule('@/core/Models/State.js', () => ({
+    default: {
+        create: jest.fn(),
+        find: jest.fn(() => ({ sort: jest.fn().mockResolvedValue([]) }))
+    }
+}));
+
+const { default: LocationService } = await import('@/services/Admin/LocationService.js');
+const { default: Country } = await import('@/core/Models/Country.js');
+
+describe('Industry Standard: LocationService Logic', () => {
     beforeEach(() => {
         jest.clearAllMocks();
     });
 
-    it('[Success] should be correctly instantiated by the core container', () => {
-        expect(LocationService).toBeDefined();
+    describe('[createCountry]', () => {
+        it('[Success] should create new country', async () => {
+            const data = { name: 'India', code: 'IN' };
+            Country.create.mockResolvedValue(data);
+
+            const result = await LocationService.createCountry(data);
+
+            expect(Country.create).toHaveBeenCalledWith(data);
+            expect(result.name).toBe('India');
+        });
     });
 
-    it('[Integrity] should expose standard service interface', () => {
-        const exports = typeof LocationService;
-        expect(exports).toBe('object');
+    describe('[listCountries]', () => {
+        it('[Success] should list all countries sorted', async () => {
+            await LocationService.listCountries();
+            expect(Country.find).toHaveBeenCalled();
+        });
     });
 });

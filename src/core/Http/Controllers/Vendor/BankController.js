@@ -1,7 +1,7 @@
-import BusinessService from '@/services/Vendor/BusinessService.js';
-import BankService from '@/services/Vendor/BankService.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '@/controllers/Controller.js';
+import BusinessService from '@/core/Services/Vendor/BusinessService.js';
+import BankService from '@/core/Services/Vendor/BankService.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import Controller from '@/core/Controllers/Controller.js';
 
 /**
  * BankController (Vendor Role) - Specialized management of
@@ -9,53 +9,53 @@ import Controller from '@/controllers/Controller.js';
  */
 class BankController extends Controller {
 
-    // GET /vendor/bank/
-    async getBankDetails(req) {
-        try {
-            const vendor = await BusinessService.getBusinessByUserId(req.user.id);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.BANK_FETCHED, vendor.bankDetails);
-        } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
-        }
+  // GET /vendor/bank/
+  async getBankDetails(req) {
+    try {
+      const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.BANK_FETCHED, vendor.bankDetails);
+    } catch (error) {
+      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }
+  }
 
-    // POST /vendor/bank/create
-    async createBankDetails(req) {
-        try {
-            const body = req.payload;
-            if (req.formDataBody?.has('cancelledCheque')) {
-                body.cancelledChequeFile = req.formDataBody.get('cancelledCheque');
-            }
-            const vendor = await BankService.syncBankDetails(req.user.id, body);
-            return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.BANK_CREATED, vendor);
-        } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
-        }
+  // POST /vendor/bank/create
+  async createBankDetails(req) {
+    try {
+      const body = req.payload;
+      if (req.formDataBody?.has('cancelledCheque')) {
+        body.cancelledChequeFile = req.formDataBody.get('cancelledCheque');
+      }
+      const vendor = await BankService.syncBankDetails(req.user.id, body);
+      return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.BANK_CREATED, vendor);
+    } catch (error) {
+      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }
+  }
 
-    // PATCH /vendor/bank/update
-    async updateBankDetails(req) {
-        try {
-            const body = req.payload;
-            if (req.formDataBody?.has('cancelledCheque')) {
-                body.cancelledChequeFile = req.formDataBody.get('cancelledCheque');
-            }
-            const vendor = await BankService.syncBankDetails(req.user.id, body);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.BANK_UPDATED, vendor);
-        } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
-        }
+  // PATCH /vendor/bank/update
+  async updateBankDetails(req) {
+    try {
+      const body = req.payload;
+      if (req.formDataBody?.has('cancelledCheque')) {
+        body.cancelledChequeFile = req.formDataBody.get('cancelledCheque');
+      }
+      const vendor = await BankService.syncBankDetails(req.user.id, body);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.BANK_UPDATED, vendor);
+    } catch (error) {
+      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }
+  }
 
-    // DELETE /vendor/bank/delete
-    async deleteBankDetails(req) {
-        try {
-            const vendor = await BankService.removeBankDetails(req.user.id);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.BANK_DELETED, vendor.bankDetails || {});
-        } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
-        }
+  // DELETE /vendor/bank/delete
+  async deleteBankDetails(req) {
+    try {
+      const vendor = await BankService.removeBankDetails(req.user.id);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.BANK_DELETED, vendor.bankDetails || {});
+    } catch (error) {
+      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }
+  }
 }
 
 const bankController = new BankController();

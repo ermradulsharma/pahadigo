@@ -1,17 +1,65 @@
-import InventoryService from '@/services/Vendor/InventoryService';
 import { jest } from '@jest/globals';
 
-describe('Industry Standard: InventoryService Business Logic Service', () => {
+const mockInventoryInstance = {
+    calendar: [],
+    save: jest.fn().mockImplementation(function() { return Promise.resolve(this); }),
+    lastSyncAt: null
+};
+
+function MockInventory(data) {
+    Object.assign(this, mockInventoryInstance, data);
+}
+MockInventory.findOne = jest.fn();
+MockInventory.prototype.save = mockInventoryInstance.save;
+
+const mockQuery = { lean: jest.fn() };
+
+jest.unstable_mockModule('@/models/index.js', () => ({
+    Inventory: MockInventory,
+    Package: { findOne: jest.fn(() => mockQuery) },
+    Booking: { find: jest.fn(() => mockQuery) }
+}));
+
+const { default: InventoryService } = await import('@/services/Vendor/InventoryService.js');
+const { Inventory, Package, Booking } = await import('@/models/index.js');
+
+describe('Industry Standard: Vendor InventoryService Logic', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        mockInventoryInstance.calendar = [];
     });
 
-    it('[Success] should be correctly instantiated by the core container', () => {
-        expect(InventoryService).toBeDefined();
+    describe('[update]', () => {
+        it('[Success] should update existing inventory', async () => {
+            const vendorId = 'v1';
+            const itemId = 'i1';
+            const serviceType = 'trekking';
+            const existingInv = new MockInventory({ vendorId, itemId, calendar: [] });
+            Inventory.findOne.mockResolvedValue(existingInv);
+
+            const updates = [{ date: new Date('2024-01-01'), totalUnits: 10 }];
+            const result = await InventoryService.update(vendorId, itemId, serviceType, updates);
+
+            expect(result.calendar).toHaveLength(1);
+            expect(result.calendar[0].totalUnits).toBe(10);
+            expect(existingInv.save).toHaveBeenCalled();
+        });
     });
 
-    it('[Integrity] should expose standard service interface', () => {
-        const exports = typeof InventoryService;
-        expect(exports).toBe('object');
+    describe('[initialize]', () => {
+        it('[Success] should initialize inventory for 30 days', async () => {
+            const vendorId = 'v1';
+            const itemId = 'i1';
+            const mockPackage = {
+                trekking: [{ _id: 'i1', availability: { totalRooms: 5 } }]
+            };
+            mockQuery.lean.mockResolvedValue(mockPackage);
+            Inventory.findOne.mockResolvedValue(null);
+
+            const result = await InventoryService.initialize(vendorId, itemId, 'trekking', 30);
+
+            expect(result.calendar).toHaveLength(30);
+            expect(result.calendar[0].totalUnits).toBe(5);
+        });
     });
 });

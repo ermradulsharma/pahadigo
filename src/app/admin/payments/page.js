@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getToken } from '@/helpers/authUtils';
+import { getToken } from '@/core/Helpers/authUtils';
 import CyberTable from '@/app/components/admin/CyberTable';
 import { Wallet, Search, ArrowRightLeft, DollarSign, Building2, Phone, Coins, ExternalLink, User, ReceiptText, Landmark } from 'lucide-react';
 import Link from 'next/link';

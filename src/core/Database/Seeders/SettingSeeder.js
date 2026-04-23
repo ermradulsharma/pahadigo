@@ -1,6 +1,7 @@
 
-import Setting from '../../Models/Setting.js';
-import { APP_DETAILS, APP_SECRETS } from '../../Constants/index.js';
+import Setting from '@/core/Models/Setting.js';
+import { getAppConfig } from '@/core/Lib/appConfig.js';
+import { DEFAULTS } from '@/core/Constants/index.js';
 
 export const seedSettings = async () => {
     try {
@@ -9,49 +10,52 @@ export const seedSettings = async () => {
             return { message: 'Settings already exist' };
         }
 
+        // Fetch values from Env/Constants via our standardized helper
+        const config = await getAppConfig();
+
         const settings = {
             // SMTP
-            smtp_email: process.env.SMTP_EMAIL || APP_DETAILS.MAIL_FROM_EMAIL,
-            smtp_password: process.env.SMTP_PASSWORD || APP_SECRETS.SMTP_ACCOUNT_PASS,
-            smtp_host: process.env.SMTP_HOST || 'smtp.gmail.com',
-            smtp_port: process.env.SMTP_PORT || '587',
-            smtp_from_address: process.env.SMTP_FROM_ADDRESS || APP_DETAILS.MAIL_FROM_EMAIL,
-            smtp_from_name: process.env.SMTP_FROM_NAME || APP_DETAILS.APP_NAME,
+            smtp_email: config.smtp.user,
+            smtp_password: config.smtp.pass,
+            smtp_host: config.smtp.host,
+            smtp_port: config.smtp.port,
+            smtp_from_address: config.smtp.from_address,
+            smtp_from_name: config.smtp.from_name,
 
             // SMS (MSG91)
-            msg91_auth_key: process.env.MSG91_AUTH_KEY || '',
-            msg91_template_id: process.env.MSG91_TEMPLATE_ID || '',
+            msg91_auth_key: config.msg91.auth_key,
+            msg91_template_id: config.msg91.template_id,
 
             // Notifications
-            push_notification_server_key: process.env.PUSH_NOTIFICATION_SERVER_KEY || APP_DETAILS.PUSH_NOTIFICATION_SERVER_KEY,
+            push_notification_server_key: config.push_notification.server_key,
 
             // Razorpay
-            razorpay_key_id: process.env.RAZORPAY_KEY_ID || '',
-            razorpay_key_secret: process.env.RAZORPAY_KEY_SECRET || '',
+            razorpay_key_id: config.razorpay.key_id,
+            razorpay_key_secret: config.razorpay.key_secret,
 
-            // Database
-            mongodb_uri: process.env.MONGODB_URI,
-            api_url: process.env.NEXT_PUBLIC_API_URL || APP_DETAILS.APP_URL,
+            // Database & API
+            mongodb_uri: config.mongodb_uri,
+            api_url: config.api_url,
 
             // JWT
-            jwt_secret: process.env.JWT_SECRET || 'CHANGE_THIS_SECRET',
+            jwt_secret: config.jwt_secret,
 
             // Social Auth
-            google_client_id: process.env.GOOGLE_CLIENT_ID || '',
-            google_client_secret: process.env.GOOGLE_CLIENT_SECRET || APP_SECRETS.SOCIAL_PASS,
-            facebook_app_id: process.env.FACEBOOK_APP_ID || '',
-            facebook_app_secret: process.env.FACEBOOK_APP_SECRET || APP_SECRETS.SOCIAL_PASS,
-            apple_client_id: process.env.APPLE_CLIENT_ID || '',
-            apple_team_id: process.env.APPLE_TEAM_ID || '',
-            apple_key_id: process.env.APPLE_KEY_ID || '',
-            apple_private_key: process.env.APPLE_PRIVATE_KEY || '',
+            google_client_id: config.google.client_id,
+            google_client_secret: config.google.client_secret,
+            facebook_app_id: config.facebook.app_id,
+            facebook_app_secret: config.facebook.app_secret,
+            apple_client_id: config.apple.client_id,
+            apple_team_id: config.apple.team_id,
+            apple_key_id: config.apple.key_id,
+            apple_private_key: config.apple.private_key,
 
             // App Details
-            app_name: process.env.APP_NAME || APP_DETAILS.APP_NAME,
-            terms_conditions: '',
-            privacy_policy: '',
-            rate_on_apple_store: '',
-            rate_on_google_store: ''
+            app_name: config.app.name,
+            terms_conditions: config.app.terms_conditions,
+            privacy_policy: config.app.privacy_policy,
+            rate_on_apple_store: DEFAULTS.STRING,
+            rate_on_google_store: DEFAULTS.STRING
         };
 
         const createdSetting = await Setting.create(settings);

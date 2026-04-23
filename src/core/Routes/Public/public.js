@@ -1,12 +1,12 @@
-import PackageController from '@/controllers/General/PackageController.js';
-import CategoryController from '@/controllers/General/CategoryController.js';
-import LocationController from '@/controllers/General/LocationController.js';
-import PolicyController from '@/controllers/General/PolicyController.js';
-import PaymentController from '@/controllers/General/PaymentController.js';
-import InquiryController from '@/controllers/General/InquiryController.js';
+import PackageController from '@/core/Controllers/General/PackageController.js';
+import CategoryController from '@/core/Controllers/General/CategoryController.js';
+import LocationController from '@/core/Controllers/General/LocationController.js';
+import PolicyController from '@/core/Controllers/General/PolicyController.js';
+import PaymentController from '@/core/Controllers/General/PaymentController.js';
+import InquiryController from '@/core/Controllers/General/InquiryController.js';
 
-import Router from '../Router.js';
-import { wrap } from '../helpers.js';
+import Router from '@/core/Routes/Router.js';
+import { wrap } from '@/core/Routes/helpers.js';
 
 /**
  * Public Routes - Accessible without authentication.

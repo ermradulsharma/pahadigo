@@ -1,5 +1,5 @@
-import { Inventory, Package, Booking } from '@/models/index.js';
-import { formatDateKey, normalizeAvailability, determineDayStatus, calculateEffectivePrice } from '@/helpers/InventoryHelper.js';
+import { Inventory, Package, Booking } from '@/core/Models/index.js';
+import { formatDateKey, normalizeAvailability, determineDayStatus, calculateEffectivePrice } from '@/core/Helpers/InventoryHelper.js';
 
 class InventoryService {
   /**

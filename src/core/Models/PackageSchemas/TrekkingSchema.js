@@ -22,7 +22,7 @@ const TrekkingSchema = new mongoose.Schema({
 
   details: {
     trekType: { type: String, enum: Object.values(PACKAGE.ACTIVITY.TREK_TYPES), default: PACKAGE.ACTIVITY.TREK_TYPES.DAY_TREK },
-    difficultyLevel: { type: String, enum: ['Easy', 'Moderate', 'Hard', 'easy', 'moderate', 'hard'], default: 'Easy' },
+    difficultyLevel: { type: String, enum: Object.values(PACKAGE.DIFFICULTY), default: PACKAGE.DIFFICULTY.EASY },
     bestSeason: { type: String, enum: Object.values(PACKAGE.SEASONS), default: PACKAGE.SEASONS.ALL_YEAR },
     duration: { type: String, default: DEFAULTS.NULL },
     maxAltitude: { type: String, default: DEFAULTS.NULL },
@@ -31,7 +31,7 @@ const TrekkingSchema = new mongoose.Schema({
     porterAvailable: { type: Boolean, default: DEFAULTS.FALSE },
     muleAvailable: { type: Boolean, default: DEFAULTS.FALSE },
     minAge: { type: Number, default: 12 },
-    fitnessLevelRequired: { type: String, default: DEFAULTS.NULL },
+    fitnessLevelRequired: { type: String, enum: Object.values(PACKAGE.FITNESS_LEVELS), default: PACKAGE.FITNESS_LEVELS.BASIC },
     startPoint: {
       name: { type: String, default: DEFAULTS.NULL },
       latitude: { type: String, default: DEFAULTS.NULL },

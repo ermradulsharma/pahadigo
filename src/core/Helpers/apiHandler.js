@@ -1,8 +1,8 @@
-import AuditService from '@/services/Admin/AuditService.js';
-import { redactSensitiveData, sanitizeNoSQL } from '@/helpers/security.js';
-import { successResponse, errorResponse } from '@/helpers/response.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import { parseNestedFormData } from '@/helpers/parseNestedFormData.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES, DEFAULTS } from '@/core/Constants/index.js';
+import AuditService from '@/core/Services/Admin/AuditService.js';
+import { redactSensitiveData, sanitizeNoSQL } from '@/core/Helpers/security.js';
+import { successResponse, errorResponse } from '@/core/Helpers/response.js';
+import { parseNestedFormData } from '@/core/Helpers/parseNestedFormData.js';
 
 export function apiHandler(handler) {
     return async (req, params) => {
@@ -15,7 +15,7 @@ export function apiHandler(handler) {
             if (req.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method.toUpperCase())) {
                 if (req.user && req.user.id) {
                     try {
-                        const urlObj = new URL(req.url, 'http://localhost');
+                        const urlObj = new URL(req.url);
                         const urlParts = urlObj.pathname.split('/').filter(Boolean);
                         const ignoreList = ['api', 'create', 'update', 'delete', 'add', 'remove', 'add-item', 'update-status', 'profile', 'business', 'vendor', 'admin', 'status', 'verify', 'resolve', 'upload'];
                         const significantParts = urlParts.filter(p => !ignoreList.includes(p.toLowerCase()) && !/^[0-9a-fA-F]{24}$/.test(p) && !/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(p));
@@ -43,7 +43,7 @@ export function apiHandler(handler) {
             if (response instanceof Response) return response;
 
             if (response && typeof response === 'object' && response.data !== undefined && response.success !== undefined) {
-                if (response.success === false) {
+                if (response.success === DEFAULTS.FALSE) {
                     return errorResponse(response.status || HTTP_STATUS.BAD_REQUEST, response.message || RESPONSE_MESSAGES.ERROR.GENERIC, response.data);
                 }
                 return successResponse(response.status || HTTP_STATUS.OK, response.message || RESPONSE_MESSAGES.SUCCESS.GENERIC, response.data);

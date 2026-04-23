@@ -1,9 +1,9 @@
-import Vendor from '@/models/Vendor.js';
-import Category from '@/models/Category.js';
-import CategoryDocument from '@/models/CategoryDocument.js';
-import VendorDocument from '@/models/VendorDocument.js';
-import { uploadToCloudinary } from '@/helpers/cloudinary.js';
-import { RESPONSE_MESSAGES, VERIFICATION_STATUS } from '@/constants/index.js';
+import Vendor from '@/core/Models/Vendor.js';
+import Category from '@/core/Models/Category.js';
+import CategoryDocument from '@/core/Models/CategoryDocument.js';
+import VendorDocument from '@/core/Models/VendorDocument.js';
+import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
+import { RESPONSE_MESSAGES, VERIFICATION_STATUS } from '@/core/Constants/index.js';
 
 /**
  * CategoryService (Vendor Scope) - Facilitates the lifecycle of business

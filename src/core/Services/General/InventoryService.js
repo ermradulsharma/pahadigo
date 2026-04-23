@@ -1,5 +1,5 @@
-import { Inventory, Package, Booking } from '@/models/index.js';
-import { formatDateKey, normalizeAvailability, determineDayStatus, calculateEffectivePrice } from '@/helpers/InventoryHelper.js';
+import { Inventory, Package, Booking } from '@/core/Models/index.js';
+import { formatDateKey, normalizeAvailability, determineDayStatus, calculateEffectivePrice } from '@/core/Helpers/InventoryHelper.js';
 
 /**
  * InventoryService (Common)
@@ -73,15 +73,15 @@ class InventoryService {
     const end = new Date(endDate);
 
     for (let d = new Date(start); d <= end; d.setDate(d.getDate() + 1)) {
-        const dayData = await this._getEffectiveDay(vendorId, itemId, serviceType, d, inv);
+      const dayData = await this._getEffectiveDay(vendorId, itemId, serviceType, d, inv);
 
-        if (!dayData || dayData.status !== 'available' || dayData.availableUnits < unitsRequired) {
-            return {
-                available: false,
-                failedDate: d.toISOString().split('T')[0],
-                reason: !dayData ? 'Item configuration error' : (dayData.status !== 'available' ? 'Status: ' + dayData.status : 'Sold out')
-            };
-        }
+      if (!dayData || dayData.status !== 'available' || dayData.availableUnits < unitsRequired) {
+        return {
+          available: false,
+          failedDate: d.toISOString().split('T')[0],
+          reason: !dayData ? 'Item configuration error' : (dayData.status !== 'available' ? 'Status: ' + dayData.status : 'Sold out')
+        };
+      }
     }
     return { available: true };
   }
@@ -106,7 +106,7 @@ class InventoryService {
     }
 
     // Actual update logic would be here, but for brevity we reuse the pattern
-    return true; 
+    return true;
   }
 
   async releaseSlotsRange(vendorId, itemId, serviceType, startDate, endDate, unitsToRelease = 1) {

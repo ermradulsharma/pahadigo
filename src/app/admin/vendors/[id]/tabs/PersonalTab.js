@@ -1,7 +1,7 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getToken } from '@/helpers/authUtils';
+import { getToken } from '@/core/Helpers/authUtils';
 import VendorTabs from '@/components/admin/VendorTabs';
 import { DetailItem, StatusBadge, Badge, SidebarCard, UnifiedStatusMenu, ProgressItem, DocumentSection, MainPanelCard, VendorHeader, Modal } from '@/components/admin/VendorUIFragments';
 import { AlertTriangle, ShieldCheck, UserCheck, Zap, Award, Search, Check as CheckIcon, MapPin, Link2, User, Activity, Fingerprint, Globe, Code, Share2 } from 'lucide-react';

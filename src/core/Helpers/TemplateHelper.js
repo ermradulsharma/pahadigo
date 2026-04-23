@@ -7,26 +7,25 @@ import path from 'path';
  * @param {Object} data - Key-value pairs to replace in the template (e.g., { OTP: '123456' })
  */
 export const renderTemplate = async (templateName, data = {}) => {
-    try {
-        const rootPath = path.resolve(process.cwd(), 'src/core/Templates');
-        const filePath = path.join(rootPath, templateName);
-        
-        let templateContent = await fs.readFile(filePath, 'utf8');
+  try {
+    const rootPath = path.resolve(process.cwd(), 'src/core/Templates');
+    const filePath = path.join(rootPath, templateName);
 
-        // Automatic defaults
-        data.YEAR = data.YEAR || new Date().getFullYear();
+    let templateContent = await fs.readFile(filePath, 'utf8');
 
-        // Simple string replacement: {{KEY}} -> value
-        Object.keys(data).forEach(key => {
-            const regex = new RegExp(`{{${key}}}`, 'g');
-            templateContent = templateContent.replace(regex, data[key]);
-        });
+    // Automatic defaults
+    data.YEAR = data.YEAR || new Date().getFullYear();
 
-        return templateContent;
-    } catch (error) {
-        console.error("[TemplateHelper] Error rendering template:", error);
-        throw new Error("Failed to render email template.");
-    }
+    // Simple string replacement: {{KEY}} -> value
+    Object.keys(data).forEach(key => {
+      const regex = new RegExp(`{{${key}}}`, 'g');
+      templateContent = templateContent.replace(regex, data[key]);
+    });
+
+    return templateContent;
+  } catch (error) {
+    throw new Error("Failed to render email template.");
+  }
 };
 
 export default { renderTemplate };

@@ -1,5 +1,5 @@
-import Category from '@/models/Category.js';
-import { RESPONSE_MESSAGES } from '@/constants/index.js';
+import Category from '@/core/Models/Category.js';
+import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 
 /**
  * CategoryService (Common/General Role)
@@ -7,19 +7,19 @@ import { RESPONSE_MESSAGES } from '@/constants/index.js';
  */
 class CategoryService {
 
-    async getAllCategories() {
-        return await Category.find({ isActive: true }).sort({ id: 1 }).lean();
-    }
+  async getAllCategories() {
+    return await Category.find({ isActive: true }).sort({ id: 1 }).lean();
+  }
 
-    async getCategoryById(id) {
-        const category = await Category.findById(id).lean();
-        if (!category) throw new Error(RESPONSE_MESSAGES.CATEGORY.NOT_FOUND);
-        return category;
-    }
+  async getCategoryById(id) {
+    const category = await Category.findById(id).lean();
+    if (!category) throw new Error(RESPONSE_MESSAGES.CATEGORY.NOT_FOUND);
+    return category;
+  }
 
-    async getCategoryBySlug(slug) {
-        return await Category.findOne({ slug: slug.toLowerCase() }).lean();
-    }
+  async getCategoryBySlug(slug) {
+    return await Category.findOne({ slug: slug.toLowerCase() }).lean();
+  }
 }
 
 export default new CategoryService();

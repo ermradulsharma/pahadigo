@@ -1,35 +1,36 @@
-import Policy from '../../Models/Policy.js';
+import Policy from '@/core/Models/Policy.js';
+import { USER_ROLES } from '@/core/Constants/index.js';
 
 const defaultPolicies = [
     // Vendor Policies
     {
-        target: 'vendor',
+        target: USER_ROLES.VENDOR,
         type: 'privacy_policy',
         content: '<h1>Privacy Policy for Vendors</h1><p>We take your privacy seriously. This policy describes how we handle vendor data...</p>'
     },
     {
-        target: 'vendor',
+        target: USER_ROLES.VENDOR,
         type: 'terms_conditions',
         content: '<h1>Terms and Conditions for Vendors</h1><p>By registering as a vendor, you agree to the following terms...</p>'
     },
     // Traveller Policies
     {
-        target: 'traveller',
+        target: USER_ROLES.TRAVELLER,
         type: 'privacy_policy',
         content: '<h1>Privacy Policy for Travellers</h1><p>Your privacy is important. Here is how we protect traveller data...</p>'
     },
     {
-        target: 'traveller',
+        target: USER_ROLES.TRAVELLER,
         type: 'terms_conditions',
         content: '<h1>Terms and Conditions for Travellers</h1><p>As a traveller, your use of this platform is subject to these terms...</p>'
     },
     {
-        target: 'traveller',
+        target: USER_ROLES.TRAVELLER,
         type: 'refund_policy',
         content: '<h1>Refund Policy for Travellers</h1><p>Travellers are entitled to refunds under the following conditions...</p>'
     },
     {
-        target: 'traveller',
+        target: USER_ROLES.TRAVELLER,
         type: 'cancellation_policy',
         content: '<h1>Cancellation Policy for Travellers</h1><p>Bookings can be cancelled based on the following timeline...</p>'
     }

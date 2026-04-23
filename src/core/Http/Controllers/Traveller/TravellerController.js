@@ -1,10 +1,10 @@
-import SearchLog from '@/models/SearchLog.js';
-import Category from '@/models/Category.js';
-import Wishlist from '@/models/Wishlist.js';
-import PackageService from '@/services/Traveller/PackageService.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import { paginateArray } from '@/helpers/queryUtils.js';
-import Controller from '@/controllers/Controller.js';
+import SearchLog from '@/core/Models/SearchLog.js';
+import Category from '@/core/Models/Category.js';
+import Wishlist from '@/core/Models/Wishlist.js';
+import PackageService from '@/core/Services/Traveller/PackageService.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { paginateArray } from '@/core/Helpers/queryUtils.js';
+import Controller from '@/core/Controllers/Controller.js';
 
 /**
  * TravellerController (Traveller Role) - Handles Wishlist, Search History, and preferences.

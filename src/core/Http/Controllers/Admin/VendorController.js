@@ -1,7 +1,7 @@
 import VendorService from '@/core/Services/Admin/VendorService.js';
 import PackageService from '@/core/Services/Admin/PackageService.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '@/core/Http/Controllers/Controller.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import Controller from '@/core/Controllers/Controller.js';
 
 /**
  * VendorController (Admin Role)

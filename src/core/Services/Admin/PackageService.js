@@ -1,6 +1,6 @@
 import Package from '@/core/Models/Package.js';
 import User from '@/core/Models/User.js';
-import { RESPONSE_MESSAGES } from '@/constants/index.js';
+import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import mongoose from 'mongoose';
 
 /**

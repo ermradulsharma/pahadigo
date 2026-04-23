@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getToken } from '@/helpers/authUtils';
+import { getToken } from '@/core/Helpers/authUtils';
 import { Megaphone, Image as ImageIcon, Tag, Plus, Trash2, Calendar, Link2, DollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
 
@@ -83,7 +83,7 @@ function BannersManager() {
       });
       const data = await res.json();
       if (data.success) {
-        setBanners(prev => [data.data.banner, ...prev].sort((a,b) => a.position - b.position));
+        setBanners(prev => [data.data.banner, ...prev].sort((a, b) => a.position - b.position));
         setNewBanner({ title: '', imageUrl: '', link: '', position: 0 });
       } else {
         alert(data.error || "Failed to create banner");

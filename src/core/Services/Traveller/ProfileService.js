@@ -1,42 +1,42 @@
-import User from '@/models/User.js';
-import { uploadToCloudinary } from '@/helpers/cloudinary.js';
-import { RESPONSE_MESSAGES } from '@/constants/index.js';
+import User from '@/core/Models/User.js';
+import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
+import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 
 /**
  * ProfileService (Traveller Role)
  * Handles traveller-facing profile management, preferences, and avatar updates.
  */
 class ProfileService {
-    async getProfile(userId) {
-        return await User.findById(userId).select('-password');
-    }
+  async getProfile(userId) {
+    return await User.findById(userId).select('-password');
+  }
 
-    async updateProfile(userId, data) {
-        const allowedFields = ['name', 'phone', 'address', 'preferences'];
-        const updates = {};
-        
-        Object.keys(data).forEach(key => {
-            if (allowedFields.includes(key)) updates[key] = data[key];
-        });
+  async updateProfile(userId, data) {
+    const allowedFields = ['name', 'phone', 'address', 'preferences'];
+    const updates = {};
 
-        return await User.findByIdAndUpdate(
-            userId, 
-            { $set: updates }, 
-            { returnDocument: 'after' }
-        ).select('-password');
-    }
+    Object.keys(data).forEach(key => {
+      if (allowedFields.includes(key)) updates[key] = data[key];
+    });
 
-    async updateAvatar(userId, avatarFile) {
-        if (!avatarFile) throw new Error(RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
+    return await User.findByIdAndUpdate(
+      userId,
+      { $set: updates },
+      { returnDocument: 'after' }
+    ).select('-password');
+  }
 
-        const result = await uploadToCloudinary(avatarFile, `avatars/${userId}`);
-        
-        return await User.findByIdAndUpdate(
-            userId, 
-            { $set: { avatar: result.url } }, 
-            { returnDocument: 'after' }
-        ).select('-password');
-    }
+  async updateAvatar(userId, avatarFile) {
+    if (!avatarFile) throw new Error(RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
+
+    const result = await uploadToCloudinary(avatarFile, `avatars/${userId}`);
+
+    return await User.findByIdAndUpdate(
+      userId,
+      { $set: { avatar: result.url } },
+      { returnDocument: 'after' }
+    ).select('-password');
+  }
 }
 
 export default new ProfileService();

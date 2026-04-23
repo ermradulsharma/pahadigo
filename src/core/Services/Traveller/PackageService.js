@@ -1,9 +1,9 @@
 import mongoose from 'mongoose';
-import Package from '@/models/Package.js';
-import Vendor from '@/models/Vendor.js';
-import Category from '@/models/Category.js';
-import { CATEGORY_MAP, SCHEMA_KEYS } from '@/constants/categories.js';
-import MasterService from '@/services/MasterService.js';
+import Package from '@/core/Models/Package.js';
+import Vendor from '@/core/Models/Vendor.js';
+import Category from '@/core/Models/Category.js';
+import { CATEGORY_MAP, SCHEMA_KEYS } from '@/core/Constants/categories.js';
+import MasterService from '@/core/Services/MasterService.js';
 
 /**
  * PackageService (Traveller Role)
@@ -47,12 +47,12 @@ class PackageService {
     }
 
     const pkg = await Package.findOne({
-      $or: SCHEMA_KEYS.map(key => ({ [`${key}._id`]: queryId }))
+      $or: Object.values(SCHEMA_KEYS).map(key => ({ [`${key}._id`]: queryId }))
     }).lean();
 
     if (!pkg) return null;
 
-    for (const key of SCHEMA_KEYS) {
+    for (const key of Object.values(SCHEMA_KEYS)) {
       if (Array.isArray(pkg[key])) {
         const item = pkg[key].find(i => i._id.toString() === itemId);
         if (item) {
@@ -75,7 +75,7 @@ class PackageService {
       {
         $project: {
           items: {
-            $concatArrays: SCHEMA_KEYS.map(key => {
+            $concatArrays: Object.values(SCHEMA_KEYS).map(key => {
               return {
                 $map: {
                   input: { $ifNull: [`$${key}`, []] },
@@ -120,7 +120,7 @@ class PackageService {
         $project: {
           vendor: 1,
           items: {
-            $concatArrays: SCHEMA_KEYS.map(key => {
+            $concatArrays: Object.values(SCHEMA_KEYS).map(key => {
               return {
                 $map: {
                   input: { $ifNull: [`$${key}`, []] },
@@ -277,7 +277,7 @@ class PackageService {
       $project: {
         vendorProfile: 1,
         items: {
-          $concatArrays: SCHEMA_KEYS.map(key => ({
+          $concatArrays: Object.values(SCHEMA_KEYS).map(key => ({
             $map: {
               input: { $ifNull: [`$catalog.${key}`, []] },
               as: "item",

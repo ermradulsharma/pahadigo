@@ -1,13 +1,13 @@
-import Vendor from '@/models/Vendor.js';
-import Category from '@/models/Category.js';
-import { mapToGeoJSON } from '@/helpers/geoUtils.js';
-import User from '@/models/User.js';
-import Review from '@/models/Review.js';
-import Booking from '@/models/Booking.js';
-import Dispute from '@/models/Dispute.js';
-import Package from '@/models/Package.js';
-import VendorClosure from '@/models/VendorClosure.js';
-import { STATUS } from '@/constants/index.js';
+import Vendor from '@/core/Models/Vendor.js';
+import Category from '@/core/Models/Category.js';
+import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
+import User from '@/core/Models/User.js';
+import Review from '@/core/Models/Review.js';
+import Booking from '@/core/Models/Booking.js';
+import Dispute from '@/core/Models/Dispute.js';
+import Package from '@/core/Models/Package.js';
+import VendorClosure from '@/core/Models/VendorClosure.js';
+import { STATUS } from '@/core/Constants/index.js';
 
 class BusinessService {
   // Constructor

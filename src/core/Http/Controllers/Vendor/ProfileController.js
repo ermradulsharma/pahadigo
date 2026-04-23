@@ -1,11 +1,11 @@
-import User from '@/models/User.js';
-import Vendor from '@/models/Vendor.js';
-import { BaseAuthService } from '@/services/Auth/index.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES, STATUS } from '@/constants/index.js';
-import { uploadToCloudinary } from '@/helpers/cloudinary.js';
-import { transformAuthResponse } from '@/helpers/index.js';
-import { mapToGeoJSON } from '@/helpers/geoUtils.js';
-import Controller from '@/controllers/Controller.js';
+import User from '@/core/Models/User.js';
+import Vendor from '@/core/Models/Vendor.js';
+import { BaseAuthService } from '@/core/Services/Auth/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES, STATUS } from '@/core/Constants/index.js';
+import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
+import { transformAuthResponse } from '@/core/Helpers/index.js';
+import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
+import Controller from '@/core/Controllers/Controller.js';
 
 /**
  * ProfileController (Vendor Role) - Specialized management of
@@ -70,7 +70,7 @@ class ProfileController extends Controller {
       if (updates.medicalConditions && typeof updates.medicalConditions === 'string') {
         updates.medicalConditions = updates.medicalConditions.split(',').map(item => item.trim()).filter(Boolean);
       }
-      
+
       if (updates.address) {
         mapToGeoJSON(updates.address, 'location');
       }

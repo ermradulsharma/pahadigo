@@ -1,8 +1,8 @@
-import InventoryService from '@/services/Vendor/InventoryService.js';
-import PackageService from '@/services/Vendor/PackageService.js';
-import BusinessService from '@/services/Vendor/BusinessService.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '@/controllers/Controller.js';
+import InventoryService from '@/core/Services/Vendor/InventoryService.js';
+import PackageService from '@/core/Services/Vendor/PackageService.js';
+import BusinessService from '@/core/Services/Vendor/BusinessService.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import Controller from '@/core/Controllers/Controller.js';
 
 /**
  * InventoryController (Vendor Role) - Handles stocks, availability, and smart pricing overrides.

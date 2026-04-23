@@ -1,5 +1,8 @@
 import mongoose from "mongoose";
-import CategoryDocument from '../../Models/CategoryDocument.js';
+import CategoryDocument from '@/core/Models/CategoryDocument.js';
+import { DEFAULTS } from "@/core/Constants/index.js";
+import { CATEGORY_SLUGS } from "@/core/Constants/categories.js";
+import connectDB from "@/core/Config/db.js";
 
 const slugify = (text) => {
   return text.toString().toLowerCase()
@@ -12,7 +15,7 @@ const slugify = (text) => {
 
 const DATA = [
   {
-    category_slug: "homestay",
+    category_slug: CATEGORY_SLUGS.HOMESTAY,
     documents: [
       "Homestay Registration Certificate",
       "FSSAI License",
@@ -24,10 +27,10 @@ const DATA = [
       "Trade License",
       "Waste Management Declaration"
     ],
-    isActive: true
+    isActive: DEFAULTS.TRUE
   },
   {
-    category_slug: "hotel",
+    category_slug: CATEGORY_SLUGS.HOTEL,
     documents: [
       "Hotel License",
       "FSSAI License",
@@ -39,10 +42,10 @@ const DATA = [
       "Health Trade License",
       "Water Testing Report"
     ],
-    isActive: true
+    isActive: DEFAULTS.TRUE
   },
   {
-    category_slug: "camping",
+    category_slug: CATEGORY_SLUGS.CAMPING,
     documents: [
       "Business License",
       "Safety & Emergency Plan",
@@ -53,10 +56,10 @@ const DATA = [
       "First Aid & Medical Tie-up Proof",
       "Staff Training Certificate"
     ],
-    isActive: true
+    isActive: DEFAULTS.TRUE
   },
   {
-    category_slug: "trekking",
+    category_slug: CATEGORY_SLUGS.TREKKING,
     documents: [
       "Adventure Sports License",
       "Guide Certification",
@@ -67,10 +70,10 @@ const DATA = [
       "Participant Medical Fitness Form",
       "Equipment Safety Check Certificate"
     ],
-    isActive: true
+    isActive: DEFAULTS.TRUE
   },
   {
-    category_slug: "rafting",
+    category_slug: CATEGORY_SLUGS.RAFTING,
     documents: [
       "River Rafting Permit",
       "Technical Safety Certificate",
@@ -81,10 +84,10 @@ const DATA = [
       "Rescue Staff Certification",
       "Emergency Evacuation Plan"
     ],
-    isActive: true
+    isActive: DEFAULTS.TRUE
   },
   {
-    category_slug: "bungee-jumping",
+    category_slug: CATEGORY_SLUGS.BUNGEE_JUMPING,
     documents: [
       "Adventure Sports License",
       "Safety Audit Report",
@@ -95,10 +98,10 @@ const DATA = [
       "Medical Emergency Tie-up",
       "Participant Medical Fitness Form"
     ],
-    isActive: true
+    isActive: DEFAULTS.TRUE
   },
   {
-    category_slug: "bike-scooter-rental",
+    category_slug: CATEGORY_SLUGS.BIKE_SCOOTER_RENTAL,
     documents: [
       "Business License",
       "RTO Permit",
@@ -109,10 +112,10 @@ const DATA = [
       "Rental Agreement Format",
       "Customer ID Verification Policy"
     ],
-    isActive: true
+    isActive: DEFAULTS.TRUE
   },
   {
-    category_slug: "custom-trip",
+    category_slug: CATEGORY_SLUGS.CUSTOM_TRIP,
     documents: [
       "Business License",
       "Commercial Vehicle Permit",
@@ -122,10 +125,10 @@ const DATA = [
       "Trip Agreement",
       "Passenger Manifest"
     ],
-    isActive: true
+    isActive: DEFAULTS.TRUE
   },
   {
-    category_slug: "chardham-tour",
+    category_slug: CATEGORY_SLUGS.CHARDHAM_TOUR,
     documents: [
       "Travel Agent Permit",
       "Passenger Insurance Policy",
@@ -135,7 +138,7 @@ const DATA = [
       "Medical Emergency Plan",
       "Yatra Registration Proof"
     ],
-    isActive: true
+    isActive: DEFAULTS.TRUE
   }
 ];
 
@@ -148,7 +151,7 @@ export const seedCategoryDocuments = async () => {
       });
 
       if (document) {
-        document.isMandatory = false;
+        document.isMandatory = DEFAULTS.FALSE;
         document.isActive = service.isActive;
         await document.save();
       } else {
@@ -156,23 +159,13 @@ export const seedCategoryDocuments = async () => {
         let uniqueSlug = baseSlug;
         let counter = 2;
 
-        while (true) {
-          const existingSlugDoc = await CategoryDocument.findOne({
-            slug: uniqueSlug,
-            category_slug: service.category_slug
-          });
+        while (DEFAULTS.TRUE) {
+          const existingSlugDoc = await CategoryDocument.findOne({ slug: uniqueSlug, category_slug: service.category_slug });
           if (!existingSlugDoc) break;
           uniqueSlug = `${baseSlug}-${counter}`;
           counter++;
         }
-
-        await CategoryDocument.create({
-          category_slug: service.category_slug,
-          name: docName,
-          slug: uniqueSlug,
-          isMandatory: false,
-          isActive: service.isActive
-        });
+        await CategoryDocument.create({ category_slug: service.category_slug, name: docName, slug: uniqueSlug, isMandatory: DEFAULTS.FALSE, isActive: service.isActive });
       }
     }
   }

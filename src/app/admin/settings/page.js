@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getToken } from '@/helpers/authUtils';
+import { getToken } from '@/core/Helpers/authUtils';
 import { Settings as SettingsIcon, Mail, BellRing, Smartphone, Key, CreditCard, Bug, Database, ShieldCheck, Fingerprint, AppWindow, Save, CheckCircle, AlertTriangle, Eye, EyeOff, Cloud, Lock } from 'lucide-react';
 
 const Card = ({ title, icon: Icon, children }) => (

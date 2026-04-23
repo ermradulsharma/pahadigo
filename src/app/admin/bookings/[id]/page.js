@@ -1,6 +1,6 @@
 'use client';
 import { useState, useEffect, use } from 'react';
-import { getToken } from '@/helpers/authUtils';
+import { getToken } from '@/core/Helpers/authUtils';
 import {
   ArrowLeft, Calendar, User, ShieldCheck, CreditCard,
   MapPin, Clock, FileText, CheckCircle2, AlertCircle,

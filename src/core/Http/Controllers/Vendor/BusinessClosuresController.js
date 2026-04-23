@@ -1,7 +1,7 @@
-import ClosureService from '@/services/Vendor/ClosureService.js';
-import BusinessService from '@/services/Vendor/BusinessService.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '@/controllers/Controller.js';
+import ClosureService from '@/core/Services/Vendor/ClosureService.js';
+import BusinessService from '@/core/Services/Vendor/BusinessService.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import Controller from '@/core/Controllers/Controller.js';
 
 /**
  * BusinessClosuresController (Vendor Role) - Specialized management of
@@ -9,47 +9,47 @@ import Controller from '@/controllers/Controller.js';
  */
 class BusinessClosuresController extends Controller {
 
-    // GET /vendor/business/closures
-    async getClosures(req) {
-        try {
-            const closures = await ClosureService.getClosurePeriods(req.user.id);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CLOSURE.FETCHED, closures);
-        } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
-        }
+  // GET /vendor/business/closures
+  async getClosures(req) {
+    try {
+      const closures = await ClosureService.getClosurePeriods(req.user.id);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CLOSURE.FETCHED, closures);
+    } catch (error) {
+      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }
+  }
 
-    // POST /vendor/business/closures
-    async createClosure(req) {
-        try {
-            const body = req.payload;
-            const result = await ClosureService.createClosurePeriod(req.user.id, body);
-            return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.CLOSURE.CREATED, result);
-        } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
-        }
+  // POST /vendor/business/closures
+  async createClosure(req) {
+    try {
+      const body = req.payload;
+      const result = await ClosureService.createClosurePeriod(req.user.id, body);
+      return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.CLOSURE.CREATED, result);
+    } catch (error) {
+      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }
+  }
 
-    // PATCH /vendor/business/closures/:id
-    async updateClosure(req, { params }) {
-        try {
-            const body = req.payload;
-            const result = await ClosureService.updateClosurePeriod(req.user.id, params.id, body);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CLOSURE.UPDATED, result);
-        } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
-        }
+  // PATCH /vendor/business/closures/:id
+  async updateClosure(req, { params }) {
+    try {
+      const body = req.payload;
+      const result = await ClosureService.updateClosurePeriod(req.user.id, params.id, body);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CLOSURE.UPDATED, result);
+    } catch (error) {
+      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }
+  }
 
-    // DELETE /vendor/business/closures/:id
-    async deleteClosure(req, { params }) {
-        try {
-            await ClosureService.removeClosurePeriod(req.user.id, params.id);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CLOSURE.DELETED);
-        } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
-        }
+  // DELETE /vendor/business/closures/:id
+  async deleteClosure(req, { params }) {
+    try {
+      await ClosureService.removeClosurePeriod(req.user.id, params.id);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CLOSURE.DELETED);
+    } catch (error) {
+      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }
+  }
 }
 
 const businessClosuresController = new BusinessClosuresController();

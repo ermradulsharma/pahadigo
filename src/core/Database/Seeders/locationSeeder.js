@@ -1,6 +1,7 @@
-import CountryModel from '../../Models/Country.js';
-import StateModel from '../../Models/State.js';
+import CountryModel from '@/core/Models/Country.js';
+import StateModel from '@/core/Models/State.js';
 import { Country, State } from 'country-state-city';
+import { STATUS } from '@/core/Constants/index.js';
 
 export const seedLocations = async () => {
     try {
@@ -20,7 +21,7 @@ export const seedLocations = async () => {
                     isoCode: c.isoCode,
                     phoneCode: c.phonecode.startsWith('+') ? c.phonecode : `+${c.phonecode}`,
                     currency: c.currency,
-                    status: 'active'
+                    status: STATUS.ACTIVE
                 };
 
                 const countryDoc = await CountryModel.findOneAndUpdate(
@@ -47,7 +48,7 @@ export const seedLocations = async () => {
                                     name: s.name,
                                     code: s.isoCode,
                                     country: countryDoc._id,
-                                    status: 'active'
+                                    status: STATUS.ACTIVE
                                 }
                             },
                             upsert: true

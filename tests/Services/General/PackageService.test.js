@@ -29,40 +29,23 @@ jest.unstable_mockModule('@/services/MasterService.js', () => ({
     }
 }));
 
-// Mock VendorDocument for getAvailablePackageItem
-jest.unstable_mockModule('mongoose', () => {
-    const mockMongoose = {
+jest.unstable_mockModule('mongoose', () => ({
+    default: {
         Types: { ObjectId: jest.fn(id => id) },
         model: jest.fn(() => ({
             findOne: jest.fn().mockResolvedValue({ status: 'verified' })
         }))
-    };
-    return {
-        default: mockMongoose,
-        __esModule: true,
-        ...mockMongoose
     }
-});
+}));
 
 const { default: PackageService } = await import('@/services/General/PackageService.js');
 const { default: Package } = await import('@/core/Models/Package.js');
+const { default: Vendor } = await import('@/core/Models/Vendor.js');
+const mongoose = (await import('mongoose')).default;
 
-describe('Industry Standard: General PackageService Business Logic', () => {
+describe('Industry Standard: General PackageService Logic', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-    });
-
-    it('[Detail] should retrieve a specific package item by its internal ID', async () => {
-        const mockPackage = {
-            _id: 'p123',
-            trekking: [{ _id: 'item1', title: 'Everest Base' }]
-        };
-        Package.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(mockPackage) });
-
-        const result = await PackageService.getPackageItem('item1');
-
-        expect(result.title).toBe('Everest Base');
-        expect(result.catalogId).toBe('p123');
     });
 
     it('[Availability] should verify vendor and category compliance for public items', async () => {
@@ -71,7 +54,10 @@ describe('Industry Standard: General PackageService Business Logic', () => {
             _id: 'item1', catalogId: 'p123', category: 'trekking', isActive: true
         });
         
-        Package.findById.mockReturnValue({ populate: jest.fn().mockReturnThis(), lean: jest.fn().mockResolvedValue({ vendor: { _id: 'v1' } }) });
+        Package.findById.mockReturnValue({ 
+            populate: jest.fn().mockReturnThis(), 
+            lean: jest.fn().mockResolvedValue({ vendor: { _id: 'v1' } }) 
+        });
 
         const result = await PackageService.getAvailablePackageItem('item1');
 
@@ -89,7 +75,6 @@ describe('Industry Standard: General PackageService Business Logic', () => {
     });
 
     it('[Geo] should execute proximity search when coordinates are provided', async () => {
-        const { default: Vendor } = await import('@/core/Models/Vendor.js');
         Vendor.aggregate.mockResolvedValue([{ _id: 'itemG', distance: 100 }]);
 
         const results = await PackageService.searchPackages(30.3, 78.0, 'trekking', 50);

@@ -1,1 +1,1 @@
-export * from './appConfig.js';
+export * from '@/core/Lib/appConfig.js';

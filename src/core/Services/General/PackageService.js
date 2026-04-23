@@ -2,8 +2,8 @@ import mongoose from 'mongoose';
 import Package from '@/core/Models/Package.js';
 import Vendor from '@/core/Models/Vendor.js';
 import Category from '@/core/Models/Category.js';
-import { CATEGORY_MAP, SCHEMA_KEYS } from '@/constants/categories.js';
-import MasterService from '@/services/MasterService.js';
+import { CATEGORY_MAP, SCHEMA_KEYS } from '@/core/Constants/categories.js';
+import MasterService from '@/core/Services/MasterService.js';
 
 /**
  * PackageService (General Role)
@@ -46,12 +46,12 @@ class PackageService {
     }
 
     const pkg = await Package.findOne({
-      $or: SCHEMA_KEYS.map(key => ({ [`${key}._id`]: queryId }))
+      $or: Object.values(SCHEMA_KEYS).map(key => ({ [`${key}._id`]: queryId }))
     }).lean();
 
     if (!pkg) return null;
 
-    for (const key of SCHEMA_KEYS) {
+    for (const key of Object.values(SCHEMA_KEYS)) {
       if (Array.isArray(pkg[key])) {
         const item = pkg[key].find(i => i._id.toString() === itemId);
         if (item) {
@@ -74,7 +74,7 @@ class PackageService {
       {
         $project: {
           items: {
-            $concatArrays: SCHEMA_KEYS.map(key => {
+            $concatArrays: Object.values(SCHEMA_KEYS).map(key => {
               return {
                 $map: {
                   input: { $ifNull: [`$${key}`, []] },
@@ -105,7 +105,7 @@ class PackageService {
 
   async getAvailablePackages(query = '') {
     const pipeline = [];
-    
+
     // 1. Initial Match using Text Index (High Performance)
     if (query) {
       pipeline.push({ $match: { $text: { $search: query } } });
@@ -113,23 +113,23 @@ class PackageService {
 
     // 2. Formatting & Unwinding
     pipeline.push({
-        $project: {
-          vendor: 1,
-          items: {
-            $concatArrays: SCHEMA_KEYS.map(key => ({
-                $map: {
-                  input: { $ifNull: [`$${key}`, []] },
-                  as: "item",
-                  in: { 
-                    $mergeObjects: [
-                      "$$item", 
-                      { category: key, catalogId: "$_id" }
-                    ] 
-                  }
-                }
-            }))
-          }
+      $project: {
+        vendor: 1,
+        items: {
+          $concatArrays: Object.values(SCHEMA_KEYS).map(key => ({
+            $map: {
+              input: { $ifNull: [`$${key}`, []] },
+              as: "item",
+              in: {
+                $mergeObjects: [
+                  "$$item",
+                  { category: key, catalogId: "$_id" }
+                ]
+              }
+            }
+          }))
         }
+      }
     });
     pipeline.push({ $unwind: "$items" });
 
@@ -276,7 +276,7 @@ class PackageService {
       $project: {
         vendorProfile: 1,
         items: {
-          $concatArrays: SCHEMA_KEYS.map(key => ({
+          $concatArrays: Object.values(SCHEMA_KEYS).map(key => ({
             $map: {
               input: { $ifNull: [`$catalog.${key}`, []] },
               as: "item",
@@ -290,7 +290,7 @@ class PackageService {
 
     // 4. Verification & Filtering
     pipeline.push(...this.masterService.getCategoryVerificationStages('items', 'vendorProfile._id'));
-    
+
     const finalMatch = { "items.isActive": true };
     if (targetSchemaKey) {
       finalMatch["items.category"] = { $regex: new RegExp(`^${targetSchemaKey}$`, 'i') };

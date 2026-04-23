@@ -3,7 +3,7 @@ import { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import { VendorHeader, StatusBadge } from '@/components/admin/VendorUIFragments';
 import PackageCard from '@/components/admin/PackageCard';
-import { getToken } from '@/helpers/authUtils';
+import { getToken } from '@/core/Helpers/authUtils';
 import { Layers, Mountain, Home, Car, Tent, Map, Zap, Bike, Building, Waves, Milestone, Luggage, FileText, Search, X, Check, X as XIcon, Clock, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
 

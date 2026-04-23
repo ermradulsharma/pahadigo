@@ -1,11 +1,11 @@
-import BusinessService from '@/services/Vendor/BusinessService.js';
-import PackageService from '@/services/Vendor/PackageService.js';
-import { CATEGORY_MAP } from '@/constants/categories.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '@/controllers/Controller.js';
-import { uploadToCloudinary } from '@/helpers/cloudinary.js';
-import { VendorService } from '@/services/Admin';
-import Vendor from '@/models/Vendor.js';
+import BusinessService from '@/core/Services/Vendor/BusinessService.js';
+import PackageService from '@/core/Services/Vendor/PackageService.js';
+import { CATEGORY_MAP } from '@/core/Constants/categories.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import Controller from '@/core/Controllers/Controller.js';
+import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
+import { VendorService } from '@/core/Services/Admin/index.js';
+import Vendor from '@/core/Models/Vendor.js';
 
 /**
  * PackageController (Vendor Role) - Comprehensive management of vendor catalogs and service items.
@@ -52,7 +52,7 @@ class PackageController extends Controller {
       const userId = req.user.id;
       const vendor = await Vendor.findOne({ user: userId }).select("_id");
       if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-      
+
       const pkg = await PackageService.getPackageById(params.id);
 
       if (!pkg || pkg.vendor.toString() !== vendor._id.toString()) {
@@ -269,7 +269,7 @@ class PackageController extends Controller {
       const userId = req.user.id;
       const vendor = await Vendor.findOne({ user: userId }).select("_id");
       if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-      
+
       const category = (body.category || '').trim();
       const { isActive } = body;
 

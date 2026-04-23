@@ -1,8 +1,8 @@
 import mongoose from 'mongoose';
-import Booking from '@/models/Booking.js';
-import Package from '@/models/Package.js';
-import NotificationService from '@/services/General/NotificationService.js';
-import { RESPONSE_MESSAGES, BOOKING_STATUS, PAYMENT_STATUS } from '@/constants/index.js';
+import Booking from '@/core/Models/Booking.js';
+import Package from '@/core/Models/Package.js';
+import NotificationService from '@/core/Services/General/NotificationService.js';
+import { RESPONSE_MESSAGES, BOOKING_STATUS, PAYMENT_STATUS } from '@/core/Constants/index.js';
 
 class BookingService {
   /**
@@ -135,7 +135,7 @@ class BookingService {
     }
 
     booking.status = BOOKING_STATUS.CANCELLED;
-    
+
     // If it was already paid, it goes to Refund Queue
     if (booking.paymentStatus === PAYMENT_STATUS.PAID) {
       booking.paymentStatus = PAYMENT_STATUS.REFUND_PENDING;

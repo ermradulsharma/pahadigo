@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { getToken } from '@/helpers/authUtils';
+import { getToken } from '@/core/Helpers/authUtils';
 import { Search, Plus, Eye, Package as PackageIcon, ShieldAlert, CheckCircle2, Factory, X, User as UserIcon, Mail, Phone, Lock, Trash2 } from 'lucide-react';
 import CyberTable from '@/components/admin/CyberTable';
 

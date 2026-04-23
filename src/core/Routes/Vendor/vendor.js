@@ -1,19 +1,19 @@
-import BusinessController from '@/controllers/Vendor/BusinessController.js';
-import ProfileController from '@/controllers/Vendor/ProfileController.js';
-import BusinessDocumentController from '@/controllers/Vendor/BusinessDocumentController.js';
-import BusinessClosuresController from '@/controllers/Vendor/BusinessClosuresController.js';
-import BankController from '@/controllers/Vendor/BankController.js';
-import CategoryController from '@/controllers/Vendor/CategoryController.js';
+import BusinessController from '@/core/Controllers/Vendor/BusinessController.js';
+import ProfileController from '@/core/Controllers/Vendor/ProfileController.js';
+import BusinessDocumentController from '@/core/Controllers/Vendor/BusinessDocumentController.js';
+import BusinessClosuresController from '@/core/Controllers/Vendor/BusinessClosuresController.js';
+import BankController from '@/core/Controllers/Vendor/BankController.js';
+import CategoryController from '@/core/Controllers/Vendor/CategoryController.js';
 
-import PackageController from '@/controllers/Vendor/PackageController.js';
-import BookingController from '@/controllers/Vendor/BookingController.js';
-import InventoryController from '@/controllers/Vendor/InventoryController.js';
-import AuthController from '@/controllers/Auth/AuthController.js';
-import SOSController from '@/controllers/General/SOSController.js';
+import PackageController from '@/core/Controllers/Vendor/PackageController.js';
+import BookingController from '@/core/Controllers/Vendor/BookingController.js';
+import InventoryController from '@/core/Controllers/Vendor/InventoryController.js';
+import AuthController from '@/core/Controllers/Auth/AuthController.js';
+import SOSController from '@/core/Controllers/General/SOSController.js';
 
-import Router from '../Router.js';
-import { USER_ROLES } from '@/constants/index.js';
-import { wrap } from '../helpers.js';
+import Router from '@/core/Routes/Router.js';
+import { USER_ROLES } from '@/core/Constants/index.js';
+import { wrap } from '@/core/Routes/helpers.js';
 
 /**
  * Vendor Routes - Porto-Nested Strictly as per legacy manifest.

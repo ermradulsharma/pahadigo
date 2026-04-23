@@ -1,6 +1,6 @@
 "use client";
 import { useState, useEffect } from 'react';
-import { getToken } from '@/helpers/authUtils';
+import { getToken } from '@/core/Helpers/authUtils';
 import { User, Shield, HardDrive, Cpu, Terminal, MapPin, Settings, Globe, Navigation, CheckCircle, AlertTriangle } from 'lucide-react';
 
 export default function AdminProfilePage() {

@@ -1,6 +1,6 @@
-import ReviewService from '../../../Services/Admin/ReviewService.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
-import Controller from '@/controllers/Controller.js';
+import ReviewService from '@/core/Services/Admin/ReviewService.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import Controller from '@/core/Controllers/Controller.js';
 
 /**
  * ReviewController (Admin Role)

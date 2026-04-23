@@ -1,14 +1,14 @@
-import { AdminAuthService, UserAuthService, BaseAuthService } from '@/services/Auth/index.js';
-import OTPService from '@/services/Auth/User/OTPService.js';
-import { parseBody } from '@/helpers/parseBody.js';
-import { parseNestedFormData } from '@/helpers/parseNestedFormData.js';
-import { uploadToCloudinary } from '@/helpers/cloudinary.js';
-import { schemas, validate } from '@/helpers/validation.js';
-import User from '@/models/User.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES, USER_ROLES } from '@/constants/index.js';
-import { transformAuthResponse } from '@/helpers/index.js';
+import { AdminAuthService, UserAuthService, BaseAuthService } from '@/core/Services/Auth/index.js';
+import OTPService from '@/core/Services/Auth/User/OTPService.js';
+import { parseBody } from '@/core/Helpers/parseBody.js';
+import { parseNestedFormData } from '@/core/Helpers/parseNestedFormData.js';
+import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
+import { schemas, validate } from '@/core/Helpers/validation.js';
+import User from '@/core/Models/User.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES, USER_ROLES } from '@/core/Constants/index.js';
+import { transformAuthResponse } from '@/core/Helpers/index.js';
 import AuthEvents from '@/core/Events/AuthEvents.js';
-import Controller from '@/controllers/Controller.js';
+import Controller from '@/core/Controllers/Controller.js';
 
 /**
  * AuthController - Handles all authentication related logic.

@@ -1,7 +1,7 @@
-import SOSService from '@/services/General/SOSService.js';
-import TravellerSOSService from '@/services/Traveller/SOSService.js';
-import { successResponse, errorResponse } from '@/helpers/response.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/constants/index.js';
+import SOSService from '@/core/Services/General/SOSService.js';
+import TravellerSOSService from '@/core/Services/Traveller/SOSService.js';
+import { successResponse, errorResponse } from '@/core/Helpers/response.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 
 /**
  * SOSController (General/Shared Role)

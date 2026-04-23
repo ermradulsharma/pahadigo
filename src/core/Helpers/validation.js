@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { RESPONSE_MESSAGES } from '@/constants/index.js';
+import { RESPONSE_MESSAGES, USER_ROLES, DEFAULTS } from '@/core/Constants/index.js';
 
 /**
  * Common validation schemas for the Pahadigo platform.
@@ -15,7 +15,7 @@ export const schemas = {
     otpSend: z.object({
         email: z.string().email(RESPONSE_MESSAGES.VALIDATION.INVALID_EMAIL).optional(),
         phone: z.string().min(10, 'Phone must be at least 10 digits').optional(),
-        role: z.enum(['traveller', 'vendor']).optional()
+        role: z.enum([USER_ROLES.TRAVELLER, USER_ROLES.VENDOR]).optional()
     }).refine(data => data.email || data.phone, {
         message: RESPONSE_MESSAGES.VALIDATION.EITHER_IDENTIFIER_REQUIRED,
         path: ['email'] // attach error to email field
@@ -26,8 +26,8 @@ export const schemas = {
         email: z.string().email().optional(),
         phone: z.string().optional(),
         otp: z.string().min(4, RESPONSE_MESSAGES.VALIDATION.OTP_MIN_LENGTH),
-        targetRole: z.enum(['traveller', 'vendor']).optional(),
-        role: z.enum(['traveller', 'vendor']).optional()
+        targetRole: z.enum([USER_ROLES.TRAVELLER, USER_ROLES.VENDOR]).optional(),
+        role: z.enum([USER_ROLES.TRAVELLER, USER_ROLES.VENDOR]).optional()
     }).refine(data => data.identifier || data.email || data.phone, {
         message: RESPONSE_MESSAGES.VALIDATION.EITHER_IDENTIFIER_REQUIRED,
         path: ['identifier']
@@ -43,7 +43,7 @@ export const schemas = {
 
     socialLogin: z.object({
         token: z.string().min(1, 'Token is required'),
-        role: z.enum(['traveller', 'vendor']).optional()
+        role: z.enum([USER_ROLES.TRAVELLER, USER_ROLES.VENDOR]).optional()
     }),
 
     // Booking Schemas
@@ -76,23 +76,23 @@ export const schemas = {
 
 /**
  * Higher-order function to validate data against a Zod schema.
- * @param {z.ZodSchema} schema 
- * @param {Object} data 
+ * @param {z.ZodSchema} schema
+ * @param {Object} data
  * @returns {Object} { success: boolean, data: any, error: string }
  */
 export const validate = (schema, data) => {
     try {
         const validData = schema.parse(data);
-        return { success: true, data: validData };
+        return { success: DEFAULTS.TRUE, data: validData };
     } catch (error) {
         if (error instanceof z.ZodError || error.name === 'ZodError') {
             const issues = error.errors || error.issues || [];
             return {
-                success: false,
+                success: DEFAULTS.FALSE,
                 error: issues.map(err => `${(err.path || []).join('.')}: ${err.message}`).join(', ') || RESPONSE_MESSAGES.ERROR.VALIDATION
             };
         }
-        return { success: false, error: RESPONSE_MESSAGES.ERROR.VALIDATION };
+        return { success: DEFAULTS.FALSE, error: RESPONSE_MESSAGES.ERROR.VALIDATION };
     }
 };
 

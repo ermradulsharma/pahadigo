@@ -1,14 +1,14 @@
-import User from '@/models/User.js';
-import Vendor from '@/models/Vendor.js';
-import VendorDocument from '@/models/VendorDocument.js';
-import VendorPackage from '@/models/Package.js';
-import VerifiedIdentity from '@/models/VerifiedIdentity.js';
-import OCRService from '@/services/Admin/OCRService.js';
-import NotificationService from '@/services/General/NotificationService.js';
-import BusinessService from '@/services/Vendor/BusinessService.js';
-import { RESPONSE_MESSAGES, USER_ROLES, STATUS, VERIFICATION_STATUS } from '@/constants/index.js';
-import { mapToGeoJSON } from '@/helpers/geoUtils.js';
-import AuditService from './AuditService.js';
+import User from '@/core/Models/User.js';
+import Vendor from '@/core/Models/Vendor.js';
+import VendorDocument from '@/core/Models/VendorDocument.js';
+import VendorPackage from '@/core/Models/Package.js';
+import VerifiedIdentity from '@/core/Models/VerifiedIdentity.js';
+import OCRService from '@/core/Services/Admin/OCRService.js';
+import NotificationService from '@/core/Services/General/NotificationService.js';
+import BusinessService from '@/core/Services/Vendor/BusinessService.js';
+import { RESPONSE_MESSAGES, USER_ROLES, STATUS, VERIFICATION_STATUS } from '@/core/Constants/index.js';
+import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
+import AuditService from '@/core/Services/Admin/AuditService.js';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 
