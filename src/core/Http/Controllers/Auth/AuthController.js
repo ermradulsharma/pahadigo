@@ -20,28 +20,36 @@ class AuthController extends Controller {
   // POST /auth/otp
   async initiateOTP(req) {
     try {
-      const body = await parseBody(req);
+      const body = req.payload;
       const { email, phone, role, termsAccepted } = body;
 
+      // Basic presence checks
       if (!email && !phone) {
         return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.EITHER_IDENTIFIER_REQUIRED);
       }
+
       if (!(termsAccepted === true || termsAccepted === 'true')) {
         return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.TERMS_REQUIRED);
       }
 
-      const identifier = email ? email.toLowerCase().trim() : phone.trim();
-      const termsAndConditionsAccepted = termsAccepted === 'true' || termsAccepted === true;
+      // Schema Validation
+      const validationResult = validate(schemas.otpSend, { email, phone, role });
+      if (!validationResult.success) {
+        return this.error(HTTP_STATUS.BAD_REQUEST, validationResult.error);
+      }
+
+      const { email: validEmail, phone: validPhone, role: validRole } = validationResult.data;
+      const identifier = validEmail ? validEmail.toLowerCase().trim() : validPhone.trim();
 
       const otp = await UserAuthService.initiateOTP({
         identifier,
-        role: role ? role.toLowerCase() : 'traveller',
-        termsAndConditionsAccepted
+        role: validRole || 'traveller',
+        termsAccepted: true
       });
 
-      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.OTP_SENT, { otp, email, phone });
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.OTP_SENT, { otp, email: validEmail, phone: validPhone });
     } catch (error) {
-      console.error("[AuthController.sendOtp] Error:", error);
+      console.error("[AuthController.initiateOTP] Error:", error);
       if (error.message === RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD) {
         return this.error(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
       }

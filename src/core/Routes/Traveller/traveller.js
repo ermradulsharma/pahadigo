@@ -21,6 +21,7 @@ const travellerRoutes = [
         { method: 'PATCH', path: '/update', handler: wrap(() => AuthController, 'updateUserProfile') },
         { method: 'DELETE', path: '/delete', handler: wrap(() => AuthController, 'deleteAccount') },
         { method: 'POST', path: '/become-vendor', handler: wrap(() => AuthController, 'upgradeToVendor') },
+        { method: 'PATCH', path: '/emergency-contacts', handler: wrap(() => SOSController, 'updateEmergencyContacts') },
 
         // Operational Bookings Group
         ...Router.group({ prefix: '/booking' }, [

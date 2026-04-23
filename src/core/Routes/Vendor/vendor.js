@@ -28,6 +28,7 @@ const vendorRoutes = [
     { method: 'PATCH', path: '/status', handler: wrap(() => ProfileController, 'toggleAccountStatus') },
     { method: 'DELETE', path: '/delete', handler: wrap(() => AuthController, 'deleteAccount') },
     { method: 'POST', path: '/become-traveller', handler: wrap(() => AuthController, 'downgradeToTraveller') },
+    { method: 'PATCH', path: '/emergency-contacts', handler: wrap(() => SOSController, 'updateEmergencyContacts') },
 
     // Business Identity Group (Matches Line 146-170)
     ...Router.group({ prefix: '/business' }, [

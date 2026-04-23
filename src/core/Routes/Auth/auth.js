@@ -11,10 +11,10 @@ const authRoutes = [
 
   // Public Auth (Matches Line 31-43)
   ...Router.group({ prefix: '/auth' }, [
-    { method: 'GET', path: '/verify', handler: wrap(() => AuthController, 'verifyToken') },
-    { method: 'POST', path: '/verify', handler: wrap(() => AuthController, 'confirmOTP') },
-    { method: 'GET', path: '/refresh', handler: wrap(() => AuthController, 'refreshToken') },
     { method: 'POST', path: '/otp', handler: wrap(() => AuthController, 'initiateOTP') },
+    { method: 'POST', path: '/verify', handler: wrap(() => AuthController, 'confirmOTP') },
+    { method: 'GET', path: '/verify', handler: wrap(() => AuthController, 'verifyToken') },
+    { method: 'GET', path: '/refresh', handler: wrap(() => AuthController, 'refreshToken') },
     { method: 'POST', path: '/login', handler: wrap(() => AuthController, 'authenticate') },
     { method: 'POST', path: '/google', handler: wrap(() => AuthController, 'socialAuthenticateGoogle') },
     { method: 'POST', path: '/facebook', handler: wrap(() => AuthController, 'socialAuthenticateFacebook') },
@@ -22,14 +22,9 @@ const authRoutes = [
     { method: 'POST', path: '/forget-password', handler: wrap(() => AuthController, 'forgotPassword') },
   ]),
 
-  // Authenticated Auth (Matches Line 71-79)
+  // Authenticated Session Management
   ...Router.group({ prefix: '/auth', middleware: ['auth'] }, [
-    { method: 'GET', path: '/me', handler: wrap(() => AuthController, 'getUserProfile') },
     { method: 'POST', path: '/logout', handler: wrap(() => AuthController, 'logout') },
-    { method: 'POST', path: '/update-profile', handler: wrap(() => AuthController, 'updateUserProfile') },
-    { method: 'POST', path: '/delete-profile', handler: wrap(() => AuthController, 'deleteAccount') },
-    { method: 'PATCH', path: '/switch-role', handler: wrap(() => AuthController, 'switchRole') },
-    { method: 'PATCH', path: '/emergency-contacts', handler: wrap(() => SOSController, 'updateEmergencyContacts') },
   ]),
 ];
 
