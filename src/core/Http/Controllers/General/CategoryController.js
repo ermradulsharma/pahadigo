@@ -22,7 +22,7 @@ class CategoryController extends Controller {
     try {
       if (!params.id) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED);
       const category = await CategoryService.getCategoryById(params.id);
-      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CATEGORY.FETCHED, { category });
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CATEGORY.FETCHED, category);
     } catch (error) {
       return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.CATEGORY.NOT_FOUND);
     }

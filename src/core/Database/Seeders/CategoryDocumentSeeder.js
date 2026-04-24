@@ -1,8 +1,9 @@
 import mongoose from "mongoose";
-import CategoryDocument from '@/core/Models/CategoryDocument.js';
-import { DEFAULTS } from "@/core/Constants/index.js";
-import { CATEGORY_SLUGS } from "@/core/Constants/categories.js";
-import connectDB from "@/core/Config/db.js";
+import CategoryDocument from '../../Models/CategoryDocument.js';
+import Category from '../../Models/Category.js';
+import { DEFAULTS } from '../../Constants/index.js';
+import { CATEGORY_SLUGS } from '../../Constants/categories.js';
+import connectDB from "../../Config/db.js";
 
 const slugify = (text) => {
   return text.toString().toLowerCase()

@@ -1,7 +1,7 @@
-import CountryModel from '@/core/Models/Country.js';
-import StateModel from '@/core/Models/State.js';
+import CountryModel from '../../Models/Country.js';
+import StateModel from '../../Models/State.js';
 import { Country, State } from 'country-state-city';
-import { STATUS } from '@/core/Constants/index.js';
+import { STATUS } from '../../Constants/index.js';
 
 export const seedLocations = async () => {
     try {

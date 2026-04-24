@@ -2,6 +2,7 @@
 
 import { useState, useEffect, Fragment } from 'react';
 import { getToken } from '@/core/Helpers/authUtils';
+import api from '@/core/Api';
 import { ChevronDown, ChevronRight, Search, Activity, Database, ShieldAlert, Cpu, Terminal, Filter, LayoutGrid } from 'lucide-react';
 
 export default function AuditLogsPage() {
@@ -17,30 +18,26 @@ export default function AuditLogsPage() {
     fetchLogs();
   }, [page, filter]);
 
-  const fetchLogs = async () => {
-    setLoading(true);
-    try {
-      const token = getToken();
-      const query = new URLSearchParams({
-        page,
-        limit: 20,
-        ...Object.fromEntries(Object.entries(filter).filter(([_, v]) => v))
-      });
-      const res = await fetch(`/api/admin/audit-logs?${query}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
-      if (data.success) {
-        setLogs(data.data.logs || []);
-        setTotal(data.data.total || 0);
-        setPages(data.data.totalPages || 1);
-      }
-    } catch (e) {
-      console.error(e);
-    } finally {
-      setLoading(false);
-    }
-  };
+    const fetchLogs = async () => {
+        setLoading(true);
+        try {
+            const params = {
+                page,
+                limit: 20,
+                ...Object.fromEntries(Object.entries(filter).filter(([_, v]) => v))
+            };
+            const data = await api.admin.auditLogs.getAll(params);
+            if (data.success) {
+                setLogs(data.data.logs || []);
+                setTotal(data.data.total || 0);
+                setPages(data.data.totalPages || 1);
+            }
+        } catch (e) {
+            console.error(e);
+        } finally {
+            setLoading(false);
+        }
+    };
 
   const handleFilterChange = (e) => {
     setFilter({ ...filter, [e.target.name]: e.target.value });

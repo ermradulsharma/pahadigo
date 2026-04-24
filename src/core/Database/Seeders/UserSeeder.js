@@ -1,5 +1,5 @@
-import User from '@/core/Models/User.js';
-import { USER_ROLES, STATUS, AUTH_PROVIDERS, GENDER, SEED_ACCOUNTS, DEFAULTS } from '@/core/Constants/index.js';
+import User from '../../Models/User.js';
+import { USER_ROLES, STATUS, AUTH_PROVIDERS, GENDER, SEED_ACCOUNTS, DEFAULTS } from '../../Constants/index.js';
 
 export const seedUsers = async () => {
   try {

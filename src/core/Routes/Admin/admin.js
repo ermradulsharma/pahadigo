@@ -13,6 +13,7 @@ import InquiryController from '@/core/Controllers/Admin/InquiryController.js';
 import SettingsController from '@/core/Controllers/Admin/SettingsController.js';
 import LocationController from '@/core/Controllers/Admin/LocationController.js';
 import PolicyController from '@/core/Controllers/Admin/PolicyController.js';
+import ProfileController from '@/core/Controllers/Admin/ProfileController.js';
 import AuthController from '@/core/Controllers/Auth/AuthController.js';
 
 import Router from '@/core/Routes/Router.js';
@@ -32,6 +33,8 @@ const adminRoutes = [
     { method: 'GET', path: '/audit-logs', handler: wrap(() => DashboardController, 'getAuditLogs') },
     { method: 'POST', path: '/change-password', handler: wrap(() => AuthController, 'changePassword') },
     { method: 'POST', path: '/reset-password', handler: wrap(() => AuthController, 'resetPassword') },
+    { method: 'GET', path: '/profile', handler: wrap(() => ProfileController, 'getProfile') },
+    { method: 'PATCH', path: '/profile', handler: wrap(() => ProfileController, 'updateProfile') },
 
     // User Management: Travellers (Matches Line 241-246)
     ...Router.group({ prefix: '/travellers' }, [
@@ -116,6 +119,7 @@ const adminRoutes = [
 
     // Taxonomy Hub (Matches Line 307-319)
     ...Router.group({ prefix: '/categories' }, [
+      { method: 'GET', path: '/', handler: wrap(() => CategoryController, 'getAll') },
       { method: 'POST', path: '/', handler: wrap(() => CategoryController, 'create') },
       { method: 'PUT', path: '/:id', handler: wrap(() => CategoryController, 'update') },
       { method: 'DELETE', path: '/:id', handler: wrap(() => CategoryController, 'delete') },

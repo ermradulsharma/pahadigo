@@ -1,6 +1,6 @@
-import Category from '@/core/Models/Category.js';
-import { DEFAULTS } from '@/core/Constants/index.js';
-import { CATEGORY_TITLES, CATEGORY_SLUGS } from '@/core/Constants/categories.js';
+import Category from '../../Models/Category.js';
+import { DEFAULTS } from '../../Constants/index.js';
+import { CATEGORY_TITLES, CATEGORY_SLUGS } from '../../Constants/categories.js';
 
 const DEFAULT_CATEGORIES = [
     { name: CATEGORY_TITLES.HOMESTAY, slug: CATEGORY_SLUGS.HOMESTAY, description: 'Stay with locals in a homely environment', isActive: DEFAULTS.TRUE },

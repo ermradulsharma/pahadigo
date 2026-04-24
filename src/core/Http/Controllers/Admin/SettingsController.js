@@ -12,7 +12,7 @@ class SettingsController extends Controller {
   async getSettings(req) {
     try {
       const setting = await SettingsService.getSettings();
-      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, { setting });
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, setting);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
@@ -21,9 +21,9 @@ class SettingsController extends Controller {
   // POST /admin/settings
   async updateSettings(req) {
     try {
-      const body = req.validData || req.jsonBody || await req.json();
+      const body = req.payload;
       const setting = await SettingsService.updateSettings(body);
-      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, { setting });
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, setting);
     } catch (error) {
       return this.error(HTTP_STATUS.BAD_REQUEST, error.message || RESPONSE_MESSAGES.ERROR.BAD_REQUEST);
     }

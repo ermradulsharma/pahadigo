@@ -1,12 +1,12 @@
 import mongoose from 'mongoose';
-import { seedCategories } from '@/core/Seeders/CategorySeeder.js';
-import { seedCategoryDocuments } from '@/core/Seeders/CategoryDocumentSeeder.js';
-import { seedUsers } from '@/core/Seeders/UserSeeder.js';
-import { seedSettings } from '@/core/Seeders/SettingSeeder.js';
-import { seedLocations } from '@/core/Seeders/LocationSeeder.js';
-import { seedPolicies } from '@/core/Seeders/PolicySeeder.js';
-import { loadEnv } from '@/core/Helpers/env.js';
-import connectDB from '@/core/Config/db.js';
+import { seedCategories } from './CategorySeeder.js';
+import { seedCategoryDocuments } from './CategoryDocumentSeeder.js';
+import { seedUsers } from './UserSeeder.js';
+import { seedSettings } from './SettingSeeder.js';
+import { seedLocations } from './LocationSeeder.js';
+import { seedPolicies } from './PolicySeeder.js';
+import { loadEnv } from '../../Helpers/env.js';
+import connectDB from '../../Config/db.js';
 
 const resetAndSeed = async () => {
   try {
@@ -15,12 +15,20 @@ const resetAndSeed = async () => {
     if (mongoose.connection.db) {
       await mongoose.connection.db.dropDatabase();
     }
+    console.log("Starting Seeding Process...");
     await seedCategories();
+    console.log("Categories Seeded");
     await seedCategoryDocuments();
+    console.log("Category Documents Seeded");
     await seedUsers();
+    console.log("Users Seeded");
     await seedSettings();
+    console.log("Settings Seeded");
     await seedLocations();
+    console.log("Locations Seeded");
     await seedPolicies();
+    console.log("Policies Seeded");
+    console.log("Seeding Completed Successfully");
     process.exit(0);
   } catch (error) {
     console.error("Seeding failed:", error);

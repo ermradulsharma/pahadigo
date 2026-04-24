@@ -104,7 +104,7 @@ export default function AdminProfilePage() {
   const fetchProfile = async () => {
     try {
       const token = getToken();
-      const res = await fetch('/api/auth/me', {
+      const res = await fetch('/api/admin/profile', {
         headers: { 'Authorization': 'Bearer ' + token }
       });
       const data = await res.json();

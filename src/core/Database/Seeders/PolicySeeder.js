@@ -1,5 +1,5 @@
-import Policy from '@/core/Models/Policy.js';
-import { USER_ROLES } from '@/core/Constants/index.js';
+import Policy from '../../Models/Policy.js';
+import { USER_ROLES } from '../../Constants/index.js';
 
 const defaultPolicies = [
     // Vendor Policies

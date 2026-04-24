@@ -12,7 +12,6 @@ const CategorySchema = new mongoose.Schema({
   toObject: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE }
 });
 
-// Pre-save middleware to generate slug if not provided
 CategorySchema.pre('save', async function () {
   if (!this.isModified('name') && !this.isNew) return;
 

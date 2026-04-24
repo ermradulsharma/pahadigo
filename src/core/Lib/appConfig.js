@@ -1,6 +1,6 @@
-import Setting from '@/core/Models/Setting.js';
-import { APP_DETAILS, APP_SECRETS, DEFAULTS } from '@/core/Constants/index.js';
-import connectDB from '@/core/Config/db.js';
+import Setting from '../Models/Setting.js';
+import { APP_DETAILS, APP_SECRETS, DEFAULTS } from '../Constants/index.js';
+import connectDB from '../Config/db.js';
 
 let cachedSettings = DEFAULTS.NULL;
 let lastFetchTime = 0;

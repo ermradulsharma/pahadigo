@@ -7,6 +7,25 @@ import Controller from '@/core/Controllers/Controller.js';
  * CategoryController (Admin Role) - Handles administrative management of activity categories.
  */
 class CategoryController extends Controller {
+  // GET /admin/categories
+  async getAll(req) {
+    try {
+      const categories = await CategoryService.listAllCategories();
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CATEGORY.FETCHED, categories);
+    } catch (error) {
+      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+    }
+  }
+
+  // GET /admin/category-documents/categories-list
+  async getCategoryList(req) {
+    try {
+      const categories = await CategoryService.listAllCategories();
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CATEGORY.FETCHED, categories);
+    } catch (error) {
+      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+    }
+  }
 
   // POST /admin/categories
   async create(req) {

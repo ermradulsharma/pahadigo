@@ -1,7 +1,6 @@
-
-import Setting from '@/core/Models/Setting.js';
-import { getAppConfig } from '@/core/Lib/appConfig.js';
-import { DEFAULTS } from '@/core/Constants/index.js';
+import Setting from '../../Models/Setting.js';
+import { getAppConfig } from '../../Lib/appConfig.js';
+import { DEFAULTS } from '../../Constants/index.js';
 
 export const seedSettings = async () => {
     try {

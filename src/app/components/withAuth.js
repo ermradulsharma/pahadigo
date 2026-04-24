@@ -20,7 +20,7 @@ export default function withAuth(Component, allowedRoles = []) {
 
         try {
           // Check if token is actually valid
-          const res = await fetch('/api/auth/me', {
+          const res = await fetch('/api/admin/profile', {
             headers: {
               'Authorization': 'Bearer ' + token
             }
