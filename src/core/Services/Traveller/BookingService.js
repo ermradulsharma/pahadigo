@@ -283,7 +283,8 @@ class BookingService {
     if (booking.pricing.coupon) {
       await Coupon.findOneAndUpdate(
         { code: booking.pricing.coupon.toUpperCase() },
-        { $inc: { usedCount: 1 } }
+        { $inc: { usedCount: 1 } },
+        { returnDocument: 'after' }
       );
     }
 

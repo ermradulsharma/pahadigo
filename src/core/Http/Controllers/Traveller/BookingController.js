@@ -29,7 +29,6 @@ class BookingController extends Controller {
       const booking = await BookingService.initiateBooking({ userId, body, itemId });
       return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.BOOKING.CREATED, booking);
     } catch (error) {
-      console.log(error);
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
   }

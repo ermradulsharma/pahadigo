@@ -156,7 +156,7 @@ class VendorService {
         vendorUpdateData.address = { ...(vendor.address || {}), ...data.address };
         mapToGeoJSON(vendorUpdateData.address, 'location');
       }
-      await Vendor.findByIdAndUpdate(vendor._id, { $set: vendorUpdateData });
+      await Vendor.findByIdAndUpdate(vendor._id, { $set: vendorUpdateData }, { returnDocument: 'after' });
     }
 
     if (user && Object.keys(userData).length > 0) {
@@ -164,7 +164,7 @@ class VendorService {
         const existing = user.preferences || {};
         userData.preferences = { ...existing, ...data.preferences };
       }
-      await User.findByIdAndUpdate(user._id, { $set: userData });
+      await User.findByIdAndUpdate(user._id, { $set: userData }, { returnDocument: 'after' });
     }
 
     if (req && req.user) {
@@ -189,7 +189,7 @@ class VendorService {
     await vendor.save();
 
     // Update User Status
-    await User.findByIdAndUpdate(vendor.user, { status: userStatus });
+    await User.findByIdAndUpdate(vendor.user, { status: userStatus }, { returnDocument: 'after' });
 
     // Trust evaluation
     await BusinessService.calculateTrustBadge(vendor._id);
@@ -214,8 +214,8 @@ class VendorService {
         deletedAt: now,
         deletedBy: deletedBy || null,
         deletedReason: 'Admin initiated deletion'
-      });
-      await Vendor.findByIdAndUpdate(id, { isApproved: false });
+      }, { returnDocument: 'after' });
+      await Vendor.findByIdAndUpdate(id, { isApproved: false }, { returnDocument: 'after' });
     } else {
       const user = await User.findById(id);
       if (user) {
@@ -224,9 +224,9 @@ class VendorService {
           deletedAt: now,
           deletedBy: deletedBy || null,
           deletedReason: 'Admin initiated deletion'
-        });
+        }, { returnDocument: 'after' });
         const vendorProfile = await Vendor.findOne({ user: id });
-        if (vendorProfile) await Vendor.findByIdAndUpdate(vendorProfile._id, { isApproved: false });
+        if (vendorProfile) await Vendor.findByIdAndUpdate(vendorProfile._id, { isApproved: false }, { returnDocument: 'after' });
       }
     }
     return true;

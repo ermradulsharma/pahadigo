@@ -91,6 +91,8 @@ const adminRoutes = [
     ...Router.group({ prefix: '/disputes' }, [
       { method: 'GET', path: '/', handler: wrap(() => DisputeController, 'getDisputes') },
       { method: 'PATCH', path: '/:id', handler: wrap(() => DisputeController, 'resolveDispute') },
+      { method: 'GET', path: '/:id/messages', handler: wrap(() => DisputeController, 'getMessages') },
+      { method: 'POST', path: '/:id/messages', handler: wrap(() => DisputeController, 'sendMessage') },
     ]),
 
     ...Router.group({ prefix: '/inquiries' }, [

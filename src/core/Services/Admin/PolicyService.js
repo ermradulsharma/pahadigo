@@ -34,7 +34,7 @@ class PolicyService {
     ];
 
     for (const p of defaults) {
-      await Policy.findOneAndUpdate({ target: p.target, type: p.type }, p, { upsert: true });
+      await Policy.findOneAndUpdate({ target: p.target, type: p.type }, p, { upsert: true, returnDocument: 'after' });
     }
     return true;
   }

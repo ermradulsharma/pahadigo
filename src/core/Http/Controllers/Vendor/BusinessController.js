@@ -23,7 +23,6 @@ class BusinessController extends Controller {
   // POST /vendor/business/profile/create
   async createProfile(req) {
     try {
-      console.log(req.payload);
       const existingProfile = await BusinessService.getBusinessByUserId(req.user.id);
       if (existingProfile) {
         return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.PROFILE_ALREADY_EXISTS);

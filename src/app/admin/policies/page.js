@@ -4,6 +4,7 @@ import dynamic from 'next/dynamic';
 import { getToken } from '@/core/Helpers/authUtils';
 import { DefaultEditor } from 'react-simple-wysiwyg';
 import { Shield, BookOpen, Save, RefreshCw, Users, Server, Briefcase } from 'lucide-react';
+import Loading from '@/components/admin/Loading';
 
 const POLICY_TYPES = {
   vendor: [
@@ -179,16 +180,7 @@ export default function PoliciesPage() {
             </div>
 
             <div className="flex-1 relative rounded-xl overflow-hidden border border-white/10 bg-black/40 shadow-[0_0_30px_rgba(0,0,0,0.8)] flex flex-col cyber-editor-container">
-              {loading && (
-                <div className="absolute inset-0 bg-black/60 backdrop-blur-md z-20 flex flex-col items-center justify-center">
-                  <div className="relative w-16 h-16 flex items-center justify-center mb-4">
-                    <div className="absolute inset-0 rounded-full border-t-2 border-cyan-500 animate-spin"></div>
-                    <div className="absolute inset-2 rounded-full border-r-2 border-indigo-500 animate-spin-reverse opacity-70"></div>
-                    <div className="w-2 h-2 bg-cyan-400 rounded-full shadow-[0_0_10px_rgba(34,211,238,0.8)]"></div>
-                  </div>
-                  <div className="text-[10px] font-mono text-cyan-400 tracking-[0.3em] uppercase animate-pulse">Retrieving Node Data...</div>
-                </div>
-              )}
+              {loading && <Loading message="Retrieving Node Data..." />}
 
               <div className="flex-1 h-full editor-wrapper">
                 <DefaultEditor

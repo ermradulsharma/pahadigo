@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import { getToken } from '@/core/Helpers/authUtils';
+import Loading from '@/components/admin/Loading';
 
 export default function ReviewModerationPage() {
   const [reviews, setReviews] = useState([]);
@@ -126,13 +127,7 @@ export default function ReviewModerationPage() {
 
         <div className="divide-y divide-white/5 relative z-10">
           {loading ? (
-            <div className="p-16 flex flex-col items-center justify-center">
-              <div className="relative w-12 h-12 flex items-center justify-center mb-4">
-                <div className="absolute inset-0 rounded-full border-t-2 border-indigo-500 animate-[spin_1.5s_linear_infinite]"></div>
-                <div className="absolute inset-1 rounded-full border-r-2 border-cyan-500 animate-[spin_2s_linear_infinite_reverse] opacity-70"></div>
-              </div>
-              <span className="text-[10px] font-mono font-bold uppercase tracking-widest text-indigo-400 animate-pulse">Scanning Nexus...</span>
-            </div>
+            <Loading message="Scanning Nexus..." />
           ) : filteredReviews.length > 0 ? (
             filteredReviews.map((review) => (
               <div key={review._id} className={`p-6 hover:bg-[#0a0a0f] transition-all flex flex-col md:flex-row gap-6 group relative ${!review.isVisible ? 'opacity-40 grayscale-[0.8] hover:opacity-100' : ''}`}>

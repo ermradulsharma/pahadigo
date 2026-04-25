@@ -7,6 +7,7 @@ import {
   ExternalLink, Undo2, RefreshCcw, Mail, Phone,
   ChevronRight, BadgeCheck, Hash
 } from 'lucide-react';
+import Loading from '@/components/admin/Loading';
 import Link from 'next/link';
 
 export default function BookingDetailPage({ params }) {
@@ -91,16 +92,7 @@ export default function BookingDetailPage({ params }) {
     }
   };
 
-  if (loading) return (
-    <div className="p-8 h-screen flex flex-col items-center justify-center space-y-4 bg-[#0a0a0c]">
-      <div className="relative w-16 h-16 flex items-center justify-center">
-        <div className="absolute inset-0 rounded-full border-t-2 border-indigo-500 animate-spin"></div>
-        <div className="absolute inset-2 rounded-full border-r-2 border-emerald-500 animate-spin-reverse opacity-70"></div>
-        <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.8)]"></div>
-      </div>
-      <div className="text-xs font-mono text-indigo-400 tracking-[0.3em] uppercase animate-pulse">Accessing Encrypted Record...</div>
-    </div>
-  );
+  if (loading) return <Loading message="Accessing Encrypted Record..." />;
 
   if (!booking) return (
     <div className="p-8 h-screen flex flex-col items-center justify-center bg-[#0a0a0c]">

@@ -1,7 +1,8 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { getToken } from '@/core/Helpers/authUtils';
-import { User, Shield, HardDrive, Cpu, Terminal, MapPin, Settings, Globe, Navigation, CheckCircle, AlertTriangle } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Shield, Camera, Save, CheckCircle, AlertTriangle, Lock, Eye, EyeOff, Briefcase, Globe, Hash } from 'lucide-react';
+import Loading from '@/components/admin/Loading';
 
 export default function AdminProfilePage() {
   const [loading, setLoading] = useState(true);
@@ -214,18 +215,7 @@ export default function AdminProfilePage() {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="p-8 h-[calc(100vh-80px)] flex flex-col items-center justify-center space-y-4">
-        <div className="relative w-16 h-16 flex items-center justify-center">
-          <div className="absolute inset-0 rounded-full border-t-2 border-indigo-500 animate-spin"></div>
-          <div className="absolute inset-2 rounded-full border-r-2 border-cyan-500 animate-spin-reverse opacity-70"></div>
-          <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.8)]"></div>
-        </div>
-        <div className="text-xs font-mono text-indigo-400 tracking-[0.3em] uppercase animate-pulse">Establishing Neural Link...</div>
-      </div>
-    );
-  }
+  if (loading) return <Loading message="Establishing Neural Link..." />;
 
   const InputLabel = ({ children }) => (
     <label className="block text-[10px] font-mono tracking-widest text-cyan-500/80 uppercase mb-2">

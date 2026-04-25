@@ -7,6 +7,7 @@ import Image from 'next/image';
 import VendorTabs from '@/components/admin/VendorTabs';
 import { DetailItem, StatusBadge, Badge, SidebarCard, UnifiedStatusMenu, ProgressItem, DocumentSection, MainPanelCard, VendorHeader } from '@/components/admin/VendorUIFragments';
 import { AlertTriangle, ShieldCheck, UserCheck, Zap, Award, Search, Check as CheckIcon } from 'lucide-react';
+import Loading from '@/components/admin/Loading';
 import PersonalTab from './tabs/PersonalTab';
 import BusinessTab from './tabs/BusinessTab';
 import PackageTab from './tabs/PackageTab';
@@ -34,7 +35,6 @@ export default function VendorDetailsPage({ params }) {
         const profile = await fetch(`/api/admin/vendors/${id}`, { headers: { 'Authorization': 'Bearer ' + token } });
         if (profile.ok) {
           const data = await profile.json();
-          console.log(data);
           if (data.data) setVendor(data.data);
         }
       } catch (e) {
@@ -177,16 +177,7 @@ export default function VendorDetailsPage({ params }) {
     return 100; // Basic check for account number
   };
 
-  if (loading) return (
-    <div className="min-h-[80vh] flex flex-col items-center justify-center">
-      <div className="relative w-16 h-16 flex items-center justify-center">
-        <div className="absolute inset-0 rounded-full border-t-2 border-indigo-500 animate-spin"></div>
-        <div className="absolute inset-2 rounded-full border-r-2 border-cyan-500 animate-spin-reverse opacity-70"></div>
-        <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.8)]"></div>
-      </div>
-      <p className="mt-4 text-xs font-mono tracking-[0.3em] uppercase text-indigo-400 animate-pulse">Decrypting Vendor Core...</p>
-    </div>
-  );
+  if (loading) return <Loading message="Syncing Vendor Node Data..." />;
 
   if (!vendor) return (
     <div className="min-h-[80vh] flex items-center justify-center p-8">
@@ -212,14 +203,8 @@ export default function VendorDetailsPage({ params }) {
               <DetailItem label="Full Designation" value={vendor.name} mono />
               <DetailItem label="Carrier Frequency" value={vendor.phone} mono />
               <DetailItem label="Comm Link (Email)" value={vendor.email} mono />
-
               <div className="flex flex-wrap gap-2">
-                <button onClick={() => toggleVerification('isVerified')} className="transition-transform active:scale-95 group cursor-pointer">
-                  <Badge color={vendor.isVerified ? 'indigo' : 'slate'} icon={UserCheck}> {vendor.isVerified ? `Verified ${vendor.role}` : `Unverified ${vendor.role}`} </Badge>
-                </button>
-                <button onClick={() => toggleVerification('isVendorVerified')} className="transition-transform active:scale-95 group cursor-pointer">
-                  <Badge color={vendor.isVendorVerified ? 'emerald' : 'slate'} icon={ShieldCheck}> {vendor.isVendorVerified ? 'Identity Verified' : 'Identity Unverified'} </Badge>
-                </button>
+                <button onClick={() => toggleVerification('isVerified')} className="transition-transform active:scale-95 group cursor-pointer"><Badge color={vendor.isVerified ? 'indigo' : 'slate'} icon={UserCheck}> {vendor.isVerified ? `Verified ${vendor.role}` : `Unverified ${vendor.role}`} </Badge></button><button onClick={() => toggleVerification('isVendorVerified')} className="transition-transform active:scale-95 group cursor-pointer"><Badge color={vendor.isVendorVerified ? 'emerald' : 'slate'} icon={ShieldCheck}> {vendor.isVendorVerified ? 'Identity Verified' : 'Identity Unverified'} </Badge></button>
               </div>
               <UnifiedStatusMenu label="Network Status" currentStatus={vendor.status} isOpen={showStatusMenu} onToggle={() => setShowStatusMenu(!showStatusMenu)} onSelect={(s) => toggleVerification('status', s)} colorTheme="indigo" />
             </SidebarCard>

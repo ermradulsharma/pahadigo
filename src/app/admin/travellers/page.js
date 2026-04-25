@@ -7,6 +7,7 @@ import CyberTable from '@/components/admin/CyberTable';
 import { Users, Mail, Phone, Plus, Search, X } from 'lucide-react';
 import api from '@/core/Api';
 import DynamicModal from '@/components/admin/DynamicModal';
+import Loading from '@/components/admin/Loading';
 
 export default function TravellersPage() {
     const [travellers, setTravellers] = useState([]);
@@ -147,16 +148,7 @@ export default function TravellersPage() {
         }
     ];
 
-    if (loading) return (
-        <div className="p-8 h-full flex flex-col items-center justify-center space-y-4">
-            <div className="relative w-16 h-16 flex items-center justify-center">
-                <div className="absolute inset-0 rounded-full border-t-2 border-indigo-500 animate-spin"></div>
-                <div className="absolute inset-2 rounded-full border-r-2 border-emerald-500 animate-spin-reverse opacity-70"></div>
-                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.8)]"></div>
-            </div>
-            <div className="text-xs font-mono text-indigo-400 tracking-[0.3em] uppercase animate-pulse">Decrypting User Data...</div>
-        </div>
-    );
+    if (loading) return <Loading message="Scanning Traveller Network..." />;
 
     return (
         <div className="p-8 max-w-7xl mx-auto">

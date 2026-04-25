@@ -37,8 +37,7 @@ class BookingController extends Controller {
   // POST /admin/payout
   async payoutBooking(req) {
     try {
-      const body = req.validData || req.jsonBody || await req.json();
-      const booking = await BookingService.payoutBooking(body, req);
+      const booking = await BookingService.payoutBooking(req.payload, req);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PAYMENT.PAYOUT_MARKED, { booking });
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -48,8 +47,7 @@ class BookingController extends Controller {
   // POST /admin/refund
   async refundBooking(req) {
     try {
-      const body = req.validData || req.jsonBody || await req.json();
-      const booking = await BookingService.refundBooking(body, req);
+      const booking = await BookingService.refundBooking(req.payload, req);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.REFUNDED, { booking });
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);

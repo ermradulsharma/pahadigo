@@ -5,6 +5,7 @@ import api from '@/core/Api';
 import DynamicModal from '@/components/admin/DynamicModal';
 import CyberTable from '@/components/admin/CyberTable';
 import { Search, Plus, X, Layers } from 'lucide-react';
+import Loading from '@/components/admin/Loading';
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState([]);
@@ -170,7 +171,7 @@ export default function CategoriesPage() {
     }
   ];
 
-  if (loading) return <div className="p-8 text-center text-indigo-400 font-mono animate-pulse uppercase tracking-[0.3em]">Decrypting Categories...</div>;
+  if (loading) return <Loading message="Decrypting Categories..." />;
 
   return (
     <div className="p-8 max-w-7xl mx-auto">

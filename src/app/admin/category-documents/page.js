@@ -4,6 +4,7 @@ import api from '@/core/Api';
 import DynamicModal from '@/components/admin/DynamicModal';
 import CyberTable from '@/components/admin/CyberTable';
 import { Search, Plus, X, FileText } from 'lucide-react';
+import Loading from '@/components/admin/Loading';
 
 export default function ServicesPage() {
   const [services, setServices] = useState([]);
@@ -172,7 +173,7 @@ export default function ServicesPage() {
     }
   ];
 
-  if (loading) return <div className="p-8 text-center text-indigo-400 font-mono animate-pulse uppercase tracking-widest">Decrypting Protocols...</div>;
+  if (loading) return <Loading message="Decrypting Protocols..." />;
 
   return (
     <div className="p-8 max-w-7xl mx-auto">

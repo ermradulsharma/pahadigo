@@ -13,43 +13,43 @@ jest.setTimeout(120000);
 let mongoServer;
 
 beforeAll(async () => {
-    mongoServer = await MongoMemoryServer.create({
-        instance: {
-            launchTimeoutMS: 240000 // Increased further
-        },
-        binary: {
-            skipMD5: true
-        },
-        spawn: {
-            timeoutMS: 240000 // Added spawn timeout
-        }
-    });
-    const uri = mongoServer.getUri();
+  mongoServer = await MongoMemoryServer.create({
+    instance: {
+      launchTimeoutMS: 240000 // Increased further
+    },
+    binary: {
+      skipMD5: true
+    },
+    spawn: {
+      timeoutMS: 240000 // Added spawn timeout
+    }
+  });
+  const uri = mongoServer.getUri();
 
-    // Ensure we are not using the real DB
-    process.env.MONGODB_URI = uri;
+  // Ensure we are not using the real DB
+  process.env.MONGODB_URI = uri;
 
-    await mongoose.connect(uri);
+  await mongoose.connect(uri);
 });
 
 afterAll(async () => {
-    if (mongoose.connection.readyState !== 0) {
-        await mongoose.connection.close();
-    }
-    await mongoose.disconnect();
-    if (mongoServer) {
-        await mongoServer.stop();
-    }
+  if (mongoose.connection.readyState !== 0) {
+    await mongoose.connection.close();
+  }
+  await mongoose.disconnect();
+  if (mongoServer) {
+    await mongoServer.stop();
+  }
 });
 
 afterEach(async () => {
-    if (mongoose.connection.readyState !== 0) {
-        const collections = mongoose.connection.collections;
-        for (const key in collections) {
-            const collection = collections[key];
-            await collection.deleteMany();
-        }
+  if (mongoose.connection.readyState !== 0) {
+    const collections = mongoose.connection.collections;
+    for (const key in collections) {
+      const collection = collections[key];
+      await collection.deleteMany();
     }
+  }
 });
 
 // Suppress surgical noisy logs to keep test output clean
@@ -57,33 +57,33 @@ const originalError = console.error;
 const originalLog = console.log;
 
 console.error = (...args) => {
-    // Suppress only known expected noise from tests
-    const noise = [
-        'SMTP credentials or host missing',
-        'Different login method',
-        'error:',
-        'Error:',
-        'ERROR:',
-        'Account uses a different login method',
-        'Internal Error',
-        'Seeding failed:',
-        'Error seeding locations:',
-        'Drop Failed',
-        'Crashed'
-    ];
-    const combinedMsg = args.map(arg => String(arg)).join(' ');
-    if (noise.some(n => combinedMsg.includes(n))) return;
-    originalError(...args);
+  // Suppress only known expected noise from tests
+  const noise = [
+    'SMTP credentials or host missing',
+    'Different login method',
+    'error:',
+    'Error:',
+    'ERROR:',
+    'Account uses a different login method',
+    'Internal Error',
+    'Seeding failed:',
+    'Error seeding locations:',
+    'Drop Failed',
+    'Crashed'
+  ];
+  const combinedMsg = args.map(arg => String(arg)).join(' ');
+  if (noise.some(n => combinedMsg.includes(n))) return;
+  originalError(...args);
 };
 
 console.log = (...args) => {
-    const noise = [
-        'successfully',
-        'Successfully',
-        '[NotificationService]',
-        'Location Seeder Completed'
-    ];
-    const combinedMsg = args.map(arg => String(arg)).join(' ');
-    if (noise.some(n => combinedMsg.includes(n))) return;
-    originalLog(...args);
+  const noise = [
+    'successfully',
+    'Successfully',
+    '[NotificationService]',
+    'Location Seeder Completed'
+  ];
+  const combinedMsg = args.map(arg => String(arg)).join(' ');
+  if (noise.some(n => combinedMsg.includes(n))) return;
+  originalLog(...args);
 };

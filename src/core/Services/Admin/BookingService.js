@@ -80,7 +80,7 @@ class BookingService {
     booking.status = BOOKING_STATUS.CANCELLED;
     booking.paymentStatus = PAYMENT_STATUS.REFUNDED;
     booking.adminNotes = reason;
-    booking.timeline.push({ status: 'Fund Refunded', remarks: `Admin processed refund of ₹${amount} via ${booking.payment.gateway}. Refund ID: ${refundResponse.id}`, actor: req?.user?.id || 'System' });
+    booking.timeline.push({ status: 'Fund Refunded', remarks: `Admin processed refund of ₹${amount} via ${booking.payment.gateway}. Refund ID: ${refundResponse.id}`, actor: req?.user?.id || null });
     await booking.save();
     if (req && req.user) await AuditService.logAction(req.user.id, 'REFUND', 'BOOKING', bookingId, { amount, reason, refundId: refundResponse.id }, req);
     return booking;
@@ -93,6 +93,19 @@ class BookingService {
 
     const total = await Dispute.countDocuments(query);
     const disputes = await Dispute.find(query)
+      .populate({
+        path: 'bookingId',
+        populate: [
+          { path: 'user', select: 'name email phone image' },
+          { path: 'vendor', populate: { path: 'user', select: 'name email phone' } }
+        ]
+      })
+      .populate('user', 'name email phone image')
+      .populate('traveller', 'name email phone image')
+      .populate({
+        path: 'vendor',
+        populate: { path: 'user', select: 'name email phone' }
+      })
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
       .limit(limit);

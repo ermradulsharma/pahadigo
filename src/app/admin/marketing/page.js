@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { getToken } from '@/core/Helpers/authUtils';
 import { Megaphone, Image as ImageIcon, Tag, Plus, Trash2, Calendar, Link2, DollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
+import Loading from '@/components/admin/Loading';
 
 export default function MarketingPage() {
   const [activeTab, setActiveTab] = useState('banners');
@@ -173,9 +174,7 @@ function BannersManager() {
       {/* List Section */}
       <div className="lg:col-span-2 space-y-4">
         {loading ? (
-          <div className="h-40 bg-white/5 border border-white/10 rounded-2xl animate-pulse flex items-center justify-center">
-            <span className="text-xs font-mono tracking-widest text-slate-500 uppercase">Fetching Banners...</span>
-          </div>
+          <Loading message="Fetching Banners..." />
         ) : (
           banners.map(banner => (
             <motion.div
@@ -357,9 +356,7 @@ function CouponsManager() {
 
       <div className="lg:col-span-2 space-y-4">
         {loading ? (
-          <div className="h-40 bg-white/5 border border-white/10 rounded-2xl animate-pulse flex items-center justify-center">
-            <span className="text-xs font-mono tracking-widest text-slate-500 uppercase">Decrypting Codes...</span>
-          </div>
+          <Loading message="Decrypting Codes..." />
         ) : (
           coupons.map(coupon => {
             const isExpired = new Date(coupon.expiryDate) < new Date();

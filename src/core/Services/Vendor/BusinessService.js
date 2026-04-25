@@ -57,7 +57,7 @@ class BusinessService {
       },
       { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true, runValidators: true }
     );
-    await User.findByIdAndUpdate(userId, { vendorProfile: vendor._id, name: vendor.ownerName });
+    await User.findByIdAndUpdate(userId, { vendorProfile: vendor._id, name: vendor.ownerName }, { returnDocument: 'after' });
     return await vendor.populate('user', 'email phone role');
   }
 

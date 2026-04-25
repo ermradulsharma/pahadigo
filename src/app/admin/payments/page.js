@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import { getToken } from '@/core/Helpers/authUtils';
 import CyberTable from '@/app/components/admin/CyberTable';
 import { Wallet, Search, ArrowRightLeft, DollarSign, Building2, Phone, Coins, ExternalLink, User, ReceiptText, Landmark } from 'lucide-react';
+import Loading from '@/components/admin/Loading';
 import Link from 'next/link';
 
 export default function VendorPayoutsPage() {
@@ -195,16 +196,7 @@ export default function VendorPayoutsPage() {
     }
   ];
 
-  if (loading) return (
-    <div className="p-8 h-full flex flex-col items-center justify-center space-y-4">
-      <div className="relative w-16 h-16 flex items-center justify-center">
-        <div className="absolute inset-0 rounded-full border-t-2 border-emerald-500 animate-spin"></div>
-        <div className="absolute inset-2 rounded-full border-r-2 border-cyan-500 animate-spin-reverse opacity-70"></div>
-        <div className="w-1.5 h-1.5 bg-emerald-400 rounded-full shadow-[0_0_10px_rgba(16,185,129,0.8)]"></div>
-      </div>
-      <div className="text-xs font-mono text-emerald-400 tracking-[0.3em] uppercase animate-pulse">Decrypting Financial Vector...</div>
-    </div>
-  );
+  if (loading) return <Loading message="Syncing Financial Streams..." />;
 
   return (
     <div className="p-8 max-w-7xl mx-auto">

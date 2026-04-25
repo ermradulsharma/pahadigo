@@ -6,6 +6,7 @@ import { motion } from 'framer-motion';
 import Link from 'next/link';
 import { getToken } from '@/core/Helpers/authUtils';
 import { ArrowLeft, Save, Server, Code, Settings, Activity, AlertTriangle, CheckCircle2 } from 'lucide-react';
+import Loading from '@/components/admin/Loading';
 
 export default function AdminPackageItemPage({ params }) {
   const resolvedParams = use(params);
@@ -102,13 +103,7 @@ export default function AdminPackageItemPage({ params }) {
     }
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen bg-[#0a0a0c] flex items-center justify-center">
-        <div className="w-16 h-16 border-t-2 border-pink-500 border-r-2 border-r-transparent rounded-full animate-spin shadow-[0_0_15px_rgba(236,72,153,0.5)]"></div>
-      </div>
-    );
-  }
+  if (loading) return <Loading message="Accessing Inventory Node..." />;
 
   if (error || !item) {
     return (

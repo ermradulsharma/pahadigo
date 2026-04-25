@@ -2,7 +2,10 @@ export const adminApi = (fetcher) => ({
   // Dashboard & Analytics
   stats: {
     getStats: () => fetcher('/api/admin/stats'),
-    getAnalytics: () => fetcher('/api/admin/analytics'),
+    getAnalytics: (params) => {
+      const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+      return fetcher(`/api/admin/analytics${query}`);
+    },
   },
 
   auditLogs: {
@@ -82,6 +85,8 @@ export const adminApi = (fetcher) => ({
   disputes: {
     getAll: () => fetcher('/api/admin/disputes'),
     resolve: (id, data) => fetcher(`/api/admin/disputes/${id}`, { method: 'PATCH', body: JSON.stringify(data) }),
+    getMessages: (id) => fetcher(`/api/admin/disputes/${id}/messages`),
+    sendMessage: (id, data) => fetcher(`/api/admin/disputes/${id}/messages`, { method: 'POST', body: JSON.stringify(data) }),
   },
 
   inquiries: {

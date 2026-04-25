@@ -4,7 +4,8 @@ import { useState, useEffect } from 'react';
 import { getToken } from '@/core/Helpers/authUtils';
 import api from '@/core/Api';
 import CyberTable from '@/app/components/admin/CyberTable';
-import { Calendar, Search, Mail, Phone, CreditCard, Eye, Undo2, ExternalLink } from 'lucide-react';
+import { Calendar, Search, CreditCard, Mail, ExternalLink, Undo2, ChevronLeft, ChevronRight, Eye, MoreVertical, X } from 'lucide-react';
+import Loading from '@/components/admin/Loading';
 import Link from 'next/link';
 
 export default function BookingsPage() {
@@ -240,16 +241,7 @@ export default function BookingsPage() {
         }
     ];
 
-    if (loading) return (
-        <div className="p-8 h-full flex flex-col items-center justify-center space-y-4">
-            <div className="relative w-16 h-16 flex items-center justify-center">
-                <div className="absolute inset-0 rounded-full border-t-2 border-indigo-500 animate-spin"></div>
-                <div className="absolute inset-2 rounded-full border-r-2 border-emerald-500 animate-spin-reverse opacity-70"></div>
-                <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.8)]"></div>
-            </div>
-            <div className="text-xs font-mono text-indigo-400 tracking-[0.3em] uppercase animate-pulse">Fetching Booking Records...</div>
-        </div>
-    );
+    if (loading) return <Loading message="Fetching Booking Records..." />;
 
     const filteredBookings = bookings.filter(b => {
         if (filterStatus === 'all') return true;

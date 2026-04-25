@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef } from 'react';
 import api from '@/core/Api';
 import { Settings as SettingsIcon, Mail, BellRing, Smartphone, Key, CreditCard, Bug, Database, ShieldCheck, Fingerprint, AppWindow, Save, CheckCircle, AlertTriangle, Eye, EyeOff, Cloud, Lock, X } from 'lucide-react';
+import Loading from '@/components/admin/Loading';
 
 const Card = ({ title, icon: Icon, children }) => (
     <div className="bg-[#111116] rounded-xl border border-white/10 relative overflow-hidden group hover:border-indigo-500/50 transition-all shadow-[0_0_20px_rgba(0,0,0,0.5)] flex flex-col">
@@ -309,18 +310,7 @@ export default function SettingsPage() {
         );
     };
 
-    if (fetching) {
-        return (
-            <div className="p-8 h-[calc(100vh-80px)] flex flex-col items-center justify-center space-y-4">
-                <div className="relative w-16 h-16 flex items-center justify-center">
-                    <div className="absolute inset-0 rounded-full border-t-2 border-indigo-500 animate-spin"></div>
-                    <div className="absolute inset-2 rounded-full border-r-2 border-cyan-500 animate-spin-reverse opacity-70"></div>
-                    <div className="w-1.5 h-1.5 bg-indigo-400 rounded-full shadow-[0_0_10px_rgba(99,102,241,0.8)]"></div>
-                </div>
-                <div className="text-xs font-mono text-indigo-400 tracking-[0.3em] uppercase animate-pulse">Initializing Setup Matrix...</div>
-            </div>
-        );
-    }
+    if (fetching) return <Loading message="Initializing Setup Matrix..." />;
 
     return (
         <div className="p-8 max-w-[1600px] mx-auto relative font-mono">

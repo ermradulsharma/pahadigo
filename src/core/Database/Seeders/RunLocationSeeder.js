@@ -8,14 +8,11 @@ const run = async () => {
     loadEnv();
     await connectDB();
     const result = await seedLocations();
-    if (result) {
-      console.log('Location Seeder Completed Successfully');
-    } else {
-      console.log('Location Seeder Failed');
+    if (!result) {
+      process.exit(1);
     }
     process.exit(0);
   } catch (error) {
-    console.error("Location Seeding failed:", error);
     process.exit(1);
   }
 };

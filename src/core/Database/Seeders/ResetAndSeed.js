@@ -15,23 +15,14 @@ const resetAndSeed = async () => {
     if (mongoose.connection.db) {
       await mongoose.connection.db.dropDatabase();
     }
-    console.log("Starting Seeding Process...");
     await seedCategories();
-    console.log("Categories Seeded");
     await seedCategoryDocuments();
-    console.log("Category Documents Seeded");
     await seedUsers();
-    console.log("Users Seeded");
     await seedSettings();
-    console.log("Settings Seeded");
     await seedLocations();
-    console.log("Locations Seeded");
     await seedPolicies();
-    console.log("Policies Seeded");
-    console.log("Seeding Completed Successfully");
     process.exit(0);
   } catch (error) {
-    console.error("Seeding failed:", error);
     process.exit(1);
   }
 };

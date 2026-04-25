@@ -44,6 +44,9 @@ jest.unstable_mockModule('@/models/Category.js', () => ({
 jest.unstable_mockModule('@/models/Dispute.js', () => ({
     default: { find: jest.fn(() => mockQuery), countDocuments: jest.fn(), aggregate: jest.fn() }
 }));
+jest.unstable_mockModule('@/models/AuditLog.js', () => ({
+    default: { find: jest.fn(() => mockQuery), countDocuments: jest.fn() }
+}));
 
 const { default: DashboardService } = await import('@/services/Admin/DashboardService.js');
 const { default: User } = await import('@/models/User.js');
@@ -53,11 +56,22 @@ const { default: Package } = await import('@/models/Package.js');
 const { default: Category } = await import('@/models/Category.js');
 const { default: Dispute } = await import('@/models/Dispute.js');
 const { default: SearchLog } = await import('@/models/SearchLog.js');
+const { default: AuditLog } = await import('@/models/AuditLog.js');
+import mongoose from 'mongoose';
+
+// Mock DB Stats globally
+if (!mongoose.connection.db) {
+    mongoose.connection.db = {};
+}
+mongoose.connection.db.stats = jest.fn().mockResolvedValue({ dataSize: 1024, storageSize: 2048 });
 
 describe('Industry Standard: DashboardService Analytics Logic', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockQuery._resolvedValue = []; // Reset default resolution
+        if (mongoose.connection.db) {
+            mongoose.connection.db.stats = jest.fn().mockResolvedValue({ dataSize: 1024, storageSize: 2048 });
+        }
     });
 
     it('[Stats] should aggregate system health and counts correctly', async () => {
@@ -81,6 +95,24 @@ describe('Industry Standard: DashboardService Analytics Logic', () => {
         Booking.countDocuments.mockResolvedValue(200);
         Booking.aggregate.mockResolvedValue([{ total: 100000 }]);
         Package.aggregate.mockResolvedValue([{ count: 25 }]);
+        
+        // New metrics mocks
+        Vendor.aggregate.mockResolvedValue([{ _id: 'Dehradun', count: 10 }]);
+        Booking.find.mockReturnValue({
+            populate: jest.fn().mockReturnThis(),
+            sort: jest.fn().mockReturnThis(),
+            limit: jest.fn().mockResolvedValue([])
+        });
+        AuditLog.find.mockReturnValue({
+            populate: jest.fn().mockReturnThis(),
+            sort: jest.fn().mockReturnThis(),
+            limit: jest.fn().mockResolvedValue([])
+        });
+        Dispute.find.mockReturnValue({
+            populate: jest.fn().mockReturnThis(),
+            limit: jest.fn().mockReturnThis(),
+            lean: jest.fn().mockResolvedValue([])
+        });
 
         const stats = await DashboardService.getDashboardStats();
 
@@ -88,8 +120,14 @@ describe('Industry Standard: DashboardService Analytics Logic', () => {
         expect(stats.totalVendors).toBe(50);
         expect(stats.packages).toBe(25);
         expect(stats.revenue).toBe(100000);
+        expect(stats.topTerritories).toBeDefined();
+        expect(stats.departures).toBeDefined();
+        expect(stats.systemHealth).toBeDefined();
+        expect(stats.systemHealth.storageLoad).toBe(50); // (1024/2048)*100
+        
         expect(Vendor.find).toHaveBeenCalled();
         expect(Booking.find).toHaveBeenCalled();
+        expect(AuditLog.find).toHaveBeenCalled();
     });
 
     it('[Analytics] should aggregate data by period', async () => {
@@ -102,7 +140,7 @@ describe('Industry Standard: DashboardService Analytics Logic', () => {
         const data = await DashboardService.getAnalyticsData('monthly');
 
         expect(data.revenueData).toBeDefined();
-        expect(data.bookingStatus[0].name).toBe('confirmed');
+        expect(data.bookingStatus[0].name).toBe('CONFIRMED');
         expect(data.userGrowth).toBeDefined();
         expect(data.topVendors[0].name).toBe('Test Vendor');
     });
@@ -115,7 +153,10 @@ describe('Industry Standard: DashboardService Analytics Logic', () => {
 
     it('[Calendar] should query bookings within date range', async () => {
         const mockBooking = { _id: '1', startDate: new Date(), bookingDetails: { category: 'trekking' } };
-        mockQuery._resolveWith([mockBooking]);
+        Booking.find.mockReturnValue({
+            populate: jest.fn().mockReturnThis(),
+            then: jest.fn(resolve => resolve([mockBooking]))
+        });
 
         const start = new Date('2024-01-01');
         const end = new Date('2024-01-31');
