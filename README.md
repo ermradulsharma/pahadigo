@@ -146,7 +146,6 @@ This repository possesses comprehensive sub-documentation manuals standardizing 
 - **[TESTING_SETUP.md](docs/TESTING_SETUP.md)** — Automated quality control, Jest integration, and memory-DB isolation.
 - **[SECURITY.md](docs/SECURITY.md)** — Authentication matrices, NoSQL injection parameters, and Coordinated Disclosure.
 - **[CONTRIBUTING.md](docs/CONTRIBUTING.md)** — Workflow standards, testing protocols, and dependency management.
-- **[postman_api_structure.md](docs/postman_api_structure.md)** — Detailed breakdown of the Postman collection structure and API organization.
 
 
 ---
