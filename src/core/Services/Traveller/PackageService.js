@@ -4,6 +4,7 @@ import Vendor from '@/core/Models/Vendor.js';
 import Category from '@/core/Models/Category.js';
 import { CATEGORY_MAP, SCHEMA_KEYS } from '@/core/Constants/categories.js';
 import MasterService from '@/core/Services/MasterService.js';
+import { getAppConfig } from '@/core/Lib/appConfig.js';
 
 /**
  * PackageService (Traveller Role)
@@ -36,6 +37,13 @@ class PackageService {
 
     if (item.isActive === false) return null;
     item.vendor = pkg.vendor?._id || pkg.vendor;
+
+    const config = await getAppConfig();
+    if (item.pricing) {
+      item.pricing.gst = config.tax?.gst || 0;
+      item.pricing.serviceTax = config.tax?.service_tax || 0;
+    }
+
     return item;
   }
 
@@ -71,7 +79,7 @@ class PackageService {
     if (!itemIds || itemIds.length === 0) return [];
     const objectIds = itemIds.map(id => (typeof id === 'string' ? id : id.toString()));
 
-    return await Package.aggregate([
+    const items = await Package.aggregate([
       {
         $project: {
           items: {
@@ -111,6 +119,19 @@ class PackageService {
         }
       }
     ]);
+
+    const config = await getAppConfig();
+    const gst = config.tax?.gst || 0;
+    const serviceTax = config.tax?.service_tax || 0;
+
+    return items.map(item => ({
+      ...item,
+      pricing: {
+        ...(item.pricing || {}),
+        gst: gst,
+        serviceTax: serviceTax
+      }
+    }));
   }
 
   async getAvailablePackages(query = '') {
@@ -194,23 +215,34 @@ class PackageService {
     const categories = await Category.find({}).lean();
     const result = {};
 
+    const config = await getAppConfig();
+    const gst = config.tax?.gst || 0;
+    const serviceTax = config.tax?.service_tax || 0;
+
     categories.forEach(cat => {
       const slug = (cat.slug || '').toLowerCase();
       const schemaKey = (CATEGORY_MAP[slug] || slug).toLowerCase();
       result[slug] = flattened.filter(item => {
         const itemCat = (item.category || '').toLowerCase();
         return itemCat === schemaKey || itemCat === slug;
-      }).map(item => ({
-        id: item._id,
-        title: item.title,
-        isActive: item.isActive,
-        pricing: item.pricing || {},
-        location: item.location || {},
-        photos: item.photos?.[0] || "",
-        category_name: cat.name || "",
-        category_slug: slug,
-        category_id: cat._id || ""
-      }))
+      }).map(item => {
+        const pricing = item.pricing || {};
+        return {
+          id: item._id,
+          title: item.title,
+          isActive: item.isActive,
+          pricing: {
+            ...pricing,
+            gst: gst,
+            serviceTax: serviceTax
+          },
+          location: item.location || {},
+          photos: item.photos?.[0] || "",
+          category_name: cat.name || "",
+          category_slug: slug,
+          category_id: cat._id || ""
+        };
+      })
     });
     return result;
   }

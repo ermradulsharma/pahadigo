@@ -7,6 +7,7 @@ import { CATEGORY_MAP } from '@/core/Constants/categories.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { paginateArray } from '@/core/Helpers/queryUtils.js';
 import Controller from '@/core/Controllers/Controller.js';
+import { getAppConfig } from '@/core/Lib/appConfig.js';
 
 /**
  * PackageController (General/Public Role) - Handles public browsing and search of packages.
@@ -82,6 +83,10 @@ class PackageController extends Controller {
 
       const rawResults = await PackageService.searchPackages(lat, lng, category, radius || 50);
 
+      const config = await getAppConfig();
+      const gst = config.tax?.gst || 0;
+      const serviceTax = config.tax?.service_tax || 0;
+
       const results = {};
       const wishlistSet = new Set();
       if (req.user?.id) {
@@ -101,7 +106,11 @@ class PackageController extends Controller {
             id: item._id,
             title: item.title,
             isActive: item.isActive,
-            pricing: item.pricing || {},
+            pricing: {
+              ...(item.pricing || {}),
+              gst: gst,
+              serviceTax: serviceTax
+            },
             location: item.location || {},
             photos: item.photos?.[0] || "",
             category_name: cat.name,
