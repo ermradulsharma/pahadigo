@@ -36,12 +36,20 @@ class PackageService {
     if (!isCategoryVerified) return null;
 
     if (item.isActive === false) return null;
-    item.vendor = pkg.vendor?._id || pkg.vendor;
 
     const config = await getAppConfig();
     if (item.pricing) {
       item.pricing.gst = config.tax?.gst || 0;
       item.pricing.serviceTax = config.tax?.service_tax || 0;
+    }
+
+    if (pkg.vendor) {
+      item.vendor = {
+        id: pkg.vendor._id,
+        ownerName: pkg.vendor.ownerName,
+        businessName: pkg.vendor.businessName,
+        address: pkg.vendor.address
+      };
     }
 
     return item;

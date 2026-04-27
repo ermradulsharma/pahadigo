@@ -43,6 +43,15 @@ class PackageService {
       item.pricing.serviceTax = config.tax?.service_tax || 0;
     }
 
+    if (pkg.vendor) {
+      item.vendor = {
+        id: pkg.vendor._id,
+        ownerName: pkg.vendor.ownerName,
+        businessName: pkg.vendor.businessName,
+        address: pkg.vendor.address
+      };
+    }
+
     return item;
   }
 
