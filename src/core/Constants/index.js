@@ -593,15 +593,15 @@ export const PACKAGE = {
   },
 
   DIFFICULTY: {
-    EASY: 'easy',
-    MODERATE: 'moderate',
-    HARD: 'hard'
+    EASY: 'Easy',
+    MODERATE: 'Moderate',
+    HARD: 'Hard'
   },
 
   FITNESS_LEVELS: {
-    BASIC: 'basic',
-    GOOD: 'good',
-    EXCELLENT: 'excellent'
+    BASIC: 'Basic',
+    GOOD: 'Good',
+    EXCELLENT: 'Excellent'
   },
 
   SEASONS: {

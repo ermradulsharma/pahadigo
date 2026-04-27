@@ -1,5 +1,6 @@
 import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import Vendor from '@/core/Models/Vendor.js';
 
 class DocumentService {
   /**
