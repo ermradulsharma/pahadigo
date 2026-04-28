@@ -53,6 +53,7 @@ test_output.txt
 
 /public/uploads/
 # /scripts/
+*-firebase-adminsdk-*.json
 # postman/
 # .postman/
 .agent/

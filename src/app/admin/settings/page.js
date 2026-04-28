@@ -57,7 +57,7 @@ export default function SettingsPage() {
 
     const [formData, setFormData] = useState({
         smtp_email: '', smtp_password: '', smtp_host: '', smtp_port: '', smtp_from_address: '', smtp_from_name: '',
-        push_notification_server_key: '', msg91_auth_key: '', msg91_template_id: '', razorpay_key_id: '',
+        firebase_project_id: '', firebase_client_email: '', firebase_private_key: '', msg91_auth_key: '', msg91_template_id: '', razorpay_key_id: '',
         razorpay_key_secret: '', mongodb_uri: '', api_url: '', jwt_secret: '', google_client_id: '',
         google_client_secret: '', facebook_app_id: '', facebook_app_secret: '', apple_client_id: '',
         apple_team_id: '', apple_key_id: '', apple_private_key: '', app_name: '', terms_conditions: '',
@@ -173,11 +173,13 @@ export default function SettingsPage() {
         },
         {
             id: 'Notifications',
-            title: 'Notifications Cluster',
+            title: 'Firebase Notifications',
             icon: BellRing,
-            keys: ['push_notification_server_key'],
+            keys: ['firebase_project_id', 'firebase_client_email', 'firebase_private_key'],
             fields: [
-                { name: 'push_notification_server_key', label: 'PN Server Directive Key', type: 'textarea', placeholder: 'Enter raw server key payload...' }
+                { name: 'firebase_project_id', label: 'Firebase Project ID', placeholder: 'Project ID...' },
+                { name: 'firebase_client_email', label: 'Firebase Client Email', placeholder: 'firebase-adminsdk-xxx@...' },
+                { name: 'firebase_private_key', label: 'Firebase Private Key', type: 'textarea', placeholder: '-----BEGIN PRIVATE KEY-----\n...\n-----END PRIVATE KEY-----' }
             ]
         },
         {

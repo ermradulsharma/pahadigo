@@ -14,8 +14,10 @@ const SettingSchema = new mongoose.Schema({
   msg91_auth_key: { type: String, default: DEFAULTS.NULL },
   msg91_template_id: { type: String, default: DEFAULTS.NULL },
 
-  // Notification
-  push_notification_server_key: { type: String, default: DEFAULTS.NULL },
+  // Firebase Configuration (Admin SDK)
+  firebase_project_id: { type: String, default: DEFAULTS.NULL },
+  firebase_client_email: { type: String, default: DEFAULTS.NULL },
+  firebase_private_key: { type: String, default: DEFAULTS.NULL },
 
   // Razorpay Configuration
   razorpay_key_id: { type: String, default: DEFAULTS.NULL },
