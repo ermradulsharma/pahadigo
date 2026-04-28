@@ -17,7 +17,7 @@ class SettingsService {
     if (!setting) {
       setting = new Setting(data);
     } else {
-      Object.assign(setting, data);
+      setting.set(data);
     }
 
     await setting.save();

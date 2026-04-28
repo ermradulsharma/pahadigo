@@ -24,8 +24,10 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
                 auth_key: process.env.MSG91_AUTH_KEY || DEFAULTS.NULL,
                 template_id: process.env.MSG91_TEMPLATE_ID || DEFAULTS.NULL
             },
-            push_notification: {
-                server_key: process.env.PUSH_NOTIFICATION_SERVER_KEY || DEFAULTS.NULL
+            firebase: {
+                project_id: process.env.FIREBASE_PROJECT_ID || DEFAULTS.NULL,
+                client_email: process.env.FIREBASE_CLIENT_EMAIL || DEFAULTS.NULL,
+                private_key: process.env.FIREBASE_PRIVATE_KEY || DEFAULTS.NULL
             },
             razorpay: {
                 key_id: process.env.RAZORPAY_KEY_ID || DEFAULTS.NULL,
@@ -89,8 +91,10 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
                 auth_key: dbSettings.msg91_auth_key || process.env.MSG91_AUTH_KEY || DEFAULTS.NULL,
                 template_id: dbSettings.msg91_template_id || process.env.MSG91_TEMPLATE_ID || DEFAULTS.NULL,
             },
-            push_notification: {
-                server_key: dbSettings.push_notification_server_key || process.env.PUSH_NOTIFICATION_SERVER_KEY || APP_DETAILS.PUSH_NOTIFICATION_SERVER_KEY,
+            firebase: {
+                project_id: dbSettings.firebase_project_id || process.env.FIREBASE_PROJECT_ID || DEFAULTS.NULL,
+                client_email: dbSettings.firebase_client_email || process.env.FIREBASE_CLIENT_EMAIL || DEFAULTS.NULL,
+                private_key: dbSettings.firebase_private_key || process.env.FIREBASE_PRIVATE_KEY || DEFAULTS.NULL,
             },
             razorpay: {
                 key_id: dbSettings.razorpay_key_id || process.env.RAZORPAY_KEY_ID || DEFAULTS.NULL,
@@ -154,8 +158,10 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
                 auth_key: process.env.MSG91_AUTH_KEY || DEFAULTS.NULL,
                 template_id: process.env.MSG91_TEMPLATE_ID || DEFAULTS.NULL,
             },
-            push_notification: {
-                server_key: process.env.PUSH_NOTIFICATION_SERVER_KEY || APP_DETAILS.PUSH_NOTIFICATION_SERVER_KEY,
+            firebase: {
+                project_id: process.env.FIREBASE_PROJECT_ID || DEFAULTS.NULL,
+                client_email: process.env.FIREBASE_CLIENT_EMAIL || DEFAULTS.NULL,
+                private_key: process.env.FIREBASE_PRIVATE_KEY || DEFAULTS.NULL,
             },
             razorpay: {
                 key_id: process.env.RAZORPAY_KEY_ID || DEFAULTS.NULL,

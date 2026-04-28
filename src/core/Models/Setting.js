@@ -22,6 +22,7 @@ const SettingSchema = new mongoose.Schema({
   // Razorpay Configuration
   razorpay_key_id: { type: String, default: DEFAULTS.NULL },
   razorpay_key_secret: { type: String, default: DEFAULTS.NULL },
+  razorpay_webhook_secret: { type: String, default: DEFAULTS.NULL },
 
   // Database Configuration
   mongodb_uri: { type: String, default: DEFAULTS.NULL },
@@ -72,4 +73,8 @@ const SettingSchema = new mongoose.Schema({
   toObject: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE }
 });
 
-export default mongoose.models.Setting || mongoose.model('Setting', SettingSchema);
+if (mongoose.models.Setting) {
+  delete mongoose.models.Setting;
+}
+
+export default mongoose.model('Setting', SettingSchema);
