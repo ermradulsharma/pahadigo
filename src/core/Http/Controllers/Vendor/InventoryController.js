@@ -14,7 +14,7 @@ class InventoryController extends Controller {
     try {
       const vendor = await BusinessService.getBusinessByUserId(req.user.id);
       if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-      const catalog = await PackageService.getInventory(vendor._id);
+      const catalog = await PackageService.getInventory(req.user.id, vendor._id);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.INVENTORY_FETCHED, catalog);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
