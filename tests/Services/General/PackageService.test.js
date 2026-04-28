@@ -34,8 +34,14 @@ jest.unstable_mockModule('mongoose', () => ({
         Types: { ObjectId: jest.fn(id => id) },
         model: jest.fn(() => ({
             findOne: jest.fn().mockResolvedValue({ status: 'verified' })
-        }))
+        })),
+        models: {},
+        Schema: class {}
     }
+}));
+
+jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
+    getAppConfig: jest.fn().mockResolvedValue({ tax: { gst: 18, service_tax: 2 } })
 }));
 
 const { default: PackageService } = await import('@/services/General/PackageService.js');

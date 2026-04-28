@@ -25,6 +25,7 @@ describe('Industry Standard: Package Data Structure', () => {
     it('[Success] should enforce uniqueness on user/vendor fields', async () => {
         const userId = generateId();
         const vendorId = generateId();
+        await Package.init();
         await Package.create({ user: userId, vendor: vendorId });
         
         let err;
