@@ -1,11 +1,18 @@
 import { jest } from '@jest/globals';
 
-jest.unstable_mockModule('@/models/Setting.js', () => ({
-    default: {
-        findOne: jest.fn(),
-        create: jest.fn()
-    }
-}));
+jest.unstable_mockModule('@/models/Setting.js', () => {
+    const mockSettingInstance = (data) => ({
+        ...data,
+        save: jest.fn().mockResolvedValue(true),
+        set: jest.fn(function(d) { Object.assign(this, d); })
+    });
+    
+    const MockSetting = jest.fn().mockImplementation(mockSettingInstance);
+    MockSetting.findOne = jest.fn();
+    MockSetting.create = jest.fn();
+    
+    return { default: MockSetting };
+});
 
 jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
     clearAppConfigCache: jest.fn()
@@ -44,13 +51,26 @@ describe('Industry Standard: SettingsService Business Logic Service', () => {
 
     describe('[updateSettings]', () => {
         it('[Success] should update existing settings and clear cache', async () => {
-            const mockSetting = { save: jest.fn() };
+            const mockSetting = { 
+                save: jest.fn().mockResolvedValue(true),
+                set: jest.fn(function(data) { Object.assign(this, data); })
+            };
             Setting.findOne.mockResolvedValue(mockSetting);
 
             await SettingsService.updateSettings({ maintenanceMode: true });
 
             expect(mockSetting.maintenanceMode).toBe(true);
             expect(mockSetting.save).toHaveBeenCalled();
+            expect(clearAppConfigCache).toHaveBeenCalled();
+        });
+
+        it('[Success] should create new settings if none exist', async () => {
+            Setting.findOne.mockResolvedValue(null);
+            
+            const result = await SettingsService.updateSettings({ maintenanceMode: true });
+
+            expect(Setting).toHaveBeenCalledWith({ maintenanceMode: true });
+            expect(result.maintenanceMode).toBe(true);
             expect(clearAppConfigCache).toHaveBeenCalled();
         });
     });
