@@ -33,7 +33,7 @@
         "react-simple-wysiwyg": "^3.4.1",
         "recharts": "^3.8.1",
         "tesseract.js": "^7.0.0",
-        "zod": "^4.3.6"
+        "zod": "^4.4.2"
     },
     "devDependencies": {
         "@tailwindcss/postcss": "^4.2.4",
