@@ -1,0 +1,356 @@
+{
+  "info": {
+    "_postman_id": "c1f1f1a1-f2f2-3a3a-4b4b-123456789abc",
+    "name": "PahadiGo Live Chat (Traveller & Vendor)",
+    "description": "Collection to test the live chat feature with SSE stream between traveller, vendor, and admin support.",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Traveller Actions",
+      "item": [
+        {
+          "name": "Create or Fetch Conversation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traveller_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"65dfc2042a42df239841cd4a\",\n  \"type\": \"traveller-vendor\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/traveller/chat/conversation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "traveller",
+                "chat",
+                "conversation"
+              ]
+            },
+            "description": "Allows a traveller to start or fetch a conversation with a vendor or admin about a booking."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Conversations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traveller_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/traveller/chat/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "traveller",
+                "chat",
+                "conversations"
+              ]
+            },
+            "description": "Lists all conversation threads for the authenticated traveller."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traveller_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/traveller/chat/conversations/{{conversationId}}/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "traveller",
+                "chat",
+                "conversations",
+                "{{conversationId}}",
+                "messages"
+              ]
+            },
+            "description": "Fetch the full message thread for a specific conversation."
+          },
+          "response": []
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traveller_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Hello! I have a question about my booking.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/traveller/chat/conversations/{{conversationId}}/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "traveller",
+                "chat",
+                "conversations",
+                "{{conversationId}}",
+                "messages"
+              ]
+            },
+            "description": "Send a message to the other participant."
+          },
+          "response": []
+        },
+        {
+          "name": "Listen to SSE Chat Stream",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{traveller_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/traveller/chat/stream",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "traveller",
+                "chat",
+                "stream"
+              ]
+            },
+            "description": "Connect to SSE stream to receive live incoming messages for traveller."
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Vendor Actions",
+      "item": [
+        {
+          "name": "Create or Fetch Conversation",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendor_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"65dfc2042a42df239841cd4a\",\n  \"type\": \"vendor-admin\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/vendor/chat/conversation",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vendor",
+                "chat",
+                "conversation"
+              ]
+            },
+            "description": "Allows a vendor to start or fetch a conversation about a booking."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Conversations",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendor_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/vendor/chat/conversations",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vendor",
+                "chat",
+                "conversations"
+              ]
+            },
+            "description": "Lists all conversation threads for the authenticated vendor."
+          },
+          "response": []
+        },
+        {
+          "name": "Get Messages",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendor_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/vendor/chat/conversations/{{conversationId}}/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vendor",
+                "chat",
+                "conversations",
+                "{{conversationId}}",
+                "messages"
+              ]
+            },
+            "description": "Fetch the full message thread for a specific conversation."
+          },
+          "response": []
+        },
+        {
+          "name": "Send Message",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendor_token}}",
+                "type": "text"
+              },
+              {
+                "key": "Content-Type",
+                "value": "application/json",
+                "type": "text"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"message\": \"Hello! Responding to your inquiry.\"\n}"
+            },
+            "url": {
+              "raw": "{{baseUrl}}/api/vendor/chat/conversations/{{conversationId}}/messages",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vendor",
+                "chat",
+                "conversations",
+                "{{conversationId}}",
+                "messages"
+              ]
+            },
+            "description": "Send a message to the other participant."
+          },
+          "response": []
+        },
+        {
+          "name": "Listen to SSE Chat Stream",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{vendor_token}}",
+                "type": "text"
+              }
+            ],
+            "url": {
+              "raw": "{{baseUrl}}/api/vendor/chat/stream",
+              "host": [
+                "{{baseUrl}}"
+              ],
+              "path": [
+                "api",
+                "vendor",
+                "chat",
+                "stream"
+              ]
+            },
+            "description": "Connect to SSE stream to receive live incoming messages for vendor."
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "baseUrl",
+      "value": "http://localhost:3000",
+      "type": "string"
+    },
+    {
+      "key": "traveller_token",
+      "value": "your_traveller_jwt_here",
+      "type": "string"
+    },
+    {
+      "key": "vendor_token",
+      "value": "your_vendor_jwt_here",
+      "type": "string"
+    },
+    {
+      "key": "conversationId",
+      "value": "conversation_id_from_creation",
+      "type": "string"
+    }
+  ]
+}

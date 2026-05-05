@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect } from 'react';
 import { getToken } from '@/core/Helpers/authUtils';
-import { User, Mail, Phone, MapPin, Shield, Camera, Save, CheckCircle, AlertTriangle, Lock, Eye, EyeOff, Briefcase, Globe, Hash } from 'lucide-react';
+import { User, Mail, Phone, MapPin, Shield, Camera, Save, CheckCircle, AlertTriangle, Lock, Eye, EyeOff, Briefcase, Globe, Hash, Terminal, Settings, HardDrive } from 'lucide-react';
 import Loading from '@/components/admin/Loading';
 
 export default function AdminProfilePage() {

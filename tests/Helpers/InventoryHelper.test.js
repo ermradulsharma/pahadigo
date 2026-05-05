@@ -1,44 +1,53 @@
-import { normalizeAvailability, calculateEffectivePrice, determineDayStatus } from '@/helpers/InventoryHelper.js';
+import { formatInventoryItem, normalizeAvailability, calculateEffectivePrice, determineDayStatus } from '@/core/Helpers/InventoryHelper.js';
 
-describe('Industry Standard: Inventory Helper Logic', () => {
-    describe('[normalizeAvailability]', () => {
-        it('[Success] should normalize homestay availability', () => {
-            const item = { availability: { totalRooms: 10, availableRooms: 5, occupiedRooms: 5 } };
+describe('InventoryHelper', () => {
+    describe('normalizeAvailability', () => {
+        test('should normalize homestay availability', () => {
+            const item = { availability: { totalRooms: 10, availableRooms: 8, occupiedRooms: 2 } };
             const result = normalizeAvailability(item);
             expect(result.totalUnits).toBe(10);
-            expect(result.bookedUnits).toBe(5);
+            expect(result.availableUnits).toBe(8);
+            expect(result.bookedUnits).toBe(2);
         });
 
-        it('[Success] should normalize transport fleet availability', () => {
-            const item = { fleetAvailability: { totalVehicles: 3, availableVehicles: 1, rentedVehicles: 2 } };
+        test('should normalize transport/fleet availability', () => {
+            const item = { fleetAvailability: { totalVehicles: 5, availableVehicles: 3, rentedVehicles: 2 } };
             const result = normalizeAvailability(item);
-            expect(result.totalUnits).toBe(3);
+            expect(result.totalUnits).toBe(5);
+            expect(result.availableUnits).toBe(3);
             expect(result.bookedUnits).toBe(2);
         });
     });
 
-    describe('[calculateEffectivePrice]', () => {
-        it('[Direct] should use override basePrice if provided', () => {
-            const result = calculateEffectivePrice(100, { basePrice: 150 });
-            expect(result).toBe(150);
+    describe('calculateEffectivePrice', () => {
+        test('should return base price if no overrides', () => {
+            expect(calculateEffectivePrice(100)).toBe(100);
         });
 
-        it('[Adjustment] should apply amount then percent adjustments', () => {
-            // 100 + 20 = 120; 120 + 10% = 132
-            const result = calculateEffectivePrice(100, { priceAdjustmentPercent: 10, priceAdjustmentAmount: 20 });
-            expect(result).toBe(132);
+        test('should apply price adjustment amount', () => {
+            expect(calculateEffectivePrice(100, { priceAdjustmentAmount: 20 })).toBe(120);
+        });
+
+        test('should apply price adjustment percent', () => {
+            expect(calculateEffectivePrice(100, { priceAdjustmentPercent: 10 })).toBe(110);
+        });
+
+        test('should prioritize basePrice override', () => {
+            expect(calculateEffectivePrice(100, { basePrice: 150, priceAdjustmentAmount: 20 })).toBe(150);
         });
     });
 
-    describe('[determineDayStatus]', () => {
-        it('[Sold Out] should return sold_out if booked >= total', () => {
-            const status = determineDayStatus(5, 5, null, true);
-            expect(status).toBe('sold_out');
+    describe('determineDayStatus', () => {
+        test('should return sold_out if booked >= total', () => {
+            expect(determineDayStatus(10, 10, null, true)).toBe('sold_out');
         });
 
-        it('[Closed] should return closed if item is inactive', () => {
-            const status = determineDayStatus(10, 0, null, false);
-            expect(status).toBe('closed');
+        test('should return manual status if provided', () => {
+            expect(determineDayStatus(10, 5, 'maintenance', true)).toBe('maintenance');
+        });
+
+        test('should return closed if item is not active', () => {
+            expect(determineDayStatus(10, 5, null, false)).toBe('closed');
         });
     });
 });

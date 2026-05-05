@@ -1,7 +1,48 @@
-import module from '@/helpers/cloudinary.js';
+import { jest } from '@jest/globals';
+import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
+import { v2 as cloudinary } from 'cloudinary';
+import { HTTP_STATUS } from '@/core/Constants/index.js';
 
-describe('Industry Standard: cloudinary Module', () => {
-    it('[Success] should satisfy core import requirements', () => {
-        expect(module).toBeDefined();
+describe('Cloudinary Helper', () => {
+    const originalEnv = process.env;
+
+    beforeEach(() => {
+        jest.clearAllMocks();
+        process.env = { ...originalEnv, CLOUDINARY_URL: 'cloudinary://test:test@test' };
+        
+        jest.spyOn(cloudinary.uploader, 'upload').mockImplementation(() => {});
+        jest.spyOn(cloudinary, 'config').mockImplementation(() => {});
+    });
+
+    afterEach(() => {
+        process.env = originalEnv;
+        jest.restoreAllMocks();
+    });
+
+    test('should upload file successfully', async () => {
+        const mockFile = {
+            type: 'image/jpeg',
+            size: 1024,
+            arrayBuffer: jest.fn().mockResolvedValue(new ArrayBuffer(8))
+        };
+
+        cloudinary.uploader.upload.mockResolvedValue({
+            secure_url: 'http://res.cloudinary.com/test.jpg',
+            public_id: 'test_id'
+        });
+
+        const result = await uploadToCloudinary(mockFile, 'test-folder');
+        expect(result.url).toBe('http://res.cloudinary.com/test.jpg');
+    });
+
+    test('should reject invalid file types', async () => {
+        const mockFile = {
+            type: 'text/plain',
+            size: 1024
+        };
+
+        await expect(uploadToCloudinary(mockFile)).rejects.toMatchObject({
+            status: HTTP_STATUS.BAD_REQUEST
+        });
     });
 });

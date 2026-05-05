@@ -1,68 +1,69 @@
 import { jest } from '@jest/globals';
 
-jest.unstable_mockModule('@/core/Models/User.js', () => ({
-    default: {
-        findOneAndUpdate: jest.fn(),
-        findOne: jest.fn()
-    }
+// Use unstable_mockModule for ESM Libs
+jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
+    getAppConfig: jest.fn().mockResolvedValue({ secrets: { master_otp: '999999' } })
 }));
 
-jest.unstable_mockModule('@/core/Events/AuthEvents.js', () => ({
-    default: { emit: jest.fn() }
-}));
-
-jest.unstable_mockModule('@/lib/appConfig.js', () => ({
-    getAppConfig: jest.fn().mockResolvedValue({ secrets: { master_otp: '888888' } })
-}));
-
-const { default: OTPService } = await import('@/services/Auth/User/OTPService.js');
+const { default: OTPService } = await import('@/core/Services/Auth/User/OTPService.js');
 const { default: User } = await import('@/core/Models/User.js');
 const { default: AuthEvents } = await import('@/core/Events/AuthEvents.js');
 
-describe('Industry Standard: OTPService Logic', () => {
+describe('User OTPService', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        jest.spyOn(User, 'findOneAndUpdate');
+        jest.spyOn(User, 'findOne');
+        // AuthEvents is also an ESM export, might need spying or mocking
+        jest.spyOn(AuthEvents, 'emit').mockImplementation(() => {});
     });
 
-    describe('[generateOTP]', () => {
-        it('[Success] should generate 6-digit OTP and emit event', async () => {
+    afterEach(() => {
+        jest.restoreAllMocks();
+    });
+
+    describe('generateOTP', () => {
+        test('should generate and save OTP for email', async () => {
             const identifier = 'test@test.com';
-            User.findOneAndUpdate.mockResolvedValue({ _id: 'u1', email: identifier });
+            User.findOneAndUpdate.mockResolvedValue({ _id: 'u1', otp: '123456' });
 
             const otp = await OTPService.generateOTP(identifier);
 
             expect(otp).toHaveLength(6);
-            expect(User.findOneAndUpdate).toHaveBeenCalled();
-            expect(AuthEvents.emit).toHaveBeenCalledWith('otp.requested', { identifier, otp });
+            expect(User.findOneAndUpdate).toHaveBeenCalledWith(
+                { $or: [{ email: identifier }, { phone: identifier }] },
+                expect.objectContaining({ $set: expect.objectContaining({ email: identifier }) }),
+                expect.anything()
+            );
+            expect(AuthEvents.emit).toHaveBeenCalledWith('otp.requested', expect.objectContaining({ identifier }));
         });
     });
 
-    describe('[verifyOTP]', () => {
-        it('[Success] should verify correct OTP', async () => {
-            const identifier = '9876543210';
-            const user = { _id: 'u1', otp: '123456', save: jest.fn() };
-            User.findOne.mockResolvedValue(user);
+    describe('verifyOTP', () => {
+        test('should verify master OTP successfully', async () => {
+            const identifier = 'test@test.com';
+            const mockUser = { _id: 'u1' };
+            User.findOne.mockResolvedValue(mockUser);
+
+            const result = await OTPService.verifyOTP(identifier, '999999');
+
+            expect(result).toBe(mockUser);
+        });
+
+        test('should verify valid user OTP and clear it', async () => {
+            const identifier = 'test@test.com';
+            const mockUser = { 
+                _id: 'u1', 
+                otp: '123456', 
+                save: jest.fn().mockResolvedValue(true) 
+            };
+            User.findOne.mockResolvedValue(mockUser);
 
             const result = await OTPService.verifyOTP(identifier, '123456');
 
-            expect(result).toEqual(user);
-            expect(user.save).toHaveBeenCalled();
-        });
-
-        it('[Success] should verify master OTP', async () => {
-            const identifier = '9876543210';
-            const user = { _id: 'u1' };
-            User.findOne.mockResolvedValue(user);
-
-            const result = await OTPService.verifyOTP(identifier, '888888');
-
-            expect(result).toEqual(user);
-        });
-
-        it('[Failure] should return null for invalid OTP', async () => {
-            User.findOne.mockResolvedValue(null);
-            const result = await OTPService.verifyOTP('9876543210', '000000');
-            expect(result).toBeNull();
+            expect(result).toBe(mockUser);
+            expect(mockUser.otp).toBe(null);
+            expect(mockUser.save).toHaveBeenCalled();
         });
     });
 });

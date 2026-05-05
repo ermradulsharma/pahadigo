@@ -17,10 +17,41 @@ import { STATUS, USER_ROLES } from '@/core/Constants/index.js';
  */
 class DashboardService {
   async getSystemHealth() {
+    const freeMem = os.freemem();
+    const totalMem = os.totalmem();
+    const usedMem = totalMem - freeMem;
+    const loadAvg = os.loadavg();
+    
+    // Database stats
+    let dbStats = { dataSize: 0, storageSize: 0, collections: 0 };
+    try {
+      dbStats = await mongoose.connection.db.stats();
+    } catch (e) {
+      console.error("DB Stats fetch error:", e);
+    }
+
     return {
       status: 'healthy',
       uptime: process.uptime(),
-      activeUsers: await User.countDocuments({ status: STATUS.ACTIVE })
+      timestamp: Date.now(),
+      activeUsers: await User.countDocuments({ status: STATUS.ACTIVE }),
+      memory: {
+        total: totalMem,
+        free: freeMem,
+        used: usedMem,
+        percentage: Math.round((usedMem / totalMem) * 100)
+      },
+      cpu: {
+        load: loadAvg,
+        cores: os.cpus().length,
+        model: os.cpus()[0]?.model
+      },
+      database: {
+        collections: dbStats.collections || 0,
+        dataSize: dbStats.dataSize || 0,
+        storageSize: dbStats.storageSize || 0,
+        objects: dbStats.objects || 0
+      }
     };
   }
 

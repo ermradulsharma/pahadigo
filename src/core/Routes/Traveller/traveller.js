@@ -5,6 +5,7 @@ import TravellerController from '@/core/Controllers/Traveller/TravellerControlle
 import PaymentController from '@/core/Controllers/Traveller/PaymentController.js';
 import AuthController from '@/core/Controllers/Auth/AuthController.js';
 import SOSController from '@/core/Controllers/General/SOSController.js';
+import ChatController from '@/core/Http/Controllers/General/ChatController.js';
 import Router from '@/core/Routes/Router.js';
 import { USER_ROLES } from '@/core/Constants/index.js';
 import { wrap } from '@/core/Routes/helpers.js';
@@ -59,6 +60,15 @@ const travellerRoutes = [
       { method: 'GET', path: '/', handler: wrap(() => ProfileController, 'getProfile') },
       { method: 'PUT', path: '/', handler: wrap(() => ProfileController, 'updateProfile') },
       { method: 'POST', path: '/avatar', handler: wrap(() => ProfileController, 'updateProfileImage') },
+    ]),
+
+    // Chat / Conversations Hub
+    ...Router.group({ prefix: '/chat' }, [
+      { method: 'POST', path: '/conversation', handler: wrap(() => ChatController, 'createConversation') },
+      { method: 'GET', path: '/conversations', handler: wrap(() => ChatController, 'getConversations') },
+      { method: 'GET', path: '/conversations/:id/messages', handler: wrap(() => ChatController, 'getMessages') },
+      { method: 'POST', path: '/conversations/:id/messages', handler: wrap(() => ChatController, 'sendMessage') },
+      { method: 'GET', path: '/stream', handler: wrap(() => ChatController, 'getStream') },
     ]),
   ]),
 ];

@@ -10,6 +10,7 @@ import BookingController from '@/core/Controllers/Vendor/BookingController.js';
 import InventoryController from '@/core/Controllers/Vendor/InventoryController.js';
 import AuthController from '@/core/Controllers/Auth/AuthController.js';
 import SOSController from '@/core/Controllers/General/SOSController.js';
+import ChatController from '@/core/Http/Controllers/General/ChatController.js';
 
 import Router from '@/core/Routes/Router.js';
 import { USER_ROLES } from '@/core/Constants/index.js';
@@ -154,6 +155,15 @@ const vendorRoutes = [
 
     // Safety & SOS
     { method: 'POST', path: '/sos', handler: wrap(() => SOSController, 'triggerSOS') },
+
+    // Chat / Conversations Hub
+    ...Router.group({ prefix: '/chat' }, [
+      { method: 'POST', path: '/conversation', handler: wrap(() => ChatController, 'createConversation') },
+      { method: 'GET', path: '/conversations', handler: wrap(() => ChatController, 'getConversations') },
+      { method: 'GET', path: '/conversations/:id/messages', handler: wrap(() => ChatController, 'getMessages') },
+      { method: 'POST', path: '/conversations/:id/messages', handler: wrap(() => ChatController, 'sendMessage') },
+      { method: 'GET', path: '/stream', handler: wrap(() => ChatController, 'getStream') },
+    ]),
   ]),
 ];
 
