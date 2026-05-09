@@ -31,12 +31,14 @@ class BookingService {
       }
 
       const packageItem = await PackageService.getAvailablePackageItem(itemId);
+
       if (!packageItem) throw new Error(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
 
       const travellerProfile = await User.findById(userId);
       if (!travellerProfile) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
 
-      const { catalogId, category, vendor: vendorId } = packageItem;
+      const { catalogId, category, vendor } = packageItem;
+      console.log(vendor);
       const pricingRules = packageItem.pricing || {};
 
       const adultsCount = parseInt(body.adults) || 1;
@@ -89,7 +91,7 @@ class BookingService {
 
       // 2. Inventory Check & Locking
       const availabilityStatus = await InventoryService.checkAvailabilityRange(
-        vendorId.toString(), itemId, category, checkInDate, checkOutDate, requiredUnits
+        vendor.id, itemId, category, checkInDate, checkOutDate, requiredUnits
       );
 
       if (!availabilityStatus.available) {
@@ -149,7 +151,7 @@ class BookingService {
       const [newBooking] = await Booking.create([{
         bookingCode,
         user: userId,
-        vendor: vendorId,
+        vendor: vendor.id,
         package: catalogId,
         expiresAt: expirationTime,
         item: { itemId: itemId, itemType: category, title: packageItem.title || packageItem.name },
@@ -185,7 +187,7 @@ class BookingService {
 
       // Verification check within the same transaction to prevent race conditions
       const finalCheck = await InventoryService.checkAvailabilityRange(
-        vendorId.toString(), itemId, category, checkInDate, checkOutDate, requiredUnits, session, newBooking._id
+        vendor.id, itemId, category, checkInDate, checkOutDate, requiredUnits, session, newBooking._id
       );
       if (!finalCheck.available) {
         throw new Error(`Inventory Conflict: Slots became unavailable.`);

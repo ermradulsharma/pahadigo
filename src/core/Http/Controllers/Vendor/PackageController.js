@@ -113,37 +113,36 @@ class PackageController extends Controller {
   // POST /vendor/package/add-item
   async addPackageItem(req, { params } = {}) {
     try {
-      const body = req.payload;
       const userId = req.user.id;
+      const body = req.payload;
+
       const vendor = await Vendor.findOne({ user: userId }).select("_id");
       if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-      const vendorId = vendor._id;
-      const category = (body.category?._id || body.category || '').trim();
+      const vendorId = vendor.id;
+      const slug = body.category;
 
       // Handle item[0][key] style format from Postman/CURL
       let itemData = body.itemData || body;
+
       if (body.item && Array.isArray(body.item)) {
         itemData = body.item[0];
       } else if (body.item && typeof body.item === 'object' && body.item['0']) {
         itemData = body.item['0'];
       }
-      // --- [MEDIA] Explicit File Upload Logic for Package Items ---
+
       if (itemData.photos) {
         const photos = Array.isArray(itemData.photos) ? itemData.photos : [itemData.photos];
         const uploadResults = [];
-
         for (const photo of photos) {
-          // Detect if it's a File object from multipart/form-data
           if (photo && typeof photo === 'object' && (photo instanceof File || photo.size > 0)) {
             try {
-              const uploaded = await uploadToCloudinary(photo, `packages/${vendorId}/${category}`);
+              const uploaded = await uploadToCloudinary(photo, `packages/${vendorId}/${slug}`);
               uploadResults.push({ url: uploaded.url, type: 'image' });
             } catch (err) {
               console.error(`[PACKAGE_CONTROLLER] Item image upload failed:`, err);
             }
           } else if (typeof photo === 'object' && photo.url) {
-            // Preservation of existing photo objects during re-save
             uploadResults.push(photo);
           } else if (typeof photo === 'string' && photo.startsWith('http')) {
             uploadResults.push({ url: photo, type: 'image' });
@@ -154,7 +153,7 @@ class PackageController extends Controller {
         else delete itemData.photos;
       }
 
-      const item = await PackageService.addItem(userId, vendorId, category, itemData);
+      const item = await PackageService.addItem(userId, vendorId, slug, itemData);
       return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.ITEM.ADDED, item);
     } catch (error) {
       const status = error.message.toLowerCase().includes('authorized') ? HTTP_STATUS.FORBIDDEN : HTTP_STATUS.BAD_REQUEST;

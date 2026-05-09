@@ -2,6 +2,7 @@ import { RESPONSE_MESSAGES, USER_ROLES, STATUS, DEFAULTS } from '@/core/Constant
 import User from '@/core/Models/User.js';
 import Vendor from '@/core/Models/Vendor.js';
 import { verifyToken, generateToken } from '@/core/Helpers/jwt.js';
+import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
 
 class BaseAuthService {
     async verifyToken(token) {
@@ -35,6 +36,9 @@ class BaseAuthService {
     }
 
     async updateUserProfile(userId, updates) {
+        if (updates.address) {
+            mapToGeoJSON(updates.address, 'location');
+        }
         const user = await User.findByIdAndUpdate(userId, updates, { returnDocument: 'after' });
         if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         return user;

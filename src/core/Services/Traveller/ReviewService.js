@@ -20,20 +20,26 @@ class ReviewService {
     const booking = await Booking.findOne({ _id: bookingId, user: userId });
     if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
 
-    const existingReview = await Review.findOne({ user: userId, booking: bookingId });
-    if (existingReview) throw new Error(RESPONSE_MESSAGES.REVIEW.ALREADY_SUBMITTED);
+    // Enforcement: Traveller can only review completed bookings
+    if (booking.status !== 'completed') {
+      throw new Error('You can only review a booking that has been completed.');
+    }
 
-    const review = await Review.create({
-      user: userId,
-      vendor: booking.vendor,
-      package: booking.package,
-      booking: bookingId,
-      rating,
-      comment,
-      isVisible: true
-    });
+    const review = await Review.findOneAndUpdate(
+      { user: userId, booking: bookingId },
+      {
+        user: userId,
+        vendor: booking.vendor,
+        package: booking.package,
+        booking: bookingId,
+        rating,
+        comment,
+        isVisible: true
+      },
+      { upsert: true, new: true, setDefaultsOnInsert: true }
+    );
 
-    if (booking.vendor) await BusinessService.evaluateVendorTrustBadge(booking.vendor);
+    if (booking.vendor) await BusinessService.calculateTrustBadge(booking.vendor);
     return review;
   }
 

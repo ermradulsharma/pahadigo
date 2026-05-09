@@ -71,6 +71,13 @@ export const schemas = {
     wishlist: z.object({
         itemId: z.string().min(1, RESPONSE_MESSAGES.VALIDATION.ITEM_ID_REQUIRED),
         category: z.string().optional()
+    }),
+
+    // Review Schemas
+    submitReview: z.object({
+        bookingId: z.string().min(1, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED),
+        rating: z.number().int().min(1).max(5),
+        comment: z.string().max(1000).optional()
     })
 };
 

@@ -33,6 +33,9 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
                 key_id: process.env.RAZORPAY_KEY_ID || DEFAULTS.NULL,
                 key_secret: process.env.RAZORPAY_KEY_SECRET || DEFAULTS.NULL
             },
+            push_notification: {
+                server_key: process.env.FCM_SERVER_KEY || APP_DETAILS.PUSH_NOTIFICATION_SERVER_KEY || DEFAULTS.NULL,
+            },
             jwt_secret: process.env.JWT_SECRET || APP_SECRETS.JWT_SECRET,
             mongodb_uri: process.env.MONGODB_URI,
             api_url: process.env.NEXT_PUBLIC_API_URL || APP_DETAILS.API_URL,
@@ -82,9 +85,9 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
             smtp: {
                 host: dbSettings.smtp_host || process.env.SMTP_HOST || APP_DETAILS.SMTP_HOST,
                 port: parseInt(dbSettings.smtp_port || process.env.SMTP_PORT) || APP_DETAILS.SMTP_PORT,
-                user: dbSettings.smtp_email || process.env.SMTP_EMAIL || APP_DETAILS.MAIL_FROM_EMAIL,
-                pass: dbSettings.smtp_password || process.env.SMTP_PASSWORD || APP_SECRETS.SMTP_ACCOUNT_PASS,
-                from_address: dbSettings.smtp_from_address || process.env.SMTP_FROM_ADDRESS || APP_DETAILS.MAIL_FROM_EMAIL,
+                user: dbSettings.smtp_email || process.env.SMTP_EMAIL || process.env.SMTP_USER || APP_DETAILS.MAIL_FROM_EMAIL,
+                pass: dbSettings.smtp_password || process.env.SMTP_PASSWORD || process.env.SMTP_PASS || APP_SECRETS.SMTP_ACCOUNT_PASS,
+                from_address: dbSettings.smtp_from_address || process.env.SMTP_FROM_ADDRESS || process.env.SMTP_EMAIL || process.env.SMTP_USER || APP_DETAILS.MAIL_FROM_EMAIL,
                 from_name: dbSettings.smtp_from_name || process.env.SMTP_FROM_NAME || APP_DETAILS.APP_NAME,
             },
             msg91: {
@@ -100,6 +103,9 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
                 key_id: dbSettings.razorpay_key_id || process.env.RAZORPAY_KEY_ID || DEFAULTS.NULL,
                 key_secret: dbSettings.razorpay_key_secret || process.env.RAZORPAY_KEY_SECRET || DEFAULTS.NULL,
                 webhook_secret: dbSettings.razorpay_webhook_secret || process.env.RAZORPAY_WEBHOOK_SECRET || DEFAULTS.NULL,
+            },
+            push_notification: {
+                server_key: dbSettings.push_notification_server_key || process.env.FCM_SERVER_KEY || APP_DETAILS.PUSH_NOTIFICATION_SERVER_KEY || DEFAULTS.NULL,
             },
             jwt_secret: dbSettings.jwt_secret || process.env.JWT_SECRET || APP_SECRETS.JWT_SECRET,
             mongodb_uri: dbSettings.mongodb_uri || process.env.MONGODB_URI || DEFAULTS.NULL,
@@ -134,9 +140,9 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
                 url: dbSettings.cloudinary_url || process.env.CLOUDINARY_URL || DEFAULTS.NULL,
             },
             secrets: {
-                social_pass: dbSettings.social_pass || process.env.SOCIAL_PASS || DEFAULTS.NULL,
-                other_account_pass: dbSettings.other_account_pass || process.env.OTHER_ACCOUNT_PASS || DEFAULTS.NULL,
-                master_otp: dbSettings.master_otp || process.env.MASTER_OTP || DEFAULTS.NULL,
+                social_pass: dbSettings.social_pass || process.env.SOCIAL_PASS || APP_SECRETS.SOCIAL_PASS || DEFAULTS.NULL,
+                other_account_pass: dbSettings.other_account_pass || process.env.OTHER_ACCOUNT_PASS || APP_SECRETS.OTHER_ACCOUNT_PASS || DEFAULTS.NULL,
+                master_otp: dbSettings.master_otp || process.env.MASTER_OTP || APP_SECRETS.MASTER_OTP || DEFAULTS.NULL,
             }
         };
 

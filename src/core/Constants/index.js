@@ -39,6 +39,7 @@ export const VERIFICATION_STATUS = {
 };
 
 export const DEFAULTS = {
+
   USER_ROLE: USER_ROLES.TRAVELLER,
   STATUS: STATUS.PENDING,
   AUTH_PROVIDER: AUTH_PROVIDERS.PHONE,
@@ -64,13 +65,23 @@ export const DEFAULTS = {
   FALSE: false,
   UNDEFINED: undefined,
   BLOOD_GROUP: null,
-  MEDICAL_CONDITIONS: []
+  MEDICAL_CONDITIONS: [],
+
+  COUNTS: {
+    ZERO: 0,
+    ONE: 1,
+    TWO: 2,
+    THREE: 3,
+    FOUR: 4,
+    FIVE: 5,
+    SIX: 6,
+    SEVEN: 7,
+    EIGHT: 8,
+    NINE: 9
+  }
 };
 
 // ============================================
-// SYSTEM & APP CONFIGURATION
-// ============================================
-
 export const APP_DETAILS = {
   APP_NAME: 'PahadiGo',
   APP_URL: process.env.APP_URL || 'http://www.pahadigo.com',
@@ -780,6 +791,12 @@ export const PACKAGE = {
       V: 'Grade V'
     },
 
+    RAFTING_TYPES: {
+      RIVERSIDE: 'Riverside',
+      EXPEDITION: 'Expedition',
+      FAMILY: 'Family'
+    },
+
     SKI_DIFFICULTY: {
       ADVANCED: 'Advanced',
       BEGINNER: 'Beginner',
@@ -805,8 +822,6 @@ export const PACKAGE = {
       BIKE: 'Bike',
       SCOOTER: 'Scooter',
       CAR: 'Car',
-      SUV: 'SUV',
-      MPV: 'MPV',
       MINIVAN: 'Minivan',
       TRAVELLER: 'Tempo Traveller',
       BUS: 'Bus'
@@ -839,8 +854,28 @@ export const PACKAGE = {
       POINT_TO_POINT: 'Point to Point',
       DAILY_RENTAL: 'Daily Rental',
       OUTSTATION: 'Outstation'
+    },
+    RAFTING_TYPES: {
+      PADDLE_RAFTING: 'Paddle Rafting',
+      OAR_RAFTING: 'Oar Rafting',
+      PADDLE_OAR_COMBO: 'Paddle-Oar Combo',
+      MOTOR_RAFTING: 'Motor Rafting',
+      CATARAFTING: 'Catarafting',
+      PACKRAFTING: 'Packrafting',
+      R2: 'R2 (Two-Person Rafting)'
     }
-  }
+  },
+
+  CHARDHAM_TOUR: {
+    TOUR_TYPES: {
+      EKDHAM: 'Ek Dham',
+      DODHAM: 'Do Dham',
+      TEENDHAM: 'Teen Dham',
+      CHARDHAM: 'Char Dham'
+    }
+  },
+
+
 };
 
 export default {

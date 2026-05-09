@@ -45,7 +45,7 @@ class PackageService {
 
     if (pkg.vendor) {
       item.vendor = {
-        id: pkg.vendor._id,
+        id: pkg.vendor._id.toString(),
         ownerName: pkg.vendor.ownerName,
         businessName: pkg.vendor.businessName,
         address: pkg.vendor.address

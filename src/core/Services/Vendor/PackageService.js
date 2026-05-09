@@ -7,6 +7,8 @@ import InventoryService from '@/core/Services/Vendor/InventoryService.js';
 import { formatInventoryItem } from '@/core/Helpers/InventoryHelper.js';
 import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { log } from 'console';
+import { slugify } from '@/core/Helpers/stringUtils.js';
 
 class PackageService {
 
@@ -156,10 +158,10 @@ class PackageService {
     return {
       id: itemObj._id,
       title: itemObj.title,
+      slug: itemObj.slug,
       isActive: itemObj.isActive,
-      pricing: itemObj.pricing || {},
       availability: itemObj.availability || {},
-      fleetAvailability: itemObj.fleetAvailability || {},
+      pricing: itemObj.pricing || {},
       location: itemObj.location || {},
       photos: itemObj.photos?.[0] || "",
       category_name: category.name || "",
@@ -183,6 +185,11 @@ class PackageService {
     if (pkg[schemaKey] === undefined) {
       throw new Error(RESPONSE_MESSAGES.CATEGORY.INVALID);
     }
+
+    if (itemData.title) {
+      itemData.slug = slugify(itemData.title);
+    }
+
     const index = pkg[schemaKey].push(itemData) - 1;
     const newItemDoc = pkg[schemaKey][index];
     if (newItemDoc.location) {
@@ -218,6 +225,10 @@ class PackageService {
     }
     const item = pkg[schemaKey].id(itemId);
     if (!item) throw new Error(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
+
+    if (updates.title) {
+      updates.slug = slugify(updates.title);
+    }
 
     // Support nested dot-notation for pricing updates etc.
     Object.keys(updates).forEach(key => {

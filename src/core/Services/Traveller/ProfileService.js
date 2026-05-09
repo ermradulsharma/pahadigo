@@ -1,6 +1,7 @@
 import User from '@/core/Models/User.js';
 import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
 
 /**
  * ProfileService (Traveller Role)
@@ -18,6 +19,10 @@ class ProfileService {
     Object.keys(data).forEach(key => {
       if (allowedFields.includes(key)) updates[key] = data[key];
     });
+
+    if (updates.address) {
+      mapToGeoJSON(updates.address, 'location');
+    }
 
     return await User.findByIdAndUpdate(
       userId,

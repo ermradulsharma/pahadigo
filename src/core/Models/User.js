@@ -1,8 +1,11 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
-import { USER_ROLES, AUTH_PROVIDERS, STATUS, DEFAULTS } from '../Constants/index.js';
+import { USER_ROLES, AUTH_PROVIDERS, STATUS, DEFAULTS, GENDER } from '../Constants/index.js';
 
 const UserSchema = new mongoose.Schema({
+  // ============================================
+  // 1. IDENTITY & AUTHENTICATION
+  // ============================================
   name: { type: String, trim: DEFAULTS.TRUE, default: DEFAULTS.NULL },
   email: { type: String, lowercase: DEFAULTS.TRUE, trim: DEFAULTS.TRUE, default: DEFAULTS.NULL },
   phone: { type: String, trim: DEFAULTS.TRUE, default: DEFAULTS.NULL },
@@ -12,20 +15,31 @@ const UserSchema = new mongoose.Schema({
   googleId: { type: String, default: DEFAULTS.NULL },
   facebookId: { type: String, default: DEFAULTS.NULL },
   appleId: { type: String, default: DEFAULTS.NULL },
+
+  // ============================================
+  // 2. PERSONAL PROFILE
+  // ============================================
   profileImage: { type: String, default: DEFAULTS.NULL },
-  gender: { type: String, default: DEFAULTS.NULL },
+  gender: { type: String, enum: Object.values(GENDER), default: DEFAULTS.NULL },
   dateOfBirth: { type: Date, default: DEFAULTS.NULL },
   bloodGroup: { type: String, default: DEFAULTS.NULL },
   medicalConditions: { type: [String], default: DEFAULTS.ARRAY },
+  bio: { type: String, default: DEFAULTS.NULL },
+
+  // ============================================
+  // 3. PROFESSIONAL INFO
+  // ============================================
   experience: { type: Number, default: 0 },
   designation: { type: String, default: DEFAULTS.NULL },
-  bio: { type: String, maxlength: 500, default: DEFAULTS.NULL },
   website: { type: String, default: DEFAULTS.NULL },
+  expertise: [{ type: String, default: DEFAULTS.NULL }],
+
+  // ============================================
+  // 4. SOCIAL CONNECTIVITY
+  // ============================================
   socialLinks: {
-    linkedin: { type: String, default: DEFAULTS.NULL },
     twitter: { type: String, default: DEFAULTS.NULL },
     instagram: { type: String, default: DEFAULTS.NULL },
-    github: { type: String, default: DEFAULTS.NULL },
     youtube: { type: String, default: DEFAULTS.NULL },
     whatsapp: { type: String, default: DEFAULTS.NULL },
     telegram: { type: String, default: DEFAULTS.NULL },
@@ -33,12 +47,19 @@ const UserSchema = new mongoose.Schema({
     tiktok: { type: String, default: DEFAULTS.NULL },
     other: { type: String, default: DEFAULTS.NULL },
   },
-  expertise: [{ type: String, default: DEFAULTS.NULL }],
+
+  // ============================================
+  // 5. SAFETY & EMERGENCY
+  // ============================================
   emergencyContacts: [{
     name: { type: String, required: DEFAULTS.TRUE, default: DEFAULTS.NULL },
     phone: { type: String, required: DEFAULTS.TRUE, default: DEFAULTS.NULL },
     relationship: { type: String, default: DEFAULTS.NULL }
   }],
+
+  // ============================================
+  // 6. ADDRESS & GEO-LOCATION
+  // ============================================
   address: {
     addressLine1: { type: String, default: DEFAULTS.NULL },
     addressLine2: { type: String, default: DEFAULTS.NULL },
@@ -53,6 +74,10 @@ const UserSchema = new mongoose.Schema({
       coordinates: { type: [Number], default: [0, 0] }
     }
   },
+
+  // ============================================
+  // 7. PREFERENCES & SETTINGS
+  // ============================================
   preferences: {
     language: { type: String, default: DEFAULTS.LANGUAGE },
     notifications: {
@@ -64,13 +89,21 @@ const UserSchema = new mongoose.Schema({
     tempRole: { type: String, default: DEFAULTS.NULL },
     tempExtraData: { type: mongoose.Schema.Types.Mixed, default: DEFAULTS.NULL }
   },
+
+  // ============================================
+  // 8. BUSINESS & VENDOR DETAILS
+  // ============================================
   isVendorVerified: { type: Boolean, default: DEFAULTS.FALSE },
   vendorProfile: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', default: DEFAULTS.NULL },
   rating: {
     average: { type: Number, default: 0 },
     count: { type: Number, default: 0 }
   },
-  fcmTokens: { type: [String], default: DEFAULTS.ARRAY },
+
+  // ============================================
+  // 9. SYSTEM & METADATA
+  // ============================================
+  fcmToken: { type: String, default: DEFAULTS.NULL },
   otp: { type: String, select: DEFAULTS.FALSE, default: DEFAULTS.NULL },
   otpExpires: { type: Date, select: DEFAULTS.FALSE, default: DEFAULTS.NULL },
   isVerified: { type: Boolean, default: DEFAULTS.FALSE },
@@ -100,6 +133,7 @@ UserSchema.pre('save', async function () {
 UserSchema.methods.comparePassword = async function (candidatePassword) {
   return bcrypt.compare(candidatePassword, this.password);
 };
+
 UserSchema.index({ email: 1 }, { unique: true, partialFilterExpression: { email: { $type: "string" } } });
 UserSchema.index({ phone: 1 }, { unique: true, partialFilterExpression: { phone: { $type: "string" } } });
 UserSchema.index({ googleId: 1 }, { unique: true, partialFilterExpression: { googleId: { $type: "string" } } });

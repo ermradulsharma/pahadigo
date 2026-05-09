@@ -15,3 +15,4 @@ export * from './requestUtils.js';
 export { default as response } from './response.js';
 export * from './security.js';
 export { default as validation } from './validation.js';
+export * from './stringUtils.js';

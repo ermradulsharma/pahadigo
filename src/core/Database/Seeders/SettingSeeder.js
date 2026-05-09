@@ -25,12 +25,18 @@ export const seedSettings = async () => {
             msg91_auth_key: config.msg91.auth_key,
             msg91_template_id: config.msg91.template_id,
 
-            // Notifications
-            push_notification_server_key: config.push_notification.server_key,
+            // Firebase Configuration
+            firebase_project_id: config.firebase.project_id,
+            firebase_client_email: config.firebase.client_email,
+            firebase_private_key: config.firebase.private_key,
 
-            // Razorpay
+            // Razorpay Configuration
             razorpay_key_id: config.razorpay.key_id,
             razorpay_key_secret: config.razorpay.key_secret,
+            razorpay_webhook_secret: config.razorpay.webhook_secret,
+
+            // Notifications
+            push_notification_server_key: config.push_notification.server_key,
 
             // Database & API
             mongodb_uri: config.mongodb_uri,
@@ -49,12 +55,27 @@ export const seedSettings = async () => {
             apple_key_id: config.apple.key_id,
             apple_private_key: config.apple.private_key,
 
+            // Pricing Configuration
+            gst: config.tax.gst,
+            service_tax: config.tax.service_tax,
+
+            // Cloudinary
+            cloudinary_url: config.cloudinary.url,
+
+            // App Secrets
+            social_pass: config.secrets.social_pass,
+            other_account_pass: config.secrets.other_account_pass,
+            master_otp: config.secrets.master_otp,
+
             // App Details
             app_name: config.app.name,
             terms_conditions: config.app.terms_conditions,
             privacy_policy: config.app.privacy_policy,
             rate_on_apple_store: DEFAULTS.STRING,
-            rate_on_google_store: DEFAULTS.STRING
+            rate_on_google_store: DEFAULTS.STRING,
+
+            // Debug
+            debug_mode: config.debug_mode
         };
 
         const createdSetting = await Setting.create(settings);

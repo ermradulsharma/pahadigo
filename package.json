@@ -16,38 +16,38 @@
         "bcryptjs": "^3.0.3",
         "cloudinary": "^2.10.0",
         "country-state-city": "^3.2.1",
-        "firebase-admin": "^13.8.0",
+        "firebase-admin": "^13.9.0",
         "framer-motion": "^12.38.0",
         "google-auth-library": "^10.6.2",
         "js-cookie": "^3.0.5",
         "jsonwebtoken": "^9.0.3",
         "lucide-react": "^1.14.0",
-        "mongoose": "^9.6.1",
+        "mongoose": "^9.6.2",
         "msg91-api": "^1.1.0",
-        "next": "^16.2.4",
+        "next": "^16.2.6",
         "next-cloudinary": "^6.17.5",
         "nodemailer": "^8.0.7",
         "razorpay": "^2.9.6",
-        "react": "19.2.5",
-        "react-dom": "19.2.5",
+        "react": "19.2.6",
+        "react-dom": "19.2.6",
         "react-simple-wysiwyg": "^3.4.1",
         "recharts": "^3.8.1",
         "tesseract.js": "^7.0.0",
         "zod": "^4.4.3"
     },
     "devDependencies": {
-        "@tailwindcss/postcss": "^4.2.4",
+        "@tailwindcss/postcss": "^4.3.0",
         "@types/jest": "^30.0.0",
-        "@types/node": "^25.6.0",
+        "@types/node": "^25.6.2",
         "autoprefixer": "^10.5.0",
         "eslint": "^10.3.0",
-        "eslint-config-next": "16.2.4",
+        "eslint-config-next": "16.2.6",
         "gcp-metadata": "^8.1.2",
-        "jest": "^30.3.0",
+        "jest": "^30.4.2",
         "mongodb-memory-server": "^11.1.0",
-        "postcss": "^8.5.13",
+        "postcss": "^8.5.14",
         "supertest": "^7.2.2",
-        "tailwindcss": "^4.2.4"
+        "tailwindcss": "^4.3.0"
     },
     "overrides": {
         "uuid": "^14.0.0",
@@ -65,6 +65,6 @@
         },
         "eslint": "$eslint",
         "@tootallnate/once": "^3.0.1",
-        "postcss": "^8.5.13"
+        "postcss": "^8.5.14"
     }
 }

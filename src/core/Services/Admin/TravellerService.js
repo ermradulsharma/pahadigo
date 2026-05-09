@@ -1,6 +1,7 @@
 import User from '@/core/Models/User.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import AuditService from '@/core/Services/Admin/AuditService.js';
+import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
 
 /**
  * TravellerService (Admin Role)
@@ -28,6 +29,9 @@ class TravellerService {
   }
 
   async updateTraveller(id, data, req = null) {
+    if (data.address) {
+      mapToGeoJSON(data.address, 'location');
+    }
     const user = await User.findByIdAndUpdate(id, data, { returnDocument: 'after' });
     if (req && req.user) await AuditService.logAction(req.user.id, 'UPDATE', 'USER', id, { changes: data }, req);
     return user;

@@ -1,26 +1,13 @@
 /**
  * Utility to calculate and sync availability based on business logic.
- * Handles varied unit types (Rooms, Tents, Seats, Slots, Passes, Vehicles).
  * 
  * Logic: Available = Total - (Occupied + Reserved + Booked + Rented + Maintenance) + Cancelled
  */
 export const calculateAvailability = (availObj) => {
     if (!availObj) return availObj;
 
-    // Convert to plain object if it's a Mongoose document to see schema keys properly
-    const data = (availObj.toObject && typeof availObj.toObject === 'function') 
-        ? availObj.toObject() 
-        : availObj;
-
-    if (typeof data !== 'object') return availObj;
-
-    // Identify the unit suffix (e.g., 'Rooms', 'Tents', 'Seats')
-    const totalKey = Object.keys(data).find(k => k.startsWith('total'));
-    if (!totalKey) return availObj;
-
-    const suffix = totalKey.replace('total', ''); // Extract 'Rooms', 'Tents', etc.
-    const get = (prefix) => {
-        const val = availObj[prefix + suffix];
+    const get = (key) => {
+        const val = availObj[key];
         if (val === undefined || val === null) return 0;
         const parsed = parseInt(val);
         return isNaN(parsed) ? 0 : parsed;
@@ -39,9 +26,9 @@ export const calculateAvailability = (availObj) => {
 
     // Update the actual object/document
     if (availObj.set && typeof availObj.set === 'function') {
-        availObj.set('available' + suffix, available);
+        availObj.set('available', available);
     } else {
-        availObj['available' + suffix] = available;
+        availObj.available = available;
     }
     
     return availObj;
