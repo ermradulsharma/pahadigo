@@ -12,6 +12,7 @@ describe('Industry Standard: Package Data Structure', () => {
             vendor: generateId(),
             trekking: [{
                 title: 'Valley of Flowers',
+                slug: 'valley-of-flowers',
                 description: 'A beautiful trek',
                 duration: { days: 5 },
                 location: { address: 'Joshimath' }

@@ -3,7 +3,7 @@ import { formatInventoryItem, normalizeAvailability, calculateEffectivePrice, de
 describe('InventoryHelper', () => {
     describe('normalizeAvailability', () => {
         test('should normalize homestay availability', () => {
-            const item = { availability: { totalRooms: 10, availableRooms: 8, occupiedRooms: 2 } };
+            const item = { availability: { total: 10, available: 8, occupied: 2 } };
             const result = normalizeAvailability(item);
             expect(result.totalUnits).toBe(10);
             expect(result.availableUnits).toBe(8);
@@ -11,7 +11,7 @@ describe('InventoryHelper', () => {
         });
 
         test('should normalize transport/fleet availability', () => {
-            const item = { fleetAvailability: { totalVehicles: 5, availableVehicles: 3, rentedVehicles: 2 } };
+            const item = { availability: { total: 5, available: 3, occupied: 2 } };
             const result = normalizeAvailability(item);
             expect(result.totalUnits).toBe(5);
             expect(result.availableUnits).toBe(3);

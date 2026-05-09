@@ -51,7 +51,7 @@ describe('Industry Standard: Vendor InventoryService Logic', () => {
             const vendorId = 'v1';
             const itemId = 'i1';
             const mockPackage = {
-                trekking: [{ _id: 'i1', availability: { totalRooms: 5 } }]
+                trekking: [{ _id: 'i1', availability: { total: 5 } }]
             };
             mockQuery.lean.mockResolvedValue(mockPackage);
             Inventory.findOne.mockResolvedValue(null);

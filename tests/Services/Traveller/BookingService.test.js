@@ -46,6 +46,10 @@ jest.unstable_mockModule('@/models/Package.js', () => ({
     default: { findById: jest.fn() }
 }));
 
+jest.unstable_mockModule('@/models/Coupon.js', () => ({
+    default: { findOne: jest.fn() }
+}));
+
 jest.unstable_mockModule('@/constants/index.js', () => ({
     RESPONSE_MESSAGES: {
         BOOKING: { NOT_FOUND_OR_UNAUTHORIZED: 'Booking not found', SLOTS_NOT_AVAILABLE: 'Slots not available' },
@@ -94,6 +98,39 @@ describe('BookingService Business Logic', () => {
 
     beforeEach(() => {
         jest.clearAllMocks();
+    });
+
+    describe('Booking Lifecycle Management', () => {
+        it('should successfully initiate a pending booking for activities', async () => {
+            const mockPackageItem = {
+                catalogId: 'c1',
+                category: 'trekking',
+                vendor: { id: 'v123' },
+                pricing: { pricePerPerson: 1000 },
+                title: 'Trek Pack'
+            };
+            PackageService.getAvailablePackageItem.mockResolvedValue(mockPackageItem);
+            User.findById.mockResolvedValue({ name: 'Test User', phone: '1234567890', email: 'test@test.com' });
+            InventoryService.checkAvailabilityRange.mockResolvedValue({ available: true });
+            
+            const createdBooking = { _id: 'b_new', status: 'pending', bookingCode: 'PH-ABCDEF' };
+            Booking.create.mockResolvedValue([createdBooking]);
+
+            const result = await BookingService.initiateBooking({
+                userId: 'u123',
+                itemId: 'item_123',
+                body: {
+                    startDate: '2026-06-01',
+                    endDate: '2026-06-02',
+                    adults: 2,
+                    children: 0
+                }
+            });
+
+            expect(result).toEqual(createdBooking);
+            expect(Booking.create).toHaveBeenCalled();
+            expect(InventoryService.checkAvailabilityRange).toHaveBeenCalledTimes(2); // initial check and final lock verification
+        });
     });
 
     describe('Payment & Verification', () => {

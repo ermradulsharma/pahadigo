@@ -1,5 +1,31 @@
 import { jest } from '@jest/globals';
-import NotificationService from '@/services/General/NotificationService.js';
+
+jest.unstable_mockModule('nodemailer', () => ({
+    default: {
+        createTransport: jest.fn().mockReturnValue({
+            sendMail: jest.fn().mockResolvedValue(true)
+        })
+    }
+}));
+
+jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
+    getAppConfig: jest.fn().mockResolvedValue({
+        smtp: {
+            host: 'mock.host',
+            port: 587,
+            user: 'mock',
+            pass: 'mock',
+            from_name: 'PahadiGo',
+            from_address: 'test@pahadigo.com'
+        }
+    })
+}));
+
+jest.unstable_mockModule('@/core/Helpers/TemplateHelper.js', () => ({
+    renderTemplate: jest.fn().mockResolvedValue('<html>Mock Template</html>')
+}));
+
+const { default: NotificationService } = await import('@/services/General/NotificationService.js');
 
 describe('NotificationService', () => {
     beforeEach(() => {

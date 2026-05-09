@@ -45,6 +45,7 @@ describe('Integration Test: Package Visibility & Category Verification', () => {
             vendor: vendorProfile._id,
             homestay: [{
                 title: 'Test Homestay',
+                slug: 'test-homestay',
                 description: 'A beautiful place',
                 isActive: true,
                 location: { address: 'Test Address' },

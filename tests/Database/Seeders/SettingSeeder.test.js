@@ -10,7 +10,11 @@ jest.unstable_mockModule('@/core/Models/Setting.js', () => ({
 jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
     getAppConfig: jest.fn().mockResolvedValue({
         smtp: {}, msg91: {}, push_notification: {}, razorpay: {},
-        google: {}, facebook: {}, apple: {}, app: {}
+        google: {}, facebook: {}, apple: {}, app: {},
+        firebase: { project_id: 'p1', client_email: 'c1', private_key: 'k1' },
+        tax: { gst: 5, service_tax: 5 },
+        cloudinary: { url: 'c1' },
+        secrets: { social_pass: 's1', other_account_pass: 'o1', master_otp: 'm1' }
     })
 }));
 
