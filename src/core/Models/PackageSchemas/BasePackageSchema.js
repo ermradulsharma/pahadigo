@@ -60,8 +60,7 @@ export const BasePackageFields = {
     total: { type: Number, default: DEFAULTS.COUNTS.ZERO },
     available: { type: Number, default: DEFAULTS.COUNTS.ZERO },
     occupied: { type: Number, default: DEFAULTS.COUNTS.ZERO },
-    reserved: { type: Number, default: DEFAULTS.COUNTS.ZERO },
-    cancelled: { type: Number, default: DEFAULTS.COUNTS.ZERO }
+    reserved: { type: Number, default: DEFAULTS.COUNTS.ZERO }
   },
 
   pricing: {
@@ -97,7 +96,9 @@ export const AccommodationPricing = {
 export const AccommodationRoomDetails = {
   roomType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.ROOM_TYPES), default: PACKAGE.ACCOMMODATION.ROOM_TYPES.STANDARD },
   bedType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.BED_TYPES), default: PACKAGE.ACCOMMODATION.BED_TYPES.DOUBLE },
-  bathroomType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.BATHROOM_TYPES), default: PACKAGE.ACCOMMODATION.BATHROOM_TYPES.PRIVATE }
+  bathroomType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.BATHROOM_TYPES), default: PACKAGE.ACCOMMODATION.BATHROOM_TYPES.PRIVATE },
+  checkInTime: { type: String, default: DEFAULTS.NULL },
+  checkOutTime: { type: String, default: DEFAULTS.NULL },
 };
 
 export const BasePackageOptions = {

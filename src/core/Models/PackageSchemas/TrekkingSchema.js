@@ -19,6 +19,8 @@ const TrekkingSchema = new mongoose.Schema({
     duration: { type: String, default: DEFAULTS.NULL },
     inclusions: { type: String, default: DEFAULTS.NULL },
     exclusions: { type: String, default: DEFAULTS.NULL },
+    departureTime: { type: String, default: DEFAULTS.NULL },
+    reportingTime: { type: String, default: DEFAULTS.NULL },
     startPoint: PointLocation,
     endPoint: PointLocation,
   },

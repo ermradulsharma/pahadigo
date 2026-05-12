@@ -7,16 +7,11 @@ const VehicleRentalSchema = new mongoose.Schema({
   isDriverIncluded: { type: Boolean, default: DEFAULTS.FALSE },
   pricing: {
     ...BasePackageFields.pricing,
-    pricePerHour: optionalPriceDecimal,
-    depositAmount: optionalPriceDecimal,
-    driverAllowancePerDay: optionalPriceDecimal
+    depositAmount: optionalPriceDecimal
   },
   details: {
     vehicleType: { type: String, enum: Object.values(PACKAGE.TRANSPORT.VEHICLE_TYPES), default: PACKAGE.TRANSPORT.VEHICLE_TYPES.BIKE },
-    transmission: { type: String, enum: Object.values(PACKAGE.TRANSPORT.TRANSMISSION_TYPES), default: PACKAGE.TRANSPORT.TRANSMISSION_TYPES.MANUAL },
-    fuelPolicy: { type: String, enum: Object.values(PACKAGE.TRANSPORT.FUEL_POLICIES), default: PACKAGE.TRANSPORT.FUEL_POLICIES.FULL_TO_FULL },
     vehicleName: { type: String, default: DEFAULTS.NULL },
-    seats: { type: String, default: DEFAULTS.NULL },
   },
   policies: {
     ...TransportPolicy,

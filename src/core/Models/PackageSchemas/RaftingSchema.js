@@ -14,6 +14,8 @@ const RaftingSchema = new mongoose.Schema({
     size: { type: Number, default: DEFAULTS.COUNTS.ZERO },
     inclusions: { type: String, default: DEFAULTS.NULL },
     exclusions: { type: String, default: DEFAULTS.NULL },
+    departureTime: { type: String, default: DEFAULTS.NULL },
+    reportingTime: { type: String, default: DEFAULTS.NULL },
     age: {
       min: { type: Number, default: DEFAULTS.COUNTS.ZERO },
       max: { type: Number, default: DEFAULTS.COUNTS.ZERO },

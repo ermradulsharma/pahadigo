@@ -9,7 +9,6 @@ const ChardhamTourSchema = new mongoose.Schema({
   pricing: BasePackageFields.pricing,
 
   details: {
-    tourType: { type: String, enum: Object.values(PACKAGE.CHARDHAM_TOUR.TOUR_TYPES), default: PACKAGE.CHARDHAM_TOUR.TOUR_TYPES.CHARDHAM },
     bestSeason: { type: String, enum: Object.values(PACKAGE.SEASONS), default: PACKAGE.SEASONS.ALL_YEAR },
     transportType: { type: String, enum: Object.values(PACKAGE.TRANSPORT.CHARDHAM_VEHICLE_CATEGORIES), default: PACKAGE.TRANSPORT.CHARDHAM_VEHICLE_CATEGORIES.REGULAR },
     hotelType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.HOTEL_TYPES), default: PACKAGE.ACCOMMODATION.HOTEL_TYPES.BUDGET },

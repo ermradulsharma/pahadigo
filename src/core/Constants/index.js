@@ -573,6 +573,8 @@ export const LANGUAGES = {
 // ============================================
 
 export const PACKAGE = {
+
+
   THEMES: {
     ADVENTURE: 'adventure',
     FAMILY: 'family',
@@ -590,17 +592,15 @@ export const PACKAGE = {
   },
 
   TYPES: {
-    BUNGEE_JUMPING: 'bungee-jumping',
-    CAMPING: 'camping',
-    CHARDHAM_TOUR: 'chardham-tour',
-    CUSTOM_TRIP: 'custom-trip',
     HOMESTAY: 'homestay',
     HOTEL: 'hotel',
-    PARAGLIDING: 'paragliding',
+    CAMPING: 'camping',
     RAFTING: 'rafting',
-    SKIING: 'skiing',
     TREKKING: 'trekking',
-    VEHICLE_RENTAL: 'vehicle-rental'
+    BIKE_SCOOTER_RENTAL: 'bike-scooter-rental',
+    BUNGEE_JUMPING: 'bungee-jumping',
+    CHARDHAM_TOUR: 'chardham-tour',
+    CUSTOM_TRIP: 'custom-trip'
   },
 
   DIFFICULTY: {
@@ -783,18 +783,24 @@ export const PACKAGE = {
       JUNGLE_CAMP: 'Jungle Camp'
     },
 
+    RAFTING_TYPES: {
+      RIVERSIDE: 'Riverside',
+      EXPEDITION: 'Expedition',
+      FAMILY: 'Family'
+    },
+
+    JUMP_TYPES: {
+      FORWARD: 'Forward',
+      BACKWARD: 'Backward',
+      TANDEM: 'Tandem'
+    },
+
     RAPID_GRADES: {
       I: 'Grade I',
       II: 'Grade II',
       III: 'Grade III',
       IV: 'Grade IV',
       V: 'Grade V'
-    },
-
-    RAFTING_TYPES: {
-      RIVERSIDE: 'Riverside',
-      EXPEDITION: 'Expedition',
-      FAMILY: 'Family'
     },
 
     SKI_DIFFICULTY: {
@@ -809,12 +815,6 @@ export const PACKAGE = {
       MEDIUM_FLY: 'Medium Fly',
       SHORT_FLY: 'Short Fly'
     },
-
-    JUMP_TYPES: {
-      FORWARD: 'Forward',
-      BACKWARD: 'Backward',
-      TANDEM: 'Tandem'
-    }
   },
 
   TRANSPORT: {
@@ -822,8 +822,9 @@ export const PACKAGE = {
       BIKE: 'Bike',
       SCOOTER: 'Scooter',
       CAR: 'Car',
-      MINIVAN: 'Minivan',
-      TRAVELLER: 'Tempo Traveller',
+      MINI_VAN: 'Mini Van',
+      VAN: 'Van',
+      TEMPO: 'Tempo',
       BUS: 'Bus'
     },
 

@@ -20,6 +20,8 @@ const BungeeSchema = new mongoose.Schema({
       min: { type: Number, default: DEFAULTS.NULL },
       max: { type: Number, default: DEFAULTS.NULL },
     },
+    departureTime: { type: String, default: DEFAULTS.NULL },
+    reportingTime: { type: String, default: DEFAULTS.NULL },
     duration: { type: String, default: DEFAULTS.NULL },
     inclusions: { type: String, default: DEFAULTS.NULL },
     exclusions: { type: String, default: DEFAULTS.NULL },

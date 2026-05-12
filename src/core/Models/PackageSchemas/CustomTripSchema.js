@@ -4,13 +4,7 @@ import { BasePackageFields, BasePackageOptions, optionalPriceDecimal, TransportP
 
 const CustomTripSchema = new mongoose.Schema({
   ...BasePackageFields,
-
-  pricing: {
-    ...BasePackageFields.pricing,
-    pricePerKm: optionalPriceDecimal,
-    pricePerDay: optionalPriceDecimal,
-  },
-
+  pricing: BasePackageFields.pricing,
   details: {
     serviceType: { type: String, enum: Object.values(PACKAGE.TRANSPORT.CUSTOM_TRIP_SERVICE_TYPES), default: PACKAGE.TRANSPORT.CUSTOM_TRIP_SERVICE_TYPES.POINT_TO_POINT },
     vehicleName: { type: String, default: DEFAULTS.NULL },
