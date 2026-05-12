@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { PACKAGE, DEFAULTS } from '../../Constants/index.js';
+import { PACKAGE, DEFAULTS, DISCOUNT_TYPES } from '../../Constants/index.js';
 
 export const optionalPriceDecimal = { type: Number, default: DEFAULTS.COUNTS.ZERO, min: DEFAULTS.COUNTS.ZERO, get: (v) => (Math.round(v * 100) / 100).toFixed(2), set: (v) => Math.round(v * 100) / 100 };
 export const priceDecimalRequired = { type: Number, required: DEFAULTS.TRUE, default: DEFAULTS.COUNTS.ZERO, min: DEFAULTS.COUNTS.ZERO, get: (v) => (Math.round(v * 100) / 100).toFixed(2), set: (v) => Math.round(v * 100) / 100 };
@@ -65,6 +65,10 @@ export const BasePackageFields = {
 
   pricing: {
     basePrice: priceDecimalRequired,
+    gst: { type: Number, default: DEFAULTS.COUNTS.ZERO },
+    discountType: { type: String, enum: ['percentage', 'flat'], default: 'flat' },
+    discount: optionalPriceDecimal,
+    sellingPrice: priceDecimalRequired,
   },
 
   location: {
