@@ -66,7 +66,7 @@ export const BasePackageFields = {
   pricing: {
     basePrice: priceDecimalRequired,
     gst: { type: Number, default: DEFAULTS.COUNTS.ZERO },
-    discountType: { type: String, enum: ['percentage', 'flat'], default: 'flat' },
+    discountType: { type: String, enum: Object.values(DISCOUNT_TYPES), default: DISCOUNT_TYPES.FLAT },
     discount: optionalPriceDecimal,
     sellingPrice: priceDecimalRequired,
   },

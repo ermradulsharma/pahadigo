@@ -17,12 +17,13 @@ class ReviewController extends Controller {
     }
   }
 
-  // POST /traveller/reviews
-  async submitReview(req) {
+  // POST /traveller/:bookingId/review
+  async submitReview(req, { params }) {
     try {
-      const body = req.validData || req.jsonBody || await req.json();
-      const review = await ReviewService.submitReview(req.user.id, body);
-      return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.REVIEW.SUBMITTED, { review });
+      const { bookingId } = params;
+      const { rating, comment } = req.payload || {};
+      const review = await ReviewService.submitReview(req.user.id, { bookingId, rating, comment });
+      return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.REVIEW.SUBMITTED, review);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }

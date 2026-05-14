@@ -52,7 +52,7 @@ class InventoryService {
       liveBookedUnits = liveBookings.reduce((sum, b) => sum + (b.occupancy?.adults + b.occupancy?.children || 1), 0);
     }
 
-    const baseItemPrice = item.pricing?.pricePerNight || item.pricing?.pricePerPerson || item.pricing?.pricePerDay || item.pricing?.price || 0;
+    const baseItemPrice = item.pricing?.sellingPrice || 0;
     const finalPrice = calculateEffectivePrice(baseItemPrice, customDay?.pricing);
 
     const totalBooked = Math.max(customDay?.bookedUnits || 0, liveBookedUnits);

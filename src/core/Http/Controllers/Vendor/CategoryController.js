@@ -82,7 +82,7 @@ class CategoryController extends Controller {
       const slug = params.slug || (req.payload && (req.payload.slug || req.payload.category_slug));
       if (!slug) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
       const result = await CategoryService.uploadDocuments(req.user.id, slug, req);
-      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.CATEGORY_DOCS_UPLOADED, result);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.CATEGORY_DOCS_UPLOADED);
     } catch (error) {
       return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
     }

@@ -31,14 +31,12 @@ class BookingService {
       }
 
       const packageItem = await PackageService.getAvailablePackageItem(itemId);
-
       if (!packageItem) throw new Error(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
 
       const travellerProfile = await User.findById(userId);
       if (!travellerProfile) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
 
       const { catalogId, category, vendor } = packageItem;
-      console.log(vendor);
       const pricingRules = packageItem.pricing || {};
 
       const adultsCount = parseInt(body.adults) || 1;
@@ -54,42 +52,32 @@ class BookingService {
       let baseItemRate = 0;
 
       const STAY_CATEGORIES = ['homestay', 'hotel', 'camping'];
-      const ACTIVITY_CATEGORIES = ['trekking', 'rafting', 'bungeeJumping', 'paragliding', 'skiing'];
-      const RENTAL_CATEGORIES = ['vehicleRental'];
+      const ACTIVITY_CATEGORIES = ['trekking', 'rafting', 'bungeeJumping'];
+      const RENTAL_CATEGORIES = ['bike-scooter-rental', 'chardham-tour', 'vehicleRental', 'chardhamTour'];
 
-      // 1. Business Logic: Calculate required Rooms/Tents or Slots
       if (STAY_CATEGORIES.includes(category)) {
-        baseItemRate = pricingRules.pricePerNight || pricingRules.price || 0;
+        baseItemRate = pricingRules.sellingPrice || 0;
 
         if (category === 'homestay') {
-          // Homestay is the whole property (1 unit)
           requiredUnits = 1;
         } else {
-          // Others: calculate units based on occupancy capacity
-          const capacityPerUnit = pricingRules.maxAdults || 2;
-          requiredUnits = Math.ceil(adultsCount / capacityPerUnit);
+          const maxCapacityPerUnit = parseInt(pricingRules.maxAdults) > 0 ? parseInt(pricingRules.maxAdults) : 2;
+          requiredUnits = Math.max(1, Math.ceil(adultsCount / maxCapacityPerUnit));
         }
-
-        // Subtotal = Base Rate * Duration * Quantity
         calculatedSubTotal = baseItemRate * totalNights * requiredUnits;
       } else if (ACTIVITY_CATEGORIES.includes(category)) {
-        baseItemRate = pricingRules.pricePerPerson || pricingRules.price || 0;
+        baseItemRate = pricingRules.sellingPrice || 0;
         const childRate = pricingRules.childPrice || baseItemRate;
 
-        // Subtotal = Total cost for adults + children (duration usually baked in pricePerPerson)
         calculatedSubTotal = (baseItemRate * adultsCount) + (childRate * childrenCount);
         requiredUnits = adultsCount + childrenCount;
       } else {
-        // Rentals etc.
-        baseItemRate = pricingRules.price || pricingRules.pricePerPerson || pricingRules.pricePerDay || 0;
-        const totalOccupants = adultsCount + childrenCount;
-        requiredUnits = totalOccupants;
-
-        const durationMultiplier = RENTAL_CATEGORIES.includes(category) ? totalNights : 1;
+        baseItemRate = pricingRules.sellingPrice || 0;
+        requiredUnits = 1;
+        const isRentalOrTour = RENTAL_CATEGORIES.includes(category);
+        const durationMultiplier = isRentalOrTour ? totalNights : 1;
         calculatedSubTotal = baseItemRate * requiredUnits * durationMultiplier;
       }
-
-      // 2. Inventory Check & Locking
       const availabilityStatus = await InventoryService.checkAvailabilityRange(
         vendor.id, itemId, category, checkInDate, checkOutDate, requiredUnits
       );
@@ -98,52 +86,35 @@ class BookingService {
         throw new Error(RESPONSE_MESSAGES.BOOKING.SLOTS_NOT_AVAILABLE);
       }
 
-      // 3. Industry Standard Tax & Fee Calculations
-      const appliedDiscount = parseFloat(body.price?.discount) || 0;
-      const appliedCouponCode = body.price?.coupon || null;
-      let appliedCouponAmount = 0;
-
-      const serviceFeeRaw = config.tax?.service_tax || 0;
-      const appliedServiceFee = serviceFeeRaw / 100; // Conversion if needed
-
-      // Server-auth Coupon Validation
-      if (appliedCouponCode) {
-        const coupon = await Coupon.findOne({
-          code: appliedCouponCode.toUpperCase(),
-          isActive: true
-        });
-
-        if (!coupon) throw new Error("Invalid or inactive coupon code.");
-        if (new Date() > coupon.expiryDate) throw new Error("Coupon has expired.");
-        if (coupon.usageLimit > 0 && coupon.usedCount >= coupon.usageLimit) {
-          throw new Error("Coupon usage limit reached.");
-        }
-
-        const couponBase = calculatedSubTotal + appliedServiceFee;
-        if (couponBase < coupon.minOrderAmount) {
-          throw new Error(`Minimum order of ₹${coupon.minOrderAmount} required for this coupon.`);
-        }
-
-        if (coupon.discountType === 'percentage') {
-          appliedCouponAmount = (couponBase * coupon.value) / 100;
-          if (coupon.maxDiscount > 0 && appliedCouponAmount > coupon.maxDiscount) {
-            appliedCouponAmount = coupon.maxDiscount;
-          }
-        } else {
-          appliedCouponAmount = coupon.value;
-        }
-        appliedCouponAmount = Math.min(appliedCouponAmount, couponBase);
+      const baseAmount = pricingRules.basePrice;
+      let d = pricingRules.discountType;
+      let discountAmount = 0;
+      if (d === "percentage") {
+        discountAmount = baseAmount * ((pricingRules.discount || 0) / 100);
+      } else if (d === "flat") {
+        discountAmount = pricingRules.discount || 0;
       }
 
-      const appliedTaxRate = config.tax?.gst || 0;
-      const taxableValue = Math.max(0, (calculatedSubTotal + appliedServiceFee) - (appliedDiscount + appliedCouponAmount));
-      const calculatedTax = Math.round(taxableValue * (appliedTaxRate / 100));
+      let tax = 0;
+      if (pricingRules.gst) {
+        tax = pricingRules.basePrice * (pricingRules.gst / 100);
+      }
 
-      const grandTotal = taxableValue + calculatedTax;
+      let serviceFee = 0;
+      if (pricingRules.serviceTax) {
+        const baseServiceFee = pricingRules.sellingPrice * (pricingRules.serviceTax / 100);
+        const gstOnServiceFee = baseServiceFee * ((config.tax?.gst || 18) / 100);
+        serviceFee = baseServiceFee + gstOnServiceFee;
+      }
 
-      // 4. Persistence & Transactional Finalization
-      // In Industry Standard, creating the Booking record (within a transaction)
-      // is sufficient to lock the inventory because checkAvailabilityRange scans active bookings.
+      const appliedDiscount = discountAmount;
+      const appliedCouponCode = null;
+      const appliedCouponAmount = 0;
+      const appliedServiceFee = serviceFee;
+      const appliedTaxRate = pricingRules.gst || 0;
+      const calculatedTax = tax;
+
+      const grandTotal = calculatedSubTotal;
 
       const bookingCode = `PH-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
       const expirationTime = new Date(Date.now() + 15 * 60 * 1000);
@@ -166,7 +137,7 @@ class BookingService {
           units: requiredUnits
         },
         pricing: {
-          basePrice: baseItemRate,
+          basePrice: baseAmount,
           subTotal: calculatedSubTotal,
           serviceFee: appliedServiceFee,
           discount: appliedDiscount,

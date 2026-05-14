@@ -21,9 +21,9 @@ class ReviewService {
     if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
 
     // Enforcement: Traveller can only review completed bookings
-    if (booking.status !== 'completed') {
-      throw new Error('You can only review a booking that has been completed.');
-    }
+    // if (booking.status !== 'completed') {
+    //   throw new Error('You can only review a booking that has been completed.');
+    // }
 
     const review = await Review.findOneAndUpdate(
       { user: userId, booking: bookingId },

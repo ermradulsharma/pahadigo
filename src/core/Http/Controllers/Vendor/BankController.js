@@ -27,7 +27,7 @@ class BankController extends Controller {
         body.cancelledChequeFile = req.formDataBody.get('cancelledCheque');
       }
       const vendor = await BankService.syncBankDetails(req.user.id, body);
-      return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.BANK_CREATED, vendor);
+      return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.BANK_CREATED);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }
@@ -41,7 +41,7 @@ class BankController extends Controller {
         body.cancelledChequeFile = req.formDataBody.get('cancelledCheque');
       }
       const vendor = await BankService.syncBankDetails(req.user.id, body);
-      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.BANK_UPDATED, vendor);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.BANK_UPDATED);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }

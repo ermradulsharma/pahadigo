@@ -41,7 +41,7 @@ const travellerRoutes = [
     ]),
 
     // Specialized Modules
-    { method: 'POST', path: '/reviews', handler: wrap(() => ReviewController, 'submitReview') },
+    { method: 'POST', path: '/:bookingId/review', handler: wrap(() => ReviewController, 'submitReview') },
     { method: 'POST', path: '/sos', handler: wrap(() => SOSController, 'triggerSOS') },
     { method: 'GET', path: '/recent-searches', handler: wrap(() => TravellerController, 'getRecentSearches') },
     { method: 'DELETE', path: '/recent-searches', handler: wrap(() => TravellerController, 'clearRecentSearches') },

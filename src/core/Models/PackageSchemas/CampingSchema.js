@@ -8,7 +8,7 @@ const CampingSchema = new mongoose.Schema({
   details: {
     campingType: { type: String, enum: Object.values(PACKAGE.ACTIVITY.CAMPING_TYPES), default: PACKAGE.ACTIVITY.CAMPING_TYPES.RIVERSIDE },
     bathroomType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.BATHROOM_TYPES), default: PACKAGE.ACCOMMODATION.BATHROOM_TYPES.SHARED },
-    isElectricty: { type: Boolean, default: DEFAULTS.FALSE },
+    isElectricity: { type: Boolean, default: DEFAULTS.FALSE },
     checkInTime: { type: String, default: DEFAULTS.NULL },
     checkOutTime: { type: String, default: DEFAULTS.NULL },
   },
