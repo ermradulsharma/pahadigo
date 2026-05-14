@@ -1,50 +1,65 @@
 import ProfileService from '@/core/Services/Traveller/ProfileService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
+import User from '@/core/Models/User.js';
 
 /**
  * ProfileController (Traveller Role)
  */
 class ProfileController extends Controller {
 
-  // GET /traveller/profile
-  async getProfile(req) {
-    try {
-      const user = await ProfileService.getProfile(req.user.id);
-      if (!user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.AUTH.USER_NOT_FOUND);
-      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, { user });
-    } catch (error) {
-      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+    // GET /traveller/profile
+    async getProfile(req) {
+        try {
+            const user = await ProfileService.getProfile(req.user.id);
+            if (!user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.AUTH.USER_NOT_FOUND);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, { user });
+        } catch (error) {
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+        }
     }
-  }
 
-  // PUT /traveller/profile
-  async updateProfile(req) {
-    try {
-      const body = req.validData || req.jsonBody || await req.json();
-      const user = await ProfileService.updateProfile(req.user.id, body);
-      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.PROFILE_UPDATED, { user });
-    } catch (error) {
-      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+    // PUT /traveller/profile
+    async updateProfile(req) {
+        try {
+            const body = req.validData || req.jsonBody || await req.json();
+            const user = await ProfileService.updateProfile(req.user.id, body);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.PROFILE_UPDATED, { user });
+        } catch (error) {
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+        }
     }
-  }
 
-  // POST /traveller/profile/avatar
-  async updateProfileImage(req) {
-    try {
-      const formDataBody = req.formDataBody;
-      if (!formDataBody || !formDataBody.get('avatar')) {
-        return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
-      }
+    // POST /traveller/profile/avatar
+    async updateProfileImage(req) {
+        try {
+            const formDataBody = req.formDataBody;
+            if (!formDataBody || !formDataBody.get('avatar')) {
+                return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
+            }
 
-      const avatarFile = formDataBody.get('avatar');
-      const user = await ProfileService.updateAvatar(req.user.id, avatarFile);
+            const avatarFile = formDataBody.get('avatar');
+            const user = await ProfileService.updateAvatar(req.user.id, avatarFile);
 
-      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.AVATAR_UPDATED, { user });
-    } catch (error) {
-      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.AVATAR_UPDATED, { user });
+        } catch (error) {
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+        }
     }
-  }
+
+    // PUT /traveller/token
+    async updateFCMToken(req) {
+        try {
+            const { fcmToken } = req.payload || {};
+            if (!fcmToken) {
+                return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
+            }
+            const user = await User.findByIdAndUpdate(req.user.id, { $set: { fcmToken } }, { returnDocument: 'after' }).select('-password');
+            return this.success(HTTP_STATUS.OK, "FCM token updated successfully.", user);
+        } catch (error) {
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+        }
+    }
 }
 
 const profileController = new ProfileController();

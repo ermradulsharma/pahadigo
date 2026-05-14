@@ -27,6 +27,7 @@ const vendorRoutes = [
     { method: 'GET', path: '/me', handler: wrap(() => ProfileController, 'getProfile') },
     { method: 'PATCH', path: '/update', handler: wrap(() => ProfileController, 'updateProfile') },
     { method: 'PATCH', path: '/status', handler: wrap(() => ProfileController, 'toggleAccountStatus') },
+    { method: 'PUT', path: '/token', handler: wrap(() => ProfileController, 'updateFCMToken') },
     { method: 'DELETE', path: '/delete', handler: wrap(() => AuthController, 'deleteAccount') },
     { method: 'POST', path: '/become-traveller', handler: wrap(() => AuthController, 'downgradeToTraveller') },
     { method: 'PATCH', path: '/emergency-contacts', handler: wrap(() => SOSController, 'updateEmergencyContacts') },
