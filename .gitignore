@@ -16,6 +16,12 @@
 # next.js
 /.next/
 /out/
+/.vs/
+/.agent/
+/.claude/
+.cursor/
+.vscode/
+.idea/
 
 # production
 /build
