@@ -663,6 +663,8 @@ export const PACKAGE = {
         },
 
         ROOM_TYPES: {
+            STANDARD: "Standard",
+            DELUXE: "Deluxe",
             STANDARD_ROOM: "Standard Room",
             CLASSIC_ROOM: "Classic Room",
             DELUXE_ROOM: "Deluxe Room",

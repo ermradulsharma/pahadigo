@@ -22,7 +22,7 @@ describe('General InventoryService', () => {
         test('should return effective day data', async () => {
             const mockPkg = { 
                 vendor: vendorId,
-                stay: [{ _id: itemId, isActive: true, pricing: { price: 100 }, availability: { total: 10 } }]
+                stay: [{ _id: itemId, isActive: true, pricing: { sellingPrice: 100 }, availability: { total: 10 } }]
             };
             Package.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(mockPkg) });
             Inventory.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
