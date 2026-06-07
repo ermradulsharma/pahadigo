@@ -181,7 +181,6 @@ class AuthService {
 
     async upgradeToVendor(userId) {
         const user = await User.findById(userId);
-        console.log("user", user)
         if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         if (user.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
         user.preferences.tempRole = user.preferences?.tempRole === USER_ROLES.VENDOR ? null : USER_ROLES.VENDOR;
@@ -195,7 +194,6 @@ class AuthService {
         if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         if (user.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
         user.preferences.tempRole = user.preferences?.tempRole === USER_ROLES.TRAVELLER ? null : USER_ROLES.TRAVELLER;
-
         await user.save();
         return true;
     }

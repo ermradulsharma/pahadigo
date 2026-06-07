@@ -12,13 +12,11 @@ export const roleMiddleware = (req, allowedRoles = []) => {
     if (!req.user) {
         return { authorized: DEFAULTS.FALSE, message: RESPONSE_MESSAGES.AUTH.UNAUTHORIZED };
     }
-    let role = req.user.role;
-    if (req.user.preferences?.tempRole) {
-        role = req.user.preferences?.tempRole;
-    }
+    const temp = req.user.preferences?.tempRole;
+    const original = req.user.role;
+    const switchRole = (temp && temp !== original) ? temp : original;
 
-
-    if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
+    if (allowedRoles.length > 0 && !allowedRoles.includes(switchRole)) {
         let errorMessage = RESPONSE_MESSAGES.ERROR.FORBIDDEN;
         if (allowedRoles.includes(USER_ROLES.ADMIN) && allowedRoles.length === 1) {
             errorMessage = RESPONSE_MESSAGES.AUTH.ADMIN_ONLY;

@@ -4,9 +4,7 @@ import User from '@/core/Models/User.js';
 
 const authMiddleware = async (req) => {
     try {
-        console.log("AUTH", req)
         const authHeader = req.headers.get('authorization') || '';
-        console.log("authHeader", authHeader)
         const token = authHeader.match(/^Bearer\s+(.+)$/i)?.[1];
         if (!token) return { authorized: DEFAULTS.FALSE, message: RESPONSE_MESSAGES.AUTH.NO_TOKEN };
 
