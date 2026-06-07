@@ -21,10 +21,10 @@ describe('BaseAuthService', () => {
 
     describe('getUserProfile', () => {
         test('should return user profile with vendor data if role is vendor', async () => {
-            const mockUser = { 
-                _id: 'u1', 
-                role: 'vendor', 
-                toObject: () => ({ _id: 'u1', role: 'vendor' }) 
+            const mockUser = {
+                _id: 'u1',
+                role: 'vendor',
+                toObject: () => ({ _id: 'u1', role: 'vendor' })
             };
             const mockVendor = { businessName: 'Test Biz' };
 
@@ -52,6 +52,7 @@ describe('BaseAuthService', () => {
     describe('updateUserProfile', () => {
         test('should update user successfully', async () => {
             const mockUser = { _id: 'u1', firstName: 'New' };
+            User.findById.mockResolvedValue(mockUser);
             User.findByIdAndUpdate.mockResolvedValue(mockUser);
 
             const result = await BaseAuthService.updateUserProfile('u1', { firstName: 'New' });
