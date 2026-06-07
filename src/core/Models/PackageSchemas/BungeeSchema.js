@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { PACKAGE, DEFAULTS } from '../../Constants/index.js';
-import { BasePackageFields, BasePackageOptions, ActivityPolicies, MealsAndAmenities } from './BasePackageSchema.js';
+import { BasePackageFields, BasePackageOptions, ActivityPolicies, MealsAndAmenities, age } from './BasePackageSchema.js';
 
 const BungeeSchema = new mongoose.Schema({
   ...BasePackageFields,
@@ -16,10 +16,7 @@ const BungeeSchema = new mongoose.Schema({
       min: { type: Number, default: DEFAULTS.NULL },
       max: { type: Number, default: DEFAULTS.NULL },
     },
-    age: {
-      min: { type: Number, default: DEFAULTS.NULL },
-      max: { type: Number, default: DEFAULTS.NULL },
-    },
+    age: age,
     departureTime: { type: String, default: DEFAULTS.NULL },
     reportingTime: { type: String, default: DEFAULTS.NULL },
     duration: { type: String, default: DEFAULTS.NULL },

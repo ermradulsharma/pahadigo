@@ -29,10 +29,7 @@ class NotificationService {
     async sendOTPEmail(email, otp) {
         try {
             const config = await getAppConfig();
-            const html = await renderTemplate('Emails/auth-otp.html', {
-                OTP: otp
-            });
-
+            const html = await renderTemplate('Emails/auth-otp.html', { OTP: otp });
             const transporter = await this._getTransporter();
             await transporter.sendMail({
                 from: `"${config.smtp.from_name}" <${config.smtp.from_address}>`,
@@ -43,7 +40,6 @@ class NotificationService {
 
             return true;
         } catch (error) {
-            console.error("[NotificationService] sendOTPEmail Error:", error);
             return false;
         }
     }

@@ -185,11 +185,11 @@ class AuthService {
     if (user.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
     if (user.role === USER_ROLES.VENDOR) throw new Error(RESPONSE_MESSAGES.AUTH.ALREADY_VENDOR);
 
-    user.role = USER_ROLES.VENDOR;
+    user.preferences.tempRole = USER_ROLES.VENDOR;
     await user.save();
 
     const vendorData = await this._getVendorStatus(user);
-    return { success: DEFAULTS.TRUE, role: user.role, user: { ...user.toObject(), password: undefined }, ...vendorData };
+    return true;
   }
 
   async downgradeToTraveller(userId) {
@@ -198,10 +198,10 @@ class AuthService {
     if (user.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
     if (user.role === USER_ROLES.TRAVELLER) throw new Error(RESPONSE_MESSAGES.AUTH.ALREADY_TRAVELLER);
 
-    user.role = USER_ROLES.TRAVELLER;
+    user.preferences.tempRole = USER_ROLES.TRAVELLER;
     await user.save();
 
-    return { success: DEFAULTS.TRUE, role: user.role, user: { ...user.toObject(), password: undefined } };
+    return true;
   }
 }
 

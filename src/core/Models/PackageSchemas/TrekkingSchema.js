@@ -1,6 +1,6 @@
 import mongoose from "mongoose";
 import { PACKAGE, DEFAULTS } from "../../Constants/index.js";
-import { BasePackageFields, BasePackageOptions, ActivityPolicies, PointLocation, CommonItinerary, MealsAndAmenities, optionalPriceDecimal } from './BasePackageSchema.js';
+import { BasePackageFields, BasePackageOptions, ActivityPolicies, PointLocation, CommonItinerary, MealsAndAmenities, optionalPriceDecimal, age } from './BasePackageSchema.js';
 
 const TrekkingSchema = new mongoose.Schema({
     ...BasePackageFields,
@@ -20,6 +20,7 @@ const TrekkingSchema = new mongoose.Schema({
         reportingTime: { type: String, default: DEFAULTS.NULL },
         startPoint: PointLocation,
         endPoint: PointLocation,
+        age: age,
     },
     itinerary: CommonItinerary,
     policies: ActivityPolicies

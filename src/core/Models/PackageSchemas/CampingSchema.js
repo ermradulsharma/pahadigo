@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { PACKAGE, DEFAULTS } from '../../Constants/index.js';
-import { BasePackageFields, BasePackageOptions, CommonPolicies, MealsAndAmenities, optionalPriceDecimal, AccommodationPolicies, AccommodationPricing } from './BasePackageSchema.js';
+import { BasePackageFields, BasePackageOptions, CommonPolicies, MealsAndAmenities, optionalPriceDecimal, AccommodationPolicies, AccommodationPricing, age } from './BasePackageSchema.js';
 
 const CampingSchema = new mongoose.Schema({
   ...BasePackageFields,
@@ -11,6 +11,7 @@ const CampingSchema = new mongoose.Schema({
     isElectricity: { type: Boolean, default: DEFAULTS.FALSE },
     checkInTime: { type: String, default: DEFAULTS.NULL },
     checkOutTime: { type: String, default: DEFAULTS.NULL },
+    age: age,
   },
   pricing: AccommodationPricing,
   policies: {

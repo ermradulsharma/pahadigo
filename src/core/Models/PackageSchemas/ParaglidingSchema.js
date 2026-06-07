@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { PACKAGE, DEFAULTS } from '../../Constants/index.js';
-import { BasePackageFields, BasePackageOptions, ActivityPolicies, MealsAndAmenities, optionalPriceDecimal } from './BasePackageSchema.js';
+import { BasePackageFields, BasePackageOptions, ActivityPolicies, MealsAndAmenities, optionalPriceDecimal, age } from './BasePackageSchema.js';
 
 const ParaglidingSchema = new mongoose.Schema({
   ...BasePackageFields,
@@ -13,7 +13,8 @@ const ParaglidingSchema = new mongoose.Schema({
     videoIncluded: { type: Boolean, default: DEFAULTS.FALSE },
     transferIncluded: { type: Boolean, default: DEFAULTS.FALSE },
     pilotExperience: { type: String, default: DEFAULTS.NULL },
-    goproExcludedPrice: optionalPriceDecimal
+    goproExcludedPrice: optionalPriceDecimal,
+    age: age,
   },
   policies: ActivityPolicies
 }, BasePackageOptions);

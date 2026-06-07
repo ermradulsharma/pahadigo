@@ -1,6 +1,6 @@
 import mongoose from 'mongoose';
 import { PACKAGE, DEFAULTS } from '../../Constants/index.js';
-import { BasePackageFields, BasePackageOptions, ActivityPolicies, PointLocation, MealsAndAmenities } from './BasePackageSchema.js';
+import { BasePackageFields, BasePackageOptions, ActivityPolicies, PointLocation, MealsAndAmenities, age } from './BasePackageSchema.js';
 
 const RaftingSchema = new mongoose.Schema({
   ...BasePackageFields,
@@ -16,10 +16,7 @@ const RaftingSchema = new mongoose.Schema({
     exclusions: { type: String, default: DEFAULTS.NULL },
     departureTime: { type: String, default: DEFAULTS.NULL },
     reportingTime: { type: String, default: DEFAULTS.NULL },
-    age: {
-      min: { type: Number, default: DEFAULTS.COUNTS.ZERO },
-      max: { type: Number, default: DEFAULTS.COUNTS.ZERO },
-    },
+    age: age,
     startPoint: PointLocation,
     endPoint: PointLocation,
   },
