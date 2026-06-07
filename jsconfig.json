@@ -1,9 +1,7 @@
 {
     "compilerOptions": {
-        "baseUrl": ".",
         "target": "ES6",
         "module": "esnext",
-        "moduleResolution": "node",
         "allowJs": true,
         "checkJs": false,
         "skipLibCheck": true,
