@@ -16,12 +16,12 @@ export const roleMiddleware = (req, allowedRoles = []) => {
     if (req.user.preferences?.tempRole) {
         role = req.user.preferences?.tempRole;
     }
+
+
     if (allowedRoles.length > 0 && !allowedRoles.includes(role)) {
         let errorMessage = RESPONSE_MESSAGES.ERROR.FORBIDDEN;
         if (allowedRoles.includes(USER_ROLES.ADMIN) && allowedRoles.length === 1) {
             errorMessage = RESPONSE_MESSAGES.AUTH.ADMIN_ONLY;
-        } else if (allowedRoles.includes(USER_ROLES.VENDOR) && allowedRoles.length === 1) {
-            errorMessage = RESPONSE_MESSAGES.AUTH.VENDORS_ONLY;
         }
         return { authorized: DEFAULTS.FALSE, message: errorMessage };
     }

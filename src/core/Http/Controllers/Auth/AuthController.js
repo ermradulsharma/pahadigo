@@ -174,20 +174,26 @@ class AuthController extends Controller {
 
     async upgradeToVendor(req) {
         try {
+            console.log("req.user", req.user)
+            console.log("req.user.id", req.user.id)
             if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
             await UserAuthService.upgradeToVendor(req.user.id);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.UPGRADED);
         } catch (error) {
+            console.log("error", error.message)
             return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
         }
     }
 
     async downgradeToTraveller(req) {
         try {
+            console.log("req.user", req.user)
+            console.log("req.user.id", req.user.id)
             if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
             await UserAuthService.downgradeToTraveller(req.user.id);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.DOWNGRADED);
         } catch (error) {
+            console.log("error", error.message)
             return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
         }
     }
