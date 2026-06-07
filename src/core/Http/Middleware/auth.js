@@ -11,7 +11,7 @@ const authMiddleware = async (req) => {
         const decoded = await verifyToken(token);
         if (!decoded) return { authorized: DEFAULTS.FALSE, message: RESPONSE_MESSAGES.AUTH.TOKEN_INVALID };
 
-        const user = await User.findById(decoded.id).select('status deletedAt role').lean();
+        const user = await User.findById(decoded.id).select('status deletedAt role preferences').lean();
 
         const statusMap = {
             [STATUS.DELETED]: RESPONSE_MESSAGES.AUTH.ACCOUNT_DELETED,

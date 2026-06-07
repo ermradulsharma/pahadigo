@@ -36,10 +36,27 @@ class BaseAuthService {
     }
 
     async updateUserProfile(userId, updates) {
+        const existingUser = await User.findById(userId);
+
+        if (!existingUser) {
+            throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+        }
+
+        if (updates.preferences) {
+            updates.preferences = {
+                ...existingUser.preferences.toObject(),
+                ...updates.preferences,
+                notifications: {
+                    ...existingUser.preferences.notifications,
+                    ...(updates.preferences.notifications || {})
+                }
+            };
+        }
+
         if (updates.address) {
             mapToGeoJSON(updates.address, 'location');
         }
-        const user = await User.findByIdAndUpdate(userId, updates, { returnDocument: 'after' });
+        const user = await User.findByIdAndUpdate(userId, updates, { new: true });
         if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         return user;
     }
