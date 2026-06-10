@@ -104,7 +104,7 @@ export default function AdminDashboard() {
     if (!isMounted || loading) return <Loading message="Initializing Dashboard Matrix..." />;
 
     return (
-        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-8 max-w-[1600px] mx-auto space-y-8 bg-[#0a0a0c] min-h-screen text-slate-300">
+        <motion.div initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }} className="p-8 max-w-400 mx-auto space-y-8 bg-[#0a0a0c] min-h-screen text-slate-300">
             <div className="flex flex-col md:flex-row md:justify-between md:items-end gap-4 border-b border-white/10 pb-4">
                 <div>
                     <h1 className="text-3xl font-bold text-white tracking-tight flex items-center gap-3"><Server className="w-8 h-8 text-indigo-400 opacity-80" /> Dashboard</h1>
@@ -137,7 +137,7 @@ export default function AdminDashboard() {
             </div>
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
-                <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} className="bg-[#111116] border border-white/10 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col h-[350px]">
+                <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} className="bg-[#111116] border border-white/10 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col h-87.5">
                     <h2 className="text-sm font-mono tracking-widest text-cyan-400 uppercase flex items-center gap-2 mb-6"><Cpu className="w-4 h-4" /> System Resources</h2>
                     <div className="flex-1 space-y-6 flex flex-col justify-center">
                         <div onClick={() => router.push('/admin/system-health')} className="relative group cursor-pointer">
@@ -172,7 +172,7 @@ export default function AdminDashboard() {
                     </div>
                 </motion.div>
 
-                <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="bg-[#111116] border border-white/10 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col h-[350px]">
+                <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="bg-[#111116] border border-white/10 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col h-87.5">
                     <h2 className="text-sm font-mono tracking-widest text-orange-400 uppercase flex items-center gap-2 mb-6"><Flame className="w-4 h-4" /> Top Destinations</h2>
                     <div className="space-y-4 flex-1 overflow-y-auto pr-2 custom-scrollbar">
                         {(!stats.topTerritories || stats.topTerritories.length === 0) ? (
@@ -189,7 +189,7 @@ export default function AdminDashboard() {
                     </div>
                 </motion.div>
 
-                <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="bg-[#111116] border border-white/10 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col relative overflow-hidden h-[350px]">
+                <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="bg-[#111116] border border-white/10 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col relative overflow-hidden h-87.5">
                     <div className="absolute top-0 right-0 w-32 h-32 bg-indigo-500/10 rounded-full blur-3xl pointer-events-none"></div>
                     <div className="flex justify-between items-center mb-6 relative z-10">
                         <h2 className="text-sm font-mono tracking-widest text-indigo-400 uppercase flex items-center gap-2"><Activity className="w-4 h-4" /> System Logs</h2>
@@ -316,8 +316,8 @@ export default function AdminDashboard() {
 
             <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 pt-4">
                 {/* Open Disputes & Security anomalies */}
-                <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} className="bg-[#111116] border border-rose-500/20 p-6 rounded-2xl shadow-[0_0_30px_rgba(244,63,94,0.05)] flex flex-col relative overflow-hidden group h-[350px]">
-                    <div className="absolute top-0 right-0 w-full h-1 bg-gradient-to-r from-transparent via-rose-500 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
+                <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} className="bg-[#111116] border border-rose-500/20 p-6 rounded-2xl shadow-[0_0_30px_rgba(244,63,94,0.05)] flex flex-col relative overflow-hidden group h-87.5">
+                    <div className="absolute top-0 right-0 w-full h-1 bg-linear-to-r from-transparent via-rose-500 to-transparent opacity-50 group-hover:opacity-100 transition-opacity"></div>
                     <div className="absolute -bottom-10 -right-10 w-32 h-32 bg-rose-500/10 rounded-full blur-3xl group-hover:bg-rose-500/20 transition-all"></div>
                     <div className="flex justify-between items-center mb-6 relative z-10">
                         <h2 className="text-sm font-mono tracking-widest text-rose-400 uppercase flex items-center gap-2">
@@ -345,7 +345,7 @@ export default function AdminDashboard() {
                 </motion.div>
 
                 {/* Upcoming Departures - Active Missions */}
-                <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="bg-[#111116] border border-white/10 hover:border-blue-500/30 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col transition-colors h-[350px]">
+                <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.1 }} className="bg-[#111116] border border-white/10 hover:border-blue-500/30 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col transition-colors h-87.5">
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-sm font-mono tracking-widest text-blue-400 uppercase flex items-center gap-2"><Navigation className="w-4 h-4" /> Upcoming Bookings</h2>
                     </div>
@@ -354,7 +354,7 @@ export default function AdminDashboard() {
                             <div className="text-xs font-mono text-slate-500 mt-4">No upcoming bookings.</div>
                         ) : stats.departures.map((dep, i) => (
                             <div onClick={() => router.push('/admin/bookings')} key={i} className="flex items-center gap-4 relative group cursor-pointer">
-                                <div className="absolute left-1.5 top-0 bottom-0 w-[1px] bg-white/10 group-hover:bg-blue-500/30 transition-colors"></div>
+                                <div className="absolute left-1.5 top-0 bottom-0 w-px bg-white/10 group-hover:bg-blue-500/30 transition-colors"></div>
                                 <div className={`relative z-10 w-3 h-3 rounded-full border border-[#111116] ${dep.status === 'Active' ? 'bg-emerald-500 shadow-[0_0_10px_#10b981]' : 'bg-amber-500 shadow-[0_0_10px_#f59e0b]'}`}></div>
                                 <div className={`flex-1 bg-white/5 border border-white/5 rounded-lg p-3 group-hover:bg-white/10 transition-colors ${dep.status === 'Active' ? 'group-hover:border-emerald-500/30' : 'group-hover:border-amber-500/30'}`}>
                                     <div className="flex justify-between mb-1">
@@ -369,7 +369,7 @@ export default function AdminDashboard() {
                 </motion.div>
 
                 {/* Recent Bookings (Moved & Compressed here) */}
-                <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="bg-[#111116] border border-white/10 hover:border-emerald-500/30 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col transition-colors h-[350px]">
+                <motion.div initial={{ y: 20, opacity: 0 }} whileInView={{ y: 0, opacity: 1 }} viewport={{ once: true }} transition={{ delay: 0.2 }} className="bg-[#111116] border border-white/10 hover:border-emerald-500/30 p-6 rounded-2xl shadow-[0_0_30px_rgba(0,0,0,0.5)] flex flex-col transition-colors h-87.5">
                     <div className="flex justify-between items-center mb-6">
                         <h2 className="text-sm font-mono tracking-widest text-emerald-400 uppercase flex items-center gap-2"><Calendar className="w-4 h-4" /> Recent Bookings</h2>
                         <Link href="/admin/bookings" className="text-[9px] font-mono text-emerald-400 hover:text-emerald-300 transition-colors uppercase tracking-widest bg-emerald-500/10 px-2 py-1 rounded border border-emerald-500/30">View All &rarr;</Link>
@@ -384,7 +384,7 @@ export default function AdminDashboard() {
                                             <div className="text-[9px] font-mono text-slate-500 uppercase tracking-tighter">{b?.traveller?.name || 'Anonymous'}</div>
                                         </td>
                                         <td className="p-2">
-                                            <div className="text-[11px] font-bold text-slate-300 truncate max-w-[150px]">{b?.item?.title || 'Package Node'}</div>
+                                            <div className="text-[11px] font-bold text-slate-300 truncate max-w-37.5">{b?.item?.title || 'Package Node'}</div>
                                             <div className="text-[9px] font-mono text-slate-500 uppercase tracking-tighter"><span className="text-indigo-400">Start Date:</span> {new Date(b?.startDate).toDateString()}</div>
                                         </td>
                                         <td className="p-2 text-right"><span className={`inline-flex items-center px-1.5 py-0.5 rounded text-[8px] font-mono tracking-widest uppercase border ${b?.status === 'confirmed' ? 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20' : 'bg-amber-500/10 text-amber-400 border-amber-500/20'}`}>{b?.status || 'pend'}</span></td>
@@ -423,7 +423,7 @@ export default function AdminDashboard() {
                         @keyframes slideIn { from { transform: translateX(100%); opacity: 0; } to { transform: translateX(0); opacity: 1; } }
                         .toast-animate { animation: slideIn 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards; }
                     `}</style>
-                    <div className={`fixed top-6 right-6 z-[100] flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-xl shadow-2xl toast-animate ${toast.type === 'error' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' : toast.type === 'info' ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'}`}>
+                    <div className={`fixed top-6 right-6 z-100 flex items-center gap-3 px-4 py-3 rounded-xl border backdrop-blur-xl shadow-2xl toast-animate ${toast.type === 'error' ? 'bg-rose-500/10 border-rose-500/20 text-rose-400' : toast.type === 'info' ? 'bg-indigo-500/10 border-indigo-500/20 text-indigo-400' : 'bg-emerald-500/10 border-emerald-500/20 text-emerald-400'}`}>
                         <div className={`w-2 h-2 rounded-full animate-pulse ${toast.type === 'error' ? 'bg-rose-500' : toast.type === 'info' ? 'bg-indigo-500' : 'bg-emerald-500'}`}></div>
                         <span className="text-xs font-mono uppercase tracking-widest font-semibold">{toast.text}</span>
                     </div>
