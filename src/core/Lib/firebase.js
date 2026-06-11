@@ -1,12 +1,14 @@
-import admin from 'firebase-admin';
+import { initializeApp, cert, getApps } from 'firebase-admin/app';
+import { getMessaging as getFcmMessaging } from 'firebase-admin/messaging';
 import Setting from '@/core/Models/Setting.js';
 
 let isInitialized = false;
 
 export const initFirebaseAdmin = async () => {
-    if (admin.apps.length) {
+    const apps = getApps();
+    if (apps.length) {
         isInitialized = true;
-        return admin.messaging();
+        return getFcmMessaging(apps[0]);
     }
 
     try {
@@ -20,15 +22,15 @@ export const initFirebaseAdmin = async () => {
         if (projectId && clientEmail && privateKey) {
             privateKey = privateKey.replace(/\\n/g, '\n');
             
-            admin.initializeApp({
-                credential: admin.credential.cert({
+            const app = initializeApp({
+                credential: cert({
                     projectId,
                     clientEmail,
                     privateKey,
                 })
             });
             isInitialized = true;
-            return admin.messaging();
+            return getFcmMessaging(app);
         } else {
             throw new Error('FIREBASE settings are missing in Database/ENV. Push notifications will not work.');
         }
@@ -38,10 +40,11 @@ export const initFirebaseAdmin = async () => {
 };
 
 export const getMessaging = async () => {
-    if (isInitialized && admin.apps.length) {
-        return admin.messaging();
+    const apps = getApps();
+    if (isInitialized && apps.length) {
+        return getFcmMessaging(apps[0]);
     }
     return await initFirebaseAdmin();
 };
 
-export const firebaseAdmin = admin;
+export const firebaseAdmin = { initializeApp, cert, getApps, getMessaging: getFcmMessaging };
