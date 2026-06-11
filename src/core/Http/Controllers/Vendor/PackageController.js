@@ -3,7 +3,6 @@ import PackageService from '@/core/Services/Vendor/PackageService.js';
 import { CATEGORY_MAP } from '@/core/Constants/categories.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
-import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
 import { VendorService } from '@/core/Services/Admin/index.js';
 import Vendor from '@/core/Models/Vendor.js';
 
@@ -112,51 +111,39 @@ class PackageController extends Controller {
 
     // POST /vendor/package/add-item
     async addPackageItem(req, { params } = {}) {
-        try {
-            const userId = req.user.id;
-            const body = req.payload;
+        return this.savePackageItem(req, { params, isUpdate: false });
+    }
 
+    // PATCH /vendor/package/update-item (Modify service item details)
+    async updatePackageItem(req, { params } = {}) {
+        return this.savePackageItem(req, { params, isUpdate: true });
+    }
+
+    // Unify package saving controller logic (both addition and update)
+    async savePackageItem(req, { params = {}, isUpdate } = {}) {
+        try {
+            const body = req.payload;
+            const category = body.category;
+            if (!category) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ITEM.CATEGORY_REQUIRED);
+
+            const userId = req.user.id;
             const vendor = await Vendor.findOne({ user: userId }).select("_id");
             if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-            const vendorId = vendor.id;
-            const slug = body.category;
-
-            let itemData = body.itemData || body;
-
-            if (body.item && Array.isArray(body.item)) {
-                itemData = body.item[0];
-            } else if (body.item && typeof body.item === 'object' && body.item['0']) {
-                itemData = body.item['0'];
+            let itemData = body;
+            let itemId = null;
+            if (isUpdate) {
+                itemId = params?.itemId || body.itemId;
             }
-
-            if (itemData.photos) {
-                const photos = Array.isArray(itemData.photos) ? itemData.photos : [itemData.photos];
-                const uploadResults = [];
-                for (const photo of photos) {
-                    if (photo && typeof photo === 'object' && (photo instanceof File || photo.size > 0)) {
-                        try {
-                            const uploaded = await uploadToCloudinary(photo, `packages/${vendorId}/${slug}`);
-                            uploadResults.push({ url: uploaded.url, type: 'image' });
-                        } catch (err) {
-                            console.error(`[PACKAGE_CONTROLLER] Item image upload failed:`, err);
-                        }
-                    } else if (typeof photo === 'object' && photo.url) {
-                        uploadResults.push(photo);
-                    } else if (typeof photo === 'string' && photo.startsWith('http')) {
-                        uploadResults.push({ url: photo, type: 'image' });
-                    }
-                }
-
-                if (uploadResults.length > 0) itemData.photos = uploadResults;
-                else delete itemData.photos;
+            const result = isUpdate ? await PackageService.updateItem(userId, vendor._id, category, itemId, itemData) : await PackageService.addItem(userId, vendor._id, category, itemData);
+            if (isUpdate) {
+                return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.ITEM.UPDATED);
+            } else {
+                return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.ITEM.ADDED, result);
             }
-
-            const item = await PackageService.addItem(userId, vendorId, slug, itemData);
-            return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.ITEM.ADDED);
         } catch (error) {
-            const status = error.message.toLowerCase().includes('authorized') ? HTTP_STATUS.FORBIDDEN : HTTP_STATUS.BAD_REQUEST;
-            return this.error(status, error.message);
+            console.log("error", error);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -178,47 +165,7 @@ class PackageController extends Controller {
         }
     }
 
-    // PATCH /vendor/package/update-item (Modify service item details)
-    async updatePackageItem(req, { params } = {}) {
-        try {
-            const body = req.payload;
-            const userId = req.user.id;
-            const vendor = await Vendor.findOne({ user: userId }).select("_id");
-            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-            const itemId = params.itemId || body.itemId;
-            const category = (body.category || params.category || '').trim();
-            const updates = body.updates || body;
-
-            // --- [MEDIA] Explicit File Upload Logic for Updates ---
-            if (updates.photos) {
-                const photos = Array.isArray(updates.photos) ? updates.photos : [updates.photos];
-                const uploadResults = [];
-
-                for (const photo of photos) {
-                    if (photo && typeof photo === 'object' && (photo instanceof File || photo.size > 0)) {
-                        try {
-                            const uploaded = await uploadToCloudinary(photo, `packages/${vendor._id}/${category}`);
-                            uploadResults.push({ url: uploaded.url, type: 'image' });
-                        } catch (err) {
-                            console.error(`[PACKAGE_CONTROLLER] Update image upload failed:`, err);
-                        }
-                    } else if (typeof photo === 'object' && photo.url) {
-                        uploadResults.push(photo);
-                    } else if (typeof photo === 'string' && photo.startsWith('http')) {
-                        uploadResults.push({ url: photo, type: 'image' });
-                    }
-                }
-                if (uploadResults.length > 0) updates.photos = uploadResults;
-            }
-
-            const result = await PackageService.updateItem(userId, vendor._id, category, itemId, updates);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.UPDATED, result);
-        } catch (error) {
-            const status = error.message.toLowerCase().includes('authorized') ? HTTP_STATUS.FORBIDDEN : HTTP_STATUS.BAD_REQUEST;
-            return this.error(status, error.message);
-        }
-    }
 
     // DELETE /vendor/package/delete-item
     async removePackageItem(req, { params } = {}) {

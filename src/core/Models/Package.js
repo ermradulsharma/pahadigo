@@ -8,8 +8,6 @@ import RaftingSchema from './PackageSchemas/RaftingSchema.js';
 import BungeeSchema from './PackageSchemas/BungeeSchema.js';
 import VehicleRentalSchema from './PackageSchemas/VehicleRentalSchema.js';
 import ChardhamTourSchema from './PackageSchemas/ChardhamTourSchema.js';
-import SkiingSchema from './PackageSchemas/SkiingSchema.js';
-import ParaglidingSchema from './PackageSchemas/ParaglidingSchema.js';
 import CustomTripSchema from './PackageSchemas/CustomTripSchema.js';
 
 const VendorPackageSchema = new mongoose.Schema({
@@ -23,8 +21,6 @@ const VendorPackageSchema = new mongoose.Schema({
   bungeeJumping: [BungeeSchema],
   vehicleRental: [VehicleRentalSchema],
   chardhamTour: [ChardhamTourSchema],
-  skiing: [SkiingSchema],
-  paragliding: [ParaglidingSchema],
   customTrip: [CustomTripSchema],
   createdAt: { type: Date, default: Date.now }
 }, {
@@ -44,8 +40,6 @@ VendorPackageSchema.index({
   'bungeeJumping.title': 'text',
   'vehicleRental.name': 'text',
   'chardhamTour.title': 'text',
-  'skiing.title': 'text',
-  'paragliding.title': 'text',
   'customTrip.title': 'text'
 }, {
   name: 'PackageTextIndex',

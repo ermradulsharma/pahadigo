@@ -1,12 +1,11 @@
 import mongoose from 'mongoose';
-import { PACKAGE, DEFAULTS } from '../../Constants/index.js';
-import { BasePackageFields, BasePackageOptions, CommonPolicies, MealsAndAmenities, optionalPriceDecimal, AccommodationPolicies, AccommodationPricing, AccommodationRoomDetails } from './BasePackageSchema.js';
+import { BasePackageFields, BasePackageOptions, MealsAndAmenities, AccommodationPolicies, AccommodationPricing } from './BasePackageSchema.js';
+import { HotelDetails } from './Package/Accommodation.js';
 
 const HotelSchema = new mongoose.Schema({
   ...BasePackageFields,
   ...MealsAndAmenities,
-  type: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.HOTEL_TYPES), default: PACKAGE.ACCOMMODATION.HOTEL_TYPES.BUDGET },
-  details: AccommodationRoomDetails,
+  details: HotelDetails,
   pricing: AccommodationPricing,
   policies: AccommodationPolicies
 }, BasePackageOptions);

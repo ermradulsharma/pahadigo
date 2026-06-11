@@ -1,15 +1,11 @@
 import mongoose from 'mongoose';
-import { PACKAGE, DEFAULTS } from '../../Constants/index.js';
-import { BasePackageFields, BasePackageOptions, optionalPriceDecimal, TransportPolicy } from './BasePackageSchema.js';
+import { BasePackageFields, BasePackageOptions, TransportPolicy } from './BasePackageSchema.js';
+import { CustomTripDetails } from './Package/Transport.js';
 
 const CustomTripSchema = new mongoose.Schema({
   ...BasePackageFields,
   pricing: BasePackageFields.pricing,
-  details: {
-    serviceType: { type: String, enum: Object.values(PACKAGE.TRANSPORT.CUSTOM_TRIP_SERVICE_TYPES), default: PACKAGE.TRANSPORT.CUSTOM_TRIP_SERVICE_TYPES.POINT_TO_POINT },
-    vehicleName: { type: String, default: DEFAULTS.NULL },
-    vehicleType: { type: String, enum: Object.values(PACKAGE.TRANSPORT.VEHICLE_TYPES), default: PACKAGE.TRANSPORT.VEHICLE_TYPES.BIKE },
-  },
+  details: CustomTripDetails,
   policies: TransportPolicy
 }, BasePackageOptions);
 

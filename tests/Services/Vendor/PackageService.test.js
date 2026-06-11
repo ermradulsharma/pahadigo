@@ -78,6 +78,24 @@ describe('Industry Standard: Vendor PackageService Logic', () => {
 
             expect(mockPkg.save).toHaveBeenCalled();
         });
+
+        it('[Pricing] should calculate sellingPrice if not provided', async () => {
+            Vendor.findById.mockResolvedValue({ _id: 'v1', category: [{ slug: 'trekking', name: 'Trekking' }] });
+            Package.findOne.mockResolvedValue(mockPkg);
+            
+            const itemData = { 
+                title: 'New Trek',
+                pricing: {
+                    basePrice: 1000,
+                    gst: 18,
+                    discountType: 'percentage',
+                    discount: 10
+                }
+            };
+            const result = await PackageService.addItem('u1', 'v1', 'trekking', itemData);
+
+            expect(result.pricing.sellingPrice).toBe(1080); // 1000 + 180 (GST) - 100 (10% discount)
+        });
     });
 
     describe('[updateItem]', () => {
@@ -93,6 +111,39 @@ describe('Industry Standard: Vendor PackageService Logic', () => {
 
             expect(item.set).toHaveBeenCalledWith('title', 'Updated Title');
             expect(mockPkg.save).toHaveBeenCalled();
+        });
+
+        it('[Pricing] should recalculate sellingPrice on update', async () => {
+            Vendor.findById.mockResolvedValue({ _id: 'v1', category: [{ slug: 'trekking' }] });
+            Package.findOne.mockResolvedValue(mockPkg);
+            
+            const updates = { 
+                pricing: {
+                    basePrice: 2000,
+                    gst: 5,
+                    discountType: 'flat',
+                    discount: 100
+                }
+            };
+            
+            const item = { 
+                _id: 'item1',
+                pricing: {
+                    basePrice: 2000,
+                    gst: 5,
+                    discountType: 'flat',
+                    discount: 100
+                },
+                set: jest.fn(function(key, value) {
+                    this[key] = value;
+                }),
+                toObject: function() { return this; }
+            };
+            mockPkg.trekking.id = jest.fn().mockReturnValue(item);
+
+            const result = await PackageService.updateItem('u1', 'v1', 'trekking', 'item1', updates);
+
+            expect(result.pricing.sellingPrice).toBe(2000); // 2000 + 100 (GST) - 100 (flat discount)
         });
     });
 });

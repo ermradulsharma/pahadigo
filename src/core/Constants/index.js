@@ -332,6 +332,8 @@ export const RESPONSE_MESSAGES = {
         STATUS_UPDATED: 'Item availability status updated.',
         FETCHED: 'Service items retrieved.',
         BASELINE_UPDATED: 'Service pricing baseline updated.',
+        CATEGORY_REQUIRED: 'Please select a category.',
+
     },
     CATEGORY: {
         CREATED: 'New category created successfully.',

@@ -1,6 +1,7 @@
 import mongoose from 'mongoose';
-import { PACKAGE, DEFAULTS } from '../../Constants/index.js';
+import { DEFAULTS } from '../../Constants/index.js';
 import { BasePackageFields, BasePackageOptions, TransportPolicy, optionalPriceDecimal } from './BasePackageSchema.js';
+import { BikeScooterRentalDetails } from './Package/Transport.js';
 
 const VehicleRentalSchema = new mongoose.Schema({
   ...BasePackageFields,
@@ -9,10 +10,7 @@ const VehicleRentalSchema = new mongoose.Schema({
     ...BasePackageFields.pricing,
     depositAmount: optionalPriceDecimal
   },
-  details: {
-    vehicleType: { type: String, enum: Object.values(PACKAGE.TRANSPORT.VEHICLE_TYPES), default: PACKAGE.TRANSPORT.VEHICLE_TYPES.BIKE },
-    vehicleName: { type: String, default: DEFAULTS.NULL },
-  },
+  details: BikeScooterRentalDetails,
   policies: {
     ...TransportPolicy,
     minAge: { type: Number, default: 18 },

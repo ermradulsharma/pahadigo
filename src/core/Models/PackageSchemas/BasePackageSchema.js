@@ -1,8 +1,12 @@
 import mongoose from 'mongoose';
-import { PACKAGE, DEFAULTS, DISCOUNT_TYPES } from '../../Constants/index.js';
+import { DEFAULTS, DISCOUNT_TYPES, PACKAGE } from '../../Constants/index.js';
+import { ACCOMMODATION } from '../../Constants/Package/accommodation.js';
+import { ACTIVITY } from '../../Constants/Package/activity.js';
+import { TRANSPORT } from '../../Constants/Package/transport.js';
+import { PACKAGE as PACKAGE_CONSTANTS } from '../../Constants/Package/package.js';
 
-export const optionalPriceDecimal = { type: Number, default: DEFAULTS.COUNTS.ZERO, min: DEFAULTS.COUNTS.ZERO, get: (v) => (Math.round(v * 100) / 100).toFixed(2), set: (v) => Math.round(v * 100) / 100 };
-export const priceDecimalRequired = { type: Number, required: DEFAULTS.TRUE, default: DEFAULTS.COUNTS.ZERO, min: DEFAULTS.COUNTS.ZERO, get: (v) => (Math.round(v * 100) / 100).toFixed(2), set: (v) => Math.round(v * 100) / 100 };
+export const optionalPriceDecimal = { type: Number, default: DEFAULTS.COUNTS.ZERO, min: DEFAULTS.COUNTS.ZERO, get: (v) => Math.round(v * 100) / 100, set: (v) => Math.round(v * 100) / 100 };
+export const priceDecimalRequired = { type: Number, required: DEFAULTS.TRUE, default: DEFAULTS.COUNTS.ZERO, min: DEFAULTS.COUNTS.ZERO, get: (v) => Math.round(v * 100) / 100, set: (v) => Math.round(v * 100) / 100 };
 
 export const PointLocation = {
     name: { type: String, default: DEFAULTS.NULL },
@@ -105,9 +109,9 @@ export const AccommodationRoomDetails = {
     checkOutTime: { type: String, default: DEFAULTS.NULL },
 };
 
-export const age = {
-    minAge: { type: Number, default: DEFAULTS.COUNTS.ZERO, min: DEFAULTS.COUNTS.ZERO },
-    maxAge: { type: Number, default: DEFAULTS.COUNTS.ZERO, min: DEFAULTS.COUNTS.ZERO },
+export const range = {
+    min: { type: Number, default: DEFAULTS.COUNTS.ZERO, min: DEFAULTS.COUNTS.ZERO },
+    max: { type: Number, default: DEFAULTS.COUNTS.ZERO, min: DEFAULTS.COUNTS.ZERO },
 }
 
 export const BasePackageOptions = {
