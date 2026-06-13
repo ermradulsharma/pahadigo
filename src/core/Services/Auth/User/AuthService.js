@@ -73,6 +73,7 @@ class AuthService {
                 user.termsAccepted = DEFAULTS.TRUE;
                 user.termsAcceptedAt = new Date();
             }
+            user.preferences.tempRole = null;
             if (user.isModified()) await user.save();
         }
 
