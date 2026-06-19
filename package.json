@@ -65,6 +65,11 @@
         },
         "eslint": "$eslint",
         "@tootallnate/once": "^3.0.1",
-        "postcss": "$postcss"
+        "postcss": "$postcss",
+        "form-data": "^4.0.6",
+        "@types/request": {
+            "form-data": "^2.5.6"
+        },
+        "js-yaml": "^4.2.0"
     }
 }
