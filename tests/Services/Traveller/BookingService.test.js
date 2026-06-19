@@ -30,27 +30,27 @@ jest.unstable_mockModule('mongoose', () => {
     };
 });
 
-jest.unstable_mockModule('@/models/Booking.js', () => ({
+jest.unstable_mockModule('@/core/Models/Booking.js', () => ({
     default: { create: jest.fn(), findOne: jest.fn(), findById: jest.fn(), find: jest.fn(() => ({ sort: jest.fn(() => Promise.resolve([])) })) }
 }));
 
-jest.unstable_mockModule('@/models/User.js', () => ({
+jest.unstable_mockModule('@/core/Models/User.js', () => ({
     default: { findById: jest.fn() }
 }));
 
-jest.unstable_mockModule('@/models/Dispute.js', () => ({
+jest.unstable_mockModule('@/core/Models/Dispute.js', () => ({
     default: { create: jest.fn(), findOne: jest.fn() }
 }));
 
-jest.unstable_mockModule('@/models/Package.js', () => ({
+jest.unstable_mockModule('@/core/Models/Package.js', () => ({
     default: { findById: jest.fn() }
 }));
 
-jest.unstable_mockModule('@/models/Coupon.js', () => ({
+jest.unstable_mockModule('@/core/Models/Coupon.js', () => ({
     default: { findOne: jest.fn() }
 }));
 
-jest.unstable_mockModule('@/constants/index.js', () => ({
+jest.unstable_mockModule('@/core/Constants/index.js', () => ({
     RESPONSE_MESSAGES: {
         BOOKING: { NOT_FOUND_OR_UNAUTHORIZED: 'Booking not found', SLOTS_NOT_AVAILABLE: 'Slots not available' },
         PACKAGE: { NOT_FOUND: 'Package not found' },
@@ -64,23 +64,27 @@ jest.unstable_mockModule('@/constants/index.js', () => ({
     DEFAULTS: { TRUE: true, FALSE: false, NULL: null }
 }));
 
-jest.unstable_mockModule('@/services/General/NotificationService.js', () => ({
+jest.unstable_mockModule('@/core/Services/General/NotificationService.js', () => ({
     default: { notifyBookingStatus: jest.fn() }
 }));
 
-jest.unstable_mockModule('@/services/General/RazorpayService.js', () => ({
+jest.unstable_mockModule('@/core/Services/General/RazorpayService.js', () => ({
     default: { createOrder: jest.fn(), verifySignature: jest.fn() }
 }));
 
-jest.unstable_mockModule('@/services/Traveller/PackageService.js', () => ({
+jest.unstable_mockModule('@/core/Services/Traveller/PackageService.js', () => ({
     default: { getAvailablePackageItem: jest.fn() }
 }));
 
-jest.unstable_mockModule('@/services/Traveller/InventoryService.js', () => ({
+jest.unstable_mockModule('@/core/Services/Traveller/InventoryService.js', () => ({
     default: { checkAvailabilityRange: jest.fn(), reserveSlotsRange: jest.fn() }
 }));
 
-jest.unstable_mockModule('@/lib/appConfig.js', () => ({
+jest.unstable_mockModule('@/core/Services/Vendor/BusinessService.js', () => ({
+    default: { getBusinessById: jest.fn(() => Promise.resolve({})) }
+}));
+
+jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
     getAppConfig: jest.fn(() => Promise.resolve({
         razorpay: { key_id: 'test_key', key_secret: 'test_secret' },
         tax: { gst: 5, service_tax: 0 }
@@ -88,11 +92,11 @@ jest.unstable_mockModule('@/lib/appConfig.js', () => ({
 }));
 
 // 2. Dynamic Imports
-const { default: BookingService } = await import('@/services/Traveller/BookingService.js');
-const { default: Booking } = await import('@/models/Booking.js');
-const { default: PackageService } = await import('@/services/Traveller/PackageService.js');
-const { default: InventoryService } = await import('@/services/Traveller/InventoryService.js');
-const { default: User } = await import('@/models/User.js');
+const { default: BookingService } = await import('@/core/Services/Traveller/BookingService.js');
+const { default: Booking } = await import('@/core/Models/Booking.js');
+const { default: PackageService } = await import('@/core/Services/Traveller/PackageService.js');
+const { default: InventoryService } = await import('@/core/Services/Traveller/InventoryService.js');
+const { default: User } = await import('@/core/Models/User.js');
 
 describe('BookingService Business Logic', () => {
 
@@ -106,8 +110,9 @@ describe('BookingService Business Logic', () => {
                 catalogId: 'c1',
                 category: 'trekking',
                 vendor: { id: 'v123' },
-                pricing: { pricePerPerson: 1000 },
-                title: 'Trek Pack'
+                pricing: { pricePerPerson: 1000, sellingPrice: 1000 },
+                title: 'Trek Pack',
+                photos: [{ url: 'http://example.com/photo.jpg' }]
             };
             PackageService.getAvailablePackageItem.mockResolvedValue(mockPackageItem);
             User.findById.mockResolvedValue({ name: 'Test User', phone: '1234567890', email: 'test@test.com' });

@@ -6,6 +6,26 @@ import { generateToken } from '@/core/Helpers/jwt.js';
 import googleAuthLib from 'google-auth-library';
 const { OAuth2Client } = googleAuthLib;
 import { getAppConfig } from '@/core/Lib/appConfig.js';
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
+
+async function getApplePublicKey(kid) {
+    try {
+        const response = await fetch('https://appleid.apple.com/auth/keys');
+        if (!response.ok) {
+            throw new Error('Failed to fetch Apple public keys');
+        }
+        const { keys } = await response.json();
+        const key = keys.find(k => k.kid === kid);
+        if (!key) {
+            throw new Error('Matching Apple public key not found');
+        }
+        return crypto.createPublicKey({ format: 'jwk', key });
+    } catch (err) {
+        throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
+    }
+}
+
 
 class AuthService {
     async initiateOTP({ identifier, role, termsAccepted }) {
@@ -112,6 +132,136 @@ class AuthService {
             if (!user.googleId) {
                 user.googleId = googleId;
                 user.authProvider = AUTH_PROVIDERS.GOOGLE;
+            }
+            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
+            if (targetRole && validRoles.includes(targetRole)) user.role = targetRole;
+            if (user.isModified()) await user.save();
+        }
+
+        await this._handleDeactivation(user);
+        let vendorData = user.role === USER_ROLES.VENDOR ? await this._getVendorStatus(user) : {};
+        const token = await generateToken({ id: user._id, role: user.role, email: user.email });
+        return { token, role: user.role, isNewUser, user, ...vendorData };
+    }
+
+    async authenticateWithFacebook(accessToken, targetRole) {
+        const config = await getAppConfig();
+        const facebookAppId = config.facebook?.app_id;
+        if (!facebookAppId) throw new Error(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
+
+        const response = await fetch(`https://graph.facebook.com/me?fields=id,name,email&access_token=${accessToken}`);
+        if (!response.ok) {
+            throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
+        }
+        const payload = await response.json();
+        if (payload.error) {
+            throw new Error(payload.error.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
+        }
+        const { id: facebookId, name, email } = payload;
+        if (!facebookId) {
+            throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
+        }
+
+        let user = null;
+        if (email) {
+            user = await User.findOne({ $or: [{ facebookId }, { email }] });
+        } else {
+            user = await User.findOne({ facebookId });
+        }
+        let isNewUser = DEFAULTS.FALSE;
+
+        if (!user) {
+            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
+            const userRole = (targetRole && validRoles.includes(targetRole)) ? targetRole : USER_ROLES.TRAVELLER;
+            user = await User.create({
+                email: email || null,
+                name: name || null,
+                facebookId,
+                role: userRole,
+                isVerified: DEFAULTS.TRUE,
+                authProvider: AUTH_PROVIDERS.FACEBOOK
+            });
+            isNewUser = DEFAULTS.TRUE;
+        } else {
+            if (!user.facebookId) {
+                user.facebookId = facebookId;
+                user.authProvider = AUTH_PROVIDERS.FACEBOOK;
+            }
+            if (email && !user.email) {
+                user.email = email;
+            }
+            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
+            if (targetRole && validRoles.includes(targetRole)) user.role = targetRole;
+            if (user.isModified()) await user.save();
+        }
+
+        await this._handleDeactivation(user);
+        let vendorData = user.role === USER_ROLES.VENDOR ? await this._getVendorStatus(user) : {};
+        const token = await generateToken({ id: user._id, role: user.role, email: user.email });
+        return { token, role: user.role, isNewUser, user, ...vendorData };
+    }
+
+    async authenticateWithApple(idToken, targetRole, appleUser, appleEmail) {
+        const config = await getAppConfig();
+        const appleClientId = config.apple?.client_id;
+        if (!appleClientId) throw new Error(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
+
+        const decodedToken = jwt.decode(idToken, { complete: true });
+        if (!decodedToken || !decodedToken.header || !decodedToken.header.kid) {
+            throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
+        }
+
+        const applePublicKey = await getApplePublicKey(decodedToken.header.kid);
+        
+        let payload;
+        try {
+            payload = jwt.verify(idToken, applePublicKey, {
+                algorithms: ['RS256'],
+                issuer: 'https://appleid.apple.com',
+                audience: appleClientId
+            });
+        } catch (err) {
+            throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
+        }
+
+        const appleId = payload.sub;
+        const email = payload.email || appleEmail || null;
+        
+        let name = null;
+        if (appleUser && appleUser.name) {
+            name = [appleUser.name.firstName, appleUser.name.lastName].filter(Boolean).join(' ');
+        }
+        if (!name) {
+            name = email ? email.split('@')[0] : 'Apple User';
+        }
+
+        let user = null;
+        if (email) {
+            user = await User.findOne({ $or: [{ appleId }, { email }] });
+        } else {
+            user = await User.findOne({ appleId });
+        }
+        let isNewUser = DEFAULTS.FALSE;
+
+        if (!user) {
+            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
+            const userRole = (targetRole && validRoles.includes(targetRole)) ? targetRole : USER_ROLES.TRAVELLER;
+            user = await User.create({
+                email: email || null,
+                name: name || null,
+                appleId,
+                role: userRole,
+                isVerified: DEFAULTS.TRUE,
+                authProvider: AUTH_PROVIDERS.APPLE
+            });
+            isNewUser = DEFAULTS.TRUE;
+        } else {
+            if (!user.appleId) {
+                user.appleId = appleId;
+                user.authProvider = AUTH_PROVIDERS.APPLE;
+            }
+            if (email && !user.email) {
+                user.email = email;
             }
             const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
             if (targetRole && validRoles.includes(targetRole)) user.role = targetRole;

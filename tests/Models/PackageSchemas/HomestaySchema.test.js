@@ -13,8 +13,7 @@ describe('Industry Standard: HomestaySchema Data Structure', () => {
         const itemData = {
             title: 'Himalayan Homestay',
             slug: 'himalayan-homestay',
-            type: 'Cottage',
-            details: { roomType: 'Standard' },
+            details: { type: 'Cottage', roomType: 'Standard' },
             location: { address: 'Manali' }
         };
         const item = await HomestayModel.create(itemData);
@@ -23,25 +22,24 @@ describe('Industry Standard: HomestaySchema Data Structure', () => {
     });
 
     it('[Failure] should fail for invalid enum values', async () => {
-        const item = new HomestayModel({ type: 'invalid-type' });
+        const item = new HomestayModel({ details: { type: 'invalid-type' } });
         let err;
         try {
             await item.validate();
         } catch (e) {
             err = e;
         }
-        expect(err.errors.type).toBeDefined();
+        expect(err.errors['details.type']).toBeDefined();
     });
 
     it('[Pricing] should format price with 2 decimal places using getter', async () => {
         const item = await HomestayModel.create({
             title: 'Price Test',
             slug: 'price-test',
-            type: 'Cottage',
-            details: { roomType: 'Standard' },
-            pricing: { basePrice: 1200.5 },
+            details: { type: 'Cottage', roomType: 'Standard' },
+            pricing: { basePrice: 1200.555 },
             location: { address: 'Manali' }
         });
-        expect(item.pricing.basePrice).toBe('1200.50');
+        expect(item.pricing.basePrice).toBe(1200.56);
     });
 });

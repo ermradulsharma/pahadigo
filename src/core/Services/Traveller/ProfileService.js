@@ -13,11 +13,23 @@ class ProfileService {
   }
 
   async updateProfile(userId, data) {
-    const allowedFields = ['name', 'phone', 'address', 'preferences'];
+    const allowedFields = [
+      'name', 'phone', 'address', 'preferences',
+      'gender', 'dateOfBirth', 'dob', 'bio',
+      'bloodGroup', 'medicalConditions', 'profileImage', 'avatar'
+    ];
     const updates = {};
 
     Object.keys(data).forEach(key => {
-      if (allowedFields.includes(key)) updates[key] = data[key];
+      if (allowedFields.includes(key)) {
+        if (key === 'dob') {
+          updates['dateOfBirth'] = data[key];
+        } else if (key === 'avatar') {
+          updates['profileImage'] = data[key];
+        } else {
+          updates[key] = data[key];
+        }
+      }
     });
 
     if (updates.address) {
@@ -38,7 +50,7 @@ class ProfileService {
 
     return await User.findByIdAndUpdate(
       userId,
-      { $set: { avatar: result.url } },
+      { $set: { profileImage: result.url } },
       { returnDocument: 'after' }
     ).select('-password');
   }

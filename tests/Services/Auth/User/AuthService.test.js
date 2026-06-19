@@ -1,4 +1,6 @@
 import { jest } from '@jest/globals';
+import jwt from 'jsonwebtoken';
+import crypto from 'crypto';
 
 jest.unstable_mockModule('@/models/User.js', () => ({
     default: {
@@ -56,7 +58,7 @@ describe('Industry Standard: User AuthService Logic', () => {
         it('[Success] should authenticate existing user and return token', async () => {
             const identifier = '9876543210';
             OTPService.verifyOTP.mockResolvedValue({ termsAccepted: 'true' });
-            User.findOne.mockResolvedValue({ _id: 'u1', role: 'traveller', isModified: () => false });
+            User.findOne.mockResolvedValue({ _id: 'u1', role: 'traveller', preferences: {}, isModified: () => false });
             generateToken.mockResolvedValue('mock-token');
 
             const result = await AuthService.authenticateWithOTP({ identifier, otp: '123456' });
@@ -90,6 +92,104 @@ describe('Industry Standard: User AuthService Logic', () => {
             expect(user.role).toBe('vendor');
             expect(user.save).toHaveBeenCalled();
             expect(result.role).toBe('vendor');
+        });
+    });
+
+    describe('[authenticateWithFacebook]', () => {
+        beforeEach(() => {
+            process.env.FACEBOOK_APP_ID = '12345';
+        });
+
+        it('[Success] should authenticate Facebook user', async () => {
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({ id: 'fb123', name: 'FB User', email: 'fb@test.com' })
+            });
+
+            User.findOne.mockResolvedValue({
+                _id: 'u1',
+                role: 'traveller',
+                isModified: () => false
+            });
+            generateToken.mockResolvedValue('mock-token');
+
+            const result = await AuthService.authenticateWithFacebook('mock-access-token', 'traveller');
+            expect(result.token).toBe('mock-token');
+            expect(result.role).toBe('traveller');
+        });
+
+        it('[Failure] should throw error on invalid token response', async () => {
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: false
+            });
+
+            await expect(AuthService.authenticateWithFacebook('invalid-token'))
+                .rejects.toThrow();
+        });
+
+        it('[Failure] should throw error when configuration is missing', async () => {
+            delete process.env.FACEBOOK_APP_ID;
+            await expect(AuthService.authenticateWithFacebook('some-token'))
+                .rejects.toThrow();
+        });
+    });
+
+    describe('[authenticateWithApple]', () => {
+        beforeEach(() => {
+            process.env.APPLE_CLIENT_ID = 'com.test.app';
+        });
+
+        it('[Success] should authenticate Apple user', async () => {
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    keys: [{ kid: 'key-1', kty: 'RSA', n: 'mock-n', e: 'mock-e' }]
+                })
+            });
+
+            // Mock jwt.decode and jwt.verify
+            jest.spyOn(jwt, 'decode').mockReturnValue({ header: { kid: 'key-1' } });
+            jest.spyOn(jwt, 'verify').mockReturnValue({ sub: 'apple123', email: 'apple@test.com' });
+
+            // Mock crypto.createPublicKey
+            jest.spyOn(crypto, 'createPublicKey').mockReturnValue({});
+
+            User.findOne.mockResolvedValue(null);
+            User.create.mockResolvedValue({
+                _id: 'u2',
+                role: 'traveller',
+                email: 'apple@test.com',
+                appleId: 'apple123'
+            });
+            generateToken.mockResolvedValue('mock-token');
+
+            const result = await AuthService.authenticateWithApple('mock-id-token', 'traveller', { name: { firstName: 'Apple', lastName: 'User' } });
+            expect(result.token).toBe('mock-token');
+            expect(User.create).toHaveBeenCalled();
+        });
+
+        it('[Failure] should throw error when token signature is invalid', async () => {
+            global.fetch = jest.fn().mockResolvedValue({
+                ok: true,
+                json: async () => ({
+                    keys: [{ kid: 'key-1', kty: 'RSA', n: 'mock-n', e: 'mock-e' }]
+                })
+            });
+
+            jest.spyOn(jwt, 'decode').mockReturnValue({ header: { kid: 'key-1' } });
+            jest.spyOn(jwt, 'verify').mockImplementation(() => {
+                throw new Error('Invalid signature');
+            });
+            jest.spyOn(crypto, 'createPublicKey').mockReturnValue({});
+
+            await expect(AuthService.authenticateWithApple('invalid-id-token'))
+                .rejects.toThrow();
+        });
+
+        it('[Failure] should throw error when configuration is missing', async () => {
+            delete process.env.APPLE_CLIENT_ID;
+            await expect(AuthService.authenticateWithApple('mock-id-token'))
+                .rejects.toThrow();
         });
     });
 });

@@ -17,8 +17,8 @@ class PaymentController extends Controller {
       const booking = await BookingService.getBookingById(bookingId);
       if (!booking) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
 
-      const order = await RazorpayService.createOrder(booking.totalPrice, booking._id.toString());
-      booking.razorpay.orderId = order.id;
+      const order = await RazorpayService.createOrder(booking.pricing.total, booking._id.toString());
+      booking.payment.orderId = order.id;
       await booking.save();
 
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PAYMENT.INITIATED, { order });

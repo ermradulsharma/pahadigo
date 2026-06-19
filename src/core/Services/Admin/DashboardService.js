@@ -203,8 +203,8 @@ class DashboardService {
         $group: {
           _id: null,
           totalRevenue: { $sum: { $cond: [{ $eq: ["$paymentStatus", "paid"] }, { $ifNull: ["$pricing.total", 0] }, 0] } },
-          pendingPayouts: { $sum: { $cond: [{ $eq: ["$payoutStatus", "pending"] }, { $ifNull: ["$pricing.total", 0] }, 0] } },
-          refundsProcessed: { $sum: { $cond: [{ $eq: ["$refundStatus", "refunded"] }, { $ifNull: ["$pricing.refundAmount", 0] }, 0] } }
+          pendingPayouts: { $sum: { $cond: [{ $eq: ["$payout.status", "pending"] }, { $ifNull: ["$pricing.total", 0] }, 0] } },
+          refundsProcessed: { $sum: { $cond: [{ $eq: ["$pricing.refundStatus", "refunded"] }, { $ifNull: ["$pricing.refundAmount", 0] }, 0] } }
         }
       }
     ]);

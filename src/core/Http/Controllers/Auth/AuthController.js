@@ -102,8 +102,10 @@ class AuthController extends Controller {
     // POST /auth/social
     async socialAuthenticateGoogle(req) {
         try {
-            const body = await parseBody(req);
-            const validationResult = validate(schemas.socialLogin, { token: body.idToken, role: body.role });
+            const body = req.payload;
+            console.log(body);
+
+            const validationResult = validate(schemas.socialLogin, { token: body.id_token, role: body.role });
             if (!validationResult.success) return this.error(HTTP_STATUS.BAD_REQUEST, validationResult.error);
             const result = await UserAuthService.authenticateWithGoogle(validationResult.data.token, validationResult.data.role);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, transformAuthResponse(result));

@@ -22,7 +22,7 @@ class ProfileController extends Controller {
     // PUT /traveller/profile
     async updateProfile(req) {
         try {
-            const body = req.validData || req.jsonBody || await req.json();
+            const body = req.payload || req.validData || req.jsonBody || await req.json();
             const user = await ProfileService.updateProfile(req.user.id, body);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.PROFILE_UPDATED, { user });
         } catch (error) {
