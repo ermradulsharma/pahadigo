@@ -39,7 +39,8 @@ class BookingService {
 
             const { catalogId, category, vendor } = packageItem;
             const business = await BusinessService.getBusinessById(vendor.id);
-            console.log(business)
+            if (!business) throw new Error(RESPONSE_MESSAGES.BUSINESS.NOT_FOUND);
+
             const pricingRules = packageItem.pricing || {};
 
             const adultsCount = parseInt(body.adults) || 1;
@@ -158,6 +159,16 @@ class BookingService {
                     taxRate: appliedTaxRate,
                     tax: calculatedTax,
                     total: grandTotal
+                },
+                payout: {
+                    bankDetails: {
+                        accountHolderName: business.bankDetails.accountHolderName,
+                        accountNumber: business.bankDetails.accountNumber,
+                        ifscCode: business.bankDetails.ifscCode,
+                        bankName: business.bankDetails.bankName
+                    },
+                    businessName: business.businessName,
+                    ownerName: business.ownerName
                 },
                 status: BOOKING_STATUS.PENDING,
                 paymentStatus: PAYMENT_STATUS.UNPAID,

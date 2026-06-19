@@ -161,7 +161,11 @@ class BusinessService {
     }
 
     async getBusinessById(id) {
-        return await Vendor.findById(id).populate('user', 'email phone role');
+        return await Vendor.findById(id).populate('user', 'email phone role').lean();
+    }
+
+    async getBusinessProfile(id) {
+        return await Vendor.findById(id).select('businessAbout businessName businessNumber businessRegistration gstNumber ownerName status trustBadge address').populate('user', 'email phone').lean();
     }
 }
 

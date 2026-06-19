@@ -23,6 +23,7 @@ export const ACCOMMODATION = {
         },
         RENTAL_TYPE: {
             ENTIRE_PLACE: 'Entire Place',
+            ENTIRE_HOME: 'Entire Home',
             PRIVATE_ROOM: 'Private Room',
             SHARED_ROOM: 'Shared Room'
         },

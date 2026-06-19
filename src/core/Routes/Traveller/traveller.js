@@ -9,6 +9,7 @@ import ChatController from '@/core/Http/Controllers/General/ChatController.js';
 import Router from '@/core/Routes/Router.js';
 import { USER_ROLES } from '@/core/Constants/index.js';
 import { wrap } from '@/core/Routes/helpers.js';
+import BusinessController from '@/core/Controllers/Traveller/VendorController';
 
 /**
  * Traveller Routes - Consumer Experience Hub for PahadiGo.
@@ -59,6 +60,7 @@ const travellerRoutes = [
     // Profile Hub (Social & Personal)
     ...Router.group({ prefix: '/profile' }, [
       { method: 'GET', path: '/', handler: wrap(() => ProfileController, 'getProfile') },
+      { method: 'GET', path: '/vendor/:businessId', handler: wrap(() => BusinessController, 'getBusinessProfile') },
       { method: 'PUT', path: '/', handler: wrap(() => ProfileController, 'updateProfile') },
       { method: 'POST', path: '/avatar', handler: wrap(() => ProfileController, 'updateProfileImage') },
     ]),

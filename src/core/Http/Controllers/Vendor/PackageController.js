@@ -135,14 +135,13 @@ class PackageController extends Controller {
             if (isUpdate) {
                 itemId = params?.itemId || body.itemId;
             }
-            const result = isUpdate ? await PackageService.updateItem(userId, vendor._id, category, itemId, itemData) : await PackageService.addItem(userId, vendor._id, category, itemData);
+            await isUpdate ? await PackageService.updateItem(userId, vendor._id, category, itemId, itemData) : await PackageService.addItem(userId, vendor._id, category, itemData);
             if (isUpdate) {
                 return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.ITEM.UPDATED);
             } else {
-                return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.ITEM.ADDED, result);
+                return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.ITEM.ADDED);
             }
         } catch (error) {
-            console.log("error", error);
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
