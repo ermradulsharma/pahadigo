@@ -1,5 +1,17 @@
 import vendorRoutes from '@/routes/Vendor/vendor.js';
 
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+const routeKey = (route) => `${route.method} ${route.path}`;
+
+const missingMutatingSchemas = (routes) => routes
+    .filter(route => MUTATING_METHODS.has(route.method) && !route.schema)
+    .map(routeKey);
+
+const invalidSchemas = (routes) => routes
+    .filter(route => route.schema && typeof route.schema.safeParse !== 'function')
+    .map(routeKey);
+
 describe('Industry Standard: Vendor Routes Structure', () => {
     it('[Success] should export a non-empty array of routes', () => {
         expect(Array.isArray(vendorRoutes)).toBe(true);
@@ -43,5 +55,13 @@ describe('Industry Standard: Vendor Routes Structure', () => {
             seen.add(key);
         });
         expect(duplicates).toEqual([]);
+    });
+
+    it('[Validation] all mutating vendor routes should define request schemas', () => {
+        expect(missingMutatingSchemas(vendorRoutes)).toEqual([]);
+    });
+
+    it('[Validation] all vendor route schemas should be Zod-compatible', () => {
+        expect(invalidSchemas(vendorRoutes)).toEqual([]);
     });
 });

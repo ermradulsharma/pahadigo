@@ -23,8 +23,4 @@ const MessageSchema = new mongoose.Schema({
   toObject: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE }
 });
 
-if (mongoose.models.Message) {
-  delete mongoose.models.Message;
-}
-
-export default mongoose.model('Message', MessageSchema);
+export default mongoose.models.Message || mongoose.model('Message', MessageSchema);

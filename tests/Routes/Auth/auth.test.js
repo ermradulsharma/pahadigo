@@ -37,4 +37,13 @@ describe('Industry Standard: Auth Routes Structure', () => {
             expect(hasAuth).toBeFalsy();
         });
     });
+    it('[Validation] public write routes should declare request schemas', () => {
+        const schemaPaths = ['/auth/login', '/auth/otp', '/auth/verify', '/auth/google', '/auth/facebook', '/auth/apple', '/auth/forget-password'];
+
+        schemaPaths.forEach(path => {
+            const route = authRoutes.find(r => r.method === 'POST' && r.path === path);
+            expect(route).toBeDefined();
+            expect(route.schema).toBeDefined();
+        });
+    });
 });

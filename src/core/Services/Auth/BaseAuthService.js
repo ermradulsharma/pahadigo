@@ -56,7 +56,7 @@ class BaseAuthService {
         if (updates.address) {
             mapToGeoJSON(updates.address, 'location');
         }
-        const user = await User.findByIdAndUpdate(userId, updates, { new: true });
+        const user = await User.findByIdAndUpdate(userId, updates, { returnDocument: 'after' });
         if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         return user;
     }

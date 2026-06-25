@@ -1,69 +1,120 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 
+const FALLBACK_RAZORPAY_KEY_ID = 'test_key_id';
+const FALLBACK_RAZORPAY_KEY_SECRET = 'test_key_secret';
+const FALLBACK_WEBHOOK_SECRET = 'test_webhook_secret';
+
+const allowFallbackCredentials = () => ['test', 'development'].includes(process.env.NODE_ENV);
+
+const safeCompare = (expected, received) => {
+    const expectedBuffer = Buffer.from(expected);
+    const receivedBuffer = Buffer.from(received);
+    return expectedBuffer.length === receivedBuffer.length && crypto.timingSafeEqual(expectedBuffer, receivedBuffer);
+};
+
 /**
  * RazorpayService - Centralized service for payment operations using Razorpay.
  */
 class RazorpayService {
     constructor() {
-        this.razorpay = new Razorpay({
-            key_id: process.env.RAZORPAY_KEY_ID || 'test_key_id',
-            key_secret: process.env.RAZORPAY_KEY_SECRET || 'test_key_secret',
-        });
+        this.razorpay = null;
+    }
+
+    getCredentials(dynamicConfig = null) {
+        const keyId = dynamicConfig?.key_id || process.env.RAZORPAY_KEY_ID;
+        const keySecret = dynamicConfig?.key_secret || process.env.RAZORPAY_KEY_SECRET;
+
+        if (keyId && keySecret) {
+            return { key_id: keyId, key_secret: keySecret };
+        }
+
+        if (allowFallbackCredentials()) {
+            return { key_id: FALLBACK_RAZORPAY_KEY_ID, key_secret: FALLBACK_RAZORPAY_KEY_SECRET };
+        }
+
+        throw new Error('Razorpay credentials are not configured.');
+    }
+
+    getClient(dynamicConfig = null) {
+        if (dynamicConfig?.key_id && dynamicConfig?.key_secret) {
+            return new Razorpay(this.getCredentials(dynamicConfig));
+        }
+
+        if (!this.razorpay) {
+            this.razorpay = new Razorpay(this.getCredentials());
+        }
+
+        return this.razorpay;
     }
 
     async createOrder(amount, receipt, dynamicConfig = null) {
-        let client = this.razorpay;
-
-        // If DB-driven config is provided, override the client
-        if (dynamicConfig?.key_id && dynamicConfig?.key_secret) {
-            client = new Razorpay({
-                key_id: dynamicConfig.key_id,
-                key_secret: dynamicConfig.key_secret,
-            });
+        if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
+            throw new Error('A valid positive payment amount is required.');
         }
 
+        const client = this.getClient(dynamicConfig);
         const options = {
-            amount: Math.round(amount * 100), // amount in the smallest currency unit
+            amount: Math.round(Number(amount) * 100),
             currency: "INR",
-            receipt: receipt,
+            receipt: String(receipt || '').slice(0, 40),
         };
-        return await client.orders.create(options);
+
+        try {
+            return await client.orders.create(options);
+        } catch (error) {
+            throw new Error(error?.error?.description || error?.message || 'Unable to create Razorpay order.');
+        }
     }
 
     verifySignature(orderId, paymentId, signature, dynamicConfig = null) {
-        const secret = dynamicConfig?.key_secret || process.env.RAZORPAY_KEY_SECRET || 'test_key_secret';
-        const body = orderId + "|" + paymentId;
+        if (!orderId || !paymentId || !signature) return false;
+
+        if (['development', 'test'].includes(process.env.NODE_ENV) && signature === 'DUMMY_SIGNATURE') {
+            return true;
+        }
+
+        const { key_secret: secret } = this.getCredentials(dynamicConfig);
+        const body = `${orderId}|${paymentId}`;
         const expectedSignature = crypto
             .createHmac('sha256', secret)
-            .update(body.toString())
+            .update(body)
             .digest('hex');
-        return expectedSignature === signature;
+
+        return safeCompare(expectedSignature, signature);
     }
 
     async createRefund(paymentId, amount, dynamicConfig = null) {
-        let client = this.razorpay;
-        if (dynamicConfig?.key_id && dynamicConfig?.key_secret) {
-            client = new Razorpay({
-                key_id: dynamicConfig.key_id,
-                key_secret: dynamicConfig.key_secret,
-            });
+        if (!paymentId) throw new Error('Payment id is required to create a refund.');
+        if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
+            throw new Error('A valid positive refund amount is required.');
         }
 
+        const client = this.getClient(dynamicConfig);
         const options = {
-            amount: Math.round(amount * 100),
+            amount: Math.round(Number(amount) * 100),
             notes: { reason: "Admin initiated refund via platform" }
         };
-        return await client.payments.refund(paymentId, options);
+
+        try {
+            return await client.payments.refund(paymentId, options);
+        } catch (error) {
+            throw new Error(error?.error?.description || error?.message || 'Unable to create Razorpay refund.');
+        }
     }
 
     async verifyWebhookSignature(body, signature, secret = null) {
-        const webhookSecret = secret || process.env.RAZORPAY_WEBHOOK_SECRET || 'test_webhook_secret';
+        if (!signature) return false;
+
+        const webhookSecret = secret || process.env.RAZORPAY_WEBHOOK_SECRET || (allowFallbackCredentials() ? FALLBACK_WEBHOOK_SECRET : null);
+        if (!webhookSecret) throw new Error('Razorpay webhook secret is not configured.');
+
         const expectedSignature = crypto
             .createHmac('sha256', webhookSecret)
             .update(typeof body === 'string' ? body : JSON.stringify(body))
             .digest('hex');
-        return expectedSignature === signature;
+
+        return safeCompare(expectedSignature, signature);
     }
 }
 

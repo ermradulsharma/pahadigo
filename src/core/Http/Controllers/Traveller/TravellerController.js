@@ -76,21 +76,21 @@ class TravellerController extends Controller {
     }
 
     // POST /traveller/wishlist
-    async addToWishlist(req) {
+    async addToWishlist(req, { params }) {
         try {
-            const body = req.payload || {};
-            if (!body.itemId) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ITEM_ID_REQUIRED);
+            const itemId = params.itemId;
+            if (!itemId) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ITEM_ID_REQUIRED);
 
-            const item = await PackageService.getAvailablePackageItem(body.itemId);
+            const item = await PackageService.getAvailablePackageItem(itemId);
             if (!item) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.WISHLIST.ITEM_NOT_FOUND);
 
             const wishlistEntry = await Wishlist.findOneAndUpdate(
-                { user: req.user.id, itemId: body.itemId },
-                { $set: { category: body.category || item.category } },
+                { user: req.user.id, itemId: params.itemId },
+                { $set: { category: item.category_slug } },
                 { upsert: true, returnDocument: 'after' }
             );
 
-            return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.WISHLIST.ADDED, wishlistEntry);
+            return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.WISHLIST.ADDED);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
         }

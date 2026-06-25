@@ -78,7 +78,7 @@ class AuthController extends Controller {
     // POST /auth/verify-otp
     async confirmOTP(req) {
         try {
-            const body = await parseBody(req);
+            const body = req.payload || req.validData || req.jsonBody || await parseBody(req);
             const rawPayload = { identifier: body.email || body.phone, otp: body.otp, targetRole: body.role || body.targetRole };
 
             const validationResult = validate(schemas.otpLogin, rawPayload);
@@ -103,8 +103,6 @@ class AuthController extends Controller {
     async socialAuthenticateGoogle(req) {
         try {
             const body = req.payload;
-            console.log(body);
-
             const validationResult = validate(schemas.socialLogin, { token: body.id_token, role: body.role });
             if (!validationResult.success) return this.error(HTTP_STATUS.BAD_REQUEST, validationResult.error);
             const result = await UserAuthService.authenticateWithGoogle(validationResult.data.token, validationResult.data.role);
@@ -116,7 +114,7 @@ class AuthController extends Controller {
 
     async socialAuthenticateFacebook(req) {
         try {
-            const body = await parseBody(req);
+            const body = req.payload || req.validData || req.jsonBody || await parseBody(req);
             const validationResult = validate(schemas.socialLogin, { token: body.accessToken, role: body.role });
             if (!validationResult.success) return this.error(HTTP_STATUS.BAD_REQUEST, validationResult.error);
             const result = await UserAuthService.authenticateWithFacebook(validationResult.data.token, validationResult.data.role);
@@ -128,7 +126,7 @@ class AuthController extends Controller {
 
     async socialAuthenticateApple(req) {
         try {
-            const body = await parseBody(req);
+            const body = req.payload || req.validData || req.jsonBody || await parseBody(req);
             if (!body.idToken) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
             const result = await UserAuthService.authenticateWithApple(body.idToken, body.role, body.user, body.email);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, transformAuthResponse(result));
@@ -205,7 +203,7 @@ class AuthController extends Controller {
 
     async forgotPassword(req) {
         try {
-            const body = await parseBody(req);
+            const body = req.payload || req.validData || req.jsonBody || await parseBody(req);
             if (!body.email) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.EMAIL_REQUIRED);
             await AdminAuthService.initiatePasswordReset(body.email);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.PASSWORD_RESET_LINK_SENT);
@@ -217,7 +215,7 @@ class AuthController extends Controller {
     async resetPassword(req) {
         try {
             if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
-            const body = await parseBody(req);
+            const body = req.payload || req.validData || req.jsonBody || await parseBody(req);
             if (!body.otp || !body.password) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
 
             const user = await User.findById(req.user.id);
@@ -237,7 +235,7 @@ class AuthController extends Controller {
     async changePassword(req) {
         try {
             if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
-            const body = await parseBody(req);
+            const body = req.payload || req.validData || req.jsonBody || await parseBody(req);
             if (!body.oldPassword || !body.newPassword) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
 
             const user = await User.findById(req.user.id).select('+password');
@@ -275,7 +273,7 @@ class AuthController extends Controller {
         try {
             if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
             let reason = null;
-            try { reason = (await parseBody(req)).reason; } catch (e) { }
+            try { reason = (req.payload || req.validData || req.jsonBody || await parseBody(req)).reason; } catch (e) { }
 
             await BaseAuthService.deactivateUserAccount(req.user.id, reason);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED);

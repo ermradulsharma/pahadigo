@@ -23,9 +23,11 @@ describe('Traveller BookingController', () => {
             const mockBookings = [{ _id: 'booking123' }];
             mockReq = createMockReq({ user: { id: 'user123', role: 'traveller' } });
             
-            const spy = jest.spyOn(Booking, 'find').mockReturnValue({
-                sort: jest.fn().mockResolvedValue(mockBookings)
-            });
+            const mockQuery = {
+                sort: jest.fn().mockReturnThis(),
+                lean: jest.fn().mockResolvedValue(mockBookings)
+            };
+            const spy = jest.spyOn(Booking, 'find').mockReturnValue(mockQuery);
 
             const response = await BookingController.getBookings(mockReq);
             const body = await response.json();
@@ -45,7 +47,10 @@ describe('Traveller BookingController', () => {
                 params: { id: 'booking123' }
             });
 
-            jest.spyOn(Booking, 'findOne').mockResolvedValue(mockBooking);
+            const mockQuery = {
+                lean: jest.fn().mockResolvedValue(mockBooking)
+            };
+            jest.spyOn(Booking, 'findOne').mockReturnValue(mockQuery);
 
             const response = await BookingController.getBookingById(mockReq, { params: { id: 'booking123' } });
             const body = await response.json();
@@ -60,7 +65,10 @@ describe('Traveller BookingController', () => {
                 params: { id: 'booking123' }
             });
 
-            jest.spyOn(Booking, 'findOne').mockResolvedValue(null);
+            const mockQuery = {
+                lean: jest.fn().mockResolvedValue(null)
+            };
+            jest.spyOn(Booking, 'findOne').mockReturnValue(mockQuery);
 
             const response = await BookingController.getBookingById(mockReq, { params: { id: 'booking123' } });
             
@@ -76,7 +84,10 @@ describe('Traveller BookingController', () => {
                 params: { id: 'booking123' }
             });
 
-            jest.spyOn(Booking, 'findOne').mockResolvedValue(mockBooking);
+            const mockQuery = {
+                lean: jest.fn().mockResolvedValue(mockBooking)
+            };
+            jest.spyOn(Booking, 'findOne').mockReturnValue(mockQuery);
             jest.spyOn(BookingService, 'refundBooking').mockResolvedValue({ ...mockBooking, status: 'cancelled' });
 
             const response = await BookingController.cancelBooking(mockReq, { params: { id: 'booking123' } });
@@ -93,7 +104,10 @@ describe('Traveller BookingController', () => {
                 params: { id: 'booking123' }
             });
 
-            jest.spyOn(Booking, 'findOne').mockResolvedValue(mockBooking);
+            const mockQuery = {
+                lean: jest.fn().mockResolvedValue(mockBooking)
+            };
+            jest.spyOn(Booking, 'findOne').mockReturnValue(mockQuery);
 
             const response = await BookingController.cancelBooking(mockReq, { params: { id: 'booking123' } });
             

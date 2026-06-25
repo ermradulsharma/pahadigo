@@ -116,7 +116,4 @@ const VendorSchema = new mongoose.Schema({
 
 VendorSchema.index({ status: 1 });
 VendorSchema.index({ 'address.location': '2dsphere' });
-if (mongoose.models.Vendor) {
-    delete mongoose.models.Vendor;
-}
-export default mongoose.model('Vendor', VendorSchema);
+export default mongoose.models.Vendor || mongoose.model('Vendor', VendorSchema);

@@ -15,9 +15,9 @@ class ChatController {
      * POST /chat/conversation
      * Create or fetch existing conversation for a booking.
      */
-    async createConversation(req, { params }) {
+    async createConversation(req, { params } = {}) {
         try {
-            const bookingId = params?.bookingId;
+            const bookingId = params?.bookingId || req.payload?.bookingId;
             const { type } = req.payload || {};
 
             if (!bookingId || !type) {
@@ -90,7 +90,21 @@ class ChatController {
                 .populate({ path: 'bookingId', select: 'bookingCode' })
                 .sort({ lastMessageAt: -1 });
 
-            return successResponse(HTTP_STATUS.OK, 'Conversations fetched successfully.', conversations);
+            // Calculate unread message count for each conversation relative to current user
+            const conversationsWithUnread = await Promise.all(
+                conversations.map(async (conv) => {
+                    const unreadCount = await ChatMessage.countDocuments({
+                        conversation: conv._id,
+                        sender: { $ne: req.user.id },
+                        isRead: false
+                    });
+                    const convObj = typeof conv.toObject === 'function' ? conv.toObject() : { ...conv };
+                    convObj.unreadCount = unreadCount;
+                    return convObj;
+                })
+            );
+
+            return successResponse(HTTP_STATUS.OK, 'Conversations fetched successfully.', conversationsWithUnread);
         } catch (error) {
             console.error('[ChatController] getConversations error:', error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -101,7 +115,7 @@ class ChatController {
      * GET /chat/conversations/:id/messages
      * Fetch messages for a specific conversation.
      */
-    async getMessages(req, { params }) {
+    async getMessages(req, { params } = {}) {
         try {
             const conversationId = params?.id;
             if (!conversationId) {
@@ -122,9 +136,23 @@ class ChatController {
                 return errorResponse(HTTP_STATUS.FORBIDDEN, 'Access denied to this conversation.');
             }
 
-            // Fetch messages
-            const messages = await ChatMessage.find({ conversation: conversationId })
-                .sort({ createdAt: 1 });
+            // Parse pagination query parameters
+            const url = new URL(req.url, 'http://localhost');
+            const limit = parseInt(url.searchParams.get('limit') || '50', 10);
+            const before = url.searchParams.get('before');
+
+            const query = { conversation: conversationId };
+            if (before) {
+                query.createdAt = { $lt: new Date(before) };
+            }
+
+            // Fetch messages with pagination
+            const messages = await ChatMessage.find(query)
+                .sort({ createdAt: -1 })
+                .limit(limit);
+
+            // Restore chronological order
+            messages.reverse();
 
             return successResponse(HTTP_STATUS.OK, 'Messages fetched successfully.', { conversation, messages });
         } catch (error) {
@@ -137,7 +165,7 @@ class ChatController {
      * POST /chat/conversations/:id/messages
      * Send a new message.
      */
-    async sendMessage(req, { params }) {
+    async sendMessage(req, { params } = {}) {
         try {
             const conversationId = params?.id;
             const { message, attachments } = req.payload || {};
@@ -145,8 +173,9 @@ class ChatController {
             if (!conversationId) {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Conversation ID is required.');
             }
-            if (!message) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Message content is required.');
+            const hasAttachments = Array.isArray(attachments) && attachments.length > 0;
+            if (!message && !hasAttachments) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Message content or attachments are required.');
             }
 
             // Verify conversation
@@ -170,12 +199,12 @@ class ChatController {
                 conversation: conversationId,
                 sender: req.user.id,
                 senderModel,
-                message,
+                message: message || '',
                 attachments: attachments || []
             });
 
             // Update the conversation's last message
-            conversation.lastMessage = message;
+            conversation.lastMessage = message || (hasAttachments ? '[Attachment]' : '');
             conversation.lastMessageAt = new Date();
             if (req.user.role === 'admin') {
                 conversation.admin = req.user.id;
@@ -205,32 +234,28 @@ class ChatController {
     async getStream(req) {
         try {
             const userId = req.user.id;
-
+            let onNewMessage;
+            let heartbeat;
             const stream = new ReadableStream({
                 start(controller) {
-                    const onNewMessage = (data) => {
-                        // Deliver event if conversation involves current user or if the user is admin
-                        if (
-                            req.user.role === 'admin' ||
-                            data.travellerId === userId ||
-                            data.vendorId === userId
-                        ) {
+                    onNewMessage = (data) => {
+                        if (req.user.role === 'admin' || data.travellerId === userId || data.vendorId === userId) {
                             const payload = `data: ${JSON.stringify(data.message)}\n\n`;
                             controller.enqueue(new TextEncoder().encode(payload));
                         }
                     };
-
-                    // Register event listener
                     chatEmitter.on('newMessage', onNewMessage);
-
-                    const heartbeat = setInterval(() => {
+                    heartbeat = setInterval(() => {
                         controller.enqueue(new TextEncoder().encode(': heartbeat\n\n'));
                     }, 20000);
-
                     req.signal?.addEventListener('abort', () => {
-                        chatEmitter.off('newMessage', onNewMessage);
-                        clearInterval(heartbeat);
+                        if (onNewMessage) chatEmitter.off('newMessage', onNewMessage);
+                        if (heartbeat) clearInterval(heartbeat);
                     });
+                },
+                cancel() {
+                    if (onNewMessage) chatEmitter.off('newMessage', onNewMessage);
+                    if (heartbeat) clearInterval(heartbeat);
                 }
             });
 
@@ -243,7 +268,42 @@ class ChatController {
                 }
             });
         } catch (error) {
-            console.error('[ChatController] getStream error:', error);
+            return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+        }
+    }
+
+    /**
+     * PATCH /chat/conversations/:id/read
+     * Mark all unread messages in a conversation as read for the receiver.
+     */
+    async markAsRead(req, { params } = {}) {
+        try {
+            const conversationId = params?.id;
+            if (!conversationId) {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Conversation ID is required.');
+            }
+
+            const conversation = await Conversation.findById(conversationId);
+            if (!conversation) {
+                return errorResponse(HTTP_STATUS.NOT_FOUND, 'Conversation not found.');
+            }
+
+            if (
+                req.user.role !== 'admin' &&
+                conversation.traveller.toString() !== req.user.id &&
+                conversation.vendor.toString() !== req.user.id
+            ) {
+                return errorResponse(HTTP_STATUS.FORBIDDEN, 'Access denied to this conversation.');
+            }
+
+            await ChatMessage.updateMany(
+                { conversation: conversationId, sender: { $ne: req.user.id }, isRead: false },
+                { $set: { isRead: true } }
+            );
+
+            return successResponse(HTTP_STATUS.OK, 'Conversation marked as read.');
+        } catch (error) {
+            console.error('[ChatController] markAsRead error:', error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }

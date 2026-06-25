@@ -36,7 +36,7 @@ class ReviewService {
         comment,
         isVisible: true
       },
-      { upsert: true, new: true, setDefaultsOnInsert: true }
+      { upsert: true, returnDocument: 'after', setDefaultsOnInsert: true }
     );
 
     if (booking.vendor) await BusinessService.calculateTrustBadge(booking.vendor);

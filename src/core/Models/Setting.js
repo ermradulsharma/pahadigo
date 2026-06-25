@@ -73,8 +73,4 @@ const SettingSchema = new mongoose.Schema({
   toObject: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE }
 });
 
-if (mongoose.models.Setting) {
-  delete mongoose.models.Setting;
-}
-
-export default mongoose.model('Setting', SettingSchema);
+export default mongoose.models.Setting || mongoose.model('Setting', SettingSchema);

@@ -13,7 +13,4 @@ const wishlistSchema = new mongoose.Schema({
 
 wishlistSchema.index({ user: 1, itemId: 1 }, { unique: DEFAULTS.TRUE });
 
-if (mongoose.models.Wishlist) {
-  delete mongoose.models.Wishlist;
-}
-export default mongoose.model('Wishlist', wishlistSchema);
+export default mongoose.models.Wishlist || mongoose.model('Wishlist', wishlistSchema);

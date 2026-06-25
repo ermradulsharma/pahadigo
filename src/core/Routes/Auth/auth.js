@@ -1,6 +1,7 @@
 import AuthController from '@/core/Controllers/Auth/AuthController.js';
 import Router from '@/core/Routes/Router.js';
 import { wrap } from '@/core/Routes/helpers.js';
+import { schemas } from '@/core/Helpers/validation.js';
 
 /**
  * Auth Routes - Separated Out from legacy manifest.
@@ -10,15 +11,15 @@ const authRoutes = [
 
   // Public Auth (Matches Line 31-43)
   ...Router.group({ prefix: '/auth' }, [
-    { method: 'POST', path: '/otp', handler: wrap(() => AuthController, 'initiateOTP') },
-    { method: 'POST', path: '/verify', handler: wrap(() => AuthController, 'confirmOTP') },
+    { method: 'POST', path: '/otp', schema: schemas.otpSend, handler: wrap(() => AuthController, 'initiateOTP') },
+    { method: 'POST', path: '/verify', schema: schemas.otpLogin, handler: wrap(() => AuthController, 'confirmOTP') },
     { method: 'GET', path: '/verify', handler: wrap(() => AuthController, 'verifyToken') },
     { method: 'GET', path: '/refresh', handler: wrap(() => AuthController, 'refreshToken') },
-    { method: 'POST', path: '/login', handler: wrap(() => AuthController, 'authenticate') },
-    { method: 'POST', path: '/google', handler: wrap(() => AuthController, 'socialAuthenticateGoogle') },
-    { method: 'POST', path: '/facebook', handler: wrap(() => AuthController, 'socialAuthenticateFacebook') },
-    { method: 'POST', path: '/apple', handler: wrap(() => AuthController, 'socialAuthenticateApple') },
-    { method: 'POST', path: '/forget-password', handler: wrap(() => AuthController, 'forgotPassword') },
+    { method: 'POST', path: '/login', schema: schemas.passwordLogin, handler: wrap(() => AuthController, 'authenticate') },
+    { method: 'POST', path: '/google', schema: schemas.googleLogin, handler: wrap(() => AuthController, 'socialAuthenticateGoogle') },
+    { method: 'POST', path: '/facebook', schema: schemas.facebookLogin, handler: wrap(() => AuthController, 'socialAuthenticateFacebook') },
+    { method: 'POST', path: '/apple', schema: schemas.appleLogin, handler: wrap(() => AuthController, 'socialAuthenticateApple') },
+    { method: 'POST', path: '/forget-password', schema: schemas.forgotPassword, handler: wrap(() => AuthController, 'forgotPassword') },
   ]),
 
   // Authenticated Session Management

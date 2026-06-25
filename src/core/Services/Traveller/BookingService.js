@@ -1,3 +1,4 @@
+import { randomBytes, randomInt } from 'node:crypto';
 import mongoose from 'mongoose';
 import Booking from '@/core/Models/Booking.js';
 import Package from '@/core/Models/Package.js';
@@ -12,6 +13,9 @@ import InventoryService from '@/core/Services/Traveller/InventoryService.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { RESPONSE_MESSAGES, BOOKING_STATUS, PAYMENT_STATUS, REFUND_STATUS } from '@/core/Constants/index.js';
 import BusinessService from '@/core/Services/Vendor/BusinessService.js';
+
+const generateNumericOTP = () => randomInt(100000, 1000000).toString();
+const generateBookingCode = () => `PH-${randomBytes(5).toString('hex').toUpperCase()}`;
 
 /**
  * BookingService (Traveller Role)
@@ -120,7 +124,7 @@ class BookingService {
 
             const grandTotal = calculatedSubTotal;
 
-            const bookingCode = `PH-${Math.random().toString(36).substring(2, 8).toUpperCase()}`;
+            const bookingCode = generateBookingCode();
             const expirationTime = new Date(Date.now() + 15 * 60 * 1000);
 
             const [newBooking] = await Booking.create([{
@@ -213,16 +217,32 @@ class BookingService {
             throw new Error("This booking is already paid.");
         }
 
+        if (booking.payment?.orderId && !booking.payment?.paymentId) {
+            return {
+                orderId: booking.payment.orderId,
+                amount: booking.pricing.total,
+                currency: 'INR',
+                bookingCode: booking.bookingCode
+            };
+        }
+
         const config = await getAppConfig();
+        let razorpayOrder;
 
-        // Create Razorpay Order
-        const razorpayOrder = await RazorpayService.createOrder(
-            booking.pricing.total,
-            booking.bookingCode,
-            config.razorpay
-        );
+        try {
+            razorpayOrder = await RazorpayService.createOrder(
+                booking.pricing.total,
+                booking.bookingCode,
+                config.razorpay
+            );
+        } catch (error) {
+            throw new Error(error.message || 'Unable to initialize payment gateway order.');
+        }
 
-        // Update Booking with Order ID and mark attempt
+        if (!razorpayOrder?.id) {
+            throw new Error('Payment gateway did not return an order id.');
+        }
+
         booking.payment.gateway = 'razorpay';
         booking.payment.orderId = razorpayOrder.id;
 
@@ -246,31 +266,35 @@ class BookingService {
      * Verify payment and generate Start/End OTPs
      */
     async verifyBookingPayment(bookingId, userId, paymentData) {
-        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = paymentData;
+        const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = paymentData || {};
 
         const booking = await Booking.findOne({ _id: bookingId, user: userId });
         if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
 
-        // 1. Verify Razorpay Signature
-        const config = await getAppConfig();
-
-        // DEVELOPMENT BYPASS: Allow dummy signature for testing in dev mode
-        const isDev = process.env.NODE_ENV === 'development';
-        const isDummy = razorpay_signature === 'DUMMY_SIGNATURE';
-
-        if (!(isDev && isDummy)) {
-            const isValid = RazorpayService.verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature, config.razorpay);
-            if (!isValid) throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_SIGNATURE);
+        if (!booking.payment?.orderId) {
+            throw new Error('Payment order has not been initialized for this booking.');
         }
 
-        // If already confirmed, don't redo
-        if (booking.status === BOOKING_STATUS.CONFIRMED) return booking;
+        if (booking.payment.orderId !== razorpay_order_id) {
+            throw new Error('Payment order does not match this booking.');
+        }
 
-        // 2. Generate OTPs (6-digit) for Access
-        const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+        if (booking.paymentStatus === PAYMENT_STATUS.PAID || booking.status === BOOKING_STATUS.CONFIRMED) {
+            const samePayment = !booking.payment.paymentId || booking.payment.paymentId === razorpay_payment_id;
+            if (samePayment) return booking;
+            throw new Error('This booking is already paid with a different payment id.');
+        }
 
-        booking.verification.startOTP = generateOTP();
-        booking.verification.endOTP = generateOTP();
+        if (booking.payment.paymentId && booking.payment.paymentId !== razorpay_payment_id) {
+            throw new Error('A different payment attempt is already recorded for this booking.');
+        }
+
+        const config = await getAppConfig();
+        const isValid = RazorpayService.verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature, config.razorpay);
+        if (!isValid) throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_SIGNATURE);
+
+        booking.verification.startOTP = generateNumericOTP();
+        booking.verification.endOTP = generateNumericOTP();
 
         booking.status = BOOKING_STATUS.CONFIRMED;
         booking.paymentStatus = PAYMENT_STATUS.PAID;

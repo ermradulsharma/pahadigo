@@ -36,7 +36,7 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
             push_notification: {
                 server_key: process.env.FCM_SERVER_KEY || APP_DETAILS.PUSH_NOTIFICATION_SERVER_KEY || DEFAULTS.NULL,
             },
-            jwt_secret: process.env.JWT_SECRET || APP_SECRETS.JWT_SECRET,
+            jwt_secret: process.env.JWT_SECRET || 'test_secret',
             mongodb_uri: process.env.MONGODB_URI,
             api_url: process.env.NEXT_PUBLIC_API_URL || APP_DETAILS.API_URL,
             debug_mode: isDebugString,
@@ -67,7 +67,7 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
             secrets: {
                 social_pass: process.env.SOCIAL_PASS || DEFAULTS.NULL,
                 other_account_pass: process.env.OTHER_ACCOUNT_PASS || DEFAULTS.NULL,
-                master_otp: process.env.MASTER_OTP || APP_SECRETS.MASTER_OTP
+                master_otp: process.env.MASTER_OTP || '888888'
             }
         };
     }

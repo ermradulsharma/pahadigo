@@ -81,7 +81,18 @@ jest.unstable_mockModule('@/core/Services/Traveller/InventoryService.js', () => 
 }));
 
 jest.unstable_mockModule('@/core/Services/Vendor/BusinessService.js', () => ({
-    default: { getBusinessById: jest.fn(() => Promise.resolve({})) }
+    default: {
+        getBusinessById: jest.fn(() => Promise.resolve({
+            businessName: 'Test Business',
+            ownerName: 'Vendor Owner',
+            bankDetails: {
+                accountHolderName: 'Vendor Owner',
+                accountNumber: '1234567890',
+                ifscCode: 'TEST0001234',
+                bankName: 'Test Bank'
+            }
+        }))
+    }
 }));
 
 jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
@@ -117,7 +128,7 @@ describe('BookingService Business Logic', () => {
             PackageService.getAvailablePackageItem.mockResolvedValue(mockPackageItem);
             User.findById.mockResolvedValue({ name: 'Test User', phone: '1234567890', email: 'test@test.com' });
             InventoryService.checkAvailabilityRange.mockResolvedValue({ available: true });
-            
+
             const createdBooking = { _id: 'b_new', status: 'pending', bookingCode: 'PH-ABCDEF' };
             Booking.create.mockResolvedValue([createdBooking]);
 
@@ -139,13 +150,29 @@ describe('BookingService Business Logic', () => {
     });
 
     describe('Payment & Verification', () => {
+        it('should reuse an existing unpaid Razorpay order instead of creating duplicates', async () => {
+            const { default: RazorpayService } = await import('@/services/General/RazorpayService.js');
+            const mockBooking = {
+                _id: 'b123', user: 'u123', status: 'pending', paymentStatus: 'unpaid',
+                payment: { orderId: 'order_existing' }, pricing: { total: 1000 }, bookingCode: 'PH-ABCDEF',
+                save: jest.fn()
+            };
+            Booking.findOne.mockResolvedValue(mockBooking);
+
+            const result = await BookingService.initializePayment('b123', 'u123');
+
+            expect(result.orderId).toBe('order_existing');
+            expect(RazorpayService.createOrder).not.toHaveBeenCalled();
+            expect(mockBooking.save).not.toHaveBeenCalled();
+        });
+
         it('should verify payment and transition to confirmed status', async () => {
             const { default: RazorpayService } = await import('@/services/General/RazorpayService.js');
             RazorpayService.verifySignature.mockReturnValue(true);
 
             const mockBooking = {
-                _id: 'b123', user: 'u123', status: 'pending',
-                verification: {}, payment: {}, timeline: [],
+                _id: 'b123', user: 'u123', status: 'pending', paymentStatus: 'unpaid',
+                verification: {}, payment: { orderId: 'o1' }, timeline: [],
                 pricing: { total: 1000 }, save: jest.fn()
             };
             Booking.findOne.mockResolvedValue(mockBooking);
@@ -157,7 +184,44 @@ describe('BookingService Business Logic', () => {
             });
 
             expect(result.status).toBe('confirmed');
+            expect(result.paymentStatus).toBe('paid');
+            expect(mockBooking.payment.paymentId).toBe('p1');
             expect(mockBooking.save).toHaveBeenCalled();
+        });
+
+        it('should reject payment verification for a mismatched Razorpay order', async () => {
+            const mockBooking = {
+                _id: 'b123', user: 'u123', status: 'pending', paymentStatus: 'unpaid',
+                verification: {}, payment: { orderId: 'order_expected' }, timeline: [],
+                pricing: { total: 1000 }, save: jest.fn()
+            };
+            Booking.findOne.mockResolvedValue(mockBooking);
+
+            await expect(BookingService.verifyBookingPayment('b123', 'u123', {
+                razorpay_order_id: 'order_other',
+                razorpay_payment_id: 'p1',
+                razorpay_signature: 'DUMMY_SIGNATURE'
+            })).rejects.toThrow('Payment order does not match this booking.');
+
+            expect(mockBooking.save).not.toHaveBeenCalled();
+        });
+
+        it('should return already paid bookings idempotently for the same payment id', async () => {
+            const mockBooking = {
+                _id: 'b123', user: 'u123', status: 'confirmed', paymentStatus: 'paid',
+                verification: {}, payment: { orderId: 'o1', paymentId: 'p1' }, timeline: [],
+                pricing: { total: 1000 }, save: jest.fn()
+            };
+            Booking.findOne.mockResolvedValue(mockBooking);
+
+            const result = await BookingService.verifyBookingPayment('b123', 'u123', {
+                razorpay_order_id: 'o1',
+                razorpay_payment_id: 'p1',
+                razorpay_signature: 'DUMMY_SIGNATURE'
+            });
+
+            expect(result).toBe(mockBooking);
+            expect(mockBooking.save).not.toHaveBeenCalled();
         });
     });
 
@@ -178,7 +242,7 @@ describe('BookingService Business Logic', () => {
         });
 
         it('should reveal end OTP once booking is ongoing', async () => {
-             const mockBooking = {
+            const mockBooking = {
                 _id: 'b123', user: 'u123', status: 'ongoing',
                 verification: { endOTP: '654321' },
                 timeline: [], save: jest.fn()

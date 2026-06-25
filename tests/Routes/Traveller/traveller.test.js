@@ -33,4 +33,24 @@ describe('Industry Standard: Traveller Routes Structure', () => {
             expect(route.roles).toContain('traveller');
         });
     });
+    it('[Validation] critical write routes should declare request schemas', () => {
+        const schemaRoutes = [
+            { method: 'PATCH', path: '/traveller/update' },
+            { method: 'PUT', path: '/traveller/token' },
+            { method: 'POST', path: '/traveller/booking/:id' },
+            { method: 'PATCH', path: '/traveller/booking/:id/cancel' },
+            { method: 'POST', path: '/traveller/booking/:id/dispute' },
+            { method: 'POST', path: '/traveller/booking/payment/:id/verify' },
+            { method: 'POST', path: '/traveller/:bookingId/review' },
+            { method: 'POST', path: '/traveller/wishlist/:itemId' },
+            { method: 'POST', path: '/traveller/payment/verify' },
+            { method: 'PUT', path: '/traveller/profile/' }
+        ];
+
+        schemaRoutes.forEach(({ method, path }) => {
+            const route = travellerRoutes.find(r => r.method === method && r.path === path);
+            expect(route).toBeDefined();
+            expect(route.schema).toBeDefined();
+        });
+    });
 });

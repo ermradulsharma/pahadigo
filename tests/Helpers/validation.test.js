@@ -62,5 +62,47 @@ describe('Validation Helper', () => {
             expect(result.success).toBe(false);
             expect(result.error).toContain(RESPONSE_MESSAGES.VALIDATION.INVALID_DATE);
         });
+
+        test('should pass when catalogId, category, and itemId are omitted', () => {
+            const data = {
+                startDate: '2026-07-08',
+                endDate: '2026-07-17',
+                price: 100
+            };
+            const result = validate(schemas.booking, data);
+            expect(result.success).toBe(true);
+            expect(result.data.catalogId).toBeUndefined();
+            expect(result.data.category).toBeUndefined();
+            expect(result.data.itemId).toBeUndefined();
+        });
+
+        test('should pass and ignore price if price is an object or invalid structure', () => {
+            const data = {
+                startDate: '2026-07-08',
+                endDate: '2026-07-17',
+                price: { coupon: '' }
+            };
+            const result = validate(schemas.booking, data);
+            expect(result.success).toBe(true);
+            expect(result.data.price).toBeUndefined();
+        });
+
+        test('should pass through extra fields like adults, children, includeMe, and guestDetails', () => {
+            const data = {
+                startDate: '2026-07-18',
+                endDate: '2026-07-25',
+                adults: 2,
+                children: 0,
+                includeMe: true,
+                guestDetails: [{ name: 'Priyanka Pandey', phone: '8940940163' }]
+            };
+            const result = validate(schemas.booking, data);
+            expect(result.success).toBe(true);
+            expect(result.data.adults).toBe(2);
+            expect(result.data.children).toBe(0);
+            expect(result.data.includeMe).toBe(true);
+            expect(result.data.guestDetails).toHaveLength(1);
+            expect(result.data.guestDetails[0].name).toBe('Priyanka Pandey');
+        });
     });
 });

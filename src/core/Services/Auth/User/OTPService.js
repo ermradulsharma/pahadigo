@@ -1,3 +1,4 @@
+import { randomInt } from 'node:crypto';
 import { DEFAULTS, USER_ROLES } from '@/core/Constants/index.js';
 import User from '@/core/Models/User.js';
 import AuthEvents from '@/core/Events/AuthEvents.js';
@@ -12,7 +13,7 @@ class OTPService {
    * Generate and save an OTP for a given user identifier (email/phone)
    */
   async generateOTP(identifier, role = USER_ROLES.TRAVELLER, metadata = {}) {
-    const otp = Math.floor(100000 + Math.random() * 900000).toString(); // 6-digit OTP
+    const otp = randomInt(100000, 1000000).toString();
     const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
     const isEmail = identifier.includes('@');
     const updatePayload = { otp, otpExpires: expires, role: role, ...metadata };

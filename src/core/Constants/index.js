@@ -97,8 +97,8 @@ export const APP_SECRETS = {
     SOCIAL_PASS: process.env.SOCIAL_PASS || DEFAULTS.NULL,
     OTHER_ACCOUNT_PASS: process.env.OTHER_ACCOUNT_PASS || DEFAULTS.NULL,
     SMTP_ACCOUNT_PASS: process.env.SMTP_PASS || DEFAULTS.NULL,
-    JWT_SECRET: process.env.JWT_SECRET || 'test_secret',
-    MASTER_OTP: process.env.MASTER_OTP || '888888'
+    JWT_SECRET: process.env.JWT_SECRET || DEFAULTS.NULL,
+    MASTER_OTP: process.env.MASTER_OTP || DEFAULTS.NULL
 };
 
 export const APP_CONSTANTS = {

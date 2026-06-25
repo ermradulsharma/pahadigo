@@ -1,5 +1,17 @@
 import adminRoutes from '@/routes/Admin/admin.js';
 
+const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
+
+const routeKey = (route) => `${route.method} ${route.path}`;
+
+const missingMutatingSchemas = (routes) => routes
+    .filter(route => MUTATING_METHODS.has(route.method) && !route.schema)
+    .map(routeKey);
+
+const invalidSchemas = (routes) => routes
+    .filter(route => route.schema && typeof route.schema.safeParse !== 'function')
+    .map(routeKey);
+
 describe('Industry Standard: Admin Routes Structure', () => {
     it('[Success] should export a non-empty array of routes', () => {
         expect(Array.isArray(adminRoutes)).toBe(true);
@@ -32,5 +44,13 @@ describe('Industry Standard: Admin Routes Structure', () => {
             expect(route.roles).toBeDefined();
             expect(route.roles).toContain('admin');
         });
+    });
+
+    it('[Validation] all mutating admin routes should define request schemas', () => {
+        expect(missingMutatingSchemas(adminRoutes)).toEqual([]);
+    });
+
+    it('[Validation] all admin route schemas should be Zod-compatible', () => {
+        expect(invalidSchemas(adminRoutes)).toEqual([]);
     });
 });

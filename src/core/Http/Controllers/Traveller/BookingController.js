@@ -17,7 +17,7 @@ class BookingController extends Controller {
             const bookings = await getManyBy(Booking, { user: req.user.id }, '', null, { createdAt: -1 });
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.FETCHED_HISTORICAL, bookings);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -30,7 +30,7 @@ class BookingController extends Controller {
             const booking = await BookingService.initiateBooking({ userId, body, itemId });
             return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.BOOKING.CREATED, booking);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -41,7 +41,7 @@ class BookingController extends Controller {
             if (!booking) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.FETCHED_DETAIL, booking);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -54,7 +54,7 @@ class BookingController extends Controller {
             const cancelledBooking = await BookingService.refundBooking(params.id, req);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.CANCELLED, cancelledBooking);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -64,21 +64,18 @@ class BookingController extends Controller {
             const paymentDetails = await BookingService.initializePayment(params.id, req.user.id);
             return this.success(HTTP_STATUS.OK, "Payment order generated successfully.", paymentDetails);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
     // POST /traveller/bookings/:id/verify-payment
     async verifyPayment(req, { params }) {
         try {
-            // Safely get body from pre-parsed data or request
             const body = req.payload;
-
             const booking = await BookingService.verifyBookingPayment(params.id, req.user.id, body);
-
             return this.success(HTTP_STATUS.OK, 'Payment verified and OTPs generated.', booking);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -129,7 +126,7 @@ class BookingController extends Controller {
             const dispute = await BookingService.reportDispute(params.id, req.user.id, disputeData);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.DISPUTE.RAISED, dispute);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 }

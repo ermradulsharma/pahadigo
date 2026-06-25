@@ -5,6 +5,7 @@ import { HTTP_STATUS } from '@/core/Constants/index.js';
 // Use unstable_mockModule for ESM Models
 jest.unstable_mockModule('@/core/Models/RateLimit.js', () => ({
     default: {
+        findOneAndUpdate: jest.fn(),
         findOne: jest.fn(),
         create: jest.fn()
     }
@@ -28,26 +29,28 @@ describe('Core Middleware: RateLimit', () => {
     test('should allow request if under limit', async () => {
         const middleware = rateLimit({ limit: 2, windowMs: 1000 });
         const mockData = {
-            count: 0,
-            resetAt: new Date(Date.now() + 1000),
-            save: jest.fn().mockResolvedValue(true)
+            count: 1,
+            resetAt: new Date(Date.now() + 1000)
         };
-        RateLimitMock.findOne.mockResolvedValue(mockData);
+        RateLimitMock.findOneAndUpdate.mockResolvedValue(mockData);
 
         const result = await middleware(mockReq);
 
         expect(result).toBeNull();
-        expect(mockData.count).toBe(1);
+        expect(RateLimitMock.findOneAndUpdate).toHaveBeenCalledWith(
+            { key: '127.0.0.1:/api/test' },
+            expect.any(Array),
+            expect.objectContaining({ upsert: true, returnDocument: 'after', updatePipeline: true })
+        );
     });
 
     test('should block request if over limit', async () => {
         const middleware = rateLimit({ limit: 1, windowMs: 1000 });
         const mockData = {
-            count: 1,
-            resetAt: new Date(Date.now() + 1000),
-            save: jest.fn().mockResolvedValue(true)
+            count: 2,
+            resetAt: new Date(Date.now() + 1000)
         };
-        RateLimitMock.findOne.mockResolvedValue(mockData);
+        RateLimitMock.findOneAndUpdate.mockResolvedValue(mockData);
 
         const result = await middleware(mockReq);
         const body = await result.json();
@@ -59,11 +62,10 @@ describe('Core Middleware: RateLimit', () => {
     test('should reset count if window expired', async () => {
         const middleware = rateLimit({ limit: 5, windowMs: 1000 });
         const mockData = {
-            count: 10,
-            resetAt: new Date(Date.now() - 1000), // Expired
-            save: jest.fn().mockResolvedValue(true)
+            count: 1,
+            resetAt: new Date(Date.now() + 1000)
         };
-        RateLimitMock.findOne.mockResolvedValue(mockData);
+        RateLimitMock.findOneAndUpdate.mockResolvedValue(mockData);
 
         const result = await middleware(mockReq);
 

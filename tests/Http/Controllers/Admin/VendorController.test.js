@@ -58,7 +58,9 @@ describe('VendorController: Integration Tests', () => {
     });
 
     const createMockReq = (body) => ({
-        jsonBody: body, // Pattern used in VendorController.js
+        payload: body,
+        validData: body,
+        jsonBody: body,
         json: jest.fn().mockResolvedValue(body),
         user: { id: new mongoose.Types.ObjectId().toString() }
     });
@@ -102,5 +104,45 @@ describe('VendorController: Integration Tests', () => {
 
         const updatedUser = await User.findById(mockUserId);
         expect(updatedUser.status).toBe('active');
+    });
+
+    it('[Success] should verify core manual document (e.g. panCard)', async () => {
+        const mockReq = createMockReq({
+            vendorId: mockVendorId.toString(),
+            documentField: 'panCard',
+            status: 'verified'
+        });
+
+        const response = await VendorController.verifyDocument(mockReq);
+
+        if (response.status !== 200) {
+            const body = await response.json();
+            console.error("FAILED RESPONSE BODY:", body);
+        }
+
+        expect(response.status).toBe(HTTP_STATUS.OK);
+
+        const updatedVendor = await Vendor.findById(mockVendorId);
+        expect(updatedVendor.documents.panCard.status).toBe('verified');
+    });
+
+    it('[Success] should verify nested manual document (e.g. bankDetails.cancelledCheque)', async () => {
+        const mockReq = createMockReq({
+            vendorId: mockVendorId.toString(),
+            documentField: 'bankDetails.cancelledCheque',
+            status: 'verified'
+        });
+
+        const response = await VendorController.verifyDocument(mockReq);
+
+        if (response.status !== 200) {
+            const body = await response.json();
+            console.error("FAILED RESPONSE BODY:", body);
+        }
+
+        expect(response.status).toBe(HTTP_STATUS.OK);
+
+        const updatedVendor = await Vendor.findById(mockVendorId);
+        expect(updatedVendor.bankDetails.cancelledCheque.status).toBe('verified');
     });
 });

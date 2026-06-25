@@ -1,6 +1,6 @@
 import Booking from '@/core/Models/Booking.js';
 import NotificationService from '@/core/Services/General/NotificationService.js';
-import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { BOOKING_STATUS, PAYMENT_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 
 /**
  * BookingService (Common)
@@ -12,14 +12,23 @@ class BookingService {
   }
 
   async updatePaymentStatus(orderId, paymentId, signatureOrStatus) {
-    // Find booking by Razorpay Order ID
+    if (!orderId || !paymentId) throw new Error('Order id and payment id are required.');
+
     const booking = await Booking.findOne({ 'payment.orderId': orderId });
     if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
 
-    booking.paymentStatus = 'paid';
-    booking.status = 'confirmed';
-
     if (!booking.payment) booking.payment = {};
+
+    const alreadyPaid = booking.paymentStatus === PAYMENT_STATUS.PAID || booking.paymentStatus === 'paid';
+    if (alreadyPaid) {
+      if (booking.payment.paymentId && booking.payment.paymentId !== paymentId) {
+        throw new Error('Payment order is already linked to a different payment.');
+      }
+      return booking;
+    }
+
+    booking.paymentStatus = PAYMENT_STATUS.PAID;
+    booking.status = BOOKING_STATUS.CONFIRMED;
     booking.payment.paymentId = paymentId;
     booking.payment.paidAt = new Date();
 
@@ -35,8 +44,7 @@ class BookingService {
 
     await booking.save();
 
-    // Notify
-    NotificationService.notifyBookingStatus(booking._id, 'confirmed');
+    NotificationService.notifyBookingStatus(booking._id, BOOKING_STATUS.CONFIRMED);
 
     return booking;
   }
