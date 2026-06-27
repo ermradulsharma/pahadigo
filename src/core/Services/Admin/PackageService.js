@@ -42,10 +42,31 @@ class PackageService {
   }
 
   async toggleServiceStatus(serviceId, status, serviceType, vendorId, userId) {
-    const pkg = await Package.findOne({
-      vendor: new mongoose.Types.ObjectId(String(vendorId)),
-      user: new mongoose.Types.ObjectId(String(userId))
-    });
+    let pkg;
+
+    // 1. Try finding by vendorId or userId if they are valid ObjectIds
+    const query = {};
+    if (vendorId && mongoose.Types.ObjectId.isValid(vendorId)) {
+      query.vendor = new mongoose.Types.ObjectId(String(vendorId));
+    }
+    if (userId && mongoose.Types.ObjectId.isValid(userId)) {
+      query.user = new mongoose.Types.ObjectId(String(userId));
+    }
+
+    if (Object.keys(query).length > 0) {
+      pkg = await Package.findOne(query);
+    }
+
+    // 2. Fallback: If not found by vendor/user, try finding by serviceId subdocument
+    if (!pkg && serviceId && mongoose.Types.ObjectId.isValid(serviceId)) {
+      const oid = new mongoose.Types.ObjectId(String(serviceId));
+      const categoryFields = Object.keys(Package.schema.paths)
+        .filter(p => !p.includes('.') && Array.isArray(Package.schema.paths[p].options.type));
+      pkg = await Package.findOne({
+        $or: categoryFields.map(key => ({ [`${key}._id`]: oid }))
+      });
+    }
+
     if (!pkg) throw new Error(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
 
 
@@ -62,6 +83,9 @@ class PackageService {
   }
 
   async getPackageItem(itemId) {
+    if (!itemId || !mongoose.Types.ObjectId.isValid(itemId)) {
+      throw new Error("Item not found");
+    }
     const oid = new mongoose.Types.ObjectId(String(itemId));
     const categoryFields = Object.keys(Package.schema.paths)
       .filter(p => !p.includes('.') && Array.isArray(Package.schema.paths[p].options.type));
@@ -85,6 +109,9 @@ class PackageService {
   }
 
   async updatePackageItem(itemId, data) {
+    if (!itemId || !mongoose.Types.ObjectId.isValid(itemId)) {
+      throw new Error("Item not found");
+    }
     const oid = new mongoose.Types.ObjectId(String(itemId));
     const categoryFields = Object.keys(Package.schema.paths)
       .filter(p => !p.includes('.') && Array.isArray(Package.schema.paths[p].options.type));

@@ -1,6 +1,10 @@
 import nodemailer from 'nodemailer';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { renderTemplate } from '@/core/Helpers/TemplateHelper.js';
+import Booking from '@/core/Models/Booking.js';
+import User from '@/core/Models/User.js';
+import Vendor from '@/core/Models/Vendor.js';
+import { PushNotificationService } from '@/core/Services/PushNotificationService.js';
 
 /**
  * NotificationService - Centralized service for sending communications
@@ -90,7 +94,91 @@ class NotificationService {
     }
 
     async notifyBookingStatus(bookingId, status) {
-        return true;
+        try {
+            const booking = await Booking.findById(bookingId).lean();
+            if (!booking) return false;
+
+            const travellerId = booking.user;
+            const vendorDoc = await Vendor.findById(booking.vendor).select('user').lean();
+            const vendorUserId = vendorDoc ? vendorDoc.user : null;
+
+            const startDateStr = booking.startDate ? new Date(booking.startDate).toLocaleDateString() : '';
+
+            let travellerTitle = '';
+            let travellerBody = '';
+            let vendorTitle = '';
+            let vendorBody = '';
+
+            const dataPayload = {
+                bookingId: String(booking._id),
+                bookingCode: booking.bookingCode,
+                status: status
+            };
+
+            switch (status) {
+                case 'created':
+                    travellerTitle = 'Booking Initiated';
+                    travellerBody = `Your booking for ${booking.item.title} has been initiated. Please complete the payment.`;
+                    break;
+                case 'confirmed':
+                    travellerTitle = 'Booking Confirmed!';
+                    travellerBody = `Your booking for ${booking.item.title} has been confirmed for ${startDateStr}.`;
+                    vendorTitle = 'New Booking Confirmed!';
+                    vendorBody = `You have a new booking for ${booking.item.title} starting on ${startDateStr}.`;
+                    break;
+                case 'ongoing':
+                    travellerTitle = 'Trip Started!';
+                    travellerBody = `Your trip for ${booking.item.title} has officially started. Enjoy your adventure!`;
+                    vendorTitle = 'Trip Started';
+                    vendorBody = `Booking ${booking.bookingCode} for ${booking.item.title} has started.`;
+                    break;
+                case 'completed':
+                    travellerTitle = 'Trip Completed!';
+                    travellerBody = `We hope you enjoyed ${booking.item.title}! Please share your feedback and rate your experience.`;
+                    vendorTitle = 'Trip Completed';
+                    vendorBody = `Booking ${booking.bookingCode} for ${booking.item.title} has been completed.`;
+                    break;
+                case 'cancelled':
+                    travellerTitle = 'Booking Cancelled';
+                    travellerBody = `Your booking for ${booking.item.title} has been cancelled successfully.`;
+                    vendorTitle = 'Booking Cancelled';
+                    vendorBody = `Booking ${booking.bookingCode} for ${booking.item.title} has been cancelled.`;
+                    break;
+                case 'otp_sent':
+                    travellerTitle = 'Trip Verification OTP';
+                    travellerBody = `Your OTP for checking into ${booking.item.title} is ready.`;
+                    break;
+            }
+
+            // Dispatch to Traveler
+            if (travellerTitle && travellerBody) {
+                const travellerUser = await User.findById(travellerId).select('fcmToken').lean();
+                if (travellerUser && travellerUser.fcmToken) {
+                    await PushNotificationService.sendToDevice(
+                        travellerUser.fcmToken,
+                        { title: travellerTitle, body: travellerBody },
+                        dataPayload
+                    );
+                }
+            }
+
+            // Dispatch to Vendor
+            if (vendorUserId && vendorTitle && vendorBody) {
+                const vendorUser = await User.findById(vendorUserId).select('fcmToken').lean();
+                if (vendorUser && vendorUser.fcmToken) {
+                    await PushNotificationService.sendToDevice(
+                        vendorUser.fcmToken,
+                        { title: vendorTitle, body: vendorBody },
+                        dataPayload
+                    );
+                }
+            }
+
+            return true;
+        } catch (error) {
+            console.error('[NotificationService] notifyBookingStatus Error:', error);
+            return false;
+        }
     }
 
     async notifyVendorApproval(vendorId, isApproved) {

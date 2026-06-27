@@ -45,6 +45,26 @@ describe('PushNotificationService', () => {
         }));
     });
 
+    test('should sanitize non-string values in data payload', async () => {
+        mockMessaging.send.mockResolvedValue('msg_id_123');
+        const token = 'device_token_123';
+        const notification = { title: 'Test', body: 'Test body' };
+        const data = { bookingId: 12345, isSelf: true, note: 'ok' };
+
+        const result = await PushNotificationService.sendToDevice(token, notification, data);
+
+        expect(result.success).toBe(true);
+        expect(mockMessaging.send).toHaveBeenCalledWith(expect.objectContaining({
+            token,
+            data: {
+                bookingId: '12345',
+                isSelf: 'true',
+                note: 'ok',
+                click_action: 'FLUTTER_NOTIFICATION_CLICK'
+            }
+        }));
+    });
+
     test('should return error if getMessaging returns null', async () => {
         const { getMessaging } = await import('@/core/Lib/firebase.js');
         getMessaging.mockResolvedValueOnce(null);
