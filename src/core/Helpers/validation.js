@@ -123,7 +123,7 @@ export const schemas = {
     profileUpdate: z.object({
         name: z.string().min(2, RESPONSE_MESSAGES.VALIDATION.NAME_MIN_LENGTH).optional(),
         phone: z.string().regex(/^\+?[1-9]\d{1,14}$/, RESPONSE_MESSAGES.VALIDATION.INVALID_PHONE).optional(),
-    }),
+    }).passthrough(),
 
     fcmToken: z.object({
         fcmToken: z.string().min(1, 'FCM token is required')
