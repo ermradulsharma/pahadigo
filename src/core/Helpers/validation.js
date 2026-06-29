@@ -207,7 +207,7 @@ export const schemas = {
         cancelledChequeFile: z.unknown().optional()
     }).passthrough(),
 
-    packageMutation: flexibleObject.refine(data => Object.keys(data).length > 0, {
+    packageMutation: flexibleObject.passthrough().refine(data => Object.keys(data).length > 0, {
         message: RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS
     }),
 
