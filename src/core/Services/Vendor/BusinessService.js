@@ -1,5 +1,6 @@
 import Vendor from '@/core/Models/Vendor.js';
 import Category from '@/core/Models/Category.js';
+import { getBusinessBy, getBusinessById as qhGetBusinessById } from '@/core/Helpers/queryHelpers.js';
 import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
 import User from '@/core/Models/User.js';
 import Review from '@/core/Models/Review.js';
@@ -63,10 +64,10 @@ class BusinessService {
 
     // Fetch Business Record by User ID
     async getBusinessByUserId(userId) {
-        const vendor = await Vendor.findOne({ user: userId, deletedAt: null }).populate('user', 'email phone role');
+        const vendor = await getBusinessBy({ user: userId, deletedAt: null }, '', { path: 'user', select: 'email phone role' });
         if (vendor) {
             const closures = await VendorClosure.find({ vendor: vendor._id, isActive: true }).sort({ startDate: 1 });
-            vendor._doc.closurePeriods = closures;
+            vendor.closurePeriods = closures;
         }
         return vendor;
     }
@@ -161,11 +162,11 @@ class BusinessService {
     }
 
     async getBusinessById(id) {
-        return await Vendor.findById(id).populate('user', 'email phone role').lean();
+        return await qhGetBusinessById(id, '', { path: 'user', select: 'email phone role' });
     }
 
-    async getBusinessProfile(id) {
-        return await Vendor.findById(id).select('businessAbout businessName businessNumber businessRegistration gstNumber ownerName status trustBadge address').populate('user', 'email phone').lean();
+    async getPublicBusinessProfile(id) {
+        return await qhGetBusinessById(id, 'businessAbout businessName businessNumber businessRegistration gstNumber ownerName status trustBadge address', { path: 'user', select: 'email phone' });
     }
 }
 

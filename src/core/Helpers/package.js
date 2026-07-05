@@ -91,19 +91,22 @@ export async function item(userId, vendorId, category, itemDataOrUpdates, itemId
         itemDoc = pkg[schemaKey].id(itemId);
         if (!itemDoc) throw new Error(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
 
-        // Support dot notation for nested fields (e.g. 'pricing.basePrice')
-        Object.keys(itemDataOrUpdates).forEach(key => {
-            if (key.includes('.')) {
-                const parts = key.split('.');
-                let current = itemDoc;
-                for (let i = 0; i < parts.length - 1; i++) {
-                    if (!current[parts[i]]) current[parts[i]] = {};
-                    current = current[parts[i]];
+        // Flatten nested objects into dot notation so we do partial updates
+        const flattenObject = (obj, prefix = '') => {
+            return Object.keys(obj).reduce((acc, k) => {
+                const pre = prefix.length ? prefix + '.' : '';
+                if (obj[k] !== null && typeof obj[k] === 'object' && obj[k].constructor === Object) {
+                    Object.assign(acc, flattenObject(obj[k], pre + k));
+                } else {
+                    acc[pre + k] = obj[k];
                 }
-                current[parts[parts.length - 1]] = itemDataOrUpdates[key];
-            } else {
-                itemDoc.set(key, itemDataOrUpdates[key]);
-            }
+                return acc;
+            }, {});
+        };
+
+        const flatUpdates = flattenObject(itemDataOrUpdates);
+        Object.keys(flatUpdates).forEach(key => {
+            itemDoc.set(key, flatUpdates[key]);
         });
 
         // Recalculate selling price if pricing fields were updated but sellingPrice wasn't explicitly supplied

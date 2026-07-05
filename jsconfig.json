@@ -6,25 +6,68 @@
         "checkJs": false,
         "skipLibCheck": true,
         "jsx": "preserve",
-        "lib": ["esnext", "dom", "dom.iterable"],
+        "lib": [
+            "esnext",
+            "dom",
+            "dom.iterable"
+        ],
         "paths": {
-            "@/core/Controllers/*": ["./src/core/Http/Controllers/*"],
-            "@/core/Models/*": ["./src/core/Models/*"],
-            "@/core/Services/*": ["./src/core/Services/*"],
-            "@/core/Middleware/*": ["./src/core/Http/Middleware/*"],
-            "@/core/Routes/*": ["./src/core/Routes/*"],
-            "@/core/Config/*": ["./src/core/Config/*"],
-            "@/core/Helpers/*": ["./src/core/Helpers/*"],
-            "@/core/Constants/*": ["./src/core/Constants/*"],
-            "@/core/Seeders/*": ["./src/core/Database/Seeders/*"],
-            "@/core/Lib/*": ["./src/core/Lib/*"],
-            "@/components/*": ["./src/app/components/*"],
-            "@/*": ["./src/*"]
+            "@/core/Controllers/*": [
+                "./src/core/Http/Controllers/*"
+            ],
+            "@/core/Models/*": [
+                "./src/core/Models/*"
+            ],
+            "@/core/Services/*": [
+                "./src/core/Services/*"
+            ],
+            "@/core/Middleware/*": [
+                "./src/core/Http/Middleware/*"
+            ],
+            "@/core/Routes/*": [
+                "./src/core/Routes/*"
+            ],
+            "@/core/Config/*": [
+                "./src/core/Config/*"
+            ],
+            "@/core/Helpers/*": [
+                "./src/core/Helpers/*"
+            ],
+            "@/core/Constants/*": [
+                "./src/core/Constants/*"
+            ],
+            "@/core/Seeders/*": [
+                "./src/core/Database/Seeders/*"
+            ],
+            "@/core/Lib/*": [
+                "./src/core/Lib/*"
+            ],
+            "@/components/*": [
+                "./src/app/components/*"
+            ],
+            "@/*": [
+                "./src/*"
+            ]
         }
     },
-    "include": ["src/**/*", "tests/**/*", "index.js", "next.config.js"],
-    "exclude": ["node_modules", ".next", "out", "public/static", "dist"],
+    "include": [
+        "src/**/*",
+        "tests/**/*",
+        "index.js",
+        "next.config.js"
+    ],
+    "exclude": [
+        "node_modules",
+        ".next",
+        "out",
+        "public/static",
+        "dist"
+    ],
     "typeAcquisition": {
-        "enable": true
+        "enable": true,
+        "exclude": [
+            "d3-path",
+            "request"
+        ]
     }
 }
