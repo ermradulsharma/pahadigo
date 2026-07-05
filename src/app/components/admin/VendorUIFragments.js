@@ -175,7 +175,7 @@ export function DocumentSection({ title, docs: rawDocs, field, onVerify, onOCR, 
 
             {/* SaaS Ultra Image Preview */}
             <div className="relative h-48 w-full bg-black overflow-hidden cursor-zoom-in group-hover:block z-10" onClick={() => onPreview(doc.url)}>
-              <Image src={doc.url} alt={title} fill className="object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-1 opacity-80 group-hover:opacity-100 mix-blend-screen" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" priority={priority} />
+              <Image src={doc.url?.replace(/\.pdf$/i, '.jpg')} alt={title} fill className="object-cover transition-transform duration-700 group-hover:scale-110 group-hover:rotate-1 opacity-80 group-hover:opacity-100 mix-blend-screen" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" priority={priority} />
 
               <div className="absolute inset-0 bg-gradient-to-t from-black via-transparent to-black/30 opacity-70"></div>
 

@@ -74,7 +74,7 @@ export default function DocumentsTab({ vendor, setVendor, id, activeTab, setActi
         <div onClick={() => setPreviewImage(null)} className="fixed inset-0 z-[100] bg-black/95 backdrop-blur-xl flex items-center justify-center p-4 sm:p-12 cursor-zoom-out animate-in fade-in duration-300">
           <div className="relative w-full h-full flex flex-col items-center justify-center max-w-5xl mx-auto">
             <div className="relative w-full h-full rounded-2xl overflow-hidden shadow-[0_0_100px_rgba(34,211,238,0.2)] border border-white/10 bg-[#0a0a0f]">
-              <Image src={previewImage} alt="Document Review" fill className="object-contain" priority sizes="100vw" />
+              <Image src={previewImage?.replace(/\.pdf$/i, '.jpg')} alt="Document Review" fill className="object-contain" priority sizes="100vw" />
             </div>
             <button className="absolute -top-4 -right-4 bg-black/50 hover:bg-rose-500/20 text-slate-400 hover:text-rose-400 p-3 rounded-full transition-all border border-white/10 hover:border-rose-500/30 backdrop-blur-md shadow-[0_0_15px_rgba(0,0,0,0.5)] z-10">
               <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" /></svg>
@@ -102,7 +102,7 @@ function CategoryDocumentSection({ title, docs, onVerify, onPreview }) {
           <div key={idx} className="group relative bg-black/40 hover:bg-[#0a0a0f] backdrop-blur-xl border border-white/10 rounded-xl overflow-hidden transition-all duration-500 hover:shadow-[0_0_20px_rgba(34,211,238,0.15)] hover:border-cyan-500/30 flex flex-col">
             <div className="absolute top-3 right-3 z-10 scale-90 origin-top-right transition-transform duration-300"> <StatusBadge status={doc.status} /> </div>
             <div className="relative h-48 w-full bg-[#050505] overflow-hidden cursor-zoom-in group-hover:opacity-90 transition-opacity" onClick={() => onPreview(doc.url)}>
-              <Image src={doc.url} alt={doc.document_slug} fill className="object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
+              <Image src={doc.url?.replace(/\.pdf$/i, '.jpg')} alt={doc.document_slug} fill className="object-cover transition-transform duration-700 group-hover:scale-105 opacity-80 group-hover:opacity-100" sizes="(max-width: 768px) 100vw, (max-width: 1200px) 50vw, 33vw" />
               <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black to-transparent pointer-events-none"></div>
               <div className="absolute inset-0 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity duration-300">
                 <div className="bg-black/50 backdrop-blur-md border border-cyan-500/30 p-2.5 rounded-xl transform scale-50 group-hover:scale-100 transition-all duration-500 shadow-[0_0_20px_rgba(34,211,238,0.3)]">
