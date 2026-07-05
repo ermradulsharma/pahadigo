@@ -1,4 +1,4 @@
-module.exports = {
+const customJestConfig = {
     testEnvironment: 'node',
     setupFilesAfterEnv: ['./tests/setup.js'],
     testTimeout: 120000,
@@ -33,3 +33,5 @@ module.exports = {
         '^@/(.*)$': '<rootDir>/src/$1',
     },
 };
+
+module.exports = customJestConfig;

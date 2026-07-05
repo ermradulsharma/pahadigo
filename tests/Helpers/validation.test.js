@@ -160,7 +160,7 @@ describe('Validation Helper', () => {
                 photos: ['url1', 'url2']
             };
             const result = validate(schemas.packageMutation, payload);
-            console.log('packageMutation result:', result);
+            // console.log('packageMutation result:', result);
             expect(result.success).toBe(true);
         });
     });

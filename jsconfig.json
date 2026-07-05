@@ -42,6 +42,36 @@
             "@/core/Lib/*": [
                 "./src/core/Lib/*"
             ],
+            "@/controllers/*": [
+                "./src/core/Http/Controllers/*"
+            ],
+            "@/models/*": [
+                "./src/core/Models/*"
+            ],
+            "@/services/*": [
+                "./src/core/Services/*"
+            ],
+            "@/helpers/*": [
+                "./src/core/Helpers/*"
+            ],
+            "@/routes/*": [
+                "./src/core/Routes/*"
+            ],
+            "@/config/*": [
+                "./src/core/Config/*"
+            ],
+            "@/constants/*": [
+                "./src/core/Constants/*"
+            ],
+            "@/seeders/*": [
+                "./src/core/Database/Seeders/*"
+            ],
+            "@/lib/*": [
+                "./src/core/Lib/*"
+            ],
+            "@/events/*": [
+                "./src/core/Events/*"
+            ],
             "@/components/*": [
                 "./src/app/components/*"
             ],
