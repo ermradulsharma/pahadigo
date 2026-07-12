@@ -24,7 +24,7 @@
         "js-cookie": "^3.0.8",
         "jsonwebtoken": "^9.0.3",
         "lucide-react": "^1.23.0",
-        "mongoose": "^9.7.3",
+        "mongoose": "^9.7.4",
         "msg91-api": "^1.1.0",
         "next": "^16.2.10",
         "next-cloudinary": "^6.17.5",
