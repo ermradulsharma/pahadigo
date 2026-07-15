@@ -1,6 +1,21 @@
 import { jest } from '@jest/globals';
-import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
-import { v2 as cloudinary } from 'cloudinary';
+
+jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
+    getAppConfig: jest.fn().mockImplementation(() => Promise.resolve({
+        cloudinary: { url: 'cloudinary://test:test@test' }
+    }))
+}));
+
+jest.unstable_mockModule('sharp', () => ({
+    default: jest.fn().mockReturnValue({
+        resize: jest.fn().mockReturnThis(),
+        webp: jest.fn().mockReturnThis(),
+        toBuffer: jest.fn().mockResolvedValue(Buffer.from('mock-image'))
+    })
+}));
+
+const { uploadToCloudinary } = await import('@/core/Helpers/cloudinary.js');
+const { v2: cloudinary } = await import('cloudinary');
 import { HTTP_STATUS } from '@/core/Constants/index.js';
 
 describe('Cloudinary Helper', () => {

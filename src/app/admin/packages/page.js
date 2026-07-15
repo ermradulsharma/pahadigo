@@ -1,9 +1,10 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getToken } from '@/core/Helpers/authUtils';
-import PackageCard, { getServiceName, getPrice } from '@/components/admin/PackageCard';
-import { CATEGORY_MAP } from '@/core/Constants/categories';
+import api from '@/core/Api/index.js';
+import { useToast } from '@/components/ui/ToastContext.js';
+import PackageCard, { getServiceName, getPrice } from '@/components/admin/PackageCard.js';
+import { CATEGORY_MAP } from '@/core/Constants/categories.js';
 
 export default function InventoryPage() {
     const [packages, setPackages] = useState([]);
@@ -11,6 +12,7 @@ export default function InventoryPage() {
     const [searchTerm, setSearchTerm] = useState('');
     const [filterCategory, setFilterCategory] = useState('all');
     const [apiCategories, setApiCategories] = useState([]);
+    const toast = useToast();
 
     useEffect(() => {
         fetchPackages();
@@ -25,22 +27,18 @@ export default function InventoryPage() {
                 setApiCategories(data.data.categories);
             }
         } catch (error) {
-            console.error("Failed to load categories", error);
+            // failed to load categories
         }
     };
 
     const fetchPackages = async () => {
         try {
-            const token = getToken();
-            const res = await fetch('/api/admin/packages', {
-                headers: { 'Authorization': `Bearer ${token}` }
-            });
-            const data = await res.json();
+            const data = await api.admin.packages.getAll();
             if (data.success) {
                 setPackages(data.data.packages);
             }
         } catch (error) {
-            console.error("Failed to fetch packages:", error);
+            // failed to fetch packages
         } finally {
             setLoading(false);
         }
@@ -48,20 +46,11 @@ export default function InventoryPage() {
 
     const toggleStatus = async (pkg, statusToSet) => {
         try {
-            const token = getToken();
-            const res = await fetch(`/api/admin/packages/${pkg._id}/status`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': `Bearer ${token}`,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    vendorId: pkg.vendorId,
-                    serviceType: pkg.serviceType,
-                    status: statusToSet
-                })
+            const data = await api.admin.packages.updateStatus(pkg._id, {
+                vendorId: pkg.vendorId,
+                serviceType: pkg.serviceType,
+                status: statusToSet
             });
-            const data = await res.json();
             if (data.success) {
                 setPackages(prev => prev.map(p =>
                     (p._id === pkg._id && p.serviceType === pkg.serviceType)
@@ -70,7 +59,7 @@ export default function InventoryPage() {
                 ));
             }
         } catch (error) {
-            alert("Failed to update status");
+            toast("Failed to update status", "error");
         }
     };
 

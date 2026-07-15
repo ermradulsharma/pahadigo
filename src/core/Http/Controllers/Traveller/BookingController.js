@@ -30,6 +30,7 @@ class BookingController extends Controller {
             const booking = await BookingService.initiateBooking({ userId, body, itemId });
             return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.BOOKING.CREATED, booking);
         } catch (error) {
+            console.error('Error in initiateBooking:', error);
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
@@ -75,7 +76,8 @@ class BookingController extends Controller {
             const booking = await BookingService.verifyBookingPayment(params.id, req.user.id, body);
             return this.success(HTTP_STATUS.OK, 'Payment verified and OTPs generated.', booking);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            console.error('Error in verifyPayment:', error);
+            return this.error(HTTP_STATUS.BAD_REQUEST, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 

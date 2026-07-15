@@ -152,25 +152,33 @@ class NotificationService {
 
             // Dispatch to Traveler
             if (travellerTitle && travellerBody) {
+                console.log(`\n🔔 [Push Notification INTENDED for Traveller] Title: "${travellerTitle}" | Body: "${travellerBody}"`);
                 const travellerUser = await User.findById(travellerId).select('fcmToken').lean();
                 if (travellerUser && travellerUser.fcmToken) {
+                    console.log(`=> 🚀 Sending Push Notification to Traveller (FCM Token: ${travellerUser.fcmToken.substring(0, 15)}...)`);
                     await PushNotificationService.sendToDevice(
                         travellerUser.fcmToken,
                         { title: travellerTitle, body: travellerBody },
                         dataPayload
                     );
+                } else {
+                    console.log('=> ⚠️ Skipped sending Push Notification to Traveller: FCM Token not found in user profile.');
                 }
             }
 
             // Dispatch to Vendor
             if (vendorUserId && vendorTitle && vendorBody) {
+                console.log(`\n🔔 [Push Notification INTENDED for Vendor] Title: "${vendorTitle}" | Body: "${vendorBody}"`);
                 const vendorUser = await User.findById(vendorUserId).select('fcmToken').lean();
                 if (vendorUser && vendorUser.fcmToken) {
+                    console.log(`=> 🚀 Sending Push Notification to Vendor (FCM Token: ${vendorUser.fcmToken.substring(0, 15)}...)`);
                     await PushNotificationService.sendToDevice(
                         vendorUser.fcmToken,
                         { title: vendorTitle, body: vendorBody },
                         dataPayload
                     );
+                } else {
+                    console.log('=> ⚠️ Skipped sending Push Notification to Vendor: FCM Token not found in vendor profile.');
                 }
             }
 
@@ -189,8 +197,54 @@ class NotificationService {
         return true;
     }
 
-    async sendInvoice(email, bookingId, role) {
-        return true;
+    async sendInvoice(email, bookingId, role = 'traveller') {
+        try {
+            const config = await getAppConfig();
+            const booking = await Booking.findById(bookingId).populate('vendor user').lean();
+            if (!booking) {
+                console.error(`[NotificationService] Invoice generation failed: Booking ${bookingId} not found`);
+                return false;
+            }
+
+            // Dynamically import to avoid Next.js Server Components issues on boot
+            const { renderToStream } = await import('@react-pdf/renderer');
+            const React = (await import('react')).default;
+            const InvoiceDocument = (await import('@/core/Templates/Pdf/InvoiceDocument.jsx')).default;
+
+            console.log(`[NotificationService] Generating PDF stream for booking ${booking.bookingCode}...`);
+            const stream = await renderToStream(React.createElement(InvoiceDocument, { booking }));
+            
+            const chunks = [];
+            for await (const chunk of stream) {
+                chunks.push(chunk);
+            }
+            const pdfBuffer = Buffer.concat(chunks);
+
+            const transporter = await this._getTransporter();
+            const subject = role === 'traveller' 
+                ? `Invoice for your PahadiGo Booking - ${booking.bookingCode}` 
+                : `Invoice Generated for Booking - ${booking.bookingCode}`;
+                
+            await transporter.sendMail({
+                from: `"${config.smtp.from_name}" <${config.smtp.from_address}>`,
+                to: email,
+                subject: subject,
+                html: `<p>Dear user,</p><p>Please find attached the invoice for your booking <strong>${booking.bookingCode}</strong>.</p><p>Thank you,<br/>PahadiGo Team</p>`,
+                attachments: [
+                    {
+                        filename: `Invoice_${booking.bookingCode}.pdf`,
+                        content: pdfBuffer,
+                        contentType: 'application/pdf'
+                    }
+                ]
+            });
+
+            console.log(`[NotificationService] Invoice sent successfully to ${email}`);
+            return true;
+        } catch (error) {
+            console.error('[NotificationService] sendInvoice Error:', error);
+            return false;
+        }
     }
 }
 

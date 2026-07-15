@@ -22,7 +22,7 @@ export const getAppConfig = jest.fn(() => Promise.resolve({
     },
     jwt_secret: process.env.JWT_SECRET || 'test_secret',
     mongodb_uri: process.env.MONGODB_URI,
-    api_url: process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3000',
+    api_url: process.env.NEXT_PUBLIC_API_URL || 'http://pahadigo.co.in',
     debug_mode: process.env.DEBUG === 'true',
     google: { 
         client_id: process.env.GOOGLE_CLIENT_ID, 

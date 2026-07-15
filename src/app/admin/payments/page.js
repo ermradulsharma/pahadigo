@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getToken } from '@/core/Helpers/authUtils';
-import CyberTable from '@/app/components/admin/CyberTable';
+import api from '@/core/Api/index.js';
+import { useToast } from '@/components/ui/ToastContext.js';
+import CyberTable from '@/app/components/admin/CyberTable.js';
 import { Wallet, Search, ArrowRightLeft, DollarSign, Building2, Phone, Coins, ExternalLink, User, ReceiptText, Landmark } from 'lucide-react';
-import Loading from '@/components/admin/Loading';
+import Loading from '@/components/admin/Loading.js';
 import Link from 'next/link';
 
 export default function VendorPayoutsPage() {
@@ -12,6 +13,7 @@ export default function VendorPayoutsPage() {
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
   const [processingPayout, setProcessingPayout] = useState(null);
+  const toast = useToast();
 
   useEffect(() => {
     fetchPaymentHistory();
@@ -19,16 +21,12 @@ export default function VendorPayoutsPage() {
 
   const fetchPaymentHistory = async () => {
     try {
-      const token = getToken();
-      const res = await fetch('/api/admin/payments', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await api.admin.payments.getHistory();
       if (data.success) {
         setPayments(data.data.payments || data.data.history || []);
       }
     } catch (error) {
-      console.error("Error fetching payment history:", error);
+      // failed to fetch payment history
     } finally {
       setLoading(false);
     }
@@ -39,24 +37,11 @@ export default function VendorPayoutsPage() {
 
     setProcessingPayout(bookingId);
     try {
-      const token = getToken();
-      const res = await fetch('/api/admin/payments/payout', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ bookingId })
-      });
-      const data = await res.json();
-      if (data.success) {
-        alert("Settlement Vector Finalized.");
-        fetchPaymentHistory();
-      } else {
-        alert("Execution Error: " + (data.error || "Matrix Rejection"));
-      }
+      await api.admin.payments.payout({ bookingId });
+      toast("Settlement Vector Finalized.", "success");
+      fetchPaymentHistory();
     } catch (error) {
-      alert("Terminal Fault marking payout.");
+      toast(error.message || "Terminal Fault marking payout.", "error");
     } finally {
       setProcessingPayout(null);
     }

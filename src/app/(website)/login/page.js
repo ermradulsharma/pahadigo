@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { setToken, getToken, getRole } from '@/core/Helpers/authUtils';
+import { setToken, getToken, getRole } from '@/core/Helpers/authUtils.js';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Lock, Mail, ArrowRight, Loader2, Cpu, Zap, Ghost } from 'lucide-react';
 
@@ -149,7 +149,7 @@ export default function LoginPage() {
                                         value={email} 
                                         onChange={e => setEmail(e.target.value)} 
                                         type="email" 
-                                        placeholder="admin@pahadigo.com"
+                                        placeholder="admin@pahadigo.co.in"
                                         className="block w-full pl-11 pr-4 py-3 bg-black/40 border border-white/5 rounded-2xl text-sm text-white placeholder:text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all" 
                                     />
                                 </div>
@@ -239,7 +239,7 @@ export default function LoginPage() {
                                         value={email} 
                                         onChange={e => setEmail(e.target.value)} 
                                         type="email" 
-                                        placeholder="admin@pahadigo.com"
+                                        placeholder="admin@pahadigo.co.in"
                                         className="block w-full pl-11 pr-4 py-3 bg-black/40 border border-white/5 rounded-2xl text-sm text-white placeholder:text-slate-700 focus:outline-none focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 transition-all" 
                                     />
                                 </div>

@@ -23,6 +23,17 @@ class BookingController extends Controller {
     }
   }
 
+  // POST /admin/bookings/create
+  async createBooking(req) {
+    try {
+      const body = req.validData || req.jsonBody || await req.json();
+      const booking = await BookingService.createBookingByAdmin(body, req);
+      return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.CREATED, { booking });
+    } catch (error) {
+      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+    }
+  }
+
   // GET /admin/bookings/:id
   async show(req, { params }) {
     try {

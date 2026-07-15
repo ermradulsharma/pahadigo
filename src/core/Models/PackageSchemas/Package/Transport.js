@@ -5,8 +5,8 @@ import { PointLocation } from '../BasePackageSchema.js'
 
 export const ChardhamDetails = {
     bestSeason: { type: String, enum: Object.values(TRANSPORT.CHARDHAM_TOUR.BEST_SEASON), default: TRANSPORT.CHARDHAM_TOUR.BEST_SEASON.SUMMER },
-    transportType: { type: String, enum: Object.values(TRANSPORT.CHARDHAM_TOUR.TRANSPORT_TYPE), default: TRANSPORT.CHARDHAM_TOUR.TRANSPORT_TYPE.BUDGET },
-    hotelType: { type: String, enum: Object.values(TRANSPORT.CHARDHAM_TOUR.HOTEL_TYPE), default: TRANSPORT.CHARDHAM_TOUR.HOTEL_TYPE.BUDGET },
+    transportType: { type: String, enum: Object.values(TRANSPORT.CHARDHAM_TOUR.TRANSPORT_TYPE), default: TRANSPORT.CHARDHAM_TOUR.TRANSPORT_TYPE.NOT_INCLUDED },
+    hotelType: { type: String, enum: Object.values(TRANSPORT.CHARDHAM_TOUR.HOTEL_TYPE), default: TRANSPORT.CHARDHAM_TOUR.HOTEL_TYPE.NOT_INCLUDED },
     duration: { type: String, default: DEFAULTS.NULL },
     inclusions: { type: String, default: DEFAULTS.NULL },
     exclusions: { type: String, default: DEFAULTS.NULL },

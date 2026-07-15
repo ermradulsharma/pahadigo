@@ -1,18 +1,20 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { getToken } from '@/core/Helpers/authUtils';
+import { getToken } from '@/core/Helpers/authUtils.js';
 import { Search, Plus, Eye, Package as PackageIcon, ShieldAlert, CheckCircle2, Factory, X, User as UserIcon, Mail, Phone, Lock, Trash2 } from 'lucide-react';
-import CyberTable from '@/components/admin/CyberTable';
-import api from '@/core/Api';
-import DynamicModal from '@/components/admin/DynamicModal';
-import Loading from '@/components/admin/Loading';
+import CyberTable from '@/components/admin/CyberTable.js';
+import api from '@/core/Api/index.js';
+import DynamicModal from '@/components/admin/DynamicModal.js';
+import Loading from '@/components/admin/Loading.js';
+import { useToast } from '@/components/ui/ToastContext.js';
 
 export default function VendorsPage() {
     const [vendors, setVendors] = useState([]);
     const [loading, setLoading] = useState(true);
     const [searchQuery, setSearchQuery] = useState('');
     const [isModalOpen, setIsModalOpen] = useState(false);
+    const toast = useToast();
 
     // Add Vendor Modal State
     const [addLoading, setAddLoading] = useState(false);
@@ -38,8 +40,9 @@ export default function VendorsPage() {
             }
             const data = await getVendors();
             setVendors(data);
+            toast(`Terminated ${successCount} nodes.`, "success");
         } catch (e) {
-            alert("Error executing bulk termination.");
+            toast("Error executing bulk termination.", "error");
         } finally {
             setBulkLoading(false);
         }
@@ -61,8 +64,9 @@ export default function VendorsPage() {
             }
             const data = await getVendors();
             setVendors(data);
+            toast(`Authorized ${successCount} nodes.`, "success");
         } catch (e) {
-            alert("Error executing bulk authorization.");
+            toast("Error executing bulk authorization.", "error");
         } finally {
             setBulkLoading(false);
         }
@@ -78,11 +82,12 @@ export default function VendorsPage() {
                 setNewVendor({ businessName: '', ownerName: '', email: '', phone: '', password: '' });
                 const updated = await getVendors();
                 setVendors(updated);
+                toast("Vendor successfully added.", "success");
             } else {
-                alert("Failed: " + (data.error || data.message));
+                toast("Failed: " + (data.error || data.message), "error");
             }
         } catch (error) {
-            alert("An error occurred.");
+            toast("An error occurred.", "error");
         } finally {
             setAddLoading(false);
         }

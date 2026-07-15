@@ -16,7 +16,7 @@ export const HomestayDetails = {
 
 export const HotelDetails = {
     type: { type: String, enum: Object.values(ACCOMMODATION.HOTEL.TYPE), default: ACCOMMODATION.HOTEL.TYPE.BUDGET },
-    roomType: { type: String, enum: Object.values(ACCOMMODATION.HOTEL.ROOM_TYPE), default: ACCOMMODATION.HOTEL.ROOM_TYPE.STANDARD },
+    roomType: { type: String, enum: Object.values(ACCOMMODATION.HOTEL.ROOM_TYPE), default: ACCOMMODATION.HOTEL.ROOM_TYPE.STANDARD_ROOM },
     bedType: { type: String, enum: Object.values(ACCOMMODATION.COMMON.BED_TYPE), default: ACCOMMODATION.COMMON.BED_TYPE.DOUBLE },
     bathroomType: { type: String, enum: Object.values(PACKAGE.BATHROOM_TYPE), default: PACKAGE.BATHROOM_TYPE.PRIVATE },
     checkInTime: { type: String, default: DEFAULTS.NULL },
@@ -24,7 +24,7 @@ export const HotelDetails = {
 };
 
 export const CampingDetails = {
-    type: { type: String, enum: Object.values(ACCOMMODATION.CAMPING.TYPE), default: ACCOMMODATION.CAMPING.TYPE.TENT },
+    type: { type: String, enum: Object.values(ACCOMMODATION.CAMPING.TYPE), default: ACCOMMODATION.CAMPING.TYPE.DOME_TENT },
     bathroomType: { type: String, enum: Object.values(PACKAGE.BATHROOM_TYPE), default: PACKAGE.BATHROOM_TYPE.PRIVATE },
     isElectricity: { type: Boolean, default: DEFAULTS.FALSE },
     checkInTime: { type: String, default: DEFAULTS.NULL },

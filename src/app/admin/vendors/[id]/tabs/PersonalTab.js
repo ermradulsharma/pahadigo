@@ -1,9 +1,10 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getToken } from '@/core/Helpers/authUtils';
-import VendorTabs from '@/components/admin/VendorTabs';
-import { DetailItem, StatusBadge, Badge, SidebarCard, UnifiedStatusMenu, ProgressItem, DocumentSection, MainPanelCard, VendorHeader, Modal } from '@/components/admin/VendorUIFragments';
+import api from '@/core/Api/index.js';
+import VendorTabs from '@/components/admin/VendorTabs.js';
+import { DetailItem, StatusBadge, Badge, SidebarCard, UnifiedStatusMenu, ProgressItem, DocumentSection, MainPanelCard, VendorHeader, Modal } from '@/components/admin/VendorUIFragments.js';
+import { useToast } from '@/components/ui/ToastContext.js';
 import { AlertTriangle, ShieldCheck, UserCheck, Zap, Award, Search, Check as CheckIcon, MapPin, Link2, User, Activity, Fingerprint, Globe, Code, Share2 } from 'lucide-react';
 
 export default function PersonalTab({ vendor, setVendor, id, activeTab, setActiveTab }) {
@@ -12,6 +13,8 @@ export default function PersonalTab({ vendor, setVendor, id, activeTab, setActiv
   const [showStatusMenu, setShowStatusMenu] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [saving, setSaving] = useState(false);
+  const toast = useToast();
+
   const [formData, setFormData] = useState({
     name: '',
     phone: '',
@@ -99,23 +102,11 @@ export default function PersonalTab({ vendor, setVendor, id, activeTab, setActiv
   const performAction = async (actionData) => {
     setSaving(true);
     try {
-      const token = getToken();
-      const res = await fetch(`/api/admin/vendors/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': 'Bearer ' + token,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(actionData)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setVendor(data.data.vendor);
-      } else {
-        alert("Action failed. Please check permissions.");
-      }
+      const data = await api.admin.vendors.update(id, actionData);
+      setVendor(data.data.vendor);
+      toast("Update successful", "success");
     } catch (e) {
-      alert("Error communicating with server.");
+      toast(e.message || "Error communicating with server.", "error");
     } finally {
       setSaving(false);
     }
@@ -124,7 +115,6 @@ export default function PersonalTab({ vendor, setVendor, id, activeTab, setActiv
   const handleSave = async () => {
     setSaving(true);
     try {
-      const token = getToken();
       const payload = {
         ...formData,
         emergencyContacts: [formData.emergencyContact], // Wrap back to array for API
@@ -132,23 +122,13 @@ export default function PersonalTab({ vendor, setVendor, id, activeTab, setActiv
         medicalConditions: formData.medicalConditions.split(',').map(s => s.trim()).filter(Boolean)
       };
       delete payload.emergencyContact; // Remove temporary singular object
-      const res = await fetch(`/api/admin/vendors/${id}`, {
-        method: 'PATCH',
-        headers: {
-          'Authorization': 'Bearer ' + token,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(payload)
-      });
-      if (res.ok) {
-        const data = await res.json();
-        setVendor(data.data.vendor);
-        setIsEditing(false);
-      } else {
-        alert("Failed to update profile");
-      }
+      
+      const data = await api.admin.vendors.update(id, payload);
+      setVendor(data.data.vendor);
+      setIsEditing(false);
+      toast("Profile updated successfully", "success");
     } catch (e) {
-      alert("Error updating profile");
+      toast(e.message || "Error updating profile", "error");
     } finally {
       setSaving(false);
     }

@@ -1,11 +1,11 @@
 "use client";
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
-import api from '@/core/Api';
-import DynamicModal from '@/components/admin/DynamicModal';
-import CyberTable from '@/components/admin/CyberTable';
+import api from '@/core/Api/index.js';
+import DynamicModal from '@/components/admin/DynamicModal.js';
+import CyberTable from '@/components/admin/CyberTable.js';
 import { Search, Plus, X, Layers } from 'lucide-react';
-import Loading from '@/components/admin/Loading';
+import Loading from '@/components/admin/Loading.js';
 
 export default function CategoriesPage() {
   const [categories, setCategories] = useState([]);

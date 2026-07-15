@@ -1,5 +1,5 @@
 'use client';
-import withAuth from '@/components/withAuth';
+import withAuth from '@/components/withAuth.js';
 import Link from 'next/link';
 
 function TravellerLayout({ children }) {

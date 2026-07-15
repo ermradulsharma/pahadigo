@@ -64,3 +64,5 @@ test_output.txt
 # .postman/
 .agent/
 *.txt
+.vercel
+.env*

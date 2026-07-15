@@ -1,6 +1,6 @@
-import { HTTP_STATUS, RESPONSE_MESSAGES } from "@/core/Constants/index";
+import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { getBusinessById } from "@/core/Helpers/queryHelpers.js";
-import Controller from "../Controller";
+import Controller from '../Controller.js';
 
 class VendorController extends Controller {
 

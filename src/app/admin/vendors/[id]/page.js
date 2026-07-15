@@ -2,16 +2,17 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getToken } from '@/core/Helpers/authUtils';
+import api from '@/core/Api/index.js';
 import Image from 'next/image';
-import VendorTabs from '@/components/admin/VendorTabs';
-import { DetailItem, StatusBadge, Badge, SidebarCard, UnifiedStatusMenu, ProgressItem, DocumentSection, MainPanelCard, VendorHeader } from '@/components/admin/VendorUIFragments';
+import VendorTabs from '@/components/admin/VendorTabs.js';
+import { DetailItem, StatusBadge, Badge, SidebarCard, UnifiedStatusMenu, ProgressItem, DocumentSection, MainPanelCard, VendorHeader } from '@/components/admin/VendorUIFragments.js';
+import { useToast } from '@/components/ui/ToastContext.js';
 import { AlertTriangle, ShieldCheck, UserCheck, Zap, Award, Search, Check as CheckIcon } from 'lucide-react';
-import Loading from '@/components/admin/Loading';
-import PersonalTab from './tabs/PersonalTab';
-import BusinessTab from './tabs/BusinessTab';
-import PackageTab from './tabs/PackageTab';
-import DocumentsTab from './tabs/DocumentsTab';
+import Loading from '@/components/admin/Loading.js';
+import PersonalTab from './tabs/PersonalTab.js';
+import BusinessTab from './tabs/BusinessTab.js';
+import PackageTab from './tabs/PackageTab.js';
+import DocumentsTab from './tabs/DocumentsTab.js';
 
 export default function VendorDetailsPage({ params }) {
     const resolvedParams = use(params);
@@ -27,16 +28,13 @@ export default function VendorDetailsPage({ params }) {
     const [refreshKey, setRefreshKey] = useState(0);
     const [showStatusMenu, setShowStatusMenu] = useState(false);
     const [showProfileStatusMenu, setShowProfileStatusMenu] = useState(false);
+    const toast = useToast();
 
     useEffect(() => {
         const fetchVendor = async () => {
             try {
-                const token = getToken();
-                const profile = await fetch(`/api/admin/vendors/${id}`, { headers: { 'Authorization': 'Bearer ' + token } });
-                if (profile.ok) {
-                    const data = await profile.json();
-                    if (data.data) setVendor(data.data);
-                }
+                const data = await api.admin.vendors.getById(id);
+                if (data.data) setVendor(data.data);
             } catch (e) {
             } finally {
                 setLoading(false);
@@ -47,49 +45,22 @@ export default function VendorDetailsPage({ params }) {
 
     const verifyDocument = async (field, status, reason = '', index = null) => {
         try {
-            const token = getToken();
-            const res = await fetch('/api/admin/verify-document', {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + token,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ vendorId: id, documentField: field, status, reason: reason || '', index })
-            });
-            if (res.ok) {
-                setRefreshKey(old => old + 1);
-                setVerifying(null);
-            } else {
-                alert('Failed to update status');
-            }
+            await api.admin.compliance.verifyDocument({ vendorId: id, documentField: field, status, reason: reason || '', index });
+            setRefreshKey(old => old + 1);
+            setVerifying(null);
         } catch (e) {
-            alert('An error occurred during verification');
+            toast(e.message || 'An error occurred during verification', 'error');
         }
     };
 
     const triggerOCR = async (field, index = null) => {
         try {
             setVerifying(`${field}-${index !== null ? index : '0'}`);
-            const token = getToken();
-            const res = await fetch('/api/admin/trigger-ocr', {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + token,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ vendorId: id, documentField: field, index })
-            });
-
-            if (res.ok) {
-                const data = await res.json();
-                alert(`OCR Success!\nName: ${data.data?.identity?.name || 'N/A'}\nID: ${data.data?.identity?.idNumber || 'N/A'}\nDOB: ${data.data?.identity?.dateOfBirth || 'N/A'}`);
-                setRefreshKey(old => old + 1);
-            } else {
-                const err = await res.json();
-                alert('OCR Failed: ' + (err.error || err.message || 'Unknown error'));
-            }
+            const data = await api.admin.compliance.triggerOCR({ vendorId: id, documentField: field, index });
+            toast(`OCR Success!\nName: ${data.data?.identity?.name || 'N/A'}\nID: ${data.data?.identity?.idNumber || 'N/A'}\nDOB: ${data.data?.identity?.dateOfBirth || 'N/A'}`, 'success');
+            setRefreshKey(old => old + 1);
         } catch (e) {
-            alert('An error occurred during OCR');
+            toast('OCR Failed: ' + (e.message || 'Unknown error'), 'error');
         } finally {
             setVerifying(null);
         }
@@ -106,33 +77,21 @@ export default function VendorDetailsPage({ params }) {
         }
 
         try {
-            const token = getToken();
-            const res = await fetch('/api/admin/approve-vendor', {
-                method: 'POST',
-                headers: {
-                    'Authorization': 'Bearer ' + token,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    vendorId: id,
-                    status,
-                    rejectionReason: rejectReason
-                })
+            await api.admin.vendors.globalApprove({
+                vendorId: id,
+                status,
+                rejectionReason: rejectReason
             });
-
-            if (res.ok) {
-                setRefreshKey(old => old + 1);
-            } else {
-                alert('Failed to update profile status');
-            }
+            setRefreshKey(old => old + 1);
+            toast("Profile status updated successfully", "success");
         } catch (e) {
+            toast(e.message || 'Failed to update profile status', 'error');
         }
     };
 
     const toggleVerification = async (field, forceValue = null) => {
         if (!vendor) return;
         try {
-            const token = getToken();
             // Safe access: check root first, then vendorProfile
             let currentValue;
             if (field === 'profileStatus') {
@@ -143,22 +102,11 @@ export default function VendorDetailsPage({ params }) {
 
             const value = forceValue !== null ? forceValue : !currentValue;
 
-            const res = await fetch(`/api/admin/vendors/${id}/update`, {
-                method: 'PATCH',
-                headers: {
-                    'Authorization': 'Bearer ' + token,
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({ [field]: value })
-            });
-
-            if (res.ok) {
-                setRefreshKey(old => old + 1);
-            } else {
-                alert('Failed to update field status');
-            }
+            await api.admin.vendors.update(id, { [field]: value });
+            setRefreshKey(old => old + 1);
+            toast("Update successful", "success");
         } catch (e) {
-            alert('An error occurred during update');
+            toast(e.message || 'An error occurred during update', 'error');
         }
     };
 

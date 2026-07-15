@@ -25,6 +25,15 @@ jest.unstable_mockModule('@/helpers/jwt.js', () => ({
     generateToken: jest.fn()
 }));
 
+let mockConfig = {
+    facebook: { app_id: '12345' },
+    apple: { client_id: 'com.test.app' }
+};
+
+jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
+    getAppConfig: jest.fn().mockImplementation(() => Promise.resolve(mockConfig))
+}));
+
 const { default: AuthService } = await import('@/services/Auth/User/AuthService.js');
 const { default: User } = await import('@/models/User.js');
 const { default: Vendor } = await import('@/models/Vendor.js');
@@ -97,7 +106,7 @@ describe('Industry Standard: User AuthService Logic', () => {
 
     describe('[authenticateWithFacebook]', () => {
         beforeEach(() => {
-            process.env.FACEBOOK_APP_ID = '12345';
+            mockConfig.facebook.app_id = '12345';
         });
 
         it('[Success] should authenticate Facebook user', async () => {
@@ -128,7 +137,7 @@ describe('Industry Standard: User AuthService Logic', () => {
         });
 
         it('[Failure] should throw error when configuration is missing', async () => {
-            delete process.env.FACEBOOK_APP_ID;
+            mockConfig.facebook.app_id = null;
             await expect(AuthService.authenticateWithFacebook('some-token'))
                 .rejects.toThrow();
         });
@@ -136,7 +145,7 @@ describe('Industry Standard: User AuthService Logic', () => {
 
     describe('[authenticateWithApple]', () => {
         beforeEach(() => {
-            process.env.APPLE_CLIENT_ID = 'com.test.app';
+            mockConfig.apple.client_id = 'com.test.app';
         });
 
         it('[Success] should authenticate Apple user', async () => {
@@ -187,7 +196,7 @@ describe('Industry Standard: User AuthService Logic', () => {
         });
 
         it('[Failure] should throw error when configuration is missing', async () => {
-            delete process.env.APPLE_CLIENT_ID;
+            mockConfig.apple.client_id = null;
             await expect(AuthService.authenticateWithApple('mock-id-token'))
                 .rejects.toThrow();
         });

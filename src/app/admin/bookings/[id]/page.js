@@ -1,13 +1,14 @@
 'use client';
 import { useState, useEffect, use } from 'react';
-import { getToken } from '@/core/Helpers/authUtils';
+import api from '@/core/Api/index.js';
+import { useToast } from '@/components/ui/ToastContext.js';
 import {
   ArrowLeft, Calendar, User, ShieldCheck, CreditCard,
   MapPin, Clock, FileText, CheckCircle2, AlertCircle,
   ExternalLink, Undo2, RefreshCcw, Mail, Phone,
   ChevronRight, BadgeCheck, Hash
 } from 'lucide-react';
-import Loading from '@/components/admin/Loading';
+import Loading from '@/components/admin/Loading.js';
 import Link from 'next/link';
 
 export default function BookingDetailPage({ params }) {
@@ -16,6 +17,7 @@ export default function BookingDetailPage({ params }) {
   const [loading, setLoading] = useState(true);
   const [processingRefund, setProcessingRefund] = useState(false);
   const [sendingInvoice, setSendingInvoice] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     fetchBooking();
@@ -26,20 +28,15 @@ export default function BookingDetailPage({ params }) {
 
     setSendingInvoice(true);
     try {
-      const token = getToken();
-      const res = await fetch(`/api/admin/bookings/${id}/invoice`, {
-        method: 'POST',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await api.admin.bookings.sendInvoice(id);
       if (data.success) {
-        alert("Transmission Successful: Invoice Dispatched.");
+        toast("Transmission Successful: Invoice Dispatched.", "success");
         fetchBooking();
       } else {
-        alert("Transmission Error: " + (data.error || "Unknown Failure"));
+        toast("Transmission Error: Unknown Failure", "error");
       }
     } catch (error) {
-      alert("Hardware/Network Failure during dispatch.");
+      toast(error.message || "Hardware/Network Failure during dispatch.", "error");
     } finally {
       setSendingInvoice(false);
     }
@@ -48,16 +45,12 @@ export default function BookingDetailPage({ params }) {
   const fetchBooking = async () => {
     setLoading(true);
     try {
-      const token = getToken();
-      const res = await fetch(`/api/admin/bookings/${id}`, {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await api.admin.bookings.getById(id);
       if (data.success) {
         setBooking(data.data.booking);
       }
     } catch (error) {
-      console.error("Error fetching booking detail:", error);
+      // fetch failed silently
     } finally {
       setLoading(false);
     }
@@ -69,24 +62,15 @@ export default function BookingDetailPage({ params }) {
 
     setProcessingRefund(true);
     try {
-      const token = getToken();
-      const res = await fetch('/api/admin/refund', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${token}`
-        },
-        body: JSON.stringify({ bookingId: id, amount, reason })
-      });
-      const data = await res.json();
+      const data = await api.admin.payments.refund({ bookingId: id, amount, reason });
       if (data.success) {
-        alert("Refund Sequence Executed Successfully.");
+        toast("Refund Sequence Executed Successfully.", "success");
         fetchBooking();
       } else {
-        alert("Execution Error: " + (data.error || "Matrix Failure"));
+        toast("Execution Error: Matrix Failure", "error");
       }
     } catch (err) {
-      alert("Terminal Error processing refund.");
+      toast(err.message || "Terminal Error processing refund.", "error");
     } finally {
       setProcessingRefund(false);
     }

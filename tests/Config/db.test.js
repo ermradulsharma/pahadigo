@@ -8,7 +8,7 @@ jest.unstable_mockModule('mongoose', () => ({
 }));
 
 const { default: mongoose } = await import('mongoose');
-const { default: connectDB } = await import('@/config/db.js');
+const { default: connectDB } = await import('@/core/Config/db.js');
 
 describe('Industry Standard: Database Configuration Logic', () => {
     beforeEach(() => {
@@ -35,9 +35,9 @@ describe('Industry Standard: Database Configuration Logic', () => {
         
         // Reset cache for this test
         global.mongoose = null;
-        const { default: freshConnectDB } = await import(`@/config/db.js?cache=${Date.now()}`);
-
-        await expect(freshConnectDB()).rejects.toThrow("MONGODB_URI is not defined");
+        const { default: freshConnectDB } = await import(`@/core/Config/db.js?cache=${Date.now()}`);
+        const RESPONSE_MESSAGES = (await import('@/core/Constants/index.js')).RESPONSE_MESSAGES;
+        await expect(freshConnectDB()).rejects.toThrow(RESPONSE_MESSAGES.ERROR.GENERIC);
 
         process.env.MONGODB_URI = originalUri;
         process.env.NODE_ENV = originalEnv;

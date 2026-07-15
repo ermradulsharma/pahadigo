@@ -2,9 +2,9 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 
-import CyberTable from '@/components/admin/CyberTable';
+import CyberTable from '@/components/admin/CyberTable.js';
 import { Search, Globe2, MapPin } from 'lucide-react';
-import Loading from '@/components/admin/Loading';
+import Loading from '@/components/admin/Loading.js';
 
 export default function CountriesPage() {
     const [countries, setCountries] = useState([]);

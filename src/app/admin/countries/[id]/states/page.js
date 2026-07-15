@@ -1,11 +1,11 @@
 "use client";
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { getToken } from '@/core/Helpers/authUtils';
+import { getToken } from '@/core/Helpers/authUtils.js';
 
-import CyberTable from '@/components/admin/CyberTable';
+import CyberTable from '@/components/admin/CyberTable.js';
 import { Search, MapPin, ArrowLeft, Plus, Trash2, Globe } from 'lucide-react';
-import Loading from '@/components/admin/Loading';
+import Loading from '@/components/admin/Loading.js';
 
 export default function StatesPage({ params: paramsPromise }) {
   const params = use(paramsPromise);
@@ -37,7 +37,7 @@ export default function StatesPage({ params: paramsPromise }) {
         setCountry(countryData.data.country);
       }
     } catch (error) {
-      console.error("Error fetching country", error);
+      // failed to fetch country
     }
   };
 
@@ -53,7 +53,7 @@ export default function StatesPage({ params: paramsPromise }) {
         }
       }
     } catch (error) {
-      console.error("Error fetching states", error);
+      // failed to fetch states
     } finally {
       setLoading(false);
     }

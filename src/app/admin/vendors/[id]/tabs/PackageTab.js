@@ -1,11 +1,12 @@
 'use client';
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { VendorHeader, StatusBadge } from '@/components/admin/VendorUIFragments';
-import PackageCard from '@/components/admin/PackageCard';
-import { getToken } from '@/core/Helpers/authUtils';
+import { VendorHeader, StatusBadge } from '@/components/admin/VendorUIFragments.js';
+import PackageCard from '@/components/admin/PackageCard.js';
+import api from '@/core/Api/index.js';
 import { Layers, Mountain, Home, Car, Tent, Map, Zap, Bike, Building, Waves, Milestone, Luggage, FileText, Search, X, Check, X as XIcon, Clock, AlertCircle } from 'lucide-react';
 import Image from 'next/image';
+import { useToast } from '@/components/ui/ToastContext.js';
 
 export const VERIFICATION_STATUS = {
     PENDING: 'pending',
@@ -18,6 +19,7 @@ export default function PackageTab({ vendor, packages, setPackages, id, activeTa
     const [selectedCategory, setSelectedCategory] = useState(null);
     const [viewingDocs, setViewingDocs] = useState(null);
     const [previewImage, setPreviewImage] = useState(null);
+    const toast = useToast();
 
     const vendorProfile = vendor?.vendorProfile || vendor;
     const vendorCategories = vendorProfile?.category || [];
@@ -74,7 +76,7 @@ export default function PackageTab({ vendor, packages, setPackages, id, activeTa
         if (newStatus === VERIFICATION_STATUS.REJECTED) {
             reason = window.prompt("Please enter the reason for rejection:");
             if (!reason || reason.trim() === "") {
-                alert("Rejection reason is mandatory!");
+                toast("Rejection reason is mandatory!", "error");
                 return;
             }
         }
@@ -88,51 +90,33 @@ export default function PackageTab({ vendor, packages, setPackages, id, activeTa
         }
 
         try {
-            const token = getToken();
-            const response = await fetch('/api/admin/verify-category-document', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Authorization': 'Bearer ' + token
-                },
-                body: JSON.stringify({
-                    documentId: doc._id,
-                    userId: doc.user_id,
-                    vendorId: doc.vendor_id,
-                    status: newStatus,
-                    reason: reason
-                })
+            await api.admin.compliance.verifyCategoryDoc({
+                documentId: doc._id,
+                userId: doc.user_id,
+                vendorId: doc.vendor_id,
+                status: newStatus,
+                reason: reason
             });
-
-            if (!response.ok) {
-                const errData = await response.json();
-                handleDocsClick({ slug: viewingDocs.categorySlug, name: viewingDocs.categoryName });
-            }
         } catch (error) {
-            console.error("Network Error:", error);
+            toast("Network Error: Failed to update document status.", "error");
+            handleDocsClick({ slug: viewingDocs.categorySlug, name: viewingDocs.categoryName });
         }
     };
 
     const handlePackageToggleStatus = async (pkg, newActive) => {
         try {
-            const token = getToken();
             const catBucket = getCategoryBucket(selectedCategory);
-            const response = await fetch(`/api/admin/packages/${pkg._id}/status`, {
-                method: 'PATCH',
-                headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-                body: JSON.stringify({
-                    vendorId: vendorProfile._id,
-                    userId: vendorProfile.user,
-                    serviceId: pkg._id,
-                    status: newActive,
-                    serviceType: catBucket
-                })
+            await api.admin.packages.updateStatus(pkg._id, {
+                vendorId: vendorProfile._id,
+                userId: vendorProfile.user,
+                serviceId: pkg._id,
+                status: newActive,
+                serviceType: catBucket
             });
-
-            if (!response.ok) alert("Failed to toggle status");
-            else router.refresh();
+            router.refresh();
+            toast("Package status updated.", "success");
         } catch (err) {
-            console.error(err);
+            toast("Failed to toggle status: " + (err.message || ""), "error");
         }
     };
 

@@ -4,9 +4,10 @@ import React, { useState, useEffect, use } from 'react';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
 import Link from 'next/link';
-import { getToken } from '@/core/Helpers/authUtils';
+import api from '@/core/Api/index.js';
+import { useToast } from '@/components/ui/ToastContext.js';
 import { ArrowLeft, Save, Server, Code, Settings, Activity, AlertTriangle, CheckCircle2 } from 'lucide-react';
-import Loading from '@/components/admin/Loading';
+import Loading from '@/components/admin/Loading.js';
 
 export default function AdminPackageItemPage({ params }) {
   const resolvedParams = use(params);
@@ -18,6 +19,7 @@ export default function AdminPackageItemPage({ params }) {
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState(null);
   const [rawJson, setRawJson] = useState("");
+  const toast = useToast();
 
   const [formData, setFormData] = useState({
     title: '',
@@ -27,31 +29,25 @@ export default function AdminPackageItemPage({ params }) {
   useEffect(() => {
     const fetchItem = async () => {
       try {
-        const token = getToken();
-        const res = await fetch(`/api/admin/packages/item/${id}`, {
-          headers: { 'Authorization': `Bearer ${token}` }
-        });
-        if (res.ok) {
-          const data = await res.json();
-          if (data.data?.item) {
-            setItem(data.data.item);
+        const data = await api.admin.packages.getItem(id);
+        if (data.success && data.data?.item) {
+          setItem(data.data.item);
 
-            // Standardize generic fields for simple editing
-            const fetched = data.data.item;
-            const extractedTitle = fetched.title || fetched.tourDetails?.tourName || fetched.details?.jumpName || fetched.vehicleDetails?.model || '';
+          // Standardize generic fields for simple editing
+          const fetched = data.data.item;
+          const extractedTitle = fetched.title || fetched.tourDetails?.tourName || fetched.details?.jumpName || fetched.vehicleDetails?.model || '';
 
-            setFormData({
-              title: extractedTitle,
-              isActive: fetched.isActive || false,
-            });
+          setFormData({
+            title: extractedTitle,
+            isActive: fetched.isActive || false,
+          });
 
-            // Create a clean JSON for advanced mode
-            const cleanObj = { ...fetched };
-            delete cleanObj.serviceType;
-            delete cleanObj.vendorId;
-            delete cleanObj.vendor;
-            setRawJson(JSON.stringify(cleanObj, null, 2));
-          }
+          // Create a clean JSON for advanced mode
+          const cleanObj = { ...fetched };
+          delete cleanObj.serviceType;
+          delete cleanObj.vendorId;
+          delete cleanObj.vendor;
+          setRawJson(JSON.stringify(cleanObj, null, 2));
         } else {
           setError('Failed to locate item in database.');
         }
@@ -83,21 +79,14 @@ export default function AdminPackageItemPage({ params }) {
 
       payload.isActive = formData.isActive;
 
-      const token = getToken();
-      const res = await fetch(`/api/admin/packages/item/${id}`, {
-        method: 'PATCH',
-        headers: { 'Authorization': `Bearer ${token}`, 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      });
+      const data = await api.admin.packages.updateItem(id, payload);
 
-      if (res.ok) {
-        alert('Item core updated successfully.');
+      if (data.success) {
+        toast('Item core updated successfully.', 'success');
         router.refresh();
-      } else {
-        alert('Failed to update item core.');
       }
     } catch (e) {
-      alert('Invalid JSON structure or network error.');
+      toast('Invalid JSON structure or network error.', 'error');
     } finally {
       setSaving(false);
     }

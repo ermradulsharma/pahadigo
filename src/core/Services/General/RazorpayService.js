@@ -1,5 +1,6 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
+import { withRetry } from '@/core/Helpers/resilience.js';
 
 const FALLBACK_RAZORPAY_KEY_ID = 'test_key_id';
 const FALLBACK_RAZORPAY_KEY_SECRET = 'test_key_secret';
@@ -61,7 +62,13 @@ class RazorpayService {
         };
 
         try {
-            return await client.orders.create(options);
+            return await withRetry(async () => {
+                return await client.orders.create(options);
+            }, { 
+                maxRetries: 3, 
+                baseDelayMs: 500,
+                shouldRetry: (err) => !err?.error?.code?.includes('BAD_REQUEST') 
+            });
         } catch (error) {
             throw new Error(error?.error?.description || error?.message || 'Unable to create Razorpay order.');
         }
@@ -70,7 +77,7 @@ class RazorpayService {
     verifySignature(orderId, paymentId, signature, dynamicConfig = null) {
         if (!orderId || !paymentId || !signature) return false;
 
-        if (['development', 'test'].includes(process.env.NODE_ENV) && signature === 'DUMMY_SIGNATURE') {
+        if (allowFallbackCredentials() && signature === 'DUMMY_SIGNATURE') {
             return true;
         }
 
@@ -97,7 +104,13 @@ class RazorpayService {
         };
 
         try {
-            return await client.payments.refund(paymentId, options);
+            return await withRetry(async () => {
+                return await client.payments.refund(paymentId, options);
+            }, {
+                maxRetries: 3,
+                baseDelayMs: 500,
+                shouldRetry: (err) => !err?.error?.code?.includes('BAD_REQUEST')
+            });
         } catch (error) {
             throw new Error(error?.error?.description || error?.message || 'Unable to create Razorpay refund.');
         }

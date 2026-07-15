@@ -38,7 +38,7 @@
     }
 
     .custom-scrollbar {
-        scrollbar-width: thin;
+        scrollbar-width: none !important;
         scrollbar-color: rgba(255, 255, 255, 0.1) transparent;
     }
 

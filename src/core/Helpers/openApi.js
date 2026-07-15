@@ -39,22 +39,30 @@ const buildOperationId = (method, path) => {
 const buildRequestBody = (route) => {
     if (!route.schema || !MUTATING_METHODS.has(route.method)) return undefined;
 
+    let jsonSchema = {};
+    try {
+        if (typeof route.schema.toJSONSchema === 'function') {
+            jsonSchema = route.schema.toJSONSchema();
+        } else {
+            jsonSchema = { type: 'object', additionalProperties: true };
+        }
+    } catch (error) {
+        console.error("[OPENAPI ZOD ERROR]", error);
+        jsonSchema = {
+            type: 'object',
+            additionalProperties: true,
+            description: 'Validated by the route Zod schema.'
+        };
+    }
+
     return {
         required: !['DELETE'].includes(route.method),
         content: {
             'application/json': {
-                schema: {
-                    type: 'object',
-                    additionalProperties: true,
-                    description: 'Validated by the route Zod schema.'
-                }
+                schema: jsonSchema
             },
             'multipart/form-data': {
-                schema: {
-                    type: 'object',
-                    additionalProperties: true,
-                    description: 'Validated by the route Zod schema after form-data parsing.'
-                }
+                schema: jsonSchema
             }
         }
     };

@@ -1,13 +1,15 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getToken } from '@/core/Helpers/authUtils';
-import Loading from '@/components/admin/Loading';
+import api from '@/core/Api/index.js';
+import { useToast } from '@/components/ui/ToastContext.js';
+import Loading from '@/components/admin/Loading.js';
 
 export default function ReviewModerationPage() {
   const [reviews, setReviews] = useState([]);
   const [loading, setLoading] = useState(true);
   const [filterRating, setFilterRating] = useState('all');
+  const toast = useToast();
 
   useEffect(() => {
     fetchReviews();
@@ -15,16 +17,12 @@ export default function ReviewModerationPage() {
 
   const fetchReviews = async () => {
     try {
-      const token = getToken();
-      const res = await fetch('/api/admin/reviews', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await api.admin.reviews.getPending();
       if (data.success) {
         setReviews(data.data.reviews || []);
       }
     } catch (error) {
-      console.error("Failed to fetch reviews:", error);
+      // failed to fetch reviews
     } finally {
       setLoading(false);
     }
@@ -32,41 +30,27 @@ export default function ReviewModerationPage() {
 
   const toggleVisibility = async (review) => {
     try {
-      const token = getToken();
-      const res = await fetch('/api/admin/reviews', {
-        method: 'PATCH',
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          reviewId: review._id,
-          isVisible: !review.isVisible
-        })
+      const data = await api.admin.reviews.updateStatus(review._id, {
+        reviewId: review._id,
+        isVisible: !review.isVisible
       });
-      const data = await res.json();
       if (data.success) {
         setReviews(prev => prev.map(r => r._id === review._id ? { ...r, isVisible: !r.isVisible } : r));
       }
     } catch (error) {
-      alert("Failed to update review status");
+      toast("Failed to update review status", "error");
     }
   };
 
   const deleteReview = async (id) => {
     if (!confirm("Are you sure you want to delete this review permanently?")) return;
     try {
-      const token = getToken();
-      const res = await fetch(`/api/admin/reviews/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await api.admin.reviews.reject(id);
       if (data.success) {
         setReviews(prev => prev.filter(r => r._id !== id));
       }
     } catch (error) {
-      alert("Failed to delete review");
+      toast("Failed to delete review", "error");
     }
   };
 

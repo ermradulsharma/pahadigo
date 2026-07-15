@@ -2,6 +2,8 @@ import User from '@/core/Models/User.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import AuditService from '@/core/Services/Admin/AuditService.js';
 import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
+import Booking from '@/core/Models/Booking.js';
+import Wishlist from '@/core/Models/Wishlist.js';
 
 /**
  * TravellerService (Admin Role)
@@ -10,6 +12,16 @@ import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
 class TravellerService {
   async getAllTravellers() {
     return await User.find({ role: 'traveller' }).sort({ createdAt: -1 }).select('-password').lean();
+  }
+
+  async getTravellerById(id) {
+    const user = await User.findOne({ _id: id, role: 'traveller' }).select('-password').lean();
+    if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+    
+    const bookings = await Booking.find({ user: id }).sort({ createdAt: -1 }).lean();
+    const wishlists = await Wishlist.find({ user: id }).sort({ createdAt: -1 }).lean();
+
+    return { ...user, bookings, wishlists };
   }
 
   async createTraveller(data, req = null) {

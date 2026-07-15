@@ -51,7 +51,7 @@ export const CommonItinerary = [{
 export const MealsAndAmenities = {
     amenities: { type: String, default: DEFAULTS.NULL },
     mealsIncluded: { type: Boolean, default: DEFAULTS.TRUE },
-    mealType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.MEAL_TYPES), default: PACKAGE.ACCOMMODATION.MEAL_TYPES.NO_MEALS }
+    mealType: { type: String, enum: Object.values(PACKAGE.MEALTYPE), default: PACKAGE.MEALTYPE.NoMealsIncluded }
 };
 
 export const BasePackageFields = {
@@ -102,9 +102,9 @@ export const AccommodationPricing = {
 };
 
 export const AccommodationRoomDetails = {
-    roomType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.ROOM_TYPES), default: PACKAGE.ACCOMMODATION.ROOM_TYPES.STANDARD },
-    bedType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.BED_TYPES), default: PACKAGE.ACCOMMODATION.BED_TYPES.DOUBLE },
-    bathroomType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.BATHROOM_TYPES), default: PACKAGE.ACCOMMODATION.BATHROOM_TYPES.PRIVATE },
+    roomType: { type: String, enum: [...Object.values(PACKAGE.ACCOMMODATION.HOTEL.ROOM_TYPE), ...Object.values(PACKAGE.ACCOMMODATION.HOMESTAY.ROOM_TYPE)], default: PACKAGE.ACCOMMODATION.HOTEL.ROOM_TYPE.STANDARD_ROOM },
+    bedType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.COMMON.BED_TYPE), default: PACKAGE.ACCOMMODATION.COMMON.BED_TYPE.DOUBLE },
+    bathroomType: { type: String, enum: Object.values(PACKAGE.BATHROOM_TYPE), default: PACKAGE.BATHROOM_TYPE.PRIVATE },
     checkInTime: { type: String, default: DEFAULTS.NULL },
     checkOutTime: { type: String, default: DEFAULTS.NULL },
 };

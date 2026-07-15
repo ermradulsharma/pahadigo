@@ -15,7 +15,7 @@ import { RESPONSE_MESSAGES, BOOKING_STATUS, PAYMENT_STATUS, REFUND_STATUS } from
 import BusinessService from '@/core/Services/Vendor/BusinessService.js';
 
 const generateNumericOTP = () => randomInt(100000, 1000000).toString();
-const generateBookingCode = () => `PH-${randomBytes(5).toString('hex').toUpperCase()}`;
+const generateBookingCode = () => `PH-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${randomBytes(4).toString('hex').toUpperCase()}`;
 
 /**
  * BookingService (Traveller Role)
@@ -36,6 +36,7 @@ class BookingService {
             }
 
             const packageItem = await PackageService.getAvailablePackageItem(itemId);
+
             if (!packageItem) throw new Error(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
 
             const travellerProfile = await User.findById(userId);
@@ -94,7 +95,7 @@ class BookingService {
                 throw new Error(RESPONSE_MESSAGES.BOOKING.SLOTS_NOT_AVAILABLE);
             }
 
-            const baseAmount = pricingRules.basePrice;
+            const baseAmount = pricingRules.basePrice || baseItemRate || 0;
             let d = pricingRules.discountType;
             let discountAmount = 0;
             if (d === "percentage") {
@@ -124,64 +125,87 @@ class BookingService {
 
             const grandTotal = calculatedSubTotal;
 
-            const bookingCode = generateBookingCode();
-            const expirationTime = new Date(Date.now() + 15 * 60 * 1000);
+            let itemUrl = '';
+            if (Array.isArray(packageItem.photos) && packageItem.photos.length > 0) {
+                itemUrl = packageItem.photos[0].url || packageItem.photos[0] || '';
+            }
+            if (typeof itemUrl !== 'string') itemUrl = '';
 
-            const [newBooking] = await Booking.create([{
-                bookingCode,
-                user: userId,
-                vendor: vendor.id,
-                package: catalogId,
-                expiresAt: expirationTime,
-                item: {
-                    itemId: itemId,
-                    itemType: category,
-                    title: packageItem.title || packageItem.name,
-                    url: packageItem.photos[0].url || ''
-                },
-                traveller: {
-                    name: travellerProfile.name,
-                    phone: travellerProfile.phone,
-                    email: travellerProfile.email
-                },
-                startDate: checkInDate,
-                endDate: checkOutDate,
-                occupancy: {
-                    adults: adultsCount,
-                    children: childrenCount,
-                    includeMe: isSelfIncluded,
-                    guestDetails,
-                    units: requiredUnits
-                },
-                pricing: {
-                    basePrice: baseAmount,
-                    subTotal: calculatedSubTotal,
-                    serviceFee: appliedServiceFee,
-                    discount: appliedDiscount,
-                    coupon: appliedCouponCode,
-                    couponAmount: Math.round(appliedCouponAmount),
-                    taxRate: appliedTaxRate,
-                    tax: calculatedTax,
-                    total: grandTotal
-                },
-                payout: {
-                    bankDetails: {
-                        accountHolderName: business.bankDetails.accountHolderName,
-                        accountNumber: business.bankDetails.accountNumber,
-                        ifscCode: business.bankDetails.ifscCode,
-                        bankName: business.bankDetails.bankName
-                    },
-                    businessName: business.businessName,
-                    ownerName: business.ownerName
-                },
-                status: BOOKING_STATUS.PENDING,
-                paymentStatus: PAYMENT_STATUS.UNPAID,
-                timeline: [{
-                    status: 'Booking Initiated',
-                    remarks: `Booking record ${bookingCode} created for ${requiredUnits} units. Awaiting payment.`,
-                    actor: userId
-                }]
-            }], { session });
+            let newBooking;
+            let attempts = 0;
+            const maxAttempts = 3;
+
+            while (attempts < maxAttempts) {
+                try {
+                    const bookingCode = generateBookingCode();
+                    const [createdBooking] = await Booking.create([{
+                        bookingCode,
+                        user: userId,
+                        vendor: business._id, // reference to Vendor ID
+                        package: catalogId,
+                        item: {
+                            itemId: packageItem._id,
+                            itemType: category,
+                            title: packageItem.title || packageItem.name || 'Package Item',
+                            url: itemUrl
+                        },
+                        traveller: {
+                            name: travellerProfile.name,
+                            phone: travellerProfile.phone,
+                            email: travellerProfile.email
+                        },
+                        startDate: checkInDate,
+                        endDate: checkOutDate,
+                        occupancy: {
+                            adults: adultsCount,
+                            children: childrenCount,
+                            includeMe: isSelfIncluded,
+                            guestDetails,
+                            units: requiredUnits
+                        },
+                        pricing: {
+                            basePrice: baseAmount,
+                            subTotal: calculatedSubTotal,
+                            serviceFee: appliedServiceFee,
+                            discount: appliedDiscount,
+                            coupon: appliedCouponCode,
+                            couponAmount: Math.round(appliedCouponAmount),
+                            taxRate: appliedTaxRate,
+                            tax: calculatedTax,
+                            total: grandTotal
+                        },
+                        payout: {
+                            bankDetails: {
+                                accountHolderName: business.bankDetails.accountHolderName,
+                                accountNumber: business.bankDetails.accountNumber,
+                                ifscCode: business.bankDetails.ifscCode,
+                                bankName: business.bankDetails.bankName
+                            },
+                            businessName: business.businessName,
+                            ownerName: business.ownerName
+                        },
+                        status: BOOKING_STATUS.PENDING,
+                        paymentStatus: PAYMENT_STATUS.UNPAID,
+                        timeline: [{
+                            status: 'Booking Initiated',
+                            remarks: `Booking record ${bookingCode} created for ${requiredUnits} units. Awaiting payment.`,
+                            actor: userId
+                        }]
+                    }], { session });
+
+                    newBooking = createdBooking;
+                    break;
+                } catch (err) {
+                    if (err.code === 11000 && err.message.includes('bookingCode')) {
+                        attempts++;
+                        if (attempts >= maxAttempts) {
+                            throw new Error('Unable to generate a unique booking code. Please try again.');
+                        }
+                    } else {
+                        throw err;
+                    }
+                }
+            }
 
             // Verification check within the same transaction to prevent race conditions
             const finalCheck = await InventoryService.checkAvailabilityRange(

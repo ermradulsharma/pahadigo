@@ -12,7 +12,7 @@ export default function PageHero({
         <section className={`relative ${heightClass} flex items-center justify-center overflow-hidden`}>
             {/* Background Image with Overlay */}
             <div className="absolute inset-0 z-0">
-                <Image src={image} alt={typeof title === 'string' ? title : "Hero Background"} fill className="object-cover" priority />
+                <Image src={image} alt={typeof title === 'string' ? title : "Hero Background"} fill sizes="100vw" className="object-cover" priority />
                 <div className="absolute inset-0 bg-gradient-to-b from-black/60 via-black/40 to-gray-50"></div>
             </div>
 

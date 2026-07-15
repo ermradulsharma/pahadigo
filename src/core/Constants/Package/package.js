@@ -1,4 +1,19 @@
 export const PACKAGE = {
+    THEMES: {
+        ADVENTURE: 'adventure',
+        FAMILY: 'family',
+        HONEYMOON: 'honeymoon',
+        NATURE: 'nature',
+        PILGRIMAGE: 'pilgrimage',
+        RELIGIOUS: 'religious',
+        SOLO: 'solo',
+        SPORTS: 'sports',
+        STAYCATION: 'staycation',
+        WEEKEND_GETAWAY: 'weekend_getaway',
+        WILDLIFE: 'wildlife',
+        WORKATION: 'workation',
+        YOGA_WELLNESS: 'yoga_wellness'
+    },
     CATEGORY: {
         BIKE_SCOOTER_RENTAL: 'Bike Scooter Rental',
         BUNGEE_JUMPING: 'Bungee Jumping',

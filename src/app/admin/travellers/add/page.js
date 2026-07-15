@@ -2,10 +2,10 @@
 
 import { useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getToken } from '@/core/Helpers/authUtils';
+import api from '@/core/Api/index.js';
 import Link from 'next/link';
 import { User, Mail, Phone, Lock, ArrowLeft, PlusCircle, ShieldCheck } from 'lucide-react';
-import Loading from '@/components/admin/Loading';
+import Loading from '@/components/admin/Loading.js';
 import { motion } from 'framer-motion';
 
 export default function AddTravellerPage() {
@@ -32,25 +32,10 @@ export default function AddTravellerPage() {
     setError('');
 
     try {
-      const token = getToken();
-      const res = await fetch('/api/admin/travellers/create', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': 'Bearer ' + token
-        },
-        body: JSON.stringify(formData)
-      });
-
-      const data = await res.json();
-
-      if (res.ok && data.success) {
-        router.push('/admin/travellers');
-      } else {
-        setError(data.message || 'Failed to create traveller');
-      }
+      await api.admin.travellers.create(formData);
+      router.push('/admin/travellers');
     } catch (err) {
-      setError('An error occurred while creating the traveller');
+      setError(err.message || 'An error occurred while creating the traveller');
     } finally {
       setLoading(false);
     }

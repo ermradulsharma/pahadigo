@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import api from '@/core/Api';
+import api from '@/core/Api/index.js';
 import { 
     Activity, Cpu, Database, Server, HardDrive, 
     Zap, RefreshCcw, ShieldCheck, Clock, Users 
@@ -11,7 +11,7 @@ import {
     Tooltip, ResponsiveContainer, LineChart, Line
 } from 'recharts';
 import { motion } from 'framer-motion';
-import Loading from '@/components/admin/Loading';
+import Loading from '@/components/admin/Loading.js';
 
 export default function SystemHealthPage() {
     const [health, setHealth] = useState(null);
@@ -39,7 +39,7 @@ export default function SystemHealthPage() {
                 });
             }
         } catch (e) {
-            console.error("Health fetch error:", e);
+            // health fetch failed
         } finally {
             setLoading(false);
             if (isManual) setTimeout(() => setRefreshing(false), 500);

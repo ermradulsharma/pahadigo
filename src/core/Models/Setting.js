@@ -24,9 +24,18 @@ const SettingSchema = new mongoose.Schema({
   razorpay_key_secret: { type: String, default: DEFAULTS.NULL },
   razorpay_webhook_secret: { type: String, default: DEFAULTS.NULL },
 
+  // Notifications
+  push_notification_server_key: { type: String, default: DEFAULTS.NULL },
+
   // Database Configuration
   mongodb_uri: { type: String, default: DEFAULTS.NULL },
   api_url: { type: String, default: DEFAULTS.NULL },
+
+  // Redis Configuration
+  upstash_redis_rest_url: { type: String, default: DEFAULTS.NULL },
+  upstash_redis_rest_token: { type: String, default: DEFAULTS.NULL },
+  upstash_redis_url: { type: String, default: DEFAULTS.NULL },
+  pahadigo_redis_url: { type: String, default: DEFAULTS.NULL },
 
   // JWT Configuration
   jwt_secret: { type: String, default: DEFAULTS.NULL },
@@ -63,6 +72,7 @@ const SettingSchema = new mongoose.Schema({
   social_pass: { type: String, default: DEFAULTS.NULL },
   other_account_pass: { type: String, default: DEFAULTS.NULL },
   master_otp: { type: String, default: DEFAULTS.NULL },
+  cron_secret: { type: String, default: DEFAULTS.NULL },
 
   // Developer Diagnostics
   debug_mode: { type: Boolean, default: DEFAULTS.FALSE },

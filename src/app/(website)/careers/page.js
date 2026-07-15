@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import PageHero from '@/components/PageHero';
+import PageHero from '@/components/PageHero.js';
 
 export const metadata = {
     title: 'Careers',
@@ -33,7 +33,7 @@ export default function Careers() {
                             <h2 className="text-3xl font-bold text-gray-900 mb-4">No Open Positions</h2>
                             <p className="text-gray-600 mb-8 max-w-lg mx-auto leading-relaxed">
                                 We currently don&apos;t have any open roles, but we&apos;re always looking for exceptional talent.
-                                If you believe you can make a difference, send your resume to <a href="mailto:careers@pahadigo.com" className="text-indigo-600 font-bold hover:underline">careers@pahadigo.com</a>.
+                                If you believe you can make a difference, send your resume to <a href="mailto:careers@pahadigo.co.in" className="text-indigo-600 font-bold hover:underline">careers@pahadigo.co.in</a>.
                             </p>
 
                             <div className="border-t border-gray-100 pt-8 mt-8">

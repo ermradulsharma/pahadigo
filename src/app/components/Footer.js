@@ -33,6 +33,7 @@ export default function Footer() {
                         <ul className="space-y-4 text-gray-400 text-sm">
                             <li><Link href="/about" className="hover:text-white transition-colors">About Us</Link></li>
                             <li><Link href="/careers" className="hover:text-white transition-colors">Careers</Link></li>
+                            <li><Link href="/faq" className="hover:text-white transition-colors">FAQ</Link></li>
                             <li><Link href="/privacy" className="hover:text-white transition-colors">Privacy Policy</Link></li>
                             <li><Link href="/terms" className="hover:text-white transition-colors">Terms of Service</Link></li>
                         </ul>
@@ -44,7 +45,7 @@ export default function Footer() {
                             <li><Link href="/packages?category=trekking" className="hover:text-white transition-colors">Trekking Packages</Link></li>
                             <li><Link href="/packages?category=camping" className="hover:text-white transition-colors">Camping Sites</Link></li>
                             <li><Link href="/packages?category=homestay" className="hover:text-white transition-colors">Homestays</Link></li>
-                            <li><Link href="#contact" className="hover:text-white transition-colors">Partner with Us</Link></li>
+                            <li><Link href="/partner" className="hover:text-white transition-colors">Partner with Us</Link></li>
                         </ul>
                     </div>
 

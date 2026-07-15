@@ -269,6 +269,10 @@ export const schemas = {
         message: RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS
     }),
 
+    adminBookingMutation: flexibleObject.refine(data => Object.keys(data).length > 0, {
+        message: RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS
+    }),
+
     adminVendorApproval: z.object({
         vendorId: idString,
         status: moderationStatus.optional(),
@@ -373,7 +377,6 @@ export const schemas = {
 
     // Review Schemas
     submitReview: z.object({
-        bookingId: z.string().min(1, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED),
         rating: z.coerce.number().int().min(1).max(5),
         comment: z.string().max(1000).optional()
     })

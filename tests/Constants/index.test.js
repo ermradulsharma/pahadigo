@@ -17,6 +17,6 @@ describe('Constants Index', () => {
 
     test('should export PACKAGE themes and types', () => {
         expect(Constants.PACKAGE.THEMES).toBeDefined();
-        expect(Constants.PACKAGE.TYPES).toBeDefined();
+        expect(Constants.PACKAGE.CATEGORY).toBeDefined();
     });
 });

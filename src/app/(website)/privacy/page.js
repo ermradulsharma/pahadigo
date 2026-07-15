@@ -68,9 +68,9 @@ export default async function PrivacyPolicy() {
               </h3>
               <div className="bg-gray-50 rounded-2xl p-6 border border-gray-100 not-prose">
                 <p className="text-gray-600 mb-4">If you have any questions about this Privacy Policy, please contact us at:</p>
-                <a href="mailto:support@pahadigo.com" className="text-indigo-600 font-bold hover:underline flex items-center">
+                <a href="mailto:support@pahadigo.co.in" className="text-indigo-600 font-bold hover:underline flex items-center">
                   <svg className="w-5 h-5 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" /></svg>
-                  support@pahadigo.com
+                  support@pahadigo.co.in
                 </a>
               </div>
             </div>

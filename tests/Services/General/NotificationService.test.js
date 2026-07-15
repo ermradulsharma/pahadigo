@@ -22,7 +22,7 @@ jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
             user: 'mock',
             pass: 'mock',
             from_name: 'PahadiGo',
-            from_address: 'test@pahadigo.com'
+            from_address: 'test@pahadigo.co.in'
         }
     })
 }));

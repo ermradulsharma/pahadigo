@@ -1,14 +1,14 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import api from '@/core/Api';
+import api from '@/core/Api/index.js';
 import {
   Mail, CheckCircle, Trash2, Clock, User, Phone, Terminal,
   ShieldAlert, MessageSquare, ExternalLink, Filter, Search,
   Eye, AlertCircle, CheckSquare, XCircle, Info, Plus
 } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
-import Loading from '@/components/admin/Loading';
+import Loading from '@/components/admin/Loading.js';
 
 export default function SupportPage() {
   const [activeTab, setActiveTab] = useState('disputes'); // 'inquiries' or 'disputes'
@@ -42,7 +42,7 @@ export default function SupportPage() {
     try {
       const res = await api.admin.disputes.getMessages(disputeId);
       if (res.success) setMessages(res.data || []);
-    } catch (e) { console.error("Chat load error:", e); }
+    } catch (e) { /* chat load failed */ }
   };
 
   const handleSendMessage = async (text, overrideTarget = null) => {
@@ -54,7 +54,7 @@ export default function SupportPage() {
       if (res.success) {
         setMessages(prev => [...prev, res.data]);
       }
-    } catch (e) { console.error("Send error:", e); }
+    } catch (e) { /* send failed */ }
     finally { setIsSending(false); }
   };
 
@@ -75,7 +75,7 @@ export default function SupportPage() {
         disputes: dispRes.success ? (dispRes.data.disputes || dispRes.data) : []
       });
     } catch (error) {
-      console.error("Support fetch error:", error);
+      // fetch failed silently
     } finally {
       setLoading(false);
     }
@@ -91,7 +91,7 @@ export default function SupportPage() {
         }));
         if (selectedItem?._id === id) setSelectedItem({ ...selectedItem, status });
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { /* update failed */ }
   };
 
   const handleDeleteInquiry = async (id) => {
@@ -102,7 +102,7 @@ export default function SupportPage() {
         setData(prev => ({ ...prev, inquiries: prev.inquiries.filter(i => i._id !== id) }));
         if (selectedItem?._id === id) setSelectedItem(null);
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { /* delete failed */ }
   };
 
   const handleResolveDispute = async (id, status, notes = "") => {
@@ -115,7 +115,7 @@ export default function SupportPage() {
         }));
         if (selectedItem?._id === id) setSelectedItem({ ...selectedItem, status, adminNotes: notes });
       }
-    } catch (e) { console.error(e); }
+    } catch (e) { /* resolve failed */ }
   };
 
   const currentList = activeTab === 'inquiries' ? data.inquiries : data.disputes;
@@ -378,7 +378,7 @@ export default function SupportPage() {
                             </div>
                             <div className="flex gap-1">
                               <a href={`tel:${selectedItem.phone || selectedItem.user?.phone}`} className="p-2 hover:bg-white/10 rounded-lg text-slate-400 transition-all hover:text-emerald-400"><Phone className="w-4 h-4" /></a>
-                              <button onClick={() => alert(`DISPUTE INTEL:\n\nID: ${selectedItem._id}\nReason: ${selectedItem.reason}\nReporter: ${selectedItem.user?.name}\nVendor: ${selectedItem.vendor?.businessName}`)} className="p-2 hover:bg-white/10 rounded-lg text-slate-400 transition-all hover:text-cyan-400"><Info className="w-4 h-4" /></button>
+                              <button onClick={() => { setSelectedItem({ ...selectedItem, _showIntel: !selectedItem._showIntel }); }} className="p-2 hover:bg-white/10 rounded-lg text-slate-400 transition-all hover:text-cyan-400"><Info className="w-4 h-4" /></button>
                             </div>
                           </div>
 
@@ -533,7 +533,7 @@ export default function SupportPage() {
                 }
                 .custom-scrollbar {
                     -ms-overflow-style: none;
-                    scrollbar-width: none;
+                    scrollbar-width: none !important;
                 }
                 .custom-scrollbar:hover::-webkit-scrollbar {
                     display: none;

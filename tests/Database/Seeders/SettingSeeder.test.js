@@ -14,11 +14,12 @@ jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
         firebase: { project_id: 'p1', client_email: 'c1', private_key: 'k1' },
         tax: { gst: 5, service_tax: 5 },
         cloudinary: { url: 'c1' },
-        secrets: { social_pass: 's1', other_account_pass: 'o1', master_otp: 'm1' }
+        secrets: { social_pass: 's1', other_account_pass: 'o1', master_otp: 'm1' },
+        redis: { upstash_url: '', upstash_token: '', upstash_tcp_url: '', standard_url: '' }
     })
 }));
 
-const { default: seedSettings } = await import('@/database/Seeders/SettingSeeder.js');
+const { default: seedSettings } = await import('@/core/Database/Seeders/SettingSeeder.js');
 const { default: Setting } = await import('@/core/Models/Setting.js');
 
 describe('Industry Standard: SettingSeeder Logic', () => {

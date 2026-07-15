@@ -1,6 +1,6 @@
 "use client";
 import { useEffect, useState, useRef } from 'react';
-import api from '@/core/Api';
+import api from '@/core/Api/index.js';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { motion } from 'framer-motion';
@@ -13,8 +13,8 @@ import {
     AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip as RechartsTooltip, ResponsiveContainer,
     LineChart, Line, BarChart, Bar, PieChart, Pie, Cell, Legend, ReferenceLine
 } from 'recharts';
-import PackageCard from '@/components/admin/PackageCard';
-import Loading from '@/components/admin/Loading';
+import PackageCard from '@/components/admin/PackageCard.js';
+import Loading from '@/components/admin/Loading.js';
 
 const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -65,7 +65,7 @@ export default function AdminDashboard() {
                 const result = await api.admin.stats.getAnalytics({ period });
                 if (result.success) setAnalyticsData(result.data.analytics);
             } catch (e) {
-                console.error(e);
+                // analytics fetch failed
                 showToast('Failed to load analytics', 'error');
             } finally {
                 setAnalyticsLoading(false);
@@ -91,7 +91,7 @@ export default function AdminDashboard() {
                     setLatestPackages(pkgRes.data.packages.slice(0, 4));
                 }
             } catch (e) {
-                console.error("Dashboard fetch error:", e);
+                // dashboard fetch failed
                 showToast('Failed to load system telemetry', 'error');
             } finally {
                 setLoading(false);
@@ -436,7 +436,7 @@ export default function AdminDashboard() {
                 }
                 .custom-scrollbar {
                     -ms-overflow-style: none;
-                    scrollbar-width: none;
+                    scrollbar-width: none !important;
                 }
                 .custom-scrollbar::-webkit-scrollbar-track {
                     background: transparent;

@@ -1,10 +1,11 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getToken } from '@/core/Helpers/authUtils';
+import api from '@/core/Api/index.js';
+import { useToast } from '@/components/ui/ToastContext.js';
 import { Megaphone, Image as ImageIcon, Tag, Plus, Trash2, Calendar, Link2, DollarSign } from 'lucide-react';
 import { motion } from 'framer-motion';
-import Loading from '@/components/admin/Loading';
+import Loading from '@/components/admin/Loading.js';
 
 export default function MarketingPage() {
   const [activeTab, setActiveTab] = useState('banners');
@@ -52,6 +53,7 @@ function BannersManager() {
   const [loading, setLoading] = useState(true);
   const [newBanner, setNewBanner] = useState({ title: '', imageUrl: '', link: '', position: 0 });
   const [isSaving, setIsSaving] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     fetchBanners();
@@ -59,14 +61,10 @@ function BannersManager() {
 
   const fetchBanners = async () => {
     try {
-      const token = getToken();
-      const res = await fetch('/api/admin/marketing/banners', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await api.admin.marketing.banners.getAll();
       if (data.success) setBanners(data.data.banners || []);
     } catch (e) {
-      console.error(e);
+      // silently fail
     } finally {
       setLoading(false);
     }
@@ -76,21 +74,13 @@ function BannersManager() {
     e.preventDefault();
     setIsSaving(true);
     try {
-      const token = getToken();
-      const res = await fetch('/api/admin/marketing/banners', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(newBanner)
-      });
-      const data = await res.json();
+      const data = await api.admin.marketing.banners.add(newBanner);
       if (data.success) {
         setBanners(prev => [data.data.banner, ...prev].sort((a, b) => a.position - b.position));
         setNewBanner({ title: '', imageUrl: '', link: '', position: 0 });
-      } else {
-        alert(data.error || "Failed to create banner");
       }
     } catch (e) {
-      alert("Error occurred");
+      toast("Error creating banner.", "error");
     } finally {
       setIsSaving(false);
     }
@@ -99,11 +89,7 @@ function BannersManager() {
   const handleDelete = async (id) => {
     if (!confirm("Delete this banner from the matrix?")) return;
     try {
-      const token = getToken();
-      await fetch(`/api/admin/marketing/banners/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      await api.admin.marketing.banners.delete(id);
       setBanners(prev => prev.filter(b => b._id !== id));
     } catch (e) { }
   };
@@ -218,6 +204,7 @@ function CouponsManager() {
   const [loading, setLoading] = useState(true);
   const [newCoupon, setNewCoupon] = useState({ code: '', discountType: 'percentage', value: 0, minOrderAmount: 0, expiryDate: '' });
   const [isSaving, setIsSaving] = useState(false);
+  const toast = useToast();
 
   useEffect(() => {
     fetchCoupons();
@@ -225,14 +212,10 @@ function CouponsManager() {
 
   const fetchCoupons = async () => {
     try {
-      const token = getToken();
-      const res = await fetch('/api/admin/marketing/coupons', {
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
-      const data = await res.json();
+      const data = await api.admin.marketing.coupons.getAll();
       if (data.success) setCoupons(data.data.coupons || []);
     } catch (e) {
-      console.error(e);
+      // silently fail
     } finally {
       setLoading(false);
     }
@@ -242,21 +225,13 @@ function CouponsManager() {
     e.preventDefault();
     setIsSaving(true);
     try {
-      const token = getToken();
-      const res = await fetch('/api/admin/marketing/coupons', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
-        body: JSON.stringify(newCoupon)
-      });
-      const data = await res.json();
+      const data = await api.admin.marketing.coupons.create(newCoupon);
       if (data.success) {
         setCoupons(prev => [data.data.coupon, ...prev]);
         setNewCoupon({ code: '', discountType: 'percentage', value: 0, minOrderAmount: 0, expiryDate: '' });
-      } else {
-        alert(data.error || "Failed to generate coupon code");
       }
     } catch (e) {
-      alert("Error occurred");
+      toast("Error creating coupon.", "error");
     } finally {
       setIsSaving(false);
     }
@@ -265,11 +240,7 @@ function CouponsManager() {
   const handleDelete = async (id) => {
     if (!confirm("Delete this coupon code?")) return;
     try {
-      const token = getToken();
-      await fetch(`/api/admin/marketing/coupons/${id}`, {
-        method: 'DELETE',
-        headers: { 'Authorization': `Bearer ${token}` }
-      });
+      await api.admin.marketing.coupons.delete(id);
       setCoupons(prev => prev.filter(c => c._id !== id));
     } catch (e) { }
   };

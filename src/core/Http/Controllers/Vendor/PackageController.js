@@ -142,6 +142,10 @@ class PackageController extends Controller {
                 return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.ITEM.ADDED);
             }
         } catch (error) {
+            if (error.name === 'ValidationError') {
+                return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
+            }
+            console.error('[PackageController] savePackageItem error:', error);
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }

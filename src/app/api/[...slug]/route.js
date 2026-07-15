@@ -42,12 +42,22 @@ const compileRoute = (route) => {
   };
 };
 
-const routesByMethod = routes.reduce((acc, route) => {
+const staticRoutesByMethod = {};
+const dynamicRoutesByMethod = {};
+
+routes.forEach(route => {
   const compiledRoute = compileRoute(route);
-  acc[compiledRoute.method] = acc[compiledRoute.method] || [];
-  acc[compiledRoute.method].push(compiledRoute);
-  return acc;
-}, {});
+  const method = compiledRoute.method;
+  
+  if (compiledRoute.paramNames.length === 0) {
+    staticRoutesByMethod[method] = staticRoutesByMethod[method] || {};
+    const staticPath = route.path.replace(/\/$/, '') || '/';
+    staticRoutesByMethod[method][staticPath] = compiledRoute;
+  } else {
+    dynamicRoutesByMethod[method] = dynamicRoutesByMethod[method] || [];
+    dynamicRoutesByMethod[method].push(compiledRoute);
+  }
+});
 
 const withRequestId = (response, requestId) => {
   response.headers.set(REQUEST_ID_HEADER, requestId);
@@ -67,8 +77,13 @@ const logError = (message, error, metadata = {}) => {
  */
 function findRoute(method, slug) {
   const path = normalizePath(slug);
-  const methodRoutes = routesByMethod[method.toUpperCase()] || [];
+  const upperMethod = method.toUpperCase();
 
+  if (staticRoutesByMethod[upperMethod] && staticRoutesByMethod[upperMethod][path]) {
+    return { routeDef: staticRoutesByMethod[upperMethod][path], params: {} };
+  }
+
+  const methodRoutes = dynamicRoutesByMethod[upperMethod] || [];
   for (const route of methodRoutes) {
     const match = path.match(route.matcher);
     if (match) {

@@ -1,11 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getToken } from '@/core/Helpers/authUtils';
-import api from '@/core/Api';
-import CyberTable from '@/app/components/admin/CyberTable';
+import { getToken } from '@/core/Helpers/authUtils.js';
+import api from '@/core/Api/index.js';
+import { useToast } from '@/components/ui/ToastContext.js';
+import CyberTable from '@/app/components/admin/CyberTable.js';
 import { Calendar, Search, CreditCard, Mail, ExternalLink, Undo2, ChevronLeft, ChevronRight, Eye, MoreVertical, X } from 'lucide-react';
-import Loading from '@/components/admin/Loading';
+import Loading from '@/components/admin/Loading.js';
 import Link from 'next/link';
 
 export default function BookingsPage() {
@@ -16,6 +17,7 @@ export default function BookingsPage() {
     const [processingRefund, setProcessingRefund] = useState(null);
     const [currentPage, setCurrentPage] = useState(1);
     const [totalMetadata, setTotalMetadata] = useState({ total: 0, totalPages: 1 });
+    const toast = useToast();
 
     useEffect(() => {
         fetchBookings(currentPage, filterStatus);
@@ -33,7 +35,7 @@ export default function BookingsPage() {
                 });
             }
         } catch (error) {
-            console.error("Error fetching bookings:", error);
+            // failed to fetch bookings
         } finally {
             setLoading(false);
         }
@@ -46,7 +48,7 @@ export default function BookingsPage() {
         const amountStr = prompt("Enter refund amount:", fullAmount);
         const amount = parseFloat(amountStr);
         if (isNaN(amount) || amount <= 0) {
-            alert("Invalid amount");
+            toast("Invalid amount", "error");
             return;
         }
 
@@ -54,13 +56,13 @@ export default function BookingsPage() {
         try {
             const data = await api.admin.payments.refund({ bookingId, amount, reason });
             if (data.success) {
-                alert("Refund processed successfully!");
+                toast("Refund processed successfully!", "success");
                 fetchBookings(currentPage, filterStatus);
             } else {
-                alert("Refund Failed: " + (data.error || data.message || "Unknown error"));
+                toast("Refund Failed: " + (data.error || data.message || "Unknown error"), "error");
             }
         } catch (error) {
-            alert("Error processing refund. Check server logs.");
+            toast("Error processing refund.", "error");
         } finally {
             setProcessingRefund(null);
         }

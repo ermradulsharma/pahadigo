@@ -1,10 +1,10 @@
 'use client';
 
 import { useState, useEffect, Fragment } from 'react';
-import { getToken } from '@/core/Helpers/authUtils';
-import api from '@/core/Api';
+import { getToken } from '@/core/Helpers/authUtils.js';
+import api from '@/core/Api/index.js';
 import { ChevronDown, ChevronRight, Search, Activity, Database, ShieldAlert, Cpu, Terminal, Filter, LayoutGrid } from 'lucide-react';
-import Loading from '@/components/admin/Loading';
+import Loading from '@/components/admin/Loading.js';
 
 export default function AuditLogsPage() {
     const [logs, setLogs] = useState([]);
@@ -34,7 +34,7 @@ export default function AuditLogsPage() {
                 setPages(data.data.totalPages || 1);
             }
         } catch (e) {
-            console.error(e);
+            // failed to fetch audit logs
         } finally {
             setLoading(false);
         }

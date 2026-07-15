@@ -18,6 +18,16 @@ class TravellerController extends Controller {
     }
   }
 
+  // GET /admin/travellers/:id
+  async getTraveller(req, { params }) {
+    try {
+      const traveller = await TravellerService.getTravellerById(params.id);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, { traveller });
+    } catch (error) {
+      return this.error(error.message === RESPONSE_MESSAGES.ERROR.NOT_FOUND ? HTTP_STATUS.NOT_FOUND : HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+    }
+  }
+
   // POST /admin/travellers/create
   async createTraveller(req) {
     try {

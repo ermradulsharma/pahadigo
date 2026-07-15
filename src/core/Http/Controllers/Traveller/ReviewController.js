@@ -13,7 +13,7 @@ class ReviewController extends Controller {
       const reviews = await ReviewService.getMyReviews(req.user.id);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.REVIEW.FETCHED, { reviews });
     } catch (error) {
-      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+      return this.error(HTTP_STATUS.BAD_REQUEST, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
   }
 
@@ -25,7 +25,8 @@ class ReviewController extends Controller {
       const review = await ReviewService.submitReview(req.user.id, { bookingId, rating, comment });
       return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.REVIEW.SUBMITTED, review);
     } catch (error) {
-      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+      console.error('Error in submitReview:', error);
+      return this.error(HTTP_STATUS.BAD_REQUEST, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
   }
 
@@ -36,7 +37,7 @@ class ReviewController extends Controller {
       if (!result) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.REVIEW.NOT_FOUND_OR_UNAUTHORIZED);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.REVIEW.RETRACTED);
     } catch (error) {
-      return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+      return this.error(HTTP_STATUS.BAD_REQUEST, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
   }
 }

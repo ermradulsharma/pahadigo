@@ -16,12 +16,22 @@ export const ACTIVITY = {
             GRADEI: 'Grade I',
             GRADEII: 'Grade II',
             GRADEIII: 'Grade III',
-            GRADEIV: 'Grade IV'
+            GRADEIV: 'Grade IV',
+            GRADEV: 'Grade V'
         },
         DIFFICULTY: {
             EASY: 'Easy',
             MODERATE: 'Moderate',
             HARD: 'Hard'
+        },
+        BOAT_TYPE: {
+            PADDLE_RAFTING: 'Paddle Rafting',
+            OAR_RAFTING: 'Oar Rafting',
+            PADDLE_OAR_COMBO: 'Paddle-Oar Combo',
+            MOTOR_RAFTING: 'Motor Rafting',
+            CATARAFTING: 'Catarafting',
+            PACKRAFTING: 'Packrafting',
+            R2: 'R2 (Two-Person Rafting)'
         }
     },
     TREKKING: {
@@ -48,5 +58,20 @@ export const ACTIVITY = {
             SUMMER: 'Summer',
             WINTER: 'Winter'
         },
+    },
+    SKIING: {
+        DIFFICULTY: {
+            ADVANCED: 'Advanced',
+            BEGINNER: 'Beginner',
+            INTERMEDIATE: 'Intermediate'
+        }
+    },
+    PARAGLIDING: {
+        TYPE: {
+            CROSS_COUNTRY: 'Cross Country',
+            LONG_FLY: 'Long Fly',
+            MEDIUM_FLY: 'Medium Fly',
+            SHORT_FLY: 'Short Fly'
+        }
     }
 }

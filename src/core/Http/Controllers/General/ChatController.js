@@ -4,11 +4,16 @@ import Booking from '@/core/Models/Booking.js';
 import { successResponse, errorResponse } from '@/core/Helpers/response.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { EventEmitter } from 'events';
-import { getBookingById } from '@/core/Helpers/queryHelpers';
+import { getBookingById } from '@/core/Helpers/queryHelpers.js';
+import User from '@/core/Models/User.js';
+import { PushNotificationService } from '@/core/Services/PushNotificationService.js';
 
 // In-memory event emitter for live chat updates
 const chatEmitter = new EventEmitter();
 chatEmitter.setMaxListeners(0);
+
+// Track active users listening to the chat SSE stream
+const activeSSEUsers = new Set();
 
 class ChatController {
     /**
@@ -17,8 +22,8 @@ class ChatController {
      */
     async createConversation(req, { params } = {}) {
         try {
-            const bookingId = params?.bookingId || req.payload?.bookingId;
-            const { type } = req.payload || {};
+            const bookingId = params?.bookingId;
+            const { type } = req.payload;
 
             if (!bookingId || !type) {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Both bookingId and type are required.');
@@ -220,6 +225,38 @@ class ChatController {
                 message: newMessage
             });
 
+            // Send push notification if the receiver is offline
+            try {
+                let receiverId;
+                if (req.user.role === 'traveller') {
+                    receiverId = conversation.vendor.toString();
+                } else if (req.user.role === 'vendor') {
+                    receiverId = conversation.traveller.toString();
+                }
+
+                if (receiverId && !activeSSEUsers.has(receiverId)) {
+                    const receiverUser = await User.findById(receiverId).select('fcmToken').lean();
+                    if (receiverUser && receiverUser.fcmToken) {
+                        const senderUser = await User.findById(req.user.id).select('name').lean();
+                        const senderName = senderUser ? senderUser.name : 'Someone';
+
+                        await PushNotificationService.sendToDevice(
+                            receiverUser.fcmToken,
+                            {
+                                title: `New message from ${senderName}`,
+                                body: message || 'Sent an attachment'
+                            },
+                            {
+                                type: 'chat_message',
+                                conversationId: conversation._id.toString()
+                            }
+                        );
+                    }
+                }
+            } catch (notifError) {
+                console.error('[ChatController] Error sending offline push notification:', notifError);
+            }
+
             return successResponse(HTTP_STATUS.CREATED, 'Message sent successfully.', newMessage);
         } catch (error) {
             console.error('[ChatController] sendMessage error:', error);
@@ -238,6 +275,7 @@ class ChatController {
             let heartbeat;
             const stream = new ReadableStream({
                 start(controller) {
+                    activeSSEUsers.add(userId);
                     onNewMessage = (data) => {
                         if (req.user.role === 'admin' || data.travellerId === userId || data.vendorId === userId) {
                             const payload = `data: ${JSON.stringify(data.message)}\n\n`;
@@ -249,13 +287,15 @@ class ChatController {
                         controller.enqueue(new TextEncoder().encode(': heartbeat\n\n'));
                     }, 20000);
                     req.signal?.addEventListener('abort', () => {
+                        activeSSEUsers.delete(userId);
                         if (onNewMessage) chatEmitter.off('newMessage', onNewMessage);
                         if (heartbeat) clearInterval(heartbeat);
                     });
                 },
                 cancel() {
-                    if (onNewMessage) chatEmitter.off('newMessage', onNewMessage);
-                    if (heartbeat) clearInterval(heartbeat);
+                    activeSSEUsers.delete(userId);
+                    chatEmitter.off('newMessage', onNewMessage);
+                    clearInterval(heartbeat);
                 }
             });
 

@@ -1,5 +1,6 @@
 import './globals.css';
 import Script from 'next/script';
+import { ToastProvider } from '@/components/ui/ToastContext.js';
 
 export const metadata = {
     title: {
@@ -21,7 +22,9 @@ export default function RootLayout({ children }) {
     return (
         <html lang="en">
             <body className="antialiased font-sans">
-                {children}
+                <ToastProvider>
+                    {children}
+                </ToastProvider>
                 {/* Google tag (gtag.js) */}
                 <Script
                     src="https://www.googletagmanager.com/gtag/js?id=G-1L0FGXLXS3"

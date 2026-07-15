@@ -1,13 +1,14 @@
 'use client';
 import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
-import { getToken } from '@/core/Helpers/authUtils';
 
-import CyberTable from '@/components/admin/CyberTable';
+
+import CyberTable from '@/components/admin/CyberTable.js';
 import { Users, Mail, Phone, Plus, Search, X } from 'lucide-react';
-import api from '@/core/Api';
-import DynamicModal from '@/components/admin/DynamicModal';
-import Loading from '@/components/admin/Loading';
+import { useToast } from '@/components/ui/ToastContext.js';
+import api from '@/core/Api/index.js';
+import DynamicModal from '@/components/admin/DynamicModal.js';
+import Loading from '@/components/admin/Loading.js';
 
 export default function TravellersPage() {
     const [travellers, setTravellers] = useState([]);
@@ -18,6 +19,7 @@ export default function TravellersPage() {
     const [editingTraveller, setEditingTraveller] = useState(null);
     const [editForm, setEditForm] = useState({ name: '', email: '', phone: '' });
     const [isSaving, setIsSaving] = useState(false);
+    const toast = useToast();
 
     const travellerFields = [
         { name: 'name', label: 'Full Name', type: 'text', required: true, icon: 'User' },
@@ -55,11 +57,28 @@ export default function TravellersPage() {
             const data = await api.admin.travellers.update(traveller._id, { status: newStatus });
             if (data.success) {
                 setTravellers(prev => prev.map(t => t._id === traveller._id ? { ...t, status: newStatus } : t));
+                toast(`Traveller ${newStatus === 'blocked' ? 'blocked' : 'unblocked'} successfully.`, 'success');
             } else {
-                alert("Failed: " + (data.error || "Unknown error"));
+                toast("Failed: " + (data.error || "Unknown error"), 'error');
             }
         } catch (e) {
-            alert("Error updating status.");
+            toast("Error updating status.", 'error');
+        }
+    };
+
+    const handleDelete = async (traveller) => {
+        if (!confirm(`Are you sure you want to permanently delete traveller ${traveller.name}?`)) return;
+
+        try {
+            const data = await api.admin.travellers.delete(traveller._id);
+            if (data.success) {
+                setTravellers(prev => prev.filter(t => t._id !== traveller._id));
+                toast("Traveller deleted successfully.", 'success');
+            } else {
+                toast("Failed: " + (data.error || "Unknown error"), 'error');
+            }
+        } catch (e) {
+            toast("Error deleting traveller.", 'error');
         }
     };
 
@@ -78,15 +97,15 @@ export default function TravellersPage() {
         try {
             const data = await api.admin.travellers.update(editingTraveller._id, editForm);
             if (data.success) {
-                alert("Traveller updated successfully!");
+                toast("Traveller updated successfully!", 'success');
                 setEditingTraveller(null);
                 const updatedData = await getTravellers();
                 setTravellers(updatedData);
             } else {
-                alert("Failed: " + (data.error || "Unknown error"));
+                toast("Failed: " + (data.error || "Unknown error"), 'error');
             }
         } catch (e) {
-            alert("Error updating traveller.");
+            toast("Error updating traveller.", 'error');
         } finally {
             setIsSaving(false);
         }
@@ -134,6 +153,7 @@ export default function TravellersPage() {
             tdClassName: 'text-right',
             render: (t) => (
                 <div className="flex justify-start gap-2">
+                    <Link href={`/admin/travellers/${t._id}`} className="px-3 py-1.5 bg-blue-500/10 border border-blue-500/20 text-blue-400 hover:text-blue-300 hover:bg-blue-500/20 rounded-lg text-xs font-mono transition-all shadow-[0_0_10px_rgba(59,130,246,0.1)]">View</Link>
                     <button onClick={() => openEditModal(t)} className="px-3 py-1.5 bg-indigo-500/10 border border-indigo-500/20 text-indigo-400 hover:text-indigo-300 hover:bg-indigo-500/20 rounded-lg text-xs font-mono transition-all shadow-[0_0_10px_rgba(99,102,241,0.1)]">Edit</button>
                     <button
                         onClick={() => handleToggleBlock(t)}
@@ -143,6 +163,7 @@ export default function TravellersPage() {
                             }`}>
                         {t.status === 'blocked' ? 'Unblock' : 'Block'}
                     </button>
+                    <button onClick={() => handleDelete(t)} className="px-3 py-1.5 bg-red-500/10 border border-red-500/20 text-red-400 hover:text-red-300 hover:bg-red-500/20 rounded-lg text-xs font-mono transition-all shadow-[0_0_10px_rgba(239,68,68,0.1)]">Delete</button>
                 </div>
             )
         }

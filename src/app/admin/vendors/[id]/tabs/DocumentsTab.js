@@ -2,39 +2,25 @@
 import { useEffect, useState, use } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { getToken } from '@/core/Helpers/authUtils';
+import api from '@/core/Api/index.js';
 import Image from 'next/image';
-import VendorTabs from '@/components/admin/VendorTabs';
-import { StatusBadge, MainPanelCard, VendorHeader } from '@/components/admin/VendorUIFragments';
+import { useToast } from '@/components/ui/ToastContext.js';
+import VendorTabs from '@/components/admin/VendorTabs.js';
+import { StatusBadge, MainPanelCard, VendorHeader } from '@/components/admin/VendorUIFragments.js';
 import { FileText, ShieldCheck, Eye, Check as CheckIcon, X } from 'lucide-react';
 
 export default function DocumentsTab({ vendor, setVendor, id, activeTab, setActiveTab, onRefresh }) {
   const router = useRouter();
   const [previewImage, setPreviewImage] = useState(null);
-
-
+  const toast = useToast();
 
   const verifyCategoryDoc = async (docId, status, reason = '') => {
     try {
-      const token = getToken();
-      const body = { documentId: docId, status, reason };
-
-      const res = await fetch('/api/admin/verify-category-document', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + token,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(body)
-      });
-
-      if (res.ok) {
-        if (onRefresh) onRefresh();
-      } else {
-        alert('Failed to update status');
-      }
+      await api.admin.compliance.verifyCategoryDoc({ documentId: docId, status, reason });
+      if (onRefresh) onRefresh();
+      toast(`Document verification updated.`, "success");
     } catch (e) {
-      alert('An error occurred during verification');
+      toast(e.message || 'An error occurred during verification', 'error');
     }
   };
 

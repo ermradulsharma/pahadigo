@@ -1,10 +1,11 @@
 'use client';
 import { useState, useEffect, useCallback } from 'react';
 import dynamic from 'next/dynamic';
-import { getToken } from '@/core/Helpers/authUtils';
+import api from '@/core/Api/index.js';
 import { DefaultEditor } from 'react-simple-wysiwyg';
 import { Shield, BookOpen, Save, RefreshCw, Users, Server, Briefcase } from 'lucide-react';
-import Loading from '@/components/admin/Loading';
+import { useToast } from '@/components/ui/ToastContext.js';
+import Loading from '@/components/admin/Loading.js';
 
 const POLICY_TYPES = {
   vendor: [
@@ -30,25 +31,20 @@ export default function PoliciesPage() {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
+  const toast = useToast();
 
   const fetchPolicies = useCallback(async () => {
     if (!isMounted) return;
     setLoading(true);
     try {
-      const token = getToken();
-      const res = await fetch('/api/admin/policies', {
-        headers: { 'Authorization': 'Bearer ' + token }
-      });
-      if (res.ok) {
-        const data = await res.json();
-        const fetchedPolicies = data.data?.policies || [];
+      const data = await api.admin.policies.getAll();
+      const fetchedPolicies = data.data?.policies || [];
 
-        // Set initial content for current selection
-        const current = fetchedPolicies.find(p => p.target === target && p.type === type);
-        setContent(current ? current.content : '');
-      }
+      // Set initial content for current selection
+      const current = fetchedPolicies.find(p => p.target === target && p.type === type);
+      setContent(current ? current.content : '');
     } catch (e) {
-      console.error('Failed to fetch policies');
+      // Failed to fetch policies
     } finally {
       setLoading(false);
     }
@@ -67,23 +63,11 @@ export default function PoliciesPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const token = getToken();
-      const res = await fetch('/api/admin/policies', {
-        method: 'POST',
-        headers: {
-          'Authorization': 'Bearer ' + token,
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({ target, type, content })
-      });
-      if (res.ok) {
-        alert('Policy matrix updated successfully!');
-        fetchPolicies();
-      } else {
-        alert('Failed to update policy matrix.');
-      }
+      await api.admin.policies.save({ target, type, content });
+      toast('Policy matrix updated successfully!', 'success');
+      fetchPolicies();
     } catch (e) {
-      alert('Error updating policy matrix.');
+      toast(e.message || 'Error updating policy matrix.', 'error');
     } finally {
       setSaving(false);
     }

@@ -42,6 +42,12 @@ export const seedSettings = async () => {
             mongodb_uri: config.mongodb_uri,
             api_url: config.api_url,
 
+            // Redis Configuration
+            upstash_redis_rest_url: config.redis.upstash_url,
+            upstash_redis_rest_token: config.redis.upstash_token,
+            upstash_redis_url: config.redis.upstash_tcp_url,
+            pahadigo_redis_url: config.redis.standard_url,
+
             // JWT
             jwt_secret: config.jwt_secret,
 
@@ -66,13 +72,14 @@ export const seedSettings = async () => {
             social_pass: config.secrets.social_pass,
             other_account_pass: config.secrets.other_account_pass,
             master_otp: config.secrets.master_otp,
+            cron_secret: config.secrets.cron_secret,
 
             // App Details
             app_name: config.app.name,
             terms_conditions: config.app.terms_conditions,
             privacy_policy: config.app.privacy_policy,
-            rate_on_apple_store: DEFAULTS.STRING,
-            rate_on_google_store: DEFAULTS.STRING,
+            rate_on_apple_store: config.app.rate_on_apple_store,
+            rate_on_google_store: config.app.rate_on_google_store,
 
             // Debug
             debug_mode: config.debug_mode

@@ -36,7 +36,7 @@ describe('Industry Standard: BookingService Payout Logic', () => {
             user: testUser._id,
             ownerName: "Rajesh PayoutTest",
             businessName: "Pahadi Go Adventures",
-            businessEmail: "test@pahadigo.com",
+            businessEmail: "test@pahadigo.co.in",
             phone: "9999999999",
             bankDetails: {
                 accountHolderName: "Rajesh PayoutTest",

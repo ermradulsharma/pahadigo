@@ -119,5 +119,51 @@ export const ACCOMMODATION = {
             QUEEN: 'Queen',
             SINGLE: 'Single'
         },
+        FOOD_POLICY: {
+            ALL: 'All',
+            VEG_ONLY: 'Veg Only',
+            EGGETARIAN: 'Eggetarian',
+            JAIN: 'Jain'
+        },
+        KITCHEN_ACCESS: {
+            NONE: 'None',
+            PRIVATE: 'Private',
+            SHARED: 'Shared',
+            KITCHENETTE: 'Kitchenette'
+        },
+        PARKING_TYPE: {
+            PRIVATE: 'Private',
+            STREET: 'Street',
+            PAID: 'Paid Parking',
+            FREE: 'Free Parking'
+        },
+        HEATING_TYPE: {
+            ELECTRIC: 'Electric Heater',
+            FIREPLACE: 'Fireplace',
+            BUKHARI: 'Bukhari',
+            CENTRAL: 'Central Heating',
+            BLOWER: 'Blower'
+        },
+        VIEW_TYPE: {
+            APPLE_ORCHARD: 'Apple Orchard',
+            CITY: 'City',
+            FOREST: 'Forest',
+            GANGA_VIEW: 'Ganga View',
+            GARDEN: 'Garden',
+            HIMALAYAN_VIEW: 'Himalayan View',
+            LAKE: 'Lake',
+            MEADOW: 'Meadow',
+            MOUNTAIN: 'Mountain',
+            NO_VIEW: 'No View',
+            OCEAN: 'Ocean',
+            ORCHARD: 'Orchard',
+            POOL: 'Pool',
+            RIVER: 'River',
+            SEA: 'Sea',
+            SNOW_PEAK: 'Snow Peak',
+            SUNRISE: 'Sunrise',
+            SUNSET: 'Sunset',
+            VALLEY: 'Valley'
+        }
     }
-}
+}
