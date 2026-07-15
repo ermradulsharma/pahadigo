@@ -37,15 +37,15 @@ describe('ChatController (Root/General)', () => {
     });
 
     test('createConversation should return bad request if type is invalid', async () => {
-        mockReq.payload = { bookingId: 'booking123', type: 'invalid-type' };
-        const response = await ChatController.createConversation(mockReq);
+        mockReq.payload = { type: 'invalid-type' };
+        const response = await ChatController.createConversation(mockReq, { params: { bookingId: 'booking123' } });
         const body = await response.json();
         expect(response.status).toBe(HTTP_STATUS.BAD_REQUEST);
         expect(body.message).toContain('Invalid conversation type');
     });
 
     test('createConversation should return 404 if booking is not found', async () => {
-        mockReq.payload = { bookingId: 'booking123', type: 'traveller-vendor' };
+        mockReq.payload = { type: 'traveller-vendor' };
         const mockQuery = {
             select: jest.fn().mockReturnThis(),
             populate: jest.fn().mockReturnThis(),
@@ -53,7 +53,7 @@ describe('ChatController (Root/General)', () => {
         };
         jest.spyOn(Booking, 'findById').mockReturnValue(mockQuery);
 
-        const response = await ChatController.createConversation(mockReq);
+        const response = await ChatController.createConversation(mockReq, { params: { bookingId: 'booking123' } });
         const body = await response.json();
         expect(response.status).toBe(HTTP_STATUS.NOT_FOUND);
         expect(body.message).toContain('Booking not found');
