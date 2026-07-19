@@ -56,7 +56,7 @@
         "mongodb-memory-server": "^11.2.0",
         "postcss": "^8.5.19",
         "supertest": "^7.2.2",
-        "tailwindcss": "^4.3.2"
+        "tailwindcss": "^4.3.3"
     },
     "engines": {
         "node": ">=18.17.0",
