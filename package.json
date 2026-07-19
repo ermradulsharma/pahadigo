@@ -48,7 +48,7 @@
         "@tailwindcss/postcss": "^4.3.2",
         "@types/jest": "^30.0.0",
         "@types/node": "^26.1.1",
-        "autoprefixer": "^10.5.3",
+        "autoprefixer": "^10.5.4",
         "eslint": "^10.7.0",
         "eslint-config-next": "16.2.10",
         "gcp-metadata": "^8.1.3",
