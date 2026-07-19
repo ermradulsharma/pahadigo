@@ -45,7 +45,7 @@
         "zod-to-json-schema": "^3.25.2"
     },
     "devDependencies": {
-        "@tailwindcss/postcss": "^4.3.2",
+        "@tailwindcss/postcss": "^4.3.3",
         "@types/jest": "^30.0.0",
         "@types/node": "^26.1.1",
         "autoprefixer": "^10.5.3",
