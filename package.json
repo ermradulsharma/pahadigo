@@ -5,6 +5,23 @@
     "author": "ermradulsharma",
     "private": true,
     "type": "module",
+    "repository": "https://github.com/ermradulsharma/pahadigo",
+    "keywords": [
+        "pahadigo",
+        "travel",
+        "booking",
+        "himachal",
+        "nextjs",
+        "react"
+    ],
+    "sponsor": {
+        "url": "https://github.com/sponsors/ermradulsharma"
+    },
+    "homepage": "https://pahadigo.co.in",
+    "previewUrl": "https://pahadigo.vercel.app",
+    "bugs": {
+        "url": "https://github.com/ermradulsharma/pahadigo/issues"
+    },
     "scripts": {
         "build": "next build",
         "dev": "next dev",
