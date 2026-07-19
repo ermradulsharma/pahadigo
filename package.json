@@ -21,7 +21,7 @@
         "bcryptjs": "^3.0.3",
         "cloudinary": "^2.10.0",
         "country-state-city": "^3.2.1",
-        "firebase-admin": "^14.1.0",
+        "firebase-admin": "^14.2.0",
         "framer-motion": "^12.42.2",
         "google-auth-library": "^10.9.0",
         "js-cookie": "^3.0.8",
