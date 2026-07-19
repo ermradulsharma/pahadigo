@@ -1,6 +1,7 @@
 <p align="center">
   <img src="public/img/pahadigo_banner.png" alt="PahadiGo Banner" width="100%" height="70%" />
 </p>
+
 ![Next.js](https://img.shields.io/badge/Next.js-16.2.x-black?style=for-the-badge&logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.x-blue?style=for-the-badge&logo=react)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Atlas_9.x-green?style=for-the-badge&logo=mongodb)
