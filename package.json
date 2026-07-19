@@ -32,7 +32,7 @@
         "next": "^16.2.10",
         "next-cloudinary": "^6.17.5",
         "nodemailer": "^9.0.3",
-        "razorpay": "^2.9.6",
+        "razorpay": "^2.9.8",
         "react": "19.2.7",
         "react-dom": "19.2.7",
         "react-simple-wysiwyg": "^3.4.1",
