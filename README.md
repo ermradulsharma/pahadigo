@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="public/img/pahadigo_banner.png" alt="PahadiGo Banner" width="100%" style="height: 50vh;"/>
+  <img src="public/img/pahadigo_banner.png" alt="PahadiGo Banner" width="100%" style="height: 70vh;"/>
 </p>
 
 ![Next.js](https://img.shields.io/badge/Next.js-16.2.x-black?style=for-the-badge&logo=next.js)
