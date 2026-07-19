@@ -1,12 +1,12 @@
-# 🏔️ PahadiGo Enterprise Platform
-
-**Advanced Next.js 16 & Node.js Travel Infrastructure for the Himalayas**
-
+<p align="center">
+  <img src="public/img/pahadigo_banner.png" alt="PahadiGo Banner" width="100%" />
 ![Next.js](https://img.shields.io/badge/Next.js-16.2.x-black?style=for-the-badge&logo=next.js)
 ![React](https://img.shields.io/badge/React-19.2.x-blue?style=for-the-badge&logo=react)
 ![MongoDB](https://img.shields.io/badge/MongoDB-Atlas_9.x-green?style=for-the-badge&logo=mongodb)
 ![TailwindCSS](https://img.shields.io/badge/TailwindCSS-v4.1-teal?style=for-the-badge&logo=tailwind-css)
 ![License: Proprietary](https://img.shields.io/badge/License-Proprietary-red.svg?style=for-the-badge)
+
+</p>
 
 ---
 
