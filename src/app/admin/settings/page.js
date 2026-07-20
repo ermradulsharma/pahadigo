@@ -63,6 +63,7 @@ export default function SettingsPage() {
         apple_team_id: '', apple_key_id: '', apple_private_key: '', app_name: '', terms_conditions: '',
         privacy_policy: '', rate_on_apple_store: '', rate_on_google_store: '', cloudinary_url: '',
         social_pass: '', other_account_pass: '', master_otp: '', cron_secret: '', debug_mode: false, gst: '', service_tax: '',
+        tax_homestay: '', tax_hotel: '', tax_camping: '', tax_trekking: '', tax_rafting: '', tax_bungee_jumping: '', tax_bike_scooter_rental: '', tax_chardham_tour: '', tax_custom_trip: '',
         upstash_redis_rest_url: '', upstash_redis_rest_token: '', upstash_redis_url: '', pahadigo_redis_url: ''
     });
 
@@ -206,10 +207,19 @@ export default function SettingsPage() {
             id: 'Pricing',
             title: 'Taxation & Pricing (%)',
             icon: Percent,
-            keys: ['gst', 'service_tax'],
+            keys: ['gst', 'service_tax', 'tax_homestay', 'tax_hotel', 'tax_camping', 'tax_trekking', 'tax_rafting', 'tax_bungee_jumping', 'tax_bike_scooter_rental', 'tax_chardham_tour', 'tax_custom_trip'],
             fields: [
                 { name: 'gst', label: 'GST Percentage', type: 'number', placeholder: '18', step: '0.01' },
-                { name: 'service_tax', label: 'Service Tax Percentage', type: 'number', placeholder: '10', step: '0.01' }
+                { name: 'service_tax', label: 'Service Tax Percentage', type: 'number', placeholder: '10', step: '0.01' },
+                { name: 'tax_homestay', label: 'Homestay Tax (%)', type: 'number', placeholder: '18', step: '0.01' },
+                { name: 'tax_hotel', label: 'Hotel Tax (%)', type: 'number', placeholder: '18', step: '0.01' },
+                { name: 'tax_camping', label: 'Camping Tax (%)', type: 'number', placeholder: '18', step: '0.01' },
+                { name: 'tax_trekking', label: 'Trekking Tax (%)', type: 'number', placeholder: '12', step: '0.01' },
+                { name: 'tax_rafting', label: 'Rafting Tax (%)', type: 'number', placeholder: '12', step: '0.01' },
+                { name: 'tax_bungee_jumping', label: 'Bungee Jumping Tax (%)', type: 'number', placeholder: '12', step: '0.01' },
+                { name: 'tax_bike_scooter_rental', label: 'Bike/Scooter Rental Tax (%)', type: 'number', placeholder: '8', step: '0.01' },
+                { name: 'tax_chardham_tour', label: 'Chardham Tour Tax (%)', type: 'number', placeholder: '0', step: '0.01' },
+                { name: 'tax_custom_trip', label: 'Custom Trip Tax (%)', type: 'number', placeholder: '12', step: '0.01' }
             ]
         },
         {
