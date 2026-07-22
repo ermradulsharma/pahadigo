@@ -36,7 +36,7 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
             push_notification: {
                 server_key: APP_DETAILS.PUSH_NOTIFICATION_SERVER_KEY || DEFAULTS.NULL,
             },
-            jwt_secret: process.env.JWT_SECRET || 'test_secret', // Allowed only in test env
+            jwt_secret: APP_SECRETS.JWT_SECRET,
             mongodb_uri: SYSTEM_ENV.MONGODB_URI,
             redis: {
                 upstash_url: SYSTEM_ENV.UPSTASH_REDIS_REST_URL || DEFAULTS.NULL,
@@ -67,12 +67,21 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
             tax: {
                 gst: parseFloat(SYSTEM_ENV.GST) || 0,
                 service_tax: parseFloat(SYSTEM_ENV.SERVICE_TAX) || 0,
+                homestay: parseFloat(SYSTEM_ENV.TAX_HOMESTAY) || 0,
+                hotel: parseFloat(SYSTEM_ENV.TAX_HOTEL) || 0,
+                camping: parseFloat(SYSTEM_ENV.TAX_CAMPING) || 0,
+                trekking: parseFloat(SYSTEM_ENV.TAX_TREKKING) || 0,
+                rafting: parseFloat(SYSTEM_ENV.TAX_RAFTING) || 0,
+                bungee_jumping: parseFloat(SYSTEM_ENV.TAX_BUNGEE_JUMPING) || 0,
+                bike_scooter_rental: parseFloat(SYSTEM_ENV.TAX_BIKE_SCOOTER_RENTAL) || 0,
+                chardham_tour: parseFloat(SYSTEM_ENV.TAX_CHARDHAM_TOUR) || 0,
+                custom_trip: parseFloat(SYSTEM_ENV.TAX_CUSTOM_TRIP) || 0
             },
             cloudinary: { url: THIRD_PARTY_APIS.CLOUDINARY_URL || DEFAULTS.NULL },
             secrets: {
                 social_pass: APP_SECRETS.SOCIAL_PASS,
                 other_account_pass: APP_SECRETS.OTHER_ACCOUNT_PASS,
-                master_otp: process.env.MASTER_OTP || '888888', // Allowed only in test env
+                master_otp: APP_SECRETS.MASTER_OTP || '888888',
                 cron_secret: process.env.CRON_SECRET || DEFAULTS.NULL
             }
         };
@@ -147,6 +156,15 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
             tax: {
                 gst: dbSettings.gst || parseFloat(SYSTEM_ENV.GST) || 0,
                 service_tax: dbSettings.service_tax || parseFloat(SYSTEM_ENV.SERVICE_TAX) || 0,
+                homestay: dbSettings.tax_homestay ?? (parseFloat(SYSTEM_ENV.TAX_HOMESTAY) || 0),
+                hotel: dbSettings.tax_hotel ?? (parseFloat(SYSTEM_ENV.TAX_HOTEL) || 0),
+                camping: dbSettings.tax_camping ?? (parseFloat(SYSTEM_ENV.TAX_CAMPING) || 0),
+                trekking: dbSettings.tax_trekking ?? (parseFloat(SYSTEM_ENV.TAX_TREKKING) || 0),
+                rafting: dbSettings.tax_rafting ?? (parseFloat(SYSTEM_ENV.TAX_RAFTING) || 0),
+                bungee_jumping: dbSettings.tax_bungee_jumping ?? (parseFloat(SYSTEM_ENV.TAX_BUNGEE_JUMPING) || 0),
+                bike_scooter_rental: dbSettings.tax_bike_scooter_rental ?? (parseFloat(SYSTEM_ENV.TAX_BIKE_SCOOTER_RENTAL) || 0),
+                chardham_tour: dbSettings.tax_chardham_tour ?? (parseFloat(SYSTEM_ENV.TAX_CHARDHAM_TOUR) || 0),
+                custom_trip: dbSettings.tax_custom_trip ?? (parseFloat(SYSTEM_ENV.TAX_CUSTOM_TRIP) || 0)
             },
             cloudinary: {
                 url: dbSettings.cloudinary_url || THIRD_PARTY_APIS.CLOUDINARY_URL || DEFAULTS.NULL,
@@ -219,6 +237,15 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
             tax: {
                 gst: parseFloat(SYSTEM_ENV.GST) || 0,
                 service_tax: parseFloat(SYSTEM_ENV.SERVICE_TAX) || 0,
+                homestay: parseFloat(SYSTEM_ENV.TAX_HOMESTAY) || 0,
+                hotel: parseFloat(SYSTEM_ENV.TAX_HOTEL) || 0,
+                camping: parseFloat(SYSTEM_ENV.TAX_CAMPING) || 0,
+                trekking: parseFloat(SYSTEM_ENV.TAX_TREKKING) || 0,
+                rafting: parseFloat(SYSTEM_ENV.TAX_RAFTING) || 0,
+                bungee_jumping: parseFloat(SYSTEM_ENV.TAX_BUNGEE_JUMPING) || 0,
+                bike_scooter_rental: parseFloat(SYSTEM_ENV.TAX_BIKE_SCOOTER_RENTAL) || 0,
+                chardham_tour: parseFloat(SYSTEM_ENV.TAX_CHARDHAM_TOUR) || 0,
+                custom_trip: parseFloat(SYSTEM_ENV.TAX_CUSTOM_TRIP) || 0
             },
             cloudinary: {
                 url: THIRD_PARTY_APIS.CLOUDINARY_URL || DEFAULTS.NULL,

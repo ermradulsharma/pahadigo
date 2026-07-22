@@ -1,6 +1,6 @@
 import { Worker } from 'bullmq';
-import { getAppConfig } from '@/core/Lib/appConfig.js';
-import NotificationService from '@/core/Services/General/NotificationService.js';
+import { getAppConfig } from '../../appConfig.js';
+import NotificationService from '../../../Services/General/NotificationService.js';
 
 let notificationWorker = null;
 
@@ -11,8 +11,6 @@ export const initNotificationWorker = async () => {
     const redisUrl = config.redis.standard_url || config.redis.upstash_tcp_url || 'redis://localhost:6379';
 
     notificationWorker = new Worker('NotificationQueue', async (job) => {
-        console.log(`[NotificationWorker] Processing job ${job.id} of type ${job.name}...`);
-        
         if (job.name === 'generate_invoice') {
             const { email, bookingId, role } = job.data;
             const success = await NotificationService._processInvoiceDelivery(email, bookingId, role);

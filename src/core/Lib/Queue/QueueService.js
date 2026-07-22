@@ -1,5 +1,5 @@
 import { Queue } from 'bullmq';
-import { getAppConfig } from '@/core/Lib/appConfig.js';
+import { getAppConfig } from '../appConfig.js';
 
 let notificationQueue = null;
 

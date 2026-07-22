@@ -64,6 +64,15 @@ export const seedSettings = async () => {
             // Pricing Configuration
             gst: config.tax.gst,
             service_tax: config.tax.service_tax,
+            tax_homestay: config.tax.homestay,
+            tax_hotel: config.tax.hotel,
+            tax_camping: config.tax.camping,
+            tax_trekking: config.tax.trekking,
+            tax_rafting: config.tax.rafting,
+            tax_bungee_jumping: config.tax.bungee_jumping,
+            tax_bike_scooter_rental: config.tax.bike_scooter_rental,
+            tax_chardham_tour: config.tax.chardham_tour,
+            tax_custom_trip: config.tax.custom_trip,
 
             // Cloudinary
             cloudinary_url: config.cloudinary.url,

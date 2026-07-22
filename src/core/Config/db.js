@@ -11,18 +11,16 @@ async function connectDB() {
         const opts = { bufferCommands: false };
         cached.promise = mongoose.connect(uri, opts).then((mongoose) => mongoose);
     }
-    try { 
-        cached.conn = await cached.promise; 
-        
-        // Initialize Background Workers if not in test env
-        if (process.env.NODE_ENV !== 'test') {
-            import('../Lib/Queue/Workers/NotificationWorker.js')
-                .then(module => module.initNotificationWorker().catch(console.error))
-                .catch(console.error);
+    try {
+        cached.conn = await cached.promise;
+
+        // Initialize Background Workers if not in test env or seed mode
+        if (process.env.NODE_ENV !== 'test' && !process.argv[1]?.includes('ResetAndSeed.js')) {
+            import('../Lib/Queue/Workers/NotificationWorker.js').then(module => module.initNotificationWorker().catch(console.error)).catch(console.error);
         }
-    } catch (e) { 
-        cached.promise = null; 
-        throw e; 
+    } catch (e) {
+        cached.promise = null;
+        throw e;
     }
     return cached.conn;
 }
