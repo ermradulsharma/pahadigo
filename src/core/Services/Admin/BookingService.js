@@ -201,12 +201,14 @@ class BookingService {
 
         // Notify Traveller
         if (booking.user?.email) {
-            await NotificationService.sendInvoice(booking.user.email, booking._id, 'TRAVELLER');
+            Promise.resolve(NotificationService.sendInvoice(booking.user.email, booking._id, 'TRAVELLER'))
+                .catch(err => console.error('[NotificationService] Failed to send traveller invoice:', err));
         }
 
         // Notify Vendor
         if (booking.vendor?.businessEmail) {
-            await NotificationService.sendInvoice(booking.vendor.businessEmail, booking._id, 'VENDOR');
+            Promise.resolve(NotificationService.sendInvoice(booking.vendor.businessEmail, booking._id, 'VENDOR'))
+                .catch(err => console.error('[NotificationService] Failed to send vendor invoice:', err));
         }
 
         // Audit Trail

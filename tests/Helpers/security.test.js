@@ -28,10 +28,10 @@ describe('Industry Standard: Security Helper Logic', () => {
     });
 
     describe('[sanitizeHTML]', () => {
-        it('[Success] should escape HTML tags', () => {
-            const html = '<script>alert(1)</script>';
+        it('[Success] should strip dangerous script tags and preserve safe HTML', () => {
+            const html = '<script>alert(1)</script><p>Hello <b>World</b></p>';
             const result = sanitizeHTML(html);
-            expect(result).toBe('&lt;script&gt;alert(1)&lt;/script&gt;');
+            expect(result).toBe('<p>Hello <b>World</b></p>');
         });
     });
 });

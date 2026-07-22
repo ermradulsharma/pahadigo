@@ -105,6 +105,7 @@ const BookingSchema = new mongoose.Schema({
 });
 
 BookingSchema.index({ 'item.itemId': 1 });
+BookingSchema.index({ 'item.itemId': 1, status: 1, startDate: 1, endDate: 1 });
 BookingSchema.index({ createdAt: -1 });
 
 const Booking = mongoose.models.Booking || mongoose.model('Booking', BookingSchema);

@@ -28,7 +28,7 @@ const SettingSchema = new mongoose.Schema({
   push_notification_server_key: { type: String, default: DEFAULTS.NULL },
 
   // Database Configuration
-  mongodb_uri: { type: String, default: DEFAULTS.NULL },
+  mongodb_uri: { type: String, select: false, default: DEFAULTS.NULL },
   api_url: { type: String, default: DEFAULTS.NULL },
 
   // Redis Configuration

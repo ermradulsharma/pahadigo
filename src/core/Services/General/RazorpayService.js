@@ -77,7 +77,7 @@ class RazorpayService {
     verifySignature(orderId, paymentId, signature, dynamicConfig = null) {
         if (!orderId || !paymentId || !signature) return false;
 
-        if (allowFallbackCredentials() && signature === 'DUMMY_SIGNATURE') {
+        if (process.env.NODE_ENV === 'test' && signature === 'DUMMY_SIGNATURE') {
             return true;
         }
 

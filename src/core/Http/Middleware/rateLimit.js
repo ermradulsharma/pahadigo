@@ -110,36 +110,45 @@ export const rateLimit = ({ limit = 5, windowMs = 60000, message = 'Too many req
         const now = new Date();
         const nextResetAt = new Date(now.getTime() + windowMs);
 
-        const rateData = await RateLimit.findOneAndUpdate(
-            { key: cacheKey },
-            [
-                {
-                    $set: {
-                        count: {
-                            $cond: [
-                                { $or: [{ $not: ['$resetAt'] }, { $lte: ['$resetAt', now] }] },
-                                1,
-                                { $add: [{ $ifNull: ['$count', 0] }, 1] }
-                            ]
-                        },
-                        resetAt: {
-                            $cond: [
-                                { $or: [{ $not: ['$resetAt'] }, { $lte: ['$resetAt', now] }] },
-                                nextResetAt,
-                                '$resetAt'
-                            ]
+        try {
+            const rateData = await RateLimit.findOneAndUpdate(
+                { key: cacheKey },
+                [
+                    {
+                        $set: {
+                            count: {
+                                $cond: [
+                                    { $or: [{ $not: ['$resetAt'] }, { $lte: ['$resetAt', now] }] },
+                                    1,
+                                    { $add: [{ $ifNull: ['$count', 0] }, 1] }
+                                ]
+                            },
+                            resetAt: {
+                                $cond: [
+                                    { $or: [{ $not: ['$resetAt'] }, { $lte: ['$resetAt', now] }] },
+                                    nextResetAt,
+                                    '$resetAt'
+                                ]
+                            }
                         }
                     }
-                }
-            ],
-            { upsert: DEFAULTS.TRUE, returnDocument: 'after', setDefaultsOnInsert: DEFAULTS.TRUE, updatePipeline: true }
-        );
+                ],
+                { upsert: DEFAULTS.TRUE, returnDocument: 'after', setDefaultsOnInsert: DEFAULTS.TRUE, updatePipeline: true }
+            );
 
-        return rateData.count > limit ? errorResponse(HTTP_STATUS.TOO_MANY_REQUESTS, message, DEFAULTS.ARRAY, {
-            'X-RateLimit-Limit': limit.toString(),
-            'X-RateLimit-Remaining': '0',
-            'Retry-After': Math.max(0, Math.ceil((rateData.resetAt - Date.now()) / 1000)).toString()
-        }) : DEFAULTS.NULL;
+            return rateData.count > limit ? errorResponse(HTTP_STATUS.TOO_MANY_REQUESTS, message, DEFAULTS.ARRAY, {
+                'X-RateLimit-Limit': limit.toString(),
+                'X-RateLimit-Remaining': '0',
+                'Retry-After': Math.max(0, Math.ceil((rateData.resetAt - Date.now()) / 1000)).toString()
+            }) : DEFAULTS.NULL;
+        } catch (dbError) {
+            // Gracefully handle E11000 concurrent upsert collision
+            if (dbError.code === 11000) {
+                return DEFAULTS.NULL;
+            }
+            console.error("MongoDB Ratelimit Error:", dbError);
+            return DEFAULTS.NULL; // Fail open to not block valid traffic if DB struggles
+        }
     };
 };
 

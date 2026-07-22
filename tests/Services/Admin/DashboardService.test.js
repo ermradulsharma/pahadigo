@@ -101,12 +101,14 @@ describe('Industry Standard: DashboardService Analytics Logic', () => {
         Booking.find.mockReturnValue({
             populate: jest.fn().mockReturnThis(),
             sort: jest.fn().mockReturnThis(),
-            limit: jest.fn().mockResolvedValue([])
+            limit: jest.fn().mockReturnThis(),
+            lean: jest.fn().mockResolvedValue([])
         });
         AuditLog.find.mockReturnValue({
             populate: jest.fn().mockReturnThis(),
             sort: jest.fn().mockReturnThis(),
-            limit: jest.fn().mockResolvedValue([])
+            limit: jest.fn().mockReturnThis(),
+            lean: jest.fn().mockResolvedValue([])
         });
         Dispute.find.mockReturnValue({
             populate: jest.fn().mockReturnThis(),
@@ -155,6 +157,7 @@ describe('Industry Standard: DashboardService Analytics Logic', () => {
         const mockBooking = { _id: '1', startDate: new Date(), bookingDetails: { category: 'trekking' } };
         Booking.find.mockReturnValue({
             populate: jest.fn().mockReturnThis(),
+            lean: jest.fn().mockResolvedValue([mockBooking]),
             then: jest.fn(resolve => resolve([mockBooking]))
         });
 

@@ -23,7 +23,15 @@ class BusinessService {
             delete updateData.documents;
             for (const key in profileData.documents) {
                 if (profileData.documents[key] !== undefined) {
-                    updateData[`documents.${key}`] = profileData.documents[key];
+                    const docObj = profileData.documents[key];
+                    if (typeof docObj === 'object' && docObj !== null && !Array.isArray(docObj)) {
+                        updateData[`documents.${key}`] = {
+                            ...docObj,
+                            status: 'pending'
+                        };
+                    } else {
+                        updateData[`documents.${key}`] = docObj;
+                    }
                 }
             }
         }
@@ -166,7 +174,7 @@ class BusinessService {
     }
 
     async getPublicBusinessProfile(id) {
-        return await qhGetBusinessById(id, 'businessAbout businessName businessNumber businessRegistration gstNumber ownerName status trustBadge address', { path: 'user', select: 'email phone' });
+        return await qhGetBusinessById(id, 'businessAbout businessName businessNumber businessRegistration gstNumber ownerName status trustBadge address category profileImage');
     }
 }
 

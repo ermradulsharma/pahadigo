@@ -52,6 +52,16 @@ export function apiHandler(handler) {
             return successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.GENERIC, response);
         } catch (err) {
             if (!handler) return errorResponse(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.ROUTE_NOT_FOUND, {});
+            
+            // Handle specific Database/Validation Errors
+            if (err.name === 'ValidationError') {
+                const messages = Object.values(err.errors).map(val => val.message).join(', ');
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, messages, {});
+            }
+            if (err.name === 'CastError') {
+                return errorResponse(HTTP_STATUS.BAD_REQUEST, `Invalid value for ${err.path}`, {});
+            }
+
             const status = err.status || HTTP_STATUS.INTERNAL_SERVER_ERROR;
             return errorResponse(status, err.message, {});
         }

@@ -5,6 +5,7 @@ import Booking from '@/core/Models/Booking.js';
 import User from '@/core/Models/User.js';
 import Vendor from '@/core/Models/Vendor.js';
 import { PushNotificationService } from '@/core/Services/PushNotificationService.js';
+import { enqueueInvoice } from '@/core/Lib/Queue/QueueService.js';
 
 /**
  * NotificationService - Centralized service for sending communications
@@ -198,6 +199,20 @@ class NotificationService {
     }
 
     async sendInvoice(email, bookingId, role = 'traveller') {
+        try {
+            // Offload the heavy PDF generation and email sending to the background queue
+            await enqueueInvoice(email, bookingId, role);
+            return true;
+        } catch (error) {
+            console.error('[NotificationService] Failed to enqueue sendInvoice:', error);
+            return false;
+        }
+    }
+
+    /**
+     * Internal method called by the BullMQ worker to actually generate PDF and send the email
+     */
+    async _processInvoiceDelivery(email, bookingId, role = 'traveller') {
         try {
             const config = await getAppConfig();
             const booking = await Booking.findById(bookingId).populate('vendor user').lean();

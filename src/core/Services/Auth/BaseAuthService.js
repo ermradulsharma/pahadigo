@@ -42,13 +42,25 @@ class BaseAuthService {
             throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         }
 
+        // Security Whitelist: Strip sensitive security & role fields from updates
+        const forbiddenFields = ['role', 'status', 'isVerified', 'isVendorVerified', 'deletedAt', 'deletedBy', 'deletedReason'];
+        forbiddenFields.forEach(field => delete updates[field]);
+
         if (updates.preferences) {
+            // Prevent tempRole injection via preferences
+            const safePreferences = { ...updates.preferences };
+            delete safePreferences.tempRole;
+
+            const existingPrefs = existingUser.preferences?.toObject 
+                ? existingUser.preferences.toObject() 
+                : (existingUser.preferences || {});
+
             updates.preferences = {
-                ...existingUser.preferences.toObject(),
-                ...updates.preferences,
+                ...existingPrefs,
+                ...safePreferences,
                 notifications: {
-                    ...existingUser.preferences.notifications,
-                    ...(updates.preferences.notifications || {})
+                    ...(existingPrefs.notifications || {}),
+                    ...(safePreferences.notifications || {})
                 }
             };
         }

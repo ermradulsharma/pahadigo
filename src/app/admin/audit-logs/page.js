@@ -61,11 +61,17 @@ export default function AuditLogsPage() {
     const SyntaxHighlight = ({ json }) => {
         if (!json) return null;
         const jsonString = JSON.stringify(json, null, 2);
-        const highlighted = jsonString.replace(
+        // Escape the raw JSON string first to neutralize any HTML within values,
+        // then inject safe <span> tags for syntax highlighting.
+        const escaped = jsonString
+            .replace(/&/g, '&amp;')
+            .replace(/</g, '&lt;')
+            .replace(/>/g, '&gt;');
+        const highlighted = escaped.replace(
             /("(\\u[a-zA-Z0-9]{4}|\\[^u]|[^\\"])*"(\s*:)?|\b(true|false|null)\b|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?)/g,
             function (match) {
                 let cls = 'text-sky-300'; // string value
-                if (/^"/.test(match)) {
+                if (/^"|/.test(match)) {
                     if (/:$/.test(match)) {
                         cls = 'text-emerald-300'; // key
                     }

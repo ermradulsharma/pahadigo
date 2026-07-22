@@ -20,43 +20,23 @@ const normalizePath = (path) => {
   return normalized || '/';
 };
 
-const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+import FindMyWay from 'find-my-way';
 
-const compileRoute = (route) => {
-  const paramNames = [];
-  const routePath = route.path.replace(/\/$/, '') || '/';
-  const segments = routePath.split('/').filter(Boolean).map((segment) => {
-    if (segment.startsWith(':')) {
-      paramNames.push(segment.slice(1));
-      return '([^/]+)';
-    }
-    return escapeRegex(segment);
-  });
-  const regexPath = segments.length ? `/${segments.join('/')}` : '/';
-
-  return {
-    ...route,
-    method: route.method.toUpperCase(),
-    matcher: new RegExp(`^${regexPath}$`),
-    paramNames
-  };
-};
-
-const staticRoutesByMethod = {};
-const dynamicRoutesByMethod = {};
+const router = FindMyWay({ 
+  defaultRoute: () => null 
+});
 
 routes.forEach(route => {
-  const compiledRoute = compileRoute(route);
-  const method = compiledRoute.method;
+  const method = Array.isArray(route.method) 
+    ? route.method.map(m => m.toUpperCase()) 
+    : route.method.toUpperCase();
+    
+  let path = route.path.replace(/\/$/, '') || '/';
   
-  if (compiledRoute.paramNames.length === 0) {
-    staticRoutesByMethod[method] = staticRoutesByMethod[method] || {};
-    const staticPath = route.path.replace(/\/$/, '') || '/';
-    staticRoutesByMethod[method][staticPath] = compiledRoute;
-  } else {
-    dynamicRoutesByMethod[method] = dynamicRoutesByMethod[method] || [];
-    dynamicRoutesByMethod[method].push(compiledRoute);
-  }
+  // find-my-way uses :param format just like the legacy router
+  router.on(method, path, (req, res, params, store) => {
+    return { routeDef: route, params };
+  });
 });
 
 const withRequestId = (response, requestId) => {
@@ -77,24 +57,10 @@ const logError = (message, error, metadata = {}) => {
  */
 function findRoute(method, slug) {
   const path = normalizePath(slug);
-  const upperMethod = method.toUpperCase();
-
-  if (staticRoutesByMethod[upperMethod] && staticRoutesByMethod[upperMethod][path]) {
-    return { routeDef: staticRoutesByMethod[upperMethod][path], params: {} };
+  const match = router.find(method.toUpperCase(), path);
+  if (match && match.handler) {
+    return match.handler(null, null, match.params, match.store);
   }
-
-  const methodRoutes = dynamicRoutesByMethod[upperMethod] || [];
-  for (const route of methodRoutes) {
-    const match = path.match(route.matcher);
-    if (match) {
-      const params = { ...(route.params || {}) };
-      route.paramNames.forEach((name, index) => {
-        params[name] = match[index + 1];
-      });
-      return { routeDef: route, params };
-    }
-  }
-
   return null;
 }
 
@@ -192,8 +158,20 @@ async function handler(req, { params }) {
       return withRequestId(errorResponse(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.BAD_REQUEST, {}), requestId);
     }
 
+    // --- NoSQL Injection Sanitization for Query Params & Route Params ---
+    // Body is sanitized earlier during parsing. Here we sanitize URL params.
+    try {
+      const urlObj = new URL(req.url);
+      const rawQuery = Object.fromEntries(urlObj.searchParams.entries());
+      req.query = sanitizeNoSQL(rawQuery);
+    } catch {
+      req.query = {};
+    }
+    // Sanitize dynamic route params (e.g., /:id)
+    const sanitizedRouteParams = sanitizeNoSQL({ ...routeParams });
+
     // Execute Modular Controller Handler (Standardized by centralized apiHandler helper)
-    return withRequestId(await routeDef.handler(req, { params: routeParams }), requestId);
+    return withRequestId(await routeDef.handler(req, { params: sanitizedRouteParams }), requestId);
 
   } catch (error) {
     logError('[API HANDLER ERROR]', error, { requestId, method: req.method, path: req.url });

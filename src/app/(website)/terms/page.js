@@ -1,6 +1,7 @@
 import Link from 'next/link';
 import connectDB from '@/core/Config/db.js';
 import Policy from '@/core/Models/Policy.js';
+import { sanitizeHTML } from '@/core/Helpers/security.js';
 
 export const metadata = {
     title: 'Terms of Service',
@@ -29,7 +30,7 @@ export default async function TermsOfService() {
 
                         <div className="relative z-10 prose prose-lg prose-indigo max-w-none text-gray-600">
                             {policy?.content ? (
-                                <div dangerouslySetInnerHTML={{ __html: policy.content }} />
+                                <div dangerouslySetInnerHTML={{ __html: sanitizeHTML(policy.content) }} />
                             ) : (
                                 <>
                                     <p className="lead text-xl text-gray-700 mb-8">

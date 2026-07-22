@@ -113,7 +113,7 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
             push_notification: {
                 server_key: dbSettings.push_notification_server_key || APP_DETAILS.PUSH_NOTIFICATION_SERVER_KEY || DEFAULTS.NULL,
             },
-            jwt_secret: dbSettings.jwt_secret || APP_SECRETS.JWT_SECRET || (process.env.NODE_ENV !== 'production' ? 'dev_secret_fallback' : null),
+            jwt_secret: dbSettings.jwt_secret || APP_SECRETS.JWT_SECRET || process.env.JWT_SECRET || null,
             mongodb_uri: dbSettings.mongodb_uri || SYSTEM_ENV.MONGODB_URI || DEFAULTS.NULL,
             redis: {
                 upstash_url: dbSettings.upstash_redis_rest_url || SYSTEM_ENV.UPSTASH_REDIS_REST_URL || DEFAULTS.NULL,
