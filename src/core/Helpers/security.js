@@ -47,33 +47,45 @@ export const sanitizeHTML = (html) => {
     // Strip all dangerous tags entirely (including their content)
     const STRIP_TAGS_WITH_CONTENT = /(<(script|style|iframe|object|embed|form|input|button|select|textarea|base|link|meta|applet)[^>]*>[\s\S]*?<\/\2>|<(script|style|iframe|object|embed|form|input|button|select|textarea|base|link|meta|applet)[^>]*\/?>)/gi;
 
-    // Remove dangerous tags with content first
-    let clean = html.replace(STRIP_TAGS_WITH_CONTENT, '');
+    // Remove dangerous tags with content first, iteratively to handle nested tags (e.g. <scr<script>ipt>)
+    let clean = html;
+    let prev = '';
+    let iterations = 0;
+    while (clean !== prev && iterations < 10) {
+        prev = clean;
+        clean = clean.replace(STRIP_TAGS_WITH_CONTENT, '');
+        iterations++;
+    }
+    // Apply allowlist and attribute stripping iteratively as well
+    prev = '';
+    iterations = 0;
+    while (clean !== prev && iterations < 10) {
+        prev = clean;
+        clean = clean.replace(/(<\/?)([a-zA-Z][a-zA-Z0-9]*)([^>]*)>/g, (match, prefix, tag, attrs) => {
+            const tagLower = tag.toLowerCase();
+            if (!ALLOWED_TAGS.has(tagLower)) return '';
 
-    // Remove remaining tags that are not in allowlist, stripping only the tag not its content
-    clean = clean.replace(/(<\/?)([a-zA-Z][a-zA-Z0-9]*)([^>]*)>/g, (match, prefix, tag, attrs) => {
-        const tagLower = tag.toLowerCase();
-        if (!ALLOWED_TAGS.has(tagLower)) return '';
+            if (prefix === '</') {
+                return `</${tag}>`;
+            }
 
-        if (prefix === '</') {
-            return `</${tag}>`;
-        }
+            // Strip all event handler attributes and dangerous attrs from allowed tags
+            const safeAttrs = attrs.replace(/\s([a-zA-Z\-:]+)\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/g, (attrMatch, attrName, attrValue) => {
+                const name = attrName.toLowerCase();
+                // Block all event handlers (onclick, onerror, onload, etc.)
+                if (name.startsWith('on')) return '';
+                // Block javascript: protocol in href/src
+                if ((name === 'href' || name === 'src') && /javascript:/i.test(attrValue)) return '';
+                // Only allow allowlisted attribute names
+                if (!ALLOWED_ATTRS.has(name)) return '';
+                // Force target="_blank" links to have rel="noopener noreferrer"
+                return attrMatch;
+            });
 
-        // Strip all event handler attributes and dangerous attrs from allowed tags
-        const safeAttrs = attrs.replace(/\s([a-zA-Z\-:]+)\s*=\s*("[^"]*"|'[^']*'|[^\s>]*)/g, (attrMatch, attrName, attrValue) => {
-            const name = attrName.toLowerCase();
-            // Block all event handlers (onclick, onerror, onload, etc.)
-            if (name.startsWith('on')) return '';
-            // Block javascript: protocol in href/src
-            if ((name === 'href' || name === 'src') && /javascript:/i.test(attrValue)) return '';
-            // Only allow allowlisted attribute names
-            if (!ALLOWED_ATTRS.has(name)) return '';
-            // Force target="_blank" links to have rel="noopener noreferrer"
-            return attrMatch;
+            return `<${tag}${safeAttrs}>`;
         });
-
-        return `<${tag}${safeAttrs}>`;
-    });
+        iterations++;
+    }
 
     return clean;
 };
