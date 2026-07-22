@@ -82,7 +82,8 @@
     "overrides": {
         "postcss": "$postcss",
         "uuid": "$uuid",
-        "eslint": "$eslint"
+        "eslint": "$eslint",
+        "sharp": "$sharp"
     },
     "allowScripts": {
         "@firebase/util@1.15.1": true,
