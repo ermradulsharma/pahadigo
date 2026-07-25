@@ -20,6 +20,8 @@ export const TRANSPORT = {
         },
         HOTEL_TYPE: {
             NOT_INCLUDED: "Not Included",
+            STANDARD: "Standard",
+            PREMIUM: "Premium",
             ASHRAM: "Ashram",
             BOUTIQUE: "Boutique",
             BUDGET: "Budget",
@@ -44,7 +46,12 @@ export const TRANSPORT = {
             MINI_VAN: 'Mini Van',
             VAN: 'Van',
             TEMPO: 'Tempo',
-            BUS: 'Bus'
+            BUS: 'Bus',
+            BUDGET_SUMO_BOLERO: 'Budget (Sumo/Bolero)',
+            COMFORT_INNOVA_ERTIGA: 'Comfort (Innova/Ertiga)',
+            TEMPO_TRAVELLER: 'Tempo Traveller',
+            LUXURY_URBANIA: 'Luxury Urbania',
+            COACH_BUS: 'Coach/Bus'
         },
 
     },
