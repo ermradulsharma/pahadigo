@@ -12,6 +12,8 @@ export const ChardhamDetails = {
     exclusions: { type: String, default: DEFAULTS.NULL },
     departureTime: { type: String, default: DEFAULTS.NULL },
     reportingTime: { type: String, default: DEFAULTS.NULL },
+    maxAdults: { type: Number, default: DEFAULTS.COUNTS.ZERO },
+    maxChildren: { type: Number, default: DEFAULTS.COUNTS.ZERO },
     startPoint: PointLocation,
     endPoint: PointLocation,
 }
@@ -19,6 +21,8 @@ export const ChardhamDetails = {
 export const BikeScooterRentalDetails = {
     vehicleName: { type: String, default: DEFAULTS.NULL },
     vehicleType: { type: String, enum: Object.values(TRANSPORT.BIKE_SCOOTER_RENTAL.TYPE), default: TRANSPORT.BIKE_SCOOTER_RENTAL.TYPE.BIKE },
+    maxAdults: { type: Number, default: DEFAULTS.COUNTS.ZERO },
+    maxChildren: { type: Number, default: DEFAULTS.COUNTS.ZERO },
 }
 
 export const CustomTripDetails = {
