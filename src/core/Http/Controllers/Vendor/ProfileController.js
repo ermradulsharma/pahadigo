@@ -6,6 +6,7 @@ import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
 import { transformAuthResponse } from '@/core/Helpers/index.js';
 import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
 import Controller from '@/core/Controllers/Controller.js';
+import UserEvents from '@/core/Events/UserEvents.js';
 
 /**
  * ProfileController (Vendor Role) - Specialized management of
@@ -80,6 +81,8 @@ class ProfileController extends Controller {
                 { $set: updates },
                 { returnDocument: 'after', runValidators: true }
             ).select('-password');
+
+            if (user?.email) UserEvents.emit('user.profile_updated', { identifier: user.email, userName: user.name });
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PERSONAL_UPDATED, user);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);

@@ -2,6 +2,8 @@ import BusinessService from '@/core/Services/Vendor/BusinessService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
 import Controller from '@/core/Controllers/Controller.js';
+import VendorEvents from '@/core/Events/VendorEvents.js';
+import User from '@/core/Models/User';
 
 /**
  * BusinessController (Vendor Role) - Specialized management of
@@ -24,15 +26,16 @@ class BusinessController extends Controller {
     async createProfile(req) {
         try {
             const existingProfile = await BusinessService.getBusinessByUserId(req.user.id);
-            if (existingProfile) {
-                return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.PROFILE_ALREADY_EXISTS);
-            }
+            if (existingProfile) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.PROFILE_ALREADY_EXISTS);
+
             const body = req.payload;
             if (req.formDataBody?.get('profile_image')) {
                 const res = await uploadToCloudinary(req.formDataBody.get('profile_image'), `vendor_profiles/${req.user.id}`);
                 body.profileImage = res.url;
             }
+
             const vendor = await BusinessService.syncBusinessProfile(req.user.id, body);
+            if (vendor.user?.email) VendorEvents.emit('vendor.profile_created', { identifier: vendor.user.email, businessName: vendor.businessName });
             return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.PROFILE_INITIATED, vendor);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);

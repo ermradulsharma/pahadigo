@@ -20,11 +20,24 @@ class NotificationService {
         return nodemailer.createTransport({
             host: config.smtp.host,
             port: config.smtp.port,
-            secure: config.smtp.port === 465, // true for 465, false for other ports
-            auth: {
-                user: config.smtp.user,
-                pass: config.smtp.pass,
-            },
+            secure: config.smtp.port === 465,
+            auth: { user: config.smtp.user, pass: config.smtp.pass, },
+        });
+    }
+
+    /**
+     * Internal helper to send emails with standard configuration
+     */
+    async _sendEmailHelper({ to, toName, subject, html, attachments }) {
+        const config = await getAppConfig();
+        const transporter = await this._getTransporter();
+        const toAddress = toName ? `"${toName}" <${to}>` : to;
+        return await transporter.sendMail({
+            from: `"${config.smtp.from_name}" <${config.smtp.from_address}>`,
+            to: toAddress,
+            subject,
+            html,
+            ...(attachments && { attachments })
         });
     }
 
@@ -33,16 +46,8 @@ class NotificationService {
      */
     async sendOTPEmail(email, otp) {
         try {
-            const config = await getAppConfig();
             const html = await renderTemplate('Emails/auth-otp.html', { OTP: otp });
-            const transporter = await this._getTransporter();
-            await transporter.sendMail({
-                from: `"${config.smtp.from_name}" <${config.smtp.from_address}>`,
-                to: email,
-                subject: `PahadiGo OTP Verification`,
-                html: html,
-            });
-
+            await this._sendEmailHelper({ to: email, subject: `PahadiGo OTP Verification`, html: html });
             return true;
         } catch (error) {
             return false;
@@ -68,24 +73,71 @@ class NotificationService {
      */
     async sendLoginAlertEmail(email, details) {
         try {
-            const config = await getAppConfig();
             const html = await renderTemplate('Emails/login-alert.html', {
                 DEVICE: details.device || 'Unknown Device',
                 IP: details.ip || 'Unknown IP',
                 TIME: details.time || new Date().toLocaleString()
             });
-
-            const transporter = await this._getTransporter();
-            await transporter.sendMail({
-                from: `"${config.smtp.from_name}" <${config.smtp.from_address}>`,
-                to: email,
-                subject: `PahadiGo: New Login Alert`,
-                html: html,
-            });
-
+            await this._sendEmailHelper({ to: email, subject: `PahadiGo: New Login Alert`, html: html });
             return true;
         } catch (error) {
             console.error("[NotificationService] sendLoginAlertEmail Error:", error);
+            return false;
+        }
+    }
+
+    /**
+     * Send welcome email to vendor upon profile creation
+     */
+    async sendVendorWelcomeEmail(email, businessName) {
+        try {
+            const html = await renderTemplate('Emails/vendor/welcome.html', { BUSINESS_NAME: businessName });
+            await this._sendEmailHelper({ to: email, toName: businessName, subject: `Welcome to PahadiGo!`, html: html });
+            return true;
+        } catch (error) {
+            console.error("[NotificationService] sendVendorWelcomeEmail Error:", error);
+            return false;
+        }
+    }
+
+    /**
+     * Send email to vendor acknowledging document upload
+     */
+    async sendVendorDocumentsReceivedEmail(email, businessName) {
+        try {
+            const html = await renderTemplate('Emails/vendor/documents.html', { BUSINESS_NAME: businessName });
+            await this._sendEmailHelper({ to: email, toName: businessName, subject: `Documents Received - PahadiGo`, html: html });
+            return true;
+        } catch (error) {
+            console.error("[NotificationService] sendVendorDocumentsReceivedEmail Error:", error);
+            return false;
+        }
+    }
+
+    /**
+     * Send email to vendor acknowledging bank details submission
+     */
+    async sendVendorBankAddedEmail(email, businessName) {
+        try {
+            const html = await renderTemplate('Emails/vendor/bank.html', { BUSINESS_NAME: businessName });
+            await this._sendEmailHelper({ to: email, toName: businessName, subject: `Bank Details Submitted - PahadiGo`, html: html });
+            return true;
+        } catch (error) {
+            console.error("[NotificationService] sendVendorBankAddedEmail Error:", error);
+            return false;
+        }
+    }
+
+    /**
+     * Send email to user acknowledging profile update
+     */
+    async sendUserProfileUpdatedEmail(email, userName) {
+        try {
+            const html = await renderTemplate('Emails/vendor/profile.html', { USER_NAME: userName });
+            await this._sendEmailHelper({ to: email, toName: userName, subject: `Profile Updated - PahadiGo`, html: html });
+            return true;
+        } catch (error) {
+            console.error("[NotificationService] sendUserProfileUpdatedEmail Error:", error);
             return false;
         }
     }
@@ -228,20 +280,14 @@ class NotificationService {
 
             console.log(`[NotificationService] Generating PDF stream for booking ${booking.bookingCode}...`);
             const stream = await renderToStream(React.createElement(InvoiceDocument, { booking }));
-            
+
             const chunks = [];
             for await (const chunk of stream) {
                 chunks.push(chunk);
             }
             const pdfBuffer = Buffer.concat(chunks);
 
-            const transporter = await this._getTransporter();
-            const subject = role === 'traveller' 
-                ? `Invoice for your PahadiGo Booking - ${booking.bookingCode}` 
-                : `Invoice Generated for Booking - ${booking.bookingCode}`;
-                
-            await transporter.sendMail({
-                from: `"${config.smtp.from_name}" <${config.smtp.from_address}>`,
+            await this._sendEmailHelper({
                 to: email,
                 subject: subject,
                 html: `<p>Dear user,</p><p>Please find attached the invoice for your booking <strong>${booking.bookingCode}</strong>.</p><p>Thank you,<br/>PahadiGo Team</p>`,
