@@ -101,6 +101,13 @@ export const AccommodationPricing = {
     extraBedPrice: optionalPriceDecimal
 };
 
+export const TransportPricing = {
+    ...BasePackageFields.pricing,
+    maxAdults: { type: Number, default: DEFAULTS.COUNTS.ZERO },
+    maxChildren: { type: Number, default: DEFAULTS.COUNTS.ZERO },
+    childPrice: optionalPriceDecimal
+};
+
 export const AccommodationRoomDetails = {
     roomType: { type: String, enum: [...Object.values(PACKAGE.ACCOMMODATION.HOTEL.ROOM_TYPE), ...Object.values(PACKAGE.ACCOMMODATION.HOMESTAY.ROOM_TYPE)], default: PACKAGE.ACCOMMODATION.HOTEL.ROOM_TYPE.STANDARD_ROOM },
     bedType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.COMMON.BED_TYPE), default: PACKAGE.ACCOMMODATION.COMMON.BED_TYPE.DOUBLE },

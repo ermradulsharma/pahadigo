@@ -1,15 +1,12 @@
 import mongoose from 'mongoose';
 import { DEFAULTS } from '../../Constants/index.js';
-import { BasePackageFields, BasePackageOptions, TransportPolicy, optionalPriceDecimal } from './BasePackageSchema.js';
+import { BasePackageFields, BasePackageOptions, TransportPolicy, TransportPricing } from './BasePackageSchema.js';
 import { BikeScooterRentalDetails } from './Package/Transport.js';
 
 const VehicleRentalSchema = new mongoose.Schema({
   ...BasePackageFields,
   isDriverIncluded: { type: Boolean, default: DEFAULTS.FALSE },
-  pricing: {
-    ...BasePackageFields.pricing,
-    depositAmount: optionalPriceDecimal
-  },
+  pricing: TransportPricing,
   details: BikeScooterRentalDetails,
   policies: {
     ...TransportPolicy,
