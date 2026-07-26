@@ -60,6 +60,8 @@ const VendorSchema = new mongoose.Schema({
         accountNumber: { type: String, default: DEFAULTS.NULL },
         ifscCode: { type: String, default: DEFAULTS.NULL },
         bankName: { type: String, default: DEFAULTS.NULL },
+        razorpayContactId: { type: String, default: DEFAULTS.NULL },
+        razorpayFundAccountId: { type: String, default: DEFAULTS.NULL },
         cancelledCheque: {
             url: { type: String, default: DEFAULTS.NULL },
             publicId: { type: String, default: DEFAULTS.NULL },
