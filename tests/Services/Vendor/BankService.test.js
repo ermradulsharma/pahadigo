@@ -26,7 +26,9 @@ describe('Vendor BankService', () => {
             const bankData = { accountHolderName: 'John Doe', accountNumber: '12345' };
             const mockVendor = { _id: 'v1', bankDetails: {} };
             
-            Vendor.findOne.mockResolvedValue(mockVendor);
+            Vendor.findOne.mockReturnValue({
+                populate: jest.fn().mockResolvedValue(mockVendor)
+            });
             Vendor.findOneAndUpdate.mockResolvedValue({ bankDetails: bankData });
 
             const result = await BankService.updateBankDetails(userId, bankData);
@@ -39,7 +41,9 @@ describe('Vendor BankService', () => {
             const bankData = { cancelledChequeFile: { name: 'cheque.jpg' } };
             const mockVendor = { _id: 'v1', bankDetails: {} };
             
-            Vendor.findOne.mockResolvedValue(mockVendor);
+            Vendor.findOne.mockReturnValue({
+                populate: jest.fn().mockResolvedValue(mockVendor)
+            });
             uploadToCloudinary.mockResolvedValue({ url: 'http://cloud.com/img', publicId: 'p1' });
             Vendor.findOneAndUpdate.mockResolvedValue({ 
                 bankDetails: { cancelledCheque: { url: 'http://cloud.com/img' } } 

@@ -26,7 +26,9 @@ describe('General RazorpayService', () => {
             expect(mockOrdersCreate).toHaveBeenCalledWith({
                 amount: 10050,
                 currency: 'INR',
-                receipt: 'receipt123'
+                receipt: 'receipt123',
+                payment_capture: 1,
+                notes: {}
             });
             expect(result).toEqual(mockOrder);
         });
