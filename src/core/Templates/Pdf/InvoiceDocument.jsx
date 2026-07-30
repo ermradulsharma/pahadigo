@@ -119,7 +119,7 @@ const styles = StyleSheet.create({
     footerText: { fontSize: 8, color: PRIMARY_COLOR, fontWeight: 'bold' }
 });
 
-const InvoiceDocument = ({ booking }) => {
+const InvoiceDocument = ({ booking, role = 'traveller' }) => {
     const numberToWords = (num) => {
         const a = ['', 'One ', 'Two ', 'Three ', 'Four ', 'Five ', 'Six ', 'Seven ', 'Eight ', 'Nine ', 'Ten ', 'Eleven ', 'Twelve ', 'Thirteen ', 'Fourteen ', 'Fifteen ', 'Sixteen ', 'Seventeen ', 'Eighteen ', 'Nineteen '];
         const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
@@ -141,7 +141,7 @@ const InvoiceDocument = ({ booking }) => {
                 invoiceNo: 'INV-2026-0142',
                 invoiceDate: '18 June 2026',
                 dueDate: '25 June 2026',
-                traveller: {
+                billedTo: {
                     name: 'Nur Aina Binti Rahman',
                     address: 'No. 22, Jalan Melur 5, Shah Alam, Selangor, Malaysia',
                     email: 'nuraina.rahman@gmail.com',
@@ -172,13 +172,27 @@ const InvoiceDocument = ({ booking }) => {
             invoiceNo: b.bookingCode || 'N/A',
             invoiceDate: b.createdAt ? new Date(b.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : new Date().toLocaleDateString(),
             dueDate: b.createdAt ? new Date(b.createdAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : new Date().toLocaleDateString(),
-            traveller: {
+            billedTo: role === 'vendor' ? {
+                name: b.vendor?.businessName || b.vendor?.ownerName || 'Vendor',
+                address: b.vendor?.address ? `${b.vendor.address.city || ''}, ${b.vendor.address.state || ''}` : '',
+                email: b.vendor?.businessEmail || b.vendor?.email || '',
+                phone: b.vendor?.businessPhone || b.vendor?.phone || ''
+            } : {
                 name: b.traveller?.name || b.user?.name || 'Guest User',
                 address: b.user?.address ? `${b.user.address.addressLine1 || ''}, ${b.user.address.city || ''}` : '',
                 email: b.traveller?.email || b.user?.email || '',
                 phone: b.traveller?.phone || b.user?.phone || ''
             },
-            items: [
+            items: role === 'vendor' ? [
+                {
+                    desc: `Platform Commission / Service Fee (Booking Ref: ${b.bookingCode || 'N/A'})`,
+                    qty: 1,
+                    unitPrice: b.pricing?.serviceFee || 0,
+                    taxRate: '18%',
+                    taxAmount: 0,
+                    amount: b.pricing?.serviceFee || 0
+                }
+            ] : [
                 {
                     desc: `${b.item?.title || 'Travel Booking'} (${b.occupancy?.adults || 1} Adults${b.occupancy?.children ? `, ${b.occupancy.children} Children` : ''})`,
                     qty: b.occupancy?.units || 1,
@@ -194,7 +208,16 @@ const InvoiceDocument = ({ booking }) => {
                 status: b.paymentStatus || 'PAID',
                 date: b.payment?.paidAt ? new Date(b.payment.paidAt).toLocaleDateString('en-GB', { day: 'numeric', month: 'long', year: 'numeric' }) : new Date().toLocaleDateString()
             },
-            summary: {
+            summary: role === 'vendor' ? {
+                subTotal: b.pricing?.serviceFee || 0,
+                discount: 0,
+                serviceFee: 0,
+                processing: 0,
+                taxAmount: 0,
+                total: b.pricing?.serviceFee || 0,
+                totalWords: numberToWords(Math.round(b.pricing?.serviceFee || 0)),
+                currency: b.pricing?.currency || 'INR'
+            } : {
                 subTotal: b.pricing?.subTotal || b.pricing?.basePrice || 0,
                 discount: b.pricing?.discount || 0,
                 serviceFee: b.pricing?.serviceFee || 0,
@@ -252,10 +275,10 @@ const InvoiceDocument = ({ booking }) => {
                             <View style={styles.billedTitleWrapper}><IconUser color={PRIMARY_COLOR} /></View>
                             <Text style={styles.billedTitle}>BILLED TO</Text>
                         </View>
-                        <Text style={styles.billedName}>{data.traveller.name}</Text>
-                        <Text style={styles.billedText}>{data.traveller.address}</Text>
-                        <View style={[styles.iconRow, { marginTop: 5 }]}><IconEmail color={PRIMARY_COLOR} /><Text style={styles.iconTextDark}>{data.traveller.email}</Text></View>
-                        <View style={styles.iconRow}><IconPhone color={PRIMARY_COLOR} /><Text style={styles.iconTextDark}>{data.traveller.phone}</Text></View>
+                        <Text style={styles.billedName}>{data.billedTo.name}</Text>
+                        <Text style={styles.billedText}>{data.billedTo.address}</Text>
+                        <View style={[styles.iconRow, { marginTop: 5 }]}><IconEmail color={PRIMARY_COLOR} /><Text style={styles.iconTextDark}>{data.billedTo.email}</Text></View>
+                        <View style={styles.iconRow}><IconPhone color={PRIMARY_COLOR} /><Text style={styles.iconTextDark}>{data.billedTo.phone}</Text></View>
                     </View>
                 </View>
                 <View style={styles.tableContainer}>

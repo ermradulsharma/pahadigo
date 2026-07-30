@@ -1,43 +1,66 @@
-import { Queue } from 'bullmq';
+import { Client } from '@upstash/qstash';
 import { getAppConfig } from '../appConfig.js';
 
-let notificationQueue = null;
+let qstashClient = null;
 
-export const getNotificationQueue = async () => {
-    if (notificationQueue) return notificationQueue;
+export const getQStashClient = async () => {
+    if (qstashClient) return qstashClient;
 
     const config = await getAppConfig();
-    const redisUrl = config.redis.standard_url || config.redis.upstash_tcp_url || 'redis://localhost:6379';
+    const token = process.env.QSTASH_TOKEN || config.qstash?.token;
 
-    notificationQueue = new Queue('NotificationQueue', {
-        connection: {
-            url: redisUrl
-        },
-        defaultJobOptions: {
-            attempts: 3,
-            backoff: {
-                type: 'exponential',
-                delay: 1000
-            }
-        }
-    });
+    if (!token) {
+        console.warn('[QueueService] QSTASH_TOKEN is missing. Background jobs will not be processed securely.');
+    }
 
-    return notificationQueue;
+    qstashClient = new Client({ token: token || 'dummy_token_for_dev' });
+    return qstashClient;
+};
+
+// Use an environment variable for the webhook URL, fallback to localhost for development
+const getWebhookUrl = () => {
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    return `${baseUrl}/api/webhooks/qstash`;
 };
 
 export const enqueueInvoice = async (email, bookingId, role) => {
     try {
-        const queue = await getNotificationQueue();
-        await queue.add('generate_invoice', { email, bookingId, role });
-        console.log(`[QueueService] Enqueued generate_invoice for Booking: ${bookingId}`);
+        const client = await getQStashClient();
+        await client.publishJSON({
+            url: getWebhookUrl(),
+            body: {
+                type: 'generate_invoice',
+                payload: { email, bookingId, role }
+            }
+        });
+        // console.log(`[QueueService] QStash: Published generate_invoice for Booking: ${bookingId}`);
         return true;
     } catch (error) {
-        console.error('[QueueService] Failed to enqueue invoice:', error);
+        // console.error('[QueueService] Failed to publish invoice to QStash:', error);
+        return false;
+    }
+};
+
+export const enqueuePushNotification = async (token, notification, data = {}) => {
+    try {
+        const client = await getQStashClient();
+        await client.publishJSON({
+            url: getWebhookUrl(),
+            body: {
+                type: 'send_push_notification',
+                payload: { token, notification, data }
+            }
+        });
+        // console.log(`[QueueService] QStash: Published send_push_notification for token: ${token.substring(0, 15)}...`);
+        return true;
+    } catch (error) {
+        // console.error('[QueueService] Failed to publish push notification to QStash:', error);
         return false;
     }
 };
 
 export default {
-    getNotificationQueue,
-    enqueueInvoice
+    getQStashClient,
+    enqueueInvoice,
+    enqueuePushNotification
 };

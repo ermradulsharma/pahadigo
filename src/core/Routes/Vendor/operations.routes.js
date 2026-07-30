@@ -11,6 +11,7 @@ export default [
         { method: 'PATCH', path: '/:id/status', schema: schemas.bookingStatusUpdate, handler: wrap(() => BookingController, 'updateBookingStatus') },
         { method: 'POST', path: '/:id/timeline', schema: schemas.timelineEvent, handler: wrap(() => BookingController, 'addTimelineEvent') },
         ...Router.group({ prefix: '/otp' }, [
+            { method: 'POST', path: '/offline-sync', schema: schemas.offlineOtpSync, handler: wrap(() => BookingController, 'syncOfflineOTPs') },
             { method: 'POST', path: '/:id/start', schema: schemas.otpVerify, handler: wrap(() => BookingController, 'verifyStartOTP') },
             { method: 'POST', path: '/:id/end', schema: schemas.otpVerify, handler: wrap(() => BookingController, 'verifyEndOTP') },
         ]),

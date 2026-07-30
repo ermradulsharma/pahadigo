@@ -1,4 +1,4 @@
-import { POST } from '@/app/api/[...slug]/route.js';
+import { POST } from '@/app/api/packages/[[...slug]]/route.js';
 import { invokeApi } from '../utils/apiTestHelper.js';
 import { HTTP_STATUS } from '@/core/Constants/index.js';
 import mongoose from 'mongoose';
@@ -29,7 +29,7 @@ describe('Integration: Booking & Concurrency', () => {
             guestDetails: []
         };
 
-        const { status, data } = await invokeApi(POST, 'public/packages/fake_item_id/book', { 
+        const { status, data } = await invokeApi(POST, 'packages/fake_item_id/book', { 
             method: 'POST',
             body: bookingPayload,
             headers: {

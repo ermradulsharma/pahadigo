@@ -3,6 +3,7 @@ const customJestConfig = {
     setupFilesAfterEnv: ['./tests/setup.js'],
     testTimeout: 120000,
     moduleNameMapper: {
+        '\\.jsx$': '<rootDir>/tests/__mocks__/jsxMock.js',
         '^@/models$': '<rootDir>/src/core/Models/index.js',
         '^@/models/(.*)$': '<rootDir>/src/core/Models/$1',
         '^@/services$': '<rootDir>/src/core/Services/index.js',

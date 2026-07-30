@@ -4,7 +4,7 @@ import { jest } from '@jest/globals';
 const mockBookingFindById = jest.fn();
 const mockUserFindById = jest.fn();
 const mockVendorFindById = jest.fn();
-const mockSendToDevice = jest.fn();
+const mockEnqueuePushNotification = jest.fn();
 
 jest.unstable_mockModule('nodemailer', () => ({
     default: {
@@ -60,11 +60,10 @@ jest.unstable_mockModule('@/core/Models/Vendor.js', () => ({
     }
 }));
 
-// Mock Push Notification Service
-jest.unstable_mockModule('@/core/Services/PushNotificationService.js', () => ({
-    PushNotificationService: {
-        sendToDevice: mockSendToDevice
-    }
+// Mock QueueService
+jest.unstable_mockModule('@/core/Lib/Queue/QueueService.js', () => ({
+    enqueuePushNotification: mockEnqueuePushNotification,
+    enqueueInvoice: jest.fn()
 }));
 
 const { default: NotificationService } = await import('@/services/General/NotificationService.js');
@@ -126,14 +125,14 @@ describe('NotificationService', () => {
             // Vendor user with FCM token
             mockUserFindById.mockResolvedValueOnce({ fcmToken: 'vendor_fcm_token' });
 
-            mockSendToDevice.mockResolvedValue({ success: true });
+            mockEnqueuePushNotification.mockResolvedValue(true);
 
             const result = await NotificationService.notifyBookingStatus('booking_123', 'confirmed');
             expect(result).toBe(true);
 
-            expect(mockSendToDevice).toHaveBeenCalledTimes(2);
+            expect(mockEnqueuePushNotification).toHaveBeenCalledTimes(2);
             // Verify traveller notification
-            expect(mockSendToDevice).toHaveBeenNthCalledWith(
+            expect(mockEnqueuePushNotification).toHaveBeenNthCalledWith(
                 1,
                 'traveller_fcm_token',
                 {
@@ -146,7 +145,7 @@ describe('NotificationService', () => {
                 })
             );
             // Verify vendor notification
-            expect(mockSendToDevice).toHaveBeenNthCalledWith(
+            expect(mockEnqueuePushNotification).toHaveBeenNthCalledWith(
                 2,
                 'vendor_fcm_token',
                 {
@@ -176,8 +175,8 @@ describe('NotificationService', () => {
             const result = await NotificationService.notifyBookingStatus('booking_123', 'created');
             expect(result).toBe(true);
 
-            expect(mockSendToDevice).toHaveBeenCalledTimes(1);
-            expect(mockSendToDevice).toHaveBeenCalledWith(
+            expect(mockEnqueuePushNotification).toHaveBeenCalledTimes(1);
+            expect(mockEnqueuePushNotification).toHaveBeenCalledWith(
                 'traveller_fcm_token',
                 {
                     title: 'Booking Initiated',
@@ -208,7 +207,7 @@ describe('NotificationService', () => {
 
             const result = await NotificationService.notifyBookingStatus('booking_123', 'confirmed');
             expect(result).toBe(true);
-            expect(mockSendToDevice).not.toHaveBeenCalled();
+            expect(mockEnqueuePushNotification).not.toHaveBeenCalled();
         });
     });
 });

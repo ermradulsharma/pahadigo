@@ -10,6 +10,7 @@ export default [
         { method: 'POST', path: '/create', schema: schemas.adminBookingMutation, handler: wrap(() => BookingController, 'createBooking') },
         { method: 'GET', path: '/:id', handler: wrap(() => BookingController, 'show') },
         { method: 'POST', path: '/:id/invoice', schema: schemas.timelineEvent, handler: wrap(() => BookingController, 'sendInvoice') },
+        { method: 'GET', path: '/:id/download-invoice', handler: wrap(() => BookingController, 'downloadInvoice') },
     ]),
     ...Router.group({ prefix: '/payments' }, [
         { method: 'GET', path: '/', handler: wrap(() => PaymentController, 'getPaymentHistory') },

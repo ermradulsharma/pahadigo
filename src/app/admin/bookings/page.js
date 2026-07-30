@@ -5,7 +5,7 @@ import { getToken } from '@/core/Helpers/authUtils.js';
 import api from '@/core/Api/index.js';
 import { useToast } from '@/components/ui/ToastContext.js';
 import CyberTable from '@/app/components/admin/CyberTable.js';
-import { Calendar, Search, CreditCard, Mail, ExternalLink, Undo2, ChevronLeft, ChevronRight, Eye, MoreVertical, X } from 'lucide-react';
+import { Calendar, Search, CreditCard, Mail, ExternalLink, Undo2, ChevronLeft, ChevronRight, Eye, MoreVertical, X, Download } from 'lucide-react';
 import Loading from '@/components/admin/Loading.js';
 import Link from 'next/link';
 
@@ -65,6 +65,22 @@ export default function BookingsPage() {
             toast("Error processing refund.", "error");
         } finally {
             setProcessingRefund(null);
+        }
+    };
+
+    const handleDownloadPdf = async (bookingId, bookingCode, type = 'traveller') => {
+        try {
+            const blob = await api.admin.bookings.downloadInvoice(bookingId, type);
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `Invoice_${type}_${bookingCode || bookingId}.pdf`;
+            document.body.appendChild(a);
+            a.click();
+            URL.revokeObjectURL(url);
+            toast(`${type === 'vendor' ? 'Vendor' : 'Traveller'} PDF downloaded successfully!`, "success");
+        } catch (error) {
+            toast("Failed to download PDF.", "error");
         }
     };
 
@@ -233,6 +249,16 @@ export default function BookingsPage() {
                         <ExternalLink className="w-3 h-3" />
                     </Link>
 
+                    {/* Download Traveller PDF Button */}
+                    <button onClick={() => handleDownloadPdf(b._id, b.bookingCode, 'traveller')} className="p-1 bg-blue-500/10 hover:bg-blue-500/20 text-blue-400 border border-blue-500/20 hover:border-blue-500/40 rounded-none transition-all" title="Download Traveller Invoice">
+                        <Download className="w-3 h-3" />
+                    </button>
+
+                    {/* Download Vendor PDF Button */}
+                    <button onClick={() => handleDownloadPdf(b._id, b.bookingCode, 'vendor')} className="p-1 bg-purple-500/10 hover:bg-purple-500/20 text-purple-400 border border-purple-500/20 hover:border-purple-500/40 rounded-none transition-all" title="Download Vendor Invoice">
+                        <Download className="w-3 h-3" />
+                    </button>
+
                     {['paid', 'refund_pending'].includes(b.paymentStatus) && b.paymentStatus !== 'refunded' && (
                         <button onClick={() => handleRefund(b._id, b.pricing?.total)} disabled={processingRefund === b._id} className="p-1 bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20 hover:border-rose-500/40 rounded-none transition-all disabled:opacity-30" title="Initiate Termination Sequence">
                             <Undo2 className={`w-3 h-3 ${processingRefund === b._id ? 'animate-spin' : ''}`} />
@@ -274,7 +300,7 @@ export default function BookingsPage() {
                     </div>
                 </div>
             </div>
-            <CyberTable data={bookings} columns={columns} itemsPerPage={10} totalItems={totalMetadata.total} externalCurrentPage={currentPage} onPageChange={(page) => setCurrentPage(page)} searchTerm={searchQuery} searchKeys={['user.name', 'user.email', 'vendor.businessName', 'vendor.ownerName', '_id', 'serviceDetails.title', 'serviceType']} emptyText="No bookings found in database." exportFilename="bookings_data" />
+            <CyberTable data={filteredBookings} columns={columns} itemsPerPage={10} totalItems={totalMetadata.total} externalCurrentPage={currentPage} onPageChange={(page) => setCurrentPage(page)} searchTerm={searchQuery} searchKeys={['user.name', 'user.email', 'vendor.businessName', 'vendor.ownerName', '_id', 'serviceDetails.title', 'serviceType']} emptyText="No bookings found in database." exportFilename="bookings_data" />
         </div>
     );
 }

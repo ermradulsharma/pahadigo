@@ -14,10 +14,7 @@ async function connectDB() {
     try {
         cached.conn = await cached.promise;
 
-        // Initialize Background Workers if not in test env or seed mode
-        if (process.env.NODE_ENV !== 'test' && !process.argv[1]?.includes('ResetAndSeed.js')) {
-            import('../Lib/Queue/Workers/NotificationWorker.js').then(module => module.initNotificationWorker().catch(console.error)).catch(console.error);
-        }
+        // Worker initialization moved to src/core/worker.js to prevent serverless execution issues
     } catch (e) {
         cached.promise = null;
         throw e;

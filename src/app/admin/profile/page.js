@@ -24,7 +24,7 @@ export default function AdminProfilePage() {
             github: ''
         },
         expertise: '', // Will handle as comma-separated string in UI
-        emergencyContact: {
+        emergencyContacts: {
             name: '',
             phone: '',
             relationship: ''

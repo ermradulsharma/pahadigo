@@ -1,4 +1,4 @@
-import { POST } from '@/app/api/[...slug]/route.js';
+import { POST } from '@/app/api/payment/[[...slug]]/route.js';
 import { invokeApi } from '../utils/apiTestHelper.js';
 import { HTTP_STATUS } from '@/core/Constants/index.js';
 import mongoose from 'mongoose';

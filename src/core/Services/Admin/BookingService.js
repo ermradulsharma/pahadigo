@@ -21,7 +21,7 @@ class BookingService {
     }
 
     async getBookingById(id) {
-        return await Booking.findById(id).populate('user', 'name email phone').populate('vendor', 'businessName ownerName phone email businessEmail').populate('package', 'title price');
+        return await Booking.findById(id).populate('user', 'name email phone address').populate('vendor', 'businessName ownerName phone email businessEmail').populate('package', 'title price');
     }
 
     async createBookingByAdmin(data, req = null) {

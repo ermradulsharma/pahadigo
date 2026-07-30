@@ -1,4 +1,5 @@
-import { GET } from '@/app/api/[...slug]/route.js';
+import { GET as travellerGET } from '@/app/api/traveller/[[...slug]]/route.js';
+import { GET as adminGET } from '@/app/api/admin/[[...slug]]/route.js';
 import { invokeApi } from '../utils/apiTestHelper.js';
 import { HTTP_STATUS } from '@/core/Constants/index.js';
 import mongoose from 'mongoose';
@@ -15,7 +16,7 @@ describe('Integration: Auth & Roles', () => {
     });
 
     it('[Middleware] should return 401 for protected routes without token', async () => {
-        const { status, data } = await invokeApi(GET, 'traveller/me', { method: 'GET' });
+        const { status, data } = await invokeApi(travellerGET, 'traveller/me', { method: 'GET' });
         
         expect(status).toBe(HTTP_STATUS.UNAUTHORIZED);
         expect(data.success).toBe(false);
@@ -32,7 +33,7 @@ describe('Integration: Auth & Roles', () => {
         });
         const token = jwt.sign({ id: user._id, role: 'traveller' }, process.env.JWT_SECRET || 'test_secret');
         
-        const { status, data } = await invokeApi(GET, 'admin/stats', { 
+        const { status, data } = await invokeApi(adminGET, 'admin/stats', { 
             method: 'GET',
             headers: {
                 'authorization': `Bearer ${token}`

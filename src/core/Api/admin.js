@@ -70,6 +70,7 @@ export const adminApi = (fetcher) => ({
         create: (data) => fetcher('/api/admin/bookings/create', { method: 'POST', body: prepareBody(data) }),
         getById: (id) => fetcher(`/api/admin/bookings/${id}`),
         sendInvoice: (id) => fetcher(`/api/admin/bookings/${id}/invoice`, { method: 'POST' }),
+        downloadInvoice: (id, type = 'traveller') => fetcher(`/api/admin/bookings/${id}/download-invoice?type=${type}`, { method: 'GET' }),
     },
 
     payments: {

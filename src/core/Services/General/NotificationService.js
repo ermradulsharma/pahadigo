@@ -5,7 +5,7 @@ import Booking from '@/core/Models/Booking.js';
 import User from '@/core/Models/User.js';
 import Vendor from '@/core/Models/Vendor.js';
 import { PushNotificationService } from '@/core/Services/PushNotificationService.js';
-import { enqueueInvoice } from '@/core/Lib/Queue/QueueService.js';
+import { enqueueInvoice, enqueuePushNotification } from '@/core/Lib/Queue/QueueService.js';
 
 /**
  * NotificationService - Centralized service for sending communications
@@ -208,8 +208,8 @@ class NotificationService {
                 console.log(`\n🔔 [Push Notification INTENDED for Traveller] Title: "${travellerTitle}" | Body: "${travellerBody}"`);
                 const travellerUser = await User.findById(travellerId).select('fcmToken').lean();
                 if (travellerUser && travellerUser.fcmToken) {
-                    console.log(`=> 🚀 Sending Push Notification to Traveller (FCM Token: ${travellerUser.fcmToken.substring(0, 15)}...)`);
-                    await PushNotificationService.sendToDevice(
+                    console.log(`=> 🚀 Enqueueing Push Notification to Traveller (FCM Token: ${travellerUser.fcmToken.substring(0, 15)}...)`);
+                    await enqueuePushNotification(
                         travellerUser.fcmToken,
                         { title: travellerTitle, body: travellerBody },
                         dataPayload
@@ -224,8 +224,8 @@ class NotificationService {
                 console.log(`\n🔔 [Push Notification INTENDED for Vendor] Title: "${vendorTitle}" | Body: "${vendorBody}"`);
                 const vendorUser = await User.findById(vendorUserId).select('fcmToken').lean();
                 if (vendorUser && vendorUser.fcmToken) {
-                    console.log(`=> 🚀 Sending Push Notification to Vendor (FCM Token: ${vendorUser.fcmToken.substring(0, 15)}...)`);
-                    await PushNotificationService.sendToDevice(
+                    console.log(`=> 🚀 Enqueueing Push Notification to Vendor (FCM Token: ${vendorUser.fcmToken.substring(0, 15)}...)`);
+                    await enqueuePushNotification(
                         vendorUser.fcmToken,
                         { title: vendorTitle, body: vendorBody },
                         dataPayload

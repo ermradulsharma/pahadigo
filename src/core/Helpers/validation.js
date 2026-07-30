@@ -239,6 +239,19 @@ export const schemas = {
         otp: z.string().min(4, RESPONSE_MESSAGES.VALIDATION.OTP_MIN_LENGTH)
     }).passthrough(),
 
+    offlineOtpSync: z.object({
+        syncData: z.array(
+            z.object({
+                bookingId: idString,
+                type: z.enum(['start', 'end']),
+                otp: z.string().min(4),
+                timestamp: z.string().refine((val) => !isNaN(Date.parse(val)), {
+                    message: RESPONSE_MESSAGES.VALIDATION.INVALID_DATE,
+                })
+            })
+        ).min(1, 'At least one sync record is required')
+    }).passthrough(),
+
     inventoryUpdate: flexibleObject.refine(data => Object.keys(data).length > 0, {
         message: RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS
     }),
