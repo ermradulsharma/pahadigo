@@ -1,4 +1,4 @@
-import { verifySignatureAppRouter } from '@upstash/qstash/dist/nextjs.js';
+import { verifySignatureAppRouter } from '@upstash/qstash/nextjs';
 import NotificationService from '@/core/Services/General/NotificationService.js';
 import { PushNotificationService } from '@/core/Services/PushNotificationService.js';
 import { NextResponse } from 'next/server';
@@ -46,8 +46,13 @@ async function handler(req) {
     }
 }
 
-// In local development, bypass the signature verification if QSTASH variables aren't set
+// In local development or during builds without keys, use fallback dummy keys to prevent crashes
+const config = {
+    currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY || 'dummy_current_key',
+    nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY || 'dummy_next_key'
+};
+
 const isDev = process.env.NODE_ENV !== 'production';
 const hasKeys = process.env.QSTASH_CURRENT_SIGNING_KEY && process.env.QSTASH_NEXT_SIGNING_KEY;
 
-export const POST = (isDev && !hasKeys) ? handler : verifySignatureAppRouter(handler);
+export const POST = (isDev && !hasKeys) ? handler : verifySignatureAppRouter(handler, config);
