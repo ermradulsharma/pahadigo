@@ -35,7 +35,7 @@ assignees: ''
 
 - **OS Node:** [e.g. Windows 11, Ubuntu 22.04]
 - **Browser/Client:** [e.g. Chrome 120, Postman]
-- **Framework Version:** Next.js 15.1.x
+- **Framework Version:** Next.js 16.2.x
 - **Node.js Version:** [e.g. v20.x]
 
 ## 💡 Systemic Impact & Additional Context
