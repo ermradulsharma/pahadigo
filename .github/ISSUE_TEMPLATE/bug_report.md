@@ -3,7 +3,8 @@ name: Bug report
 about: Create a strict report to help us improve PahadiGo
 title: "[BUG] "
 labels: bug
-assignees: ""
+assignees: ''
+
 ---
 
 ## 🐛 Bug Description

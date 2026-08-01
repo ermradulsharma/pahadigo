@@ -3,7 +3,8 @@ name: Feature Request
 about: Suggest an architectural or product idea for PahadiGo
 title: "[FEAT] "
 labels: enhancement
-assignees: ""
+assignees: ''
+
 ---
 
 ## 🚀 Concept & Problem Statement
