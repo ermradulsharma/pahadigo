@@ -8,7 +8,7 @@ class VendorController extends Controller {
     // GET /traveller/profile/vendor/:businessId
     async getBusinessProfile(req, { params }) {
         try {
-            const business = await getBusinessById(params.businessId, 'businessAbout businessName businessNumber businessRegistration gstNumber ownerName status trustBadge address', { path: 'user', select: 'email phone' });
+            const business = await getBusinessById(params.businessId, 'businessAbout businessName businessNumber businessRegistration profileImage gstNumber ownerName status trustBadge address', { path: 'user', select: 'email phone profileImage isVendorVerified' });
             if (!business) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
             const packages = await getPackageBy({ vendor: params.businessId }) || {};
             const items = {};
