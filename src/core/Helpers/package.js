@@ -22,40 +22,28 @@ import { uploadToCloudinary } from './cloudinary.js';
 export async function item(userId, vendorId, category, itemDataOrUpdates, itemId = null) {
     // 1. Validate vendor authorization for category
     const vendor = await Vendor.findById(vendorId);
-    if (!vendor || !vendor.category) {
-        throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-    }
+    if (!vendor || !vendor.category) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
     const allowed = new Set();
     vendor.category.forEach(c => {
         if (!c.slug) return;
         const slug = c.slug.toLowerCase();
         allowed.add(slug);
-        if (CATEGORY_MAP[slug]) {
-            allowed.add(CATEGORY_MAP[slug]);
-        }
+        if (CATEGORY_MAP[slug]) allowed.add(CATEGORY_MAP[slug]);
     });
     const allowedCategories = Array.from(allowed);
-
-    if (!allowedCategories.includes(category)) {
-        throw new Error(`Vendor not authorized to operate in category: ${category}`);
-    }
+    if (!allowedCategories.includes(category)) throw new Error(`Vendor not authorized to operate in category: ${category}`);
 
     // 2. Find or create package catalog
     let pkg = await Package.findOne({ user: userId, vendor: vendorId });
     if (!pkg) {
-        const initialData = {
-            user: userId,
-            vendor: vendorId
-        };
+        const initialData = { user: userId, vendor: vendorId };
         Object.values(SCHEMA_KEYS).forEach(key => { initialData[key] = []; });
         pkg = await Package.create(initialData);
     }
 
     const schemaKey = CATEGORY_MAP[category] || category;
-    if (pkg[schemaKey] === undefined) {
-        throw new Error(RESPONSE_MESSAGES.CATEGORY.INVALID);
-    }
+    if (pkg[schemaKey] === undefined) throw new Error(RESPONSE_MESSAGES.CATEGORY.INVALID);
 
     // 3. Process and upload photos
     if (itemDataOrUpdates.photos) {
@@ -105,19 +93,13 @@ export async function item(userId, vendorId, category, itemDataOrUpdates, itemId
         };
 
         const flatUpdates = flattenObject(itemDataOrUpdates);
-        Object.keys(flatUpdates).forEach(key => {
-            itemDoc.set(key, flatUpdates[key]);
-        });
+        Object.keys(flatUpdates).forEach(key => itemDoc.set(key, flatUpdates[key]));
 
         // Recalculate selling price if pricing fields were updated but sellingPrice wasn't explicitly supplied
         const isPricingUpdated = Object.keys(itemDataOrUpdates).some(key => key.startsWith('pricing') || key === 'pricing');
-        const hasExplicitSellingPrice =
-            (itemDataOrUpdates['pricing.sellingPrice'] !== undefined && itemDataOrUpdates['pricing.sellingPrice'] !== null && itemDataOrUpdates['pricing.sellingPrice'] !== '') ||
-            (itemDataOrUpdates.pricing && itemDataOrUpdates.pricing.sellingPrice !== undefined && itemDataOrUpdates.pricing.sellingPrice !== null && itemDataOrUpdates.pricing.sellingPrice !== '');
+        const hasExplicitSellingPrice = (itemDataOrUpdates['pricing.sellingPrice'] !== undefined && itemDataOrUpdates['pricing.sellingPrice'] !== null && itemDataOrUpdates['pricing.sellingPrice'] !== '') || (itemDataOrUpdates.pricing && itemDataOrUpdates.pricing.sellingPrice !== undefined && itemDataOrUpdates.pricing.sellingPrice !== null && itemDataOrUpdates.pricing.sellingPrice !== '');
+        if (isPricingUpdated && !hasExplicitSellingPrice && itemDoc.pricing) itemDoc.pricing.sellingPrice = null;
 
-        if (isPricingUpdated && !hasExplicitSellingPrice && itemDoc.pricing) {
-            itemDoc.pricing.sellingPrice = null;
-        }
     } else {
         // Add path
         const index = pkg[schemaKey].push(itemDataOrUpdates) - 1;
@@ -125,31 +107,17 @@ export async function item(userId, vendorId, category, itemDataOrUpdates, itemId
     }
 
     // 5. Apply Pre-save Formatting
-    if (itemDoc.title) {
-        itemDoc.slug = slugify(itemDoc.title);
-    }
-
-    if (itemDoc.pricing) {
-        sellingPrice(itemDoc.pricing);
-    }
-
-    if (itemDoc.location) {
-        mapToGeoJSON(itemDoc.location);
-    }
-    if (itemDoc.details && itemDoc.details.startPoint) {
-        mapToGeoJSON(itemDoc.details.startPoint);
-    }
-    if (itemDoc.details && itemDoc.details.endPoint) {
-        mapToGeoJSON(itemDoc.details.endPoint);
-    }
+    if (itemDoc.title) itemDoc.slug = slugify(itemDoc.title);
+    if (itemDoc.pricing) await sellingPrice(itemDoc.pricing, category);
+    if (itemDoc.location) mapToGeoJSON(itemDoc.location);
+    if (itemDoc.details && itemDoc.details.startPoint) mapToGeoJSON(itemDoc.details.startPoint);
+    if (itemDoc.details && itemDoc.details.endPoint) mapToGeoJSON(itemDoc.details.endPoint);
 
     // 6. Save Catalog
     const saved = await pkg.save();
 
     // Retrieve the final saved subdocument
-    const savedItem = itemId
-        ? saved[schemaKey].id(itemId)
-        : saved[schemaKey][saved[schemaKey].length - 1];
+    const savedItem = itemId ? saved[schemaKey].id(itemId) : saved[schemaKey][saved[schemaKey].length - 1];
 
     // 7. Initialize inventory for new items
     if (!itemId && savedItem && savedItem._id) {

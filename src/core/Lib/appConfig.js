@@ -67,15 +67,15 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
             tax: {
                 gst: parseFloat(SYSTEM_ENV.GST) || 0,
                 service_tax: parseFloat(SYSTEM_ENV.SERVICE_TAX) || 0,
-                homestay: parseFloat(SYSTEM_ENV.TAX_HOMESTAY) || 0,
-                hotel: parseFloat(SYSTEM_ENV.TAX_HOTEL) || 0,
-                camping: parseFloat(SYSTEM_ENV.TAX_CAMPING) || 0,
-                trekking: parseFloat(SYSTEM_ENV.TAX_TREKKING) || 0,
-                rafting: parseFloat(SYSTEM_ENV.TAX_RAFTING) || 0,
-                bungee_jumping: parseFloat(SYSTEM_ENV.TAX_BUNGEE_JUMPING) || 0,
-                bike_scooter_rental: parseFloat(SYSTEM_ENV.TAX_BIKE_SCOOTER_RENTAL) || 0,
-                chardham_tour: parseFloat(SYSTEM_ENV.TAX_CHARDHAM_TOUR) || 0,
-                custom_trip: parseFloat(SYSTEM_ENV.TAX_CUSTOM_TRIP) || 0
+                tax_homestay: parseFloat(SYSTEM_ENV.TAX_HOMESTAY) || 0,
+                tax_hotel: parseFloat(SYSTEM_ENV.TAX_HOTEL) || 0,
+                tax_camping: parseFloat(SYSTEM_ENV.TAX_CAMPING) || 0,
+                tax_trekking: parseFloat(SYSTEM_ENV.TAX_TREKKING) || 0,
+                tax_rafting: parseFloat(SYSTEM_ENV.TAX_RAFTING) || 0,
+                tax_bungee_jumping: parseFloat(SYSTEM_ENV.TAX_BUNGEE_JUMPING) || 0,
+                tax_bike_scooter_rental: parseFloat(SYSTEM_ENV.TAX_BIKE_SCOOTER_RENTAL) || 0,
+                tax_chardham_tour: parseFloat(SYSTEM_ENV.TAX_CHARDHAM_TOUR) || 0,
+                tax_custom_trip: parseFloat(SYSTEM_ENV.TAX_CUSTOM_TRIP) || 0
             },
             cloudinary: { url: THIRD_PARTY_APIS.CLOUDINARY_URL || DEFAULTS.NULL },
             secrets: {
@@ -156,15 +156,15 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
             tax: {
                 gst: dbSettings.gst || parseFloat(SYSTEM_ENV.GST) || 0,
                 service_tax: dbSettings.service_tax || parseFloat(SYSTEM_ENV.SERVICE_TAX) || 0,
-                homestay: dbSettings.tax_homestay ?? (parseFloat(SYSTEM_ENV.TAX_HOMESTAY) || 0),
-                hotel: dbSettings.tax_hotel ?? (parseFloat(SYSTEM_ENV.TAX_HOTEL) || 0),
-                camping: dbSettings.tax_camping ?? (parseFloat(SYSTEM_ENV.TAX_CAMPING) || 0),
-                trekking: dbSettings.tax_trekking ?? (parseFloat(SYSTEM_ENV.TAX_TREKKING) || 0),
-                rafting: dbSettings.tax_rafting ?? (parseFloat(SYSTEM_ENV.TAX_RAFTING) || 0),
-                bungee_jumping: dbSettings.tax_bungee_jumping ?? (parseFloat(SYSTEM_ENV.TAX_BUNGEE_JUMPING) || 0),
-                bike_scooter_rental: dbSettings.tax_bike_scooter_rental ?? (parseFloat(SYSTEM_ENV.TAX_BIKE_SCOOTER_RENTAL) || 0),
-                chardham_tour: dbSettings.tax_chardham_tour ?? (parseFloat(SYSTEM_ENV.TAX_CHARDHAM_TOUR) || 0),
-                custom_trip: dbSettings.tax_custom_trip ?? (parseFloat(SYSTEM_ENV.TAX_CUSTOM_TRIP) || 0)
+                tax_homestay: dbSettings.tax_homestay ?? (parseFloat(SYSTEM_ENV.TAX_HOMESTAY) || 0),
+                tax_hotel: dbSettings.tax_hotel ?? (parseFloat(SYSTEM_ENV.TAX_HOTEL) || 0),
+                tax_camping: dbSettings.tax_camping ?? (parseFloat(SYSTEM_ENV.TAX_CAMPING) || 0),
+                tax_trekking: dbSettings.tax_trekking ?? (parseFloat(SYSTEM_ENV.TAX_TREKKING) || 0),
+                tax_rafting: dbSettings.tax_rafting ?? (parseFloat(SYSTEM_ENV.TAX_RAFTING) || 0),
+                tax_bungee_jumping: dbSettings.tax_bungee_jumping ?? (parseFloat(SYSTEM_ENV.TAX_BUNGEE_JUMPING) || 0),
+                tax_bike_scooter_rental: dbSettings.tax_bike_scooter_rental ?? (parseFloat(SYSTEM_ENV.TAX_BIKE_SCOOTER_RENTAL) || 0),
+                tax_chardham_tour: dbSettings.tax_chardham_tour ?? (parseFloat(SYSTEM_ENV.TAX_CHARDHAM_TOUR) || 0),
+                tax_custom_trip: dbSettings.tax_custom_trip ?? (parseFloat(SYSTEM_ENV.TAX_CUSTOM_TRIP) || 0)
             },
             cloudinary: {
                 url: dbSettings.cloudinary_url || THIRD_PARTY_APIS.CLOUDINARY_URL || DEFAULTS.NULL,
@@ -237,15 +237,15 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
             tax: {
                 gst: parseFloat(SYSTEM_ENV.GST) || 0,
                 service_tax: parseFloat(SYSTEM_ENV.SERVICE_TAX) || 0,
-                homestay: parseFloat(SYSTEM_ENV.TAX_HOMESTAY) || 0,
-                hotel: parseFloat(SYSTEM_ENV.TAX_HOTEL) || 0,
-                camping: parseFloat(SYSTEM_ENV.TAX_CAMPING) || 0,
-                trekking: parseFloat(SYSTEM_ENV.TAX_TREKKING) || 0,
-                rafting: parseFloat(SYSTEM_ENV.TAX_RAFTING) || 0,
-                bungee_jumping: parseFloat(SYSTEM_ENV.TAX_BUNGEE_JUMPING) || 0,
-                bike_scooter_rental: parseFloat(SYSTEM_ENV.TAX_BIKE_SCOOTER_RENTAL) || 0,
-                chardham_tour: parseFloat(SYSTEM_ENV.TAX_CHARDHAM_TOUR) || 0,
-                custom_trip: parseFloat(SYSTEM_ENV.TAX_CUSTOM_TRIP) || 0
+                tax_homestay: parseFloat(SYSTEM_ENV.TAX_HOMESTAY) || 0,
+                tax_hotel: parseFloat(SYSTEM_ENV.TAX_HOTEL) || 0,
+                tax_camping: parseFloat(SYSTEM_ENV.TAX_CAMPING) || 0,
+                tax_trekking: parseFloat(SYSTEM_ENV.TAX_TREKKING) || 0,
+                tax_rafting: parseFloat(SYSTEM_ENV.TAX_RAFTING) || 0,
+                tax_bungee_jumping: parseFloat(SYSTEM_ENV.TAX_BUNGEE_JUMPING) || 0,
+                tax_bike_scooter_rental: parseFloat(SYSTEM_ENV.TAX_BIKE_SCOOTER_RENTAL) || 0,
+                tax_chardham_tour: parseFloat(SYSTEM_ENV.TAX_CHARDHAM_TOUR) || 0,
+                tax_custom_trip: parseFloat(SYSTEM_ENV.TAX_CUSTOM_TRIP) || 0
             },
             cloudinary: {
                 url: THIRD_PARTY_APIS.CLOUDINARY_URL || DEFAULTS.NULL,
