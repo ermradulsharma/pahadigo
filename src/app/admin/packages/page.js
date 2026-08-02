@@ -1,9 +1,12 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import Link from 'next/link';
+import { Power, ExternalLink, MapPin } from 'lucide-react';
 import api from '@/core/Api/index.js';
 import { useToast } from '@/components/ui/ToastContext.js';
-import PackageCard, { getServiceName, getPrice } from '@/components/admin/PackageCard.js';
+import { getServiceName, getPrice } from '@/app/components/admin/PackageCard.js';
+import CyberTable from '@/app/components/admin/CyberTable.js';
 import { CATEGORY_MAP } from '@/core/Constants/categories.js';
 
 export default function InventoryPage() {
@@ -57,6 +60,7 @@ export default function InventoryPage() {
                         ? { ...p, isActive: statusToSet }
                         : p
                 ));
+                toast(`Package status updated to ${statusToSet ? 'Active' : 'Offline'}`, "success");
             }
         } catch (error) {
             toast("Failed to update status", "error");
@@ -70,83 +74,87 @@ export default function InventoryPage() {
         return matchesSearch && matchesCategory;
     });
 
+    const columns = [
+        {
+            header: 'Image',
+            accessor: 'image',
+            getValue: (pkg) => pkg.photos?.[0]?.url || 'No Image',
+            render: (pkg) => (
+                <div className="w-12 h-12 rounded-lg overflow-hidden bg-[#111116] border border-white/10 flex items-center justify-center">
+                    {pkg.photos?.[0]?.url ? (
+                        <img src={pkg.photos[0].url} alt={getServiceName(pkg)} className="w-full h-full object-cover opacity-80 hover:opacity-100 transition-opacity" />
+                    ) : (
+                        <span className="text-[8px] font-mono text-slate-600 uppercase tracking-widest text-center leading-tight">No<br />Img</span>
+                    )}
+                </div>
+            )
+        },
+        { header: 'Package Name', accessor: 'name', getValue: (pkg) => getServiceName(pkg), render: (pkg) => <span className="font-bold text-white">{getServiceName(pkg)}</span> },
+        { header: 'Type', accessor: 'serviceType', getValue: (pkg) => pkg.serviceType?.replace(/-/g, ' ') || 'Unknown', render: (pkg) => <span className="text-xs uppercase tracking-widest text-indigo-400">{pkg.serviceType?.replace(/-/g, ' ') || 'Unknown'}</span> },
+        { header: 'Vendor', accessor: 'vendor', getValue: (pkg) => pkg.vendor?.businessName || 'Unknown Vendor', render: (pkg) => pkg.vendor?.businessName || 'Unknown Vendor' },
+        {
+            header: 'Location',
+            accessor: 'location',
+            exportOnly: true,
+            getValue: (pkg) => typeof pkg.location === 'object' ? pkg.location?.address : (pkg.location || 'Location Not Defined'),
+            render: () => null
+        },
+        { header: 'Price', accessor: 'price', getValue: (pkg) => Number(getPrice(pkg)), render: (pkg) => <span className="font-mono text-indigo-400">₹{Number(getPrice(pkg)).toLocaleString()}</span> },
+        {
+            header: 'Status',
+            accessor: 'isActive',
+            getValue: (pkg) => pkg.isActive ? 'Active' : 'Offline',
+            render: (pkg) => (
+                <span className={`px-2 py-1 rounded text-[10px] font-mono uppercase tracking-widest ${pkg.isActive ? 'bg-emerald-500/10 text-emerald-400 border border-emerald-500/20' : 'bg-rose-500/10 text-rose-400 border border-rose-500/20'}`}>
+                    {pkg.isActive ? 'Active' : 'Offline'}
+                </span>
+            )
+        },
+        {
+            header: 'Actions',
+            getValue: () => '',
+            render: (pkg) => {
+                const locationStr = typeof pkg.location === 'object' ? pkg.location?.address : (pkg.location || 'Location Not Defined');
+                return (
+                    <div className="flex gap-2 items-center">
+                        <div
+                            className="w-8 h-8 flex items-center justify-center bg-cyan-500/10 hover:bg-cyan-500/20 text-cyan-400 border border-cyan-500/20 rounded transition-all cursor-help"
+                            title={locationStr}
+                        >
+                            <MapPin size={14} strokeWidth={2.5} />
+                        </div>
+                        <button
+                            onClick={() => toggleStatus(pkg, !pkg.isActive)}
+                            className={`w-8 h-8 flex items-center justify-center rounded transition-all ${pkg.isActive ? 'bg-rose-500/10 hover:bg-rose-500/20 text-rose-400 border border-rose-500/20' : 'bg-emerald-500/10 hover:bg-emerald-500/20 text-emerald-400 border border-emerald-500/20'}`}
+                            title={pkg.isActive ? 'Set Component Offline' : 'Activate Component'}
+                        >
+                            <Power size={14} strokeWidth={2.5} />
+                        </button>
+                        <Link
+                            href={`/admin/packages/item/${pkg._id}`}
+                            className="w-8 h-8 flex items-center justify-center bg-indigo-500/10 hover:bg-indigo-500/20 text-indigo-400 border border-indigo-500/20 rounded transition-all"
+                            title="Inspect Node"
+                        >
+                            <ExternalLink size={14} strokeWidth={2.5} />
+                        </Link>
+                    </div>
+                );
+            }
+        }
+    ];
+
     return (
         <div className="min-h-screen bg-[#0a0a0f] text-slate-300 pb-24 font-sans">
             <header className="sticky top-0 z-40 bg-black/50 backdrop-blur-xl border-b border-white/5 py-6 px-8 transition-all">
                 <div className="max-w-[1600px] mx-auto flex flex-col md:flex-row md:items-center justify-between gap-4">
                     <div>
-                        <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5">
-                            <span className="text-cyan-500/80">Admin Workspace</span>
-                            <span>/</span>
-                            <span className="text-slate-400">Inventory Catalog</span>
-                        </div>
-                        <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">
-                            All Packages
-                            <span className="px-2.5 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full text-[10px] font-bold tracking-widest uppercase">
-                                {packages.length} Items Total
-                            </span>
-                        </h1>
+                        <div className="flex items-center gap-2 text-[11px] font-bold text-slate-500 uppercase tracking-widest mb-1.5"><span className="text-cyan-500/80">Admin Workspace</span> <span>/</span> <span className="text-slate-400">Inventory Catalog</span></div>
+                        <h1 className="text-3xl font-black text-white tracking-tight flex items-center gap-3">All Packages<span className="px-2.5 py-1 bg-cyan-500/10 text-cyan-400 border border-cyan-500/20 rounded-full text-[10px] font-bold tracking-widest uppercase">{packages.length} Items Total</span></h1>
                     </div>
                 </div>
             </header>
-
-            <main className="max-w-[1600px] mx-auto px-8 py-10 relative z-10">
-                {/* Search & Filter Bar */}
-                <div className="bg-[#111116] border border-white/10 rounded-2xl p-4 mb-8 flex flex-col md:flex-row gap-4 items-center justify-between shadow-[0_0_40px_rgba(0,0,0,0.5)] relative overflow-hidden">
-                    <div className="absolute top-0 right-1/4 w-64 h-64 bg-indigo-500/10 rounded-full blur-[80px] pointer-events-none"></div>
-                    <div className="absolute bottom-0 left-1/4 w-64 h-64 bg-cyan-500/10 rounded-full blur-[80px] pointer-events-none"></div>
-
-                    <div className="relative flex-1 w-full md:w-auto relative z-10 group">
-                        <span className="absolute left-4 top-1/2 -translate-y-1/2 text-slate-500 group-focus-within:text-cyan-400 transition-colors">
-                            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                        </span>
-                        <input type="text" placeholder="Search packages by name, location, or vendor..." className="w-full pl-12 pr-4 py-3.5 bg-black/40 border border-white/5 rounded-xl focus:border-cyan-500/50 focus:bg-black/60 outline-none transition-all text-sm text-cyan-50 placeholder-slate-500 shadow-inner" value={searchTerm} onChange={(e) => setSearchTerm(e.target.value)} />
-                    </div>
-                    <div className="relative w-full md:w-auto min-w-[200px] z-10">
-                        <select className="w-full px-5 py-3.5 bg-black/40 border border-white/5 rounded-xl text-sm font-bold text-slate-300 hover:text-white outline-none focus:border-indigo-500/50 focus:bg-black/60 appearance-none cursor-pointer transition-all shadow-inner" value={filterCategory} onChange={(e) => setFilterCategory(e.target.value)}>
-                            <option value="all">Global Matrix</option>
-                            {apiCategories.map((cat) => (
-                                <option key={cat._id} value={CATEGORY_MAP[cat.slug] || cat.slug}>
-                                    {cat.name}
-                                </option>
-                            ))}
-                        </select>
-                        <span className="absolute right-4 top-1/2 -translate-y-1/2 text-slate-500 pointer-events-none">
-                            <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 9l-7 7-7-7" /></svg>
-                        </span>
-                    </div>
-                </div>
-
-                {/* Content Area */}
-                <div>
-                    {loading ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {[1, 2, 3, 4, 5, 6, 7, 8].map(i => (
-                                <div key={i} className="bg-[#111116] h-[380px] rounded-3xl border border-white/5 animate-pulse overflow-hidden relative">
-                                    <div className="absolute inset-0 bg-gradient-to-tr from-white/5 to-transparent"></div>
-                                </div>
-                            ))}
-                        </div>
-                    ) : filteredPackages.length > 0 ? (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
-                            {filteredPackages.map((pkg) => (
-                                <PackageCard key={`${pkg._id}-${pkg.serviceType}`} pkg={pkg} showVendorInfo={true} inspectHref={`/admin/packages/item/${pkg._id}`} onToggleStatus={(p, status) => toggleStatus(p, status)} />
-                            ))}
-                        </div>
-                    ) : (
-                        <div className="h-[400px] flex flex-col items-center justify-center text-slate-500 bg-[#111116]/50 rounded-3xl border border-white/5 relative overflow-hidden shadow-inner">
-                            <div className="absolute inset-0 bg-[url('/grid-pattern.svg')] bg-[length:30px_30px] bg-fixed opacity-[0.03] pointer-events-none"></div>
-                            <div className="relative z-10 flex flex-col items-center">
-                                <div className="p-5 bg-white/5 rounded-2xl mb-5 text-indigo-400 border border-white/5 shadow-lg shadow-black">
-                                    <svg className="w-10 h-10" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" /></svg>
-                                </div>
-                                <h3 className="text-xl font-bold text-white mb-2 tracking-tight">No Packages Found</h3>
-                                <p className="text-sm text-slate-500 max-w-sm text-center">We couldn't find any items matching your current search constraints or category filters.</p>
-                                <button onClick={() => { setSearchTerm(''); setFilterCategory('all'); }} className="mt-6 px-6 py-2.5 bg-white/5 hover:bg-white/10 text-white rounded-xl text-sm font-bold border border-white/10 transition-colors">Clear Filters</button>
-                            </div>
-                        </div>
-                    )}
-                </div>
+            <main className="max-w-[1600px] mx-auto p-8 relative z-10">
+                <CyberTable data={filteredPackages} columns={columns} loading={loading} loadingText="Fetching Packages..." emptyText="No packages found matching criteria." searchable={true} />
             </main>
         </div>
     );
