@@ -61,6 +61,7 @@ const travellerRoutes = [
     // Profile Hub (Social & Personal)
     ...Router.group({ prefix: '/profile' }, [
       { method: 'GET', path: '/', handler: wrap(() => ProfileController, 'getProfile') },
+      { method: 'GET', path: '/vendor/info/:userId', handler: wrap(() => BusinessController, 'getVendorPersonalInfo') },
       { method: 'GET', path: '/vendor/:businessId', handler: wrap(() => BusinessController, 'getBusinessProfile') },
       { method: 'PUT', path: '/', schema: schemas.profileUpdate, handler: wrap(() => ProfileController, 'updateProfile') },
       { method: 'POST', path: '/avatar', handler: wrap(() => ProfileController, 'updateProfileImage') },
