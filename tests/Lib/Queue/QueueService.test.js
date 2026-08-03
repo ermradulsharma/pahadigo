@@ -6,7 +6,10 @@ let getAppConfigMock;
 let publishJSONMock;
 
 describe('QueueService', () => {
+    const originalEnv = process.env;
+
     beforeAll(async () => {
+        process.env = { ...originalEnv, NEXT_PUBLIC_APP_URL: 'http://localhost:3000' };
         publishJSONMock = jest.fn().mockResolvedValue({ messageId: '123' });
         ClientMock = jest.fn().mockImplementation(() => ({
             publishJSON: publishJSONMock
@@ -51,5 +54,9 @@ describe('QueueService', () => {
         publishJSONMock.mockRejectedValue(new Error('Failed'));
         const result = await QueueServiceModule.enqueuePushNotification('token123', { title: 'Test' });
         expect(result).toBe(false);
+    });
+
+    afterAll(() => {
+        process.env = originalEnv;
     });
 });
