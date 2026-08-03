@@ -4,29 +4,25 @@ process.env.JWT_SECRET = 'test_secret';
 process.env.NODE_ENV = 'test';
 
 import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import { jest } from '@jest/globals';
 
 // Increase timeout for global hooks (especially for slow teardowns on CI/large runs)
 jest.setTimeout(300000);
 
-let mongoServer;
-
 beforeAll(async () => {
-  mongoServer = await MongoMemoryServer.create({
-    instance: {
-      launchTimeout: 240000 // Correct option name, 4 minutes
-    },
-    binary: {
-      skipMD5: true
-    }
-  });
-  const uri = mongoServer.getUri();
+  const uri = process.env.GLOBAL_MONGO_URI;
+
+  if (!uri) {
+      console.warn('GLOBAL_MONGO_URI is not set. Ensure globalSetup is configured.');
+      return;
+  }
 
   // Ensure we are not using the real DB
   process.env.MONGODB_URI = uri;
 
-  await mongoose.connect(uri);
+  if (mongoose.connection.readyState === 0) {
+      await mongoose.connect(uri);
+  }
 });
 
 afterAll(async () => {
@@ -34,9 +30,6 @@ afterAll(async () => {
     await mongoose.connection.close();
   }
   await mongoose.disconnect();
-  if (mongoServer) {
-    await mongoServer.stop();
-  }
 });
 
 afterEach(async () => {

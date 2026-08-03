@@ -3,6 +3,7 @@ import PackageService from '@/core/Services/General/PackageService.js';
 import SearchLog from '@/core/Models/SearchLog.js';
 import Category from '@/core/Models/Category.js';
 import Wishlist from '@/core/Models/Wishlist.js';
+import Review from '@/core/Models/Review.js';
 import { CATEGORY_MAP } from '@/core/Constants/categories.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { paginateArray } from '@/core/Helpers/queryUtils.js';
@@ -66,7 +67,28 @@ class PackageController extends Controller {
                     wishlistId = wishlisted._id.toString();
                 }
             }
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, { ...item, wishlist: isWishlisted, wishlistId });
+
+            const reviews = await Review.find({ package: item.catalogId, isVisible: true })
+                .populate({ path: 'booking', match: { 'item.itemId': params.id } })
+                .populate('user', 'name profileImage')
+                .lean();
+
+            const itemReviews = reviews.filter(r => r.booking != null)
+                .map(r => ({
+                    id: r._id,
+                    rating: r.rating,
+                    comment: r.comment,
+                    reply: r.reply,
+                    createdAt: r.createdAt,
+                    user: r.user ? { name: r.user.name, avatar: r.user.profileImage } : null
+                }));
+
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, {
+                ...item,
+                wishlist: isWishlisted,
+                wishlistId,
+                reviews: itemReviews
+            });
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }

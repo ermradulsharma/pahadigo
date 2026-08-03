@@ -1,6 +1,8 @@
 const customJestConfig = {
     testEnvironment: 'node',
     setupFilesAfterEnv: ['./tests/setup.js'],
+    globalSetup: './tests/globalSetup.js',
+    globalTeardown: './tests/globalTeardown.js',
     testTimeout: 120000,
     moduleNameMapper: {
         '\\.jsx$': '<rootDir>/tests/__mocks__/jsxMock.js',
