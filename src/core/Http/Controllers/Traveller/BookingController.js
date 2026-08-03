@@ -14,7 +14,17 @@ class BookingController extends Controller {
     // GET /traveller/bookings (List all my historical reservations)
     async getBookings(req) {
         try {
-            const bookings = await getManyBy(Booking, { user: req.user.id }, '', null, { createdAt: -1 });
+            const query = {
+                user: req.user.id,
+                $or: [
+                    { paymentStatus: 'paid' },
+                    { status: 'cancelled' }
+                ]
+            };
+            const bookings = await getManyBy(Booking, query, '', [
+                'user',
+                { path: 'vendor', populate: { path: 'user' } }
+            ], { createdAt: -1 });
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.FETCHED_HISTORICAL, bookings);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -38,7 +48,10 @@ class BookingController extends Controller {
     // GET /traveller/bookings/:id (Detailed operational overview)
     async getBookingById(req, { params }) {
         try {
-            const booking = await getBookingBy({ _id: params.id, user: req.user.id });
+            const booking = await getBookingBy({ _id: params.id, user: req.user.id }, '', [
+                'user',
+                { path: 'vendor', populate: { path: 'user' } }
+            ]);
             if (!booking) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.FETCHED_DETAIL, booking);
         } catch (error) {

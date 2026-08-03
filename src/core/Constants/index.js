@@ -122,6 +122,8 @@ export const PAYMENT_STATUS = {
     PENDING: 'pending',
     PAID: 'paid',
     FAILED: 'failed',
+    CANCELLED: 'cancelled',
+    DISPUTE: 'dispute',
     PARTIALLY_PAID: 'partially_paid',
     REFUNDED: 'refunded',
     REFUND_PENDING: 'refund_pending',
