@@ -11,7 +11,8 @@ class PolicyController extends Controller {
   // GET /admin/policies
   async getPolicies(req) {
     try {
-      const url = new URL(req.url, 'http://localhost');
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+      const url = new URL(req.url, baseUrl);
       const target = url.searchParams.get('target');
       const policies = await PolicyService.getPolicies(target);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.POLICY.FETCHED, { policies });
@@ -47,3 +48,4 @@ class PolicyController extends Controller {
 
 const policyController = new PolicyController();
 export default policyController;
+

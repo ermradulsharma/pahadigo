@@ -44,7 +44,8 @@ class LocationController extends Controller {
   // GET /admin/locations/states
   async listStates(req) {
     try {
-      const url = new URL(req.url, 'http://localhost');
+      const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+      const url = new URL(req.url, baseUrl);
       const countryId = url.searchParams.get('countryId');
       const states = await LocationService.listStates(countryId);
       return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, { states });
@@ -61,3 +62,4 @@ class LocationController extends Controller {
 
 const locationController = new LocationController();
 export default locationController;
+

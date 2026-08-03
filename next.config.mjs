@@ -21,6 +21,9 @@ const nextConfig = {
             bodySizeLimit: '10mb',
         },
     },
+    compiler: {
+        removeConsole: process.env.NODE_ENV === 'production',
+    },
     async headers() {
         return [
             {

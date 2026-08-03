@@ -15,7 +15,8 @@ class PackageController extends Controller {
     // GET /vendor/packages
     async getPackages(req) {
         try {
-            const url = new URL(req.url, 'http://localhost');
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+            const url = new URL(req.url, baseUrl);
             const page = parseInt(url.searchParams.get('page')) || 1;
             const limit = parseInt(url.searchParams.get('limit')) || 10;
             const userId = req.user.id;
@@ -231,3 +232,4 @@ class PackageController extends Controller {
 
 const packageController = new PackageController();
 export default packageController;
+

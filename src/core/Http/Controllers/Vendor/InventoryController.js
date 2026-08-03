@@ -26,8 +26,8 @@ class InventoryController extends Controller {
         try {
             const vendor = await BusinessService.getBusinessByUserId(req.user.id);
             if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-
-            const url = new URL(req.url, 'http://localhost');
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+            const url = new URL(req.url, baseUrl);
             const itemId = params.itemId || url.searchParams.get('itemId');
             let serviceType = params.serviceType || url.searchParams.get('serviceType');
 
@@ -108,3 +108,4 @@ class InventoryController extends Controller {
 
 const inventoryController = new InventoryController();
 export default inventoryController;
+

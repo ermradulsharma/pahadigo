@@ -115,8 +115,8 @@ class BookingController extends Controller {
             console.log(booking);
 
             if (!booking) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
-
-            const url = new URL(req.url, 'http://localhost');
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+            const url = new URL(req.url, baseUrl);
             const role = url.searchParams.get('type') || 'traveller';
 
             const stream = await renderToStream(React.createElement(InvoiceDocument, { booking, role }));
@@ -142,3 +142,4 @@ class BookingController extends Controller {
 
 const bookingController = new BookingController();
 export default bookingController;
+

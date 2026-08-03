@@ -142,7 +142,8 @@ class ChatController {
             }
 
             // Parse pagination query parameters
-            const url = new URL(req.url, 'http://localhost');
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+            const url = new URL(req.url, baseUrl);
             const limit = parseInt(url.searchParams.get('limit') || '50', 10);
             const before = url.searchParams.get('before');
 
@@ -350,3 +351,4 @@ class ChatController {
 }
 
 export default new ChatController();
+

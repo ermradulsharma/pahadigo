@@ -13,13 +13,14 @@ export const getQStashClient = async () => {
         console.warn('[QueueService] QSTASH_TOKEN is missing. Background jobs will not be processed securely.');
     }
 
-    qstashClient = new Client({ token: token || 'dummy_token_for_dev' });
+    qstashClient = new Client({ token: token });
     return qstashClient;
 };
 
-// Use an environment variable for the webhook URL, fallback to localhost for development
+// Use an environment variable for the webhook URL
 const getWebhookUrl = () => {
-    const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+    const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+    if (!baseUrl) throw new Error("NEXT_PUBLIC_APP_URL is not set for production");
     return `${baseUrl}/api/webhooks/qstash`;
 };
 

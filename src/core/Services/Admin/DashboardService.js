@@ -10,6 +10,7 @@ import AuditLog from '@/core/Models/AuditLog.js';
 import os from 'os';
 import { getStartDateByPeriod } from '@/core/Helpers/dateUtils.js';
 import { STATUS, USER_ROLES } from '@/core/Constants/index.js';
+import { SCHEMA_KEYS } from '@/core/Constants/categories.js';
 
 /**
  * DashboardService (Admin Role)
@@ -75,16 +76,7 @@ class DashboardService {
                 {
                     $project: {
                         items: {
-                            $concatArrays: [
-                                { $ifNull: ["$homestay", []] },
-                                { $ifNull: ["$trekking", []] },
-                                { $ifNull: ["$hotel", []] },
-                                { $ifNull: ["$camping", []] },
-                                { $ifNull: ["$paragliding", []] },
-                                { $ifNull: ["$rafting", []] },
-                                { $ifNull: ["$skating", []] },
-                                { $ifNull: ["$vehicleRental", []] }
-                            ]
+                            $concatArrays: Object.values(SCHEMA_KEYS).map(key => ({ $ifNull: [`$${key}`, []] }))
                         }
                     }
                 },
