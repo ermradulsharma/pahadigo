@@ -4,11 +4,25 @@ jest.unstable_mockModule('@/constants/categories.js', () => ({
     CATEGORY_MAP: { trekking: 'trekking', camping: 'camping' }
 }));
 
+jest.unstable_mockModule('@/core/Models/VendorClosure.js', () => ({
+    default: {
+        findOne: jest.fn()
+    }
+}));
+
 jest.unstable_mockModule('mongoose', () => ({
     default: {
         model: jest.fn(() => ({
             findOne: jest.fn()
-        }))
+        })),
+        models: {},
+        Schema: class {
+            constructor() {
+                this.index = jest.fn();
+                this.pre = jest.fn();
+            }
+            static Types = { ObjectId: jest.fn() };
+        }
     }
 }));
 
@@ -88,15 +102,15 @@ describe('Industry Standard: MasterService Business Logic', () => {
 
     describe('[isVendorOperational]', () => {
         it('[Success] should return true when no active closure exists', async () => {
-            const mongoose = await import('mongoose');
-            mongoose.default.model.mockReturnValue({ findOne: jest.fn().mockResolvedValue(null) });
+            const { default: VendorClosure } = await import('@/core/Models/VendorClosure.js');
+            VendorClosure.findOne.mockResolvedValue(null);
             const result = await MasterService.isVendorOperational('vendor123');
             expect(result).toBe(true);
         });
 
         it('[Failure] should return false when an active closure exists', async () => {
-            const mongoose = await import('mongoose');
-            mongoose.default.model.mockReturnValue({ findOne: jest.fn().mockResolvedValue({ _id: 'closure1' }) });
+            const { default: VendorClosure } = await import('@/core/Models/VendorClosure.js');
+            VendorClosure.findOne.mockResolvedValue({ _id: 'closure1' });
             const result = await MasterService.isVendorOperational('vendor123');
             expect(result).toBe(false);
         });

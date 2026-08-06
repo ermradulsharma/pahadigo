@@ -36,7 +36,12 @@ jest.unstable_mockModule('mongoose', () => ({
             findOne: jest.fn().mockResolvedValue({ status: 'verified' })
         })),
         models: {},
-        Schema: class {}
+        Schema: class {
+            constructor() {
+                this.index = jest.fn();
+            }
+            static Types = { ObjectId: jest.fn(id => id) };
+        }
     }
 }));
 

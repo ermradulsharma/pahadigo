@@ -24,6 +24,8 @@ describe('Traveller BookingController', () => {
             mockReq = createMockReq({ user: { id: 'user123', role: 'traveller' } });
             
             const mockQuery = {
+                populate: jest.fn().mockReturnThis(),
+                select: jest.fn().mockReturnThis(),
                 sort: jest.fn().mockReturnThis(),
                 lean: jest.fn().mockResolvedValue(mockBookings)
             };
@@ -35,7 +37,7 @@ describe('Traveller BookingController', () => {
             expect(response.status).toBe(HTTP_STATUS.OK);
             expect(body.message).toBe(RESPONSE_MESSAGES.BOOKING.FETCHED_HISTORICAL);
             expect(body.data).toEqual(mockBookings);
-            expect(spy).toHaveBeenCalledWith({ user: 'user123' });
+            expect(spy).toHaveBeenCalledWith(expect.objectContaining({ user: 'user123' }));
         });
     });
 
@@ -48,6 +50,7 @@ describe('Traveller BookingController', () => {
             });
 
             const mockQuery = {
+                populate: jest.fn().mockReturnThis(),
                 lean: jest.fn().mockResolvedValue(mockBooking)
             };
             jest.spyOn(Booking, 'findOne').mockReturnValue(mockQuery);
@@ -66,6 +69,7 @@ describe('Traveller BookingController', () => {
             });
 
             const mockQuery = {
+                populate: jest.fn().mockReturnThis(),
                 lean: jest.fn().mockResolvedValue(null)
             };
             jest.spyOn(Booking, 'findOne').mockReturnValue(mockQuery);
