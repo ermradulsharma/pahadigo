@@ -133,7 +133,15 @@ export const PAYMENT_STATUS = {
 
 export const PAYOUT_STATUS = {
     PENDING: 'pending',
-    PAID: 'paid'
+    PAID: 'paid',
+    FAILED: 'failed',
+    REFUNDED: 'refunded',
+    CANCELLED: 'cancelled',
+    DISPUTE: 'dispute',
+    REJECTED: 'rejected',
+    HOLD: 'hold',
+    NOT_PAID: 'not-paid',
+    NOT_REFUNDED: 'not-refunded'
 };
 
 export const REFUND_STATUS = {

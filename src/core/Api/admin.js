@@ -57,6 +57,7 @@ export const adminApi = (fetcher) => ({
         getAll: () => fetcher('/api/admin/packages'),
         updateStatus: (id, data) => fetcher(`/api/admin/packages/${id}/status`, { method: 'PATCH', body: prepareBody(data) }),
         addOnBehalf: (data) => fetcher('/api/admin/packages/add', { method: 'POST', body: prepareBody(data) }),
+        addItemOnBehalf: (data) => fetcher('/api/admin/packages/add-item', { method: 'POST', body: prepareBody(data) }),
         getItem: (id) => fetcher(`/api/admin/packages/item/${id}`),
         updateItem: (id, data) => fetcher(`/api/admin/packages/item/${id}`, { method: 'PATCH', body: prepareBody(data) }),
     },

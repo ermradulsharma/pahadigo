@@ -109,6 +109,33 @@ export const getPackageById = async (id, select = '', populate = null) => {
     return await getById(Package, id, select, populate);
 };
 
+/**
+ * Fetch a specific package item (subdocument) by its ID.
+ */
+export const getPackageItemById = async (itemId) => {
+
+    const pkg = await getPackageBy({
+        $or: categories.map(key => ({ [`${key}._id`]: itemId }))
+    }, '', populate);
+
+    if (!pkg) return null;
+
+    for (const key of categories) {
+        if (Array.isArray(pkg[key])) {
+            const item = pkg[key].find(i => i._id.toString() === itemId.toString());
+            if (item) {
+                return {
+                    ...item,
+                    category: key,
+                    catalogId: pkg._id.toString(),
+                    vendor: pkg.vendor
+                };
+            }
+        }
+    }
+    return null;
+};
+
 export default {
     getById,
     getBy,
@@ -120,5 +147,6 @@ export default {
     getBookingBy,
     getBookingById,
     getPackageBy,
-    getPackageById
+    getPackageById,
+    getPackageItemById
 };

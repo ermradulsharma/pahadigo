@@ -2,7 +2,7 @@ import Booking from '@/core/Models/Booking.js';
 import { getBookingBy, getManyBy } from '@/core/Helpers/queryHelpers.js';
 import PackageService from '@/core/Services/Traveller/PackageService.js';
 import BookingService from '@/core/Services/Traveller/BookingService.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES, PAYMENT_STATUS, BOOKING_STATUS } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
 
 /**
@@ -17,17 +17,15 @@ class BookingController extends Controller {
             const query = {
                 user: req.user.id,
                 $or: [
-                    { paymentStatus: 'paid' },
-                    { status: 'cancelled' }
+                    { paymentStatus: PAYMENT_STATUS.PAID },
+                    { paymentStatus: PAYMENT_STATUS.CANCELLED },
+                    { status: BOOKING_STATUS.CANCELLED }
                 ]
             };
-            const bookings = await getManyBy(Booking, query, '', [
-                'user',
-                { path: 'vendor', populate: { path: 'user' } }
-            ], { createdAt: -1 });
+            const bookings = await getManyBy(Booking, query, '', ['user', { path: 'vendor', populate: { path: 'user' } }], { createdAt: -1 });
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.FETCHED_HISTORICAL, bookings);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -41,7 +39,7 @@ class BookingController extends Controller {
             return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.BOOKING.CREATED, booking);
         } catch (error) {
             console.error('Error in initiateBooking:', error);
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -55,7 +53,7 @@ class BookingController extends Controller {
             if (!booking) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.FETCHED_DETAIL, booking);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -68,7 +66,7 @@ class BookingController extends Controller {
             const cancelledBooking = await BookingService.refundBooking(params.id, req);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.CANCELLED, cancelledBooking);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -78,7 +76,7 @@ class BookingController extends Controller {
             const paymentDetails = await BookingService.initializePayment(params.id, req.user.id);
             return this.success(HTTP_STATUS.OK, "Payment order generated successfully.", paymentDetails);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -90,7 +88,7 @@ class BookingController extends Controller {
             return this.success(HTTP_STATUS.OK, 'Payment verified and OTPs generated.', booking);
         } catch (error) {
             console.error('Error in verifyPayment:', error);
-            return this.error(HTTP_STATUS.BAD_REQUEST, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -100,7 +98,7 @@ class BookingController extends Controller {
             const result = await BookingService.getBookingOTP(params.id, req.user.id);
             return this.success(HTTP_STATUS.OK, `${result.type} retrieved.`, result);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
+            return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -120,7 +118,7 @@ class BookingController extends Controller {
                 for (const item of body.evidence) {
                     if (item instanceof File || (item && item.size > 0)) {
                         const upload = await uploadToCloudinary(item, 'disputes');
-                        evidenceUrls.push(upload.url);
+                        evidenceUrls.push(upload);
                     } else if (typeof item === 'string') {
                         evidenceUrls.push(item);
                     }
@@ -129,7 +127,7 @@ class BookingController extends Controller {
                 // Single file case
                 const { uploadToCloudinary } = await import('@/core/Helpers/cloudinary.js');
                 const upload = await uploadToCloudinary(body.evidence, 'disputes');
-                evidenceUrls.push(upload.url);
+                evidenceUrls.push(upload);
             }
 
             const disputeData = {
@@ -141,7 +139,7 @@ class BookingController extends Controller {
             const dispute = await BookingService.reportDispute(params.id, req.user.id, disputeData);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.DISPUTE.RAISED, dispute);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 }

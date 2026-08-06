@@ -3,6 +3,7 @@ import { useEffect, useState, useCallback } from 'react';
 import Link from 'next/link';
 import { getToken } from '@/core/Helpers/authUtils.js';
 import { Search, Plus, Eye, Package as PackageIcon, ShieldAlert, CheckCircle2, Factory, X, User as UserIcon, Mail, Phone, Lock, Trash2 } from 'lucide-react';
+import PageHeader from '@/components/admin/PageHeader';
 import CyberTable from '@/components/admin/CyberTable.js';
 import api from '@/core/Api/index.js';
 import DynamicModal from '@/components/admin/DynamicModal.js';
@@ -173,20 +174,7 @@ export default function VendorsPage() {
 
     return (
         <div className="p-8 max-w-7xl mx-auto">
-            <div className="flex flex-col md:flex-row md:justify-between md:items-center mb-2 gap-4">
-                <div>
-                    <h1 className="text-2xl font-bold text-white tracking-tight flex items-center gap-3"><Factory className="w-7 h-7 text-indigo-400 opacity-80" /> Vendor Network</h1>
-                    <p className="text-xs font-mono text-slate-500 tracking-widest uppercase mt-1">Authorized Supply Chain Nodes</p>
-                </div>
-                <div className="flex items-center gap-4">
-                    <div className="relative group hidden md:block">
-                        <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 w-4 h-4 text-slate-500 group-focus-within:text-indigo-400 transition-colors" />
-                        <input type="text" placeholder="Scan Nodes..." className="bg-[#0a0a0c]/80 backdrop-blur-xl pl-10 pr-4 py-2 border border-white/10 rounded-lg focus:ring-1 focus:ring-indigo-500/50 focus:border-indigo-500/50 outline-none text-sm text-slate-200 w-64 md:w-65 shadow-[0_0_15px_rgba(0,0,0,0.5)] transition-all placeholder:text-slate-600" value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} />
-                    </div>
-                    <button onClick={() => setIsModalOpen(true)} className="flex items-center gap-2 bg-indigo-600/20 text-indigo-400 border border-indigo-500/30 px-4 py-2 rounded-lg hover:bg-indigo-600/40 hover:text-white transition-all shadow-[0_0_15px_rgba(99,102,241,0.1)] hover:shadow-[0_0_20px_rgba(99,102,241,0.3)] font-medium text-sm"><Plus className="w-4 h-4" /><span className="font-semibold tracking-wide">Register</span></button>
-                </div>
-            </div>
-
+            <PageHeader title="Vendor Network" subtitle="Authorized Supply Chain Nodes" icon={Factory} searchQuery={searchQuery} onSearchChange={setSearchQuery} actionLabel="Register" actionIcon={Plus} onAction={() => setIsModalOpen(true)} />
             <CyberTable data={vendors} columns={columns} itemsPerPage={10} searchTerm={searchQuery} searchKeys={['user.name', 'ownerName', 'user.email', 'businessName']} emptyText="NULL OUTPUT: No nodes found in current vector." exportFilename="vendor_nodes"
                 bulkActions={(selectedVendors) => (
                     <div className="flex items-center gap-2">

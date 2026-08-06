@@ -13,6 +13,7 @@ import InventoryService from '@/core/Services/Traveller/InventoryService.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { RESPONSE_MESSAGES, BOOKING_STATUS, PAYMENT_STATUS, REFUND_STATUS } from '@/core/Constants/index.js';
 import BusinessService from '@/core/Services/Vendor/BusinessService.js';
+import { getPackageItemById, getUserById, getBookingBy } from '@/core/Helpers/queryHelpers.js';
 
 const generateNumericOTP = () => randomInt(100000, 1000000).toString();
 const generateBookingCode = () => `PH-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${randomBytes(4).toString('hex').toUpperCase()}`;
@@ -30,21 +31,24 @@ class BookingService {
             const config = await getAppConfig();
             const checkInDate = new Date(body.startDate);
             const checkOutDate = new Date(body.endDate || body.startDate);
-
-            if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) {
-                throw new Error("Invalid startDate or endDate format. Use YYYY-MM-DD.");
-            }
+            if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) throw new Error("Invalid startDate or endDate format. Use YYYY-MM-DD.");
 
             const packageItem = await PackageService.getAvailablePackageItem(itemId);
+            console.log("[Package Item]", packageItem);
 
             if (!packageItem) throw new Error(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
 
-            const travellerProfile = await User.findById(userId);
+            const travellerProfile = await getUserById(userId);
             if (!travellerProfile) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
 
             const { catalogId, category, vendor } = packageItem;
-            const business = await BusinessService.getBusinessById(vendor.id);
-            if (!business) throw new Error(RESPONSE_MESSAGES.BUSINESS.NOT_FOUND);
+            // console.log(vendor.toString(), "[Vendor]");
+            // console.log(category, "[Category]");
+            // console.log(catalogId, "[Catalog ID]");
+            const business = await BusinessService.getBusinessById(vendor);
+            // console.log(business, "[Business]");
+
+            if (!business) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
             const pricingRules = packageItem.pricing || {};
 
@@ -55,9 +59,10 @@ class BookingService {
 
             const timeDiff = checkOutDate.getTime() - checkInDate.getTime();
             const totalNights = Math.max(1, Math.round(timeDiff / (1000 * 60 * 60 * 24)));
+            const requestedUnits = parseInt(body.units) > 0 ? parseInt(body.units) : 1;
 
             let calculatedSubTotal = 0;
-            let requiredUnits = 1;
+            let requiredUnits = requestedUnits;
             let baseItemRate = 0;
 
             const STAY_CATEGORIES = ['homestay', 'hotel', 'camping'];
@@ -71,7 +76,7 @@ class BookingService {
                     requiredUnits = 1;
                 } else {
                     const maxCapacityPerUnit = parseInt(pricingRules.maxAdults) > 0 ? parseInt(pricingRules.maxAdults) : 2;
-                    requiredUnits = Math.max(1, Math.ceil(adultsCount / maxCapacityPerUnit));
+                    requiredUnits = Math.max(requestedUnits, Math.ceil(adultsCount / maxCapacityPerUnit));
                 }
                 calculatedSubTotal = baseItemRate * totalNights * requiredUnits;
             } else if (ACTIVITY_CATEGORIES.includes(category)) {
@@ -82,13 +87,15 @@ class BookingService {
                 requiredUnits = adultsCount + childrenCount;
             } else {
                 baseItemRate = pricingRules.sellingPrice || 0;
-                requiredUnits = 1;
                 const isRentalOrTour = RENTAL_CATEGORIES.includes(category);
                 const durationMultiplier = isRentalOrTour ? totalNights : 1;
                 calculatedSubTotal = baseItemRate * requiredUnits * durationMultiplier;
             }
+
+            calculatedSubTotal = Math.round(calculatedSubTotal * 100) / 100;
+
             const availabilityStatus = await InventoryService.checkAvailabilityRange(
-                vendor.id, itemId, category, checkInDate, checkOutDate, requiredUnits
+                vendor.toString(), itemId, category, checkInDate, checkOutDate, requiredUnits
             );
 
             if (!availabilityStatus.available) {
@@ -99,31 +106,32 @@ class BookingService {
             let d = pricingRules.discountType;
             let discountAmount = 0;
             if (d === "percentage") {
-                discountAmount = baseAmount * ((pricingRules.discount || 0) / 100);
+                discountAmount = calculatedSubTotal * ((pricingRules.discount || 0) / 100);
             } else if (d === "flat") {
                 discountAmount = pricingRules.discount || 0;
             }
 
             let tax = 0;
             if (pricingRules.gst) {
-                tax = pricingRules.basePrice * (pricingRules.gst / 100);
+                const taxableAmount = Math.max(0, calculatedSubTotal - discountAmount);
+                tax = taxableAmount * (pricingRules.gst / 100);
             }
 
             let serviceFee = 0;
             if (pricingRules.serviceTax) {
-                const baseServiceFee = pricingRules.sellingPrice * (pricingRules.serviceTax / 100);
-                const gstOnServiceFee = baseServiceFee * ((config.tax?.gst) / 100);
+                const baseServiceFee = calculatedSubTotal * (pricingRules.serviceTax / 100);
+                const gstOnServiceFee = baseServiceFee * ((config?.tax?.gst || 18) / 100);
                 serviceFee = baseServiceFee + gstOnServiceFee;
             }
 
-            const appliedDiscount = discountAmount;
+            const appliedDiscount = Math.round(discountAmount * 100) / 100;
             const appliedCouponCode = null;
             const appliedCouponAmount = 0;
-            const appliedServiceFee = serviceFee;
+            const appliedServiceFee = Math.round(serviceFee * 100) / 100;
             const appliedTaxRate = pricingRules.gst || 0;
-            const calculatedTax = tax;
+            const calculatedTax = Math.round(tax * 100) / 100;
 
-            const grandTotal = calculatedSubTotal;
+            const grandTotal = Math.max(0, Math.round((calculatedSubTotal + calculatedTax + appliedServiceFee - appliedDiscount - appliedCouponAmount) * 100) / 100);
 
             let itemUrl = '';
             if (Array.isArray(packageItem.photos) && packageItem.photos.length > 0) {
@@ -175,11 +183,14 @@ class BookingService {
                             total: grandTotal
                         },
                         payout: {
+                            amount: Math.max(0, Math.round((calculatedSubTotal - appliedDiscount - appliedCouponAmount) * 100) / 100),
                             bankDetails: {
-                                accountHolderName: business.bankDetails.accountHolderName,
-                                accountNumber: business.bankDetails.accountNumber,
-                                ifscCode: business.bankDetails.ifscCode,
-                                bankName: business.bankDetails.bankName
+                                accountHolderName: business.bankDetails?.accountHolderName || null,
+                                accountNumber: business.bankDetails?.accountNumber || null,
+                                ifscCode: business.bankDetails?.ifscCode || null,
+                                bankName: business.bankDetails?.bankName || null,
+                                razorpayContactId: business.bankDetails?.razorpayContactId || null,
+                                razorpayFundAccountId: business.bankDetails?.razorpayFundAccountId || null
                             },
                             businessName: business.businessName,
                             ownerName: business.ownerName
@@ -207,9 +218,8 @@ class BookingService {
                 }
             }
 
-            // Verification check within the same transaction to prevent race conditions
             const finalCheck = await InventoryService.checkAvailabilityRange(
-                vendor.id, itemId, category, checkInDate, checkOutDate, requiredUnits, session, newBooking._id
+                vendor.toString(), itemId, category, checkInDate, checkOutDate, requiredUnits, session, newBooking._id
             );
             if (!finalCheck.available) {
                 throw new Error(`Inventory Conflict: Slots became unavailable.`);
@@ -354,7 +364,7 @@ class BookingService {
      * Reveal appropriate OTP (Start or End) based on booking status
      */
     async getBookingOTP(bookingId, userId) {
-        const booking = await Booking.findOne({ _id: bookingId, user: userId });
+        const booking = await getBookingBy({ _id: bookingId, user: userId });
         if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
 
         if (booking.status === BOOKING_STATUS.COMPLETED) {
@@ -383,66 +393,6 @@ class BookingService {
         }
         NotificationService.notifyBookingStatus(booking._id, 'otp_sent');
         return { type: otpType, otp: otpValue };
-    }
-
-    /**
-     * Start the booking (Check-in via OTP)
-     */
-    async startBooking(bookingId, userId, otp) {
-        const booking = await Booking.findOne({ _id: bookingId, user: userId });
-        if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
-
-        if (booking.status !== BOOKING_STATUS.CONFIRMED) {
-            throw new Error(`Cannot start booking in ${booking.status} status.`);
-        }
-
-        if (booking.verification.startOTP !== otp) {
-            throw new Error("Invalid Start OTP.");
-        }
-
-        booking.status = BOOKING_STATUS.ONGOING;
-        booking.verification.isStartVerified = true;
-        booking.verification.startVerifiedAt = new Date();
-
-        booking.timeline.push({
-            status: 'Trip Started',
-            remarks: 'Check-in verified via Start OTP.',
-            actor: userId
-        });
-
-        await booking.save();
-        NotificationService.notifyBookingStatus(booking._id, 'ongoing');
-        return booking;
-    }
-
-    /**
-     * Complete the booking (Check-out via OTP)
-     */
-    async completeBooking(bookingId, userId, otp) {
-        const booking = await Booking.findOne({ _id: bookingId, user: userId });
-        if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
-
-        if (booking.status !== BOOKING_STATUS.ONGOING) {
-            throw new Error(`Cannot complete booking in ${booking.status} status.`);
-        }
-
-        if (booking.verification.endOTP !== otp) {
-            throw new Error("Invalid End OTP.");
-        }
-
-        booking.status = BOOKING_STATUS.COMPLETED;
-        booking.verification.isEndVerified = true;
-        booking.verification.endVerifiedAt = new Date();
-
-        booking.timeline.push({
-            status: 'Trip Completed',
-            remarks: 'Check-out verified via End OTP.',
-            actor: userId
-        });
-
-        await booking.save();
-        NotificationService.notifyBookingStatus(booking._id, 'completed');
-        return booking;
     }
 
     /**

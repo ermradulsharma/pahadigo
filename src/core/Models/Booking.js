@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { DEFAULTS, PAYMENT_GATEWAYS, BOOKING_STATUS, PAYMENT_STATUS, REFUND_STATUS } from '../Constants/index.js';
+import { DEFAULTS, PAYMENT_GATEWAYS, BOOKING_STATUS, PAYMENT_STATUS, REFUND_STATUS, PAYOUT_STATUS } from '../Constants/index.js';
 
 const BookingSchema = new mongoose.Schema({
     bookingCode: { type: String, unique: DEFAULTS.TRUE, index: DEFAULTS.TRUE },
@@ -61,7 +61,7 @@ const BookingSchema = new mongoose.Schema({
 
     payout: {
         amount: { type: Number, default: 0 },
-        status: { type: String, enum: ['pending', 'paid', 'failed', 'refunded', 'cancelled', 'dispute', 'rejected', 'hold', 'not-paid', 'not-refunded'], default: 'pending', index: DEFAULTS.TRUE },
+        status: { type: String, enum: Object.values(PAYOUT_STATUS), default: PAYOUT_STATUS.PENDING, index: DEFAULTS.TRUE },
         transactionId: { type: String, default: DEFAULTS.NULL },
         paidAt: { type: Date, default: DEFAULTS.NULL },
         businessName: { type: String, default: DEFAULTS.NULL },
@@ -70,7 +70,9 @@ const BookingSchema = new mongoose.Schema({
             accountHolderName: { type: String, default: DEFAULTS.NULL },
             accountNumber: { type: String, default: DEFAULTS.NULL },
             ifscCode: { type: String, default: DEFAULTS.NULL },
-            bankName: { type: String, default: DEFAULTS.NULL }
+            bankName: { type: String, default: DEFAULTS.NULL },
+            razorpayContactId: { type: String, default: DEFAULTS.NULL },
+            razorpayFundAccountId: { type: String, default: DEFAULTS.NULL }
         }
     },
 

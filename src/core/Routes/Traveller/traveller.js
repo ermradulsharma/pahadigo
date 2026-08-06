@@ -41,6 +41,8 @@ const travellerRoutes = [
       ...Router.group({ prefix: '/otp' }, [
         { method: 'GET', path: '/:id', handler: wrap(() => BookingController, 'getBookingOTP') },
       ]),
+      { method: 'POST', path: '/:id/start', handler: wrap(() => BookingController, 'startBooking') },
+      { method: 'POST', path: '/:id/complete', handler: wrap(() => BookingController, 'completeBooking') },
     ]),
 
     // Specialized Modules
