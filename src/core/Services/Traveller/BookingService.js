@@ -34,7 +34,6 @@ class BookingService {
             if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) throw new Error("Invalid startDate or endDate format. Use YYYY-MM-DD.");
 
             const packageItem = await PackageService.getAvailablePackageItem(itemId);
-            console.log("[Package Item]", packageItem);
 
             if (!packageItem) throw new Error(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
 
