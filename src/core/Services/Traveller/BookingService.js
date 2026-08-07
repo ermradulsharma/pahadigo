@@ -238,58 +238,24 @@ class BookingService {
     async initializePayment(bookingId, userId) {
         const booking = await Booking.findOne({ _id: bookingId, user: userId });
         if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
-
-        if (booking.status !== BOOKING_STATUS.PENDING) {
-            throw new Error(`Payment not allowed. Booking status is ${booking.status}.`);
-        }
-
-        if (booking.paymentStatus === PAYMENT_STATUS.PAID) {
-            throw new Error("This booking is already paid.");
-        }
-
-        if (booking.payment?.orderId && !booking.payment?.paymentId) {
-            return {
-                orderId: booking.payment.orderId,
-                amount: booking.pricing.total,
-                currency: 'INR',
-                bookingCode: booking.bookingCode
-            };
-        }
-
+        if (booking.status !== BOOKING_STATUS.PENDING) throw new Error(`Payment not allowed. Booking status is ${booking.status}.`);
+        if (booking.paymentStatus === PAYMENT_STATUS.PAID) throw new Error("This booking is already paid.");
+        if (booking.payment?.orderId && !booking.payment?.paymentId) return { orderId: booking.payment.orderId, amount: booking.pricing.total, currency: 'INR', bookingCode: booking.bookingCode };
         const config = await getAppConfig();
         let razorpayOrder;
 
         try {
-            razorpayOrder = await RazorpayService.createOrder(
-                booking.pricing.total,
-                booking.bookingCode,
-                config.razorpay
-            );
+            razorpayOrder = await RazorpayService.createOrder(booking.pricing.total, booking.bookingCode, config.razorpay);
         } catch (error) {
             throw new Error(error.message || 'Unable to initialize payment gateway order.');
         }
 
-        if (!razorpayOrder?.id) {
-            throw new Error('Payment gateway did not return an order id.');
-        }
-
+        if (!razorpayOrder?.id) throw new Error('Payment gateway did not return an order id.');
         booking.payment.gateway = 'razorpay';
         booking.payment.orderId = razorpayOrder.id;
-
-        booking.timeline.push({
-            status: 'Payment Attempted',
-            remarks: `Razorpay Order ${razorpayOrder.id} generated.`,
-            actor: userId
-        });
-
+        booking.timeline.push({ status: 'Payment Attempted', remarks: `Razorpay Order ${razorpayOrder.id} generated.`, actor: userId });
         await booking.save();
-
-        return {
-            orderId: razorpayOrder.id,
-            amount: booking.pricing.total,
-            currency: 'INR',
-            bookingCode: booking.bookingCode
-        };
+        return { orderId: razorpayOrder.id, amount: booking.pricing.total, currency: 'INR', bookingCode: booking.bookingCode };
     }
 
     /**
