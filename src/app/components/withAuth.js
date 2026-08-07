@@ -1,7 +1,7 @@
 'use client';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
-import { getToken, getRole, removeToken } from '@/core/Helpers/authUtils.js';
+import { getToken, getRole, removeToken } from '@/app/utils/authUtils.js';
 
 export default function withAuth(Component, allowedRoles = []) {
   return function ProtectedRoute(props) {

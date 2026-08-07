@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
-import { getToken } from '@/core/Helpers/authUtils.js';
+import { getToken } from '@/app/utils/authUtils.js';
 import api from '@/core/Api/index.js';
 import { useToast } from '@/components/ui/ToastContext.js';
 import CyberTable from '@/app/components/admin/CyberTable.js';

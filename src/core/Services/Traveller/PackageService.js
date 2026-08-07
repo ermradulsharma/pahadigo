@@ -6,6 +6,7 @@ import VendorDocument from '@/core/Models/VendorDocument.js';
 import { CATEGORY_MAP, SCHEMA_KEYS } from '@/core/Constants/categories.js';
 import MasterService from '@/core/Services/MasterService.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
+import { getPackageItemById } from '@/core/Helpers/queryHelpers.js';
 
 /**
  * PackageService (Traveller Role)
@@ -57,31 +58,7 @@ class PackageService {
     }
 
     async getPackageItem(itemId) {
-        if (!itemId) return null;
-        let queryId = itemId;
-        if (typeof itemId === 'string' && itemId.length === 24) {
-            try { queryId = new mongoose.Types.ObjectId(itemId); } catch (e) { }
-        }
-
-        const pkg = await Package.findOne({
-            $or: Object.values(SCHEMA_KEYS).map(key => ({ [`${key}._id`]: queryId }))
-        }).lean();
-
-        if (!pkg) return null;
-
-        for (const key of Object.values(SCHEMA_KEYS)) {
-            if (Array.isArray(pkg[key])) {
-                const item = pkg[key].find(i => i._id.toString() === itemId);
-                if (item) {
-                    return {
-                        ...item,
-                        category: key,
-                        catalogId: pkg._id.toString()
-                    };
-                }
-            }
-        }
-        return null;
+        return await getPackageItemById(itemId);
     }
 
     async getMultiplePackageItems(itemIds) {

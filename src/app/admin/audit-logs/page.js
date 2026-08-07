@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, Fragment } from 'react';
-import { getToken } from '@/core/Helpers/authUtils.js';
+import { getToken } from '@/app/utils/authUtils.js';
 import api from '@/core/Api/index.js';
 import { ChevronDown, ChevronRight, Search, Activity, Database, ShieldAlert, Cpu, Terminal, Filter, LayoutGrid } from 'lucide-react';
 import Loading from '@/components/admin/Loading.js';

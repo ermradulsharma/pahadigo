@@ -4,11 +4,12 @@ import dbConnect from '@/core/Config/db.js';
 import authMiddleware from '@/core/Middleware/auth.js';
 import roleMiddleware from '@/core/Middleware/roleMiddleware.js';
 import { rateLimit } from '@/core/Middleware/rateLimit.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
-import { sanitizeNoSQL } from '@/core/Helpers/security.js';
-import { errorResponse } from '@/core/Helpers/response.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES, DEFAULTS } from '@/core/Constants/index.js';
+import { sanitizeNoSQL, redactSensitiveData } from '@/core/Helpers/security.js';
+import { errorResponse, successResponse } from '@/core/Helpers/response.js';
 import { parseNestedFormData } from '@/core/Helpers/parseNestedFormData.js';
 import { validate } from '@/core/Helpers/validation.js';
+import AuditService from '@/core/Services/Admin/AuditService.js';
 
 const authRateLimiter = rateLimit({ limit: 5, windowMs: 60 * 1000 }); // 5 requests per minute
 const REQUEST_ID_HEADER = 'x-request-id';
@@ -151,7 +152,51 @@ export function createNextRouter(routes) {
             const sanitizedRouteParams = sanitizeNoSQL({ ...routeParams });
 
             // Execute Modular Controller Handler
-            return withRequestId(await routeDef.handler(req, { params: sanitizedRouteParams }), requestId);
+            const response = await routeDef.handler(req, { params: sanitizedRouteParams });
+
+            // Audit Logging
+            if (!req._auditLogged && req.method && ['POST', 'PUT', 'PATCH', 'DELETE'].includes(req.method.toUpperCase())) {
+                if (req.user && req.user.id) {
+                    try {
+                        const urlObj = new URL(req.url);
+                        const urlParts = urlObj.pathname.split('/').filter(Boolean);
+                        const ignoreList = ['api', 'create', 'update', 'delete', 'add', 'remove', 'add-item', 'update-status', 'profile', 'business', 'vendor', 'admin', 'status', 'verify', 'resolve', 'upload'];
+                        const significantParts = urlParts.filter(p => !ignoreList.includes(p.toLowerCase()) && !/^[0-9a-fA-F]{24}$/.test(p) && !/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/.test(p));
+                        let extractedTarget = significantParts.slice(-1)[0];
+                        if (!extractedTarget) {
+                            extractedTarget = urlParts.length > 2 ? urlParts[urlParts.length - 2] : (urlParts[1] || 'DATA');
+                        }
+
+                        let logicalAction = 'UPDATE';
+                        if (req.method.toUpperCase() === 'POST') logicalAction = 'CREATE';
+                        if (req.method.toUpperCase() === 'DELETE') logicalAction = 'DELETE';
+
+                        await AuditService.logAction(req.user.id, logicalAction, extractedTarget.toUpperCase(), sanitizedRouteParams?.id || 'GLOBAL', {
+                            route: urlObj.pathname,
+                            status: response?.status || 'OK',
+                            payload: redactSensitiveData(req.payload)
+                        }, req);
+                    } catch (logError) {
+                        // Silent fail for logging errors
+                    }
+                }
+            }
+
+            // Standardize Response
+            let finalResponse = response;
+            if (!(response instanceof Response)) {
+                if (response && typeof response === 'object' && response.data !== undefined && response.success !== undefined) {
+                    if (response.success === DEFAULTS.FALSE) {
+                        finalResponse = errorResponse(response.status || HTTP_STATUS.BAD_REQUEST, response.message || RESPONSE_MESSAGES.ERROR.GENERIC, response.data);
+                    } else {
+                        finalResponse = successResponse(response.status || HTTP_STATUS.OK, response.message || RESPONSE_MESSAGES.SUCCESS.GENERIC, response.data);
+                    }
+                } else {
+                    finalResponse = successResponse(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.GENERIC, response);
+                }
+            }
+
+            return withRequestId(finalResponse, requestId);
 
         } catch (error) {
             logError('[API HANDLER ERROR]', error, { requestId, method: req.method, path: req.url });

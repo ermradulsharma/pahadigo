@@ -1,4 +1,4 @@
-import { getToken } from '@/core/Helpers/authUtils.js';
+import { getToken } from '@/app/utils/authUtils.js';
 import { adminApi } from './admin.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 

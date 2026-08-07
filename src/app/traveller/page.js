@@ -1,6 +1,6 @@
 'use client';
 import { useEffect, useState } from 'react';
-import { getToken } from '@/core/Helpers/authUtils.js';
+import { getToken } from '@/app/utils/authUtils.js';
 
 export default function TravellerDashboard() {
   const [profile, setProfile] = useState(null);

@@ -2,7 +2,7 @@
 import { useRouter } from 'next/navigation';
 import { useState, useEffect } from 'react';
 import Image from 'next/image';
-import { setToken, getToken, getRole } from '@/core/Helpers/authUtils.js';
+import { setToken, getToken, getRole } from '@/app/utils/authUtils.js';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Shield, Lock, Mail, ArrowRight, Loader2, Cpu, Zap, Ghost } from 'lucide-react';
 

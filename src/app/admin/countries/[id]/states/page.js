@@ -1,7 +1,7 @@
 "use client";
 import { useState, useEffect, use } from 'react';
 import Link from 'next/link';
-import { getToken } from '@/core/Helpers/authUtils.js';
+import { getToken } from '@/app/utils/authUtils.js';
 
 import CyberTable from '@/components/admin/CyberTable.js';
 import { Search, MapPin, ArrowLeft, Plus, Trash2, Globe } from 'lucide-react';

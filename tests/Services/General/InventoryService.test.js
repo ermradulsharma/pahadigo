@@ -24,9 +24,14 @@ describe('General InventoryService', () => {
                 vendor: vendorId,
                 stay: [{ _id: itemId, isActive: true, pricing: { sellingPrice: 100 }, availability: { total: 10 } }]
             };
-            Package.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(mockPkg) });
-            Inventory.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
-            Booking.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([]) });
+            const mockQuery = (resolvedValue) => ({
+                session: jest.fn().mockReturnThis(),
+                lean: jest.fn().mockResolvedValue(resolvedValue)
+            });
+
+            Package.findOne.mockReturnValue(mockQuery(mockPkg));
+            Inventory.findOne.mockReturnValue(mockQuery(null));
+            Booking.find.mockReturnValue(mockQuery([]));
 
             const result = await InventoryService._getEffectiveDay(vendorId, itemId, serviceType, date);
 
@@ -36,7 +41,7 @@ describe('General InventoryService', () => {
         });
 
         test('should return null if package or item not found', async () => {
-            Package.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
+            Package.findOne.mockReturnValue({ session: jest.fn().mockReturnThis(), lean: jest.fn().mockResolvedValue(null) });
             const result = await InventoryService._getEffectiveDay(vendorId, itemId, serviceType, date);
             expect(result).toBeNull();
         });

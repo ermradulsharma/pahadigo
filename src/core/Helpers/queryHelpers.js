@@ -1,4 +1,5 @@
 import { User, Vendor, Booking, Package } from '@/core/Models/index.js';
+import { SCHEMA_KEYS } from '@/core/Constants/categories.js';
 
 /**
  * Generic helper to fetch a single document by ID with projection, population, and lean enabled.
@@ -112,15 +113,15 @@ export const getPackageById = async (id, select = '', populate = null) => {
 /**
  * Fetch a specific package item (subdocument) by its ID.
  */
-export const getPackageItemById = async (itemId) => {
+export const getPackageItemById = async (itemId, populate = null) => {
 
     const pkg = await getPackageBy({
-        $or: categories.map(key => ({ [`${key}._id`]: itemId }))
+        $or: Object.values(SCHEMA_KEYS).map(key => ({ [`${key}._id`]: itemId }))
     }, '', populate);
 
     if (!pkg) return null;
 
-    for (const key of categories) {
+    for (const key of Object.values(SCHEMA_KEYS)) {
         if (Array.isArray(pkg[key])) {
             const item = pkg[key].find(i => i._id.toString() === itemId.toString());
             if (item) {
