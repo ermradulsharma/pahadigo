@@ -42,11 +42,8 @@ class BookingService {
             if (!travellerProfile) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
 
             const { catalogId, category, vendor } = packageItem;
-            // console.log(vendor.toString(), "[Vendor]");
-            // console.log(category, "[Category]");
-            // console.log(catalogId, "[Catalog ID]");
-            const business = await BusinessService.getBusinessById(vendor);
-            // console.log(business, "[Business]");
+            const vendorId = vendor?.id || vendor?._id || vendor;
+            const business = await BusinessService.getBusinessById(vendorId);
 
             if (!business) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
@@ -95,7 +92,7 @@ class BookingService {
             calculatedSubTotal = Math.round(calculatedSubTotal * 100) / 100;
 
             const availabilityStatus = await InventoryService.checkAvailabilityRange(
-                vendor.toString(), itemId, category, checkInDate, checkOutDate, requiredUnits
+                vendorId.toString(), itemId, category, checkInDate, checkOutDate, requiredUnits
             );
 
             if (!availabilityStatus.available) {
@@ -219,7 +216,7 @@ class BookingService {
             }
 
             const finalCheck = await InventoryService.checkAvailabilityRange(
-                vendor.toString(), itemId, category, checkInDate, checkOutDate, requiredUnits, session, newBooking._id
+                vendorId.toString(), itemId, category, checkInDate, checkOutDate, requiredUnits, session, newBooking._id
             );
             if (!finalCheck.available) {
                 throw new Error(`Inventory Conflict: Slots became unavailable.`);
