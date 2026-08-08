@@ -134,7 +134,7 @@ export default async function PackagesPage({ searchParams }) {
     return (
         <div className="bg-gray-50 min-h-screen font-sans">
             {/* Top Page Header (Clean, Typography Driven) */}
-            <div className="bg-gray-900 pt-32 pb-16 mb-10 relative overflow-hidden">
+            <div className="bg-gray-900 pt-32 pb-16 relative overflow-hidden">
                 {/* Subtle dark gradient/pattern overlay */}
                 {/* <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
                 <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent opacity-80"></div> */}
@@ -149,7 +149,7 @@ export default async function PackagesPage({ searchParams }) {
                 </div>
             </div>
 
-            <main className="max-w-8xl mx-auto px-4 sm:px-6 lg:px-8">
+            <main className="max-w-8xl mx-auto p-4 sm:p-6 lg:p-10">
                 <div className="flex flex-col lg:flex-row gap-4">
                     {/* Sidebar Filters */}
                     <Suspense fallback={<div className="w-full lg:w-[300px] h-[500px] bg-gray-100 rounded-2xl animate-pulse flex-shrink-0"></div>}>
