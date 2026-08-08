@@ -64,11 +64,11 @@ async function getServices(category, page = 1, q = '', maxPrice = '', sort = '')
 
                 allServices.push({
                     _id: item.id || item._id,
-                    type: getReadableType(item.category_name || item.category || 'Package'),
-                    title: item.title || item.roomType || item.campingType || item.trekkingName || item.stretchName || item.jumpName || item.model || item.tourName || 'Package',
-                    price: item.pricing?.sellingPrice || item.pricing?.basePrice || item.pricePerNight || item.pricePerPerson || item.pricePerDay || 0,
-                    location: item.location?.address || item.location?.city || item.location || 'Unknown Location',
-                    image: imageUrl,
+                    category: getReadableType(item.category_name || item.category || 'Package'),
+                    title: item.title || 'Package',
+                    pricing: { sellingPrice: item.pricing?.sellingPrice || 0 },
+                    location: { address: item.location?.address || item.location?.city || item.location || 'Unknown Location' },
+                    photos: [{ url: imageUrl }],
                     vendor: item.vendor?.businessName || 'Verified Vendor'
                 });
             });
@@ -103,11 +103,11 @@ async function getServices(category, page = 1, q = '', maxPrice = '', sort = '')
 
                     allServices.push({
                         _id: item.id || item._id,
-                        type: getReadableType(item.category_name || slug),
+                        category: getReadableType(item.category_name || slug),
                         title: item.title,
-                        price: item.pricing?.sellingPrice || 0,
-                        location: item.location?.address || item.location?.city || item.location || 'Unknown Location',
-                        image: imageUrl,
+                        pricing: { sellingPrice: item.pricing?.sellingPrice || 0 },
+                        location: { address: item.location?.address || item.location?.city || item.location || 'Unknown Location' },
+                        photos: [{ url: imageUrl }],
                         vendor: item.vendor?.businessName || 'Verified Vendor'
                     });
                 });
