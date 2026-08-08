@@ -85,7 +85,8 @@
         "postcss": "$postcss",
         "uuid": "$uuid",
         "eslint": "$eslint",
-        "sharp": "$sharp"
+        "sharp": "$sharp",
+        "js-yaml": "$js-yaml"
     },
     "allowScripts": {
         "@firebase/util@1.15.1": true,
