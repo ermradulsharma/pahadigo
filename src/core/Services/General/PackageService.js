@@ -112,6 +112,9 @@ class PackageService {
                     title: "$items.title",
                     isActive: "$items.isActive",
                     pricing: "$items.pricing",
+                    pricePerNight: "$items.pricePerNight",
+                    pricePerPerson: "$items.pricePerPerson",
+                    pricePerDay: "$items.pricePerDay",
                     location: "$items.location",
                     photos: "$items.photos",
                     category_slug: "$items.category",
@@ -134,7 +137,7 @@ class PackageService {
         }));
     }
 
-    async getAvailablePackages(query = '') {
+    async getAvailablePackages(query = '', minPrice = 0, maxPrice = null, sort = '') {
         const pipeline = [];
 
         // 1. Initial Match using Text Index (High Performance)
@@ -165,16 +168,51 @@ class PackageService {
         pipeline.push({ $unwind: "$items" });
 
         // 3. Post-unwind filtering (if text search was too broad or needs regex refinement)
+        const postUnwindFilters = [];
         if (query) {
             const regex = new RegExp(query, 'i');
+            postUnwindFilters.push({
+                $or: [
+                    { "items.title": regex },
+                    { "items.description": regex }
+                ]
+            });
+        }
+        if (minPrice > 0 || maxPrice !== null) {
+            const priceMatch = {};
+            if (minPrice > 0) priceMatch.$gte = minPrice;
+            if (maxPrice !== null) priceMatch.$lte = maxPrice;
+
+            postUnwindFilters.push({
+                $or: [
+                    { "items.pricing.sellingPrice": priceMatch },
+                ]
+            });
+        }
+
+        if (postUnwindFilters.length > 0) {
             pipeline.push({
                 $match: {
-                    $or: [
-                        { "items.title": regex },
-                        { "items.description": regex }
-                    ]
+                    $and: postUnwindFilters
                 }
             });
+        }
+
+        // Sorting
+        if (sort) {
+            pipeline.push({
+                $addFields: {
+                    sortPrice: {
+                        $ifNull: ["$items.pricing.sellingPrice", 99999999]
+                    }
+                }
+            });
+
+            if (sort === 'price_asc') {
+                pipeline.push({ $sort: { sortPrice: 1 } });
+            } else if (sort === 'price_desc') {
+                pipeline.push({ $sort: { sortPrice: -1 } });
+            }
         }
 
         const results = await Package.aggregate([
@@ -208,6 +246,9 @@ class PackageService {
                     title: "$items.title",
                     isActive: "$items.isActive",
                     pricing: "$items.pricing",
+                    pricePerNight: "$items.pricePerNight",
+                    pricePerPerson: "$items.pricePerPerson",
+                    pricePerDay: "$items.pricePerDay",
                     location: "$items.location",
                     photos: "$items.photos",
                     category: "$items.category",
@@ -219,8 +260,8 @@ class PackageService {
         return results;
     }
 
-    async getAvailablePackagesByCategory(query = '') {
-        const flattened = await this.getAvailablePackages(query);
+    async getAvailablePackagesByCategory(query = '', minPrice = 0, maxPrice = null, sort = '') {
+        const flattened = await this.getAvailablePackages(query, minPrice, maxPrice, sort);
         const categories = await Category.find({}).lean();
         const result = {};
 
@@ -245,6 +286,9 @@ class PackageService {
                         gst: gst,
                         serviceTax: serviceTax
                     },
+                    pricePerNight: item.pricePerNight,
+                    pricePerPerson: item.pricePerPerson,
+                    pricePerDay: item.pricePerDay,
                     location: item.location || {},
                     photos: item.photos?.[0] || "",
                     category_name: cat.name || "",
@@ -346,6 +390,9 @@ class PackageService {
                 title: "$items.title",
                 isActive: "$items.isActive",
                 pricing: "$items.pricing",
+                pricePerNight: "$items.pricePerNight",
+                pricePerPerson: "$items.pricePerPerson",
+                pricePerDay: "$items.pricePerDay",
                 location: "$items.location",
                 photos: "$items.photos",
                 category: "$items.category",

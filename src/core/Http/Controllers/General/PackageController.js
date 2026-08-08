@@ -21,18 +21,80 @@ class PackageController extends Controller {
         try {
             const url = new URL(req.url);
             const query = url.searchParams.get('q') || '';
+            const minPrice = parseInt(url.searchParams.get('minPrice')) || 0;
+            const maxPrice = url.searchParams.has('maxPrice') ? parseInt(url.searchParams.get('maxPrice')) : null;
+            const sort = url.searchParams.get('sort') || '';
             const page = parseInt(url.searchParams.get('page')) || 1;
             const limit = url.searchParams.get('limit') === 'all' ? 0 : parseInt(url.searchParams.get('limit')) || 10;
-            const packages = await PackageService.getAvailablePackagesByCategory(query);
+            const isFlat = url.searchParams.get('format') === 'flat';
+
+            const packages = await PackageService.getAvailablePackagesByCategory(query, minPrice, maxPrice, sort);
+            
             const wishlistMap = new Map();
             if (req.user?.id) {
                 const userWishlist = await Wishlist.find({ user: req.user.id }).select('itemId').lean();
                 userWishlist.forEach(w => wishlistMap.set(w.itemId.toString(), w._id.toString()));
             }
+
+            if (isFlat) {
+                let allItems = [];
+                for (const items of Object.values(packages)) {
+                    if (Array.isArray(items)) {
+                        allItems = allItems.concat(items);
+                    }
+                }
+                if (sort === 'price_asc') {
+                    allItems.sort((a, b) => {
+                        const pA = a.pricing?.sellingPrice || 99999999;
+                        const pB = b.pricing?.sellingPrice || 99999999;
+                        return pA - pB;
+                    });
+                } else if (sort === 'price_desc') {
+                    allItems.sort((a, b) => {
+                        const pA = a.pricing?.sellingPrice || 0;
+                        const pB = b.pricing?.sellingPrice || 0;
+                        return pB - pA;
+                    });
+                } else {
+                    allItems.sort((a, b) => (b.id || b._id).toString().localeCompare((a.id || a._id).toString()));
+                }
+                const itemsWithWishlist = allItems.map(item => {
+                    const itemIdStr = (item.id || item._id).toString();
+                    return {
+                        ...item,
+                        wishlist: wishlistMap.has(itemIdStr),
+                        wishlistId: wishlistMap.get(itemIdStr) || null
+                    };
+                });
+                
+                if (query) {
+                    await this._logSearch(query, req.user, allItems.length);
+                }
+                
+                const paginatedData = paginateArray(itemsWithWishlist, page, limit);
+                return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, paginatedData);
+            }
+
             const categoryData = {};
+            let totalGrouped = 0;
             for (const [slug, items] of Object.entries(packages)) {
                 if (Array.isArray(items)) {
-                    items.sort((a, b) => (b.id || b._id).toString().localeCompare((a.id || a._id).toString()));
+                    totalGrouped += items.length;
+                    if (sort === 'price_asc') {
+                        items.sort((a, b) => {
+                            const pA = a.pricing?.sellingPrice || 99999999;
+                            const pB = b.pricing?.sellingPrice || 99999999;
+                            return pA - pB;
+                        });
+                    } else if (sort === 'price_desc') {
+                        items.sort((a, b) => {
+                            const pA = a.pricing?.sellingPrice || 0;
+                            const pB = b.pricing?.sellingPrice || 0;
+                            return pB - pA;
+                        });
+                    } else {
+                        items.sort((a, b) => (b.id || b._id).toString().localeCompare((a.id || a._id).toString()));
+                    }
                     const itemsWithWishlist = items.map(item => {
                         const itemIdStr = (item.id || item._id).toString();
                         return {
@@ -45,8 +107,7 @@ class PackageController extends Controller {
                 }
             }
             if (query) {
-                const total = Object.values(packages).flat().length;
-                await this._logSearch(query, req.user, total);
+                await this._logSearch(query, req.user, totalGrouped);
             }
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, categoryData);
         } catch (error) {

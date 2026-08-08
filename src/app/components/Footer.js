@@ -2,9 +2,9 @@ import Link from 'next/link';
 
 export default function Footer() {
     return (
-        <footer className="bg-gray-900 text-white pt-20 pb-10">
+        <footer className="bg-gray-900 text-white pt-10">
             <div className="max-w-7xl mx-auto px-4">
-                <div className="grid md:grid-cols-4 gap-12 mb-16">
+                <div className="grid md:grid-cols-4 gap-12 mb-8">
                     <div className="space-y-6">
                         <span className="text-3xl font-bold font-display text-white block">
                             Pahadi<span className="text-primary-500">Go</span>
@@ -63,8 +63,8 @@ export default function Footer() {
                     </div>
                 </div>
 
-                <div className="border-t border-gray-800 pt-8 text-center text-gray-500 text-sm">
-                    <p>&copy; {new Date().getFullYear()} PahadiGo Technologies Pvt Ltd. All rights reserved.</p>
+                <div className="border-t border-gray-800 py-4 text-center text-gray-500 text-sm">
+                    <p className='text-sm text-end'>&copy; {new Date().getFullYear()} PahadiGo. All rights reserved.</p>
                 </div>
             </div>
         </footer>
