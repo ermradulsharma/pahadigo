@@ -239,7 +239,19 @@ class BookingService {
 
             await session.commitTransaction();
             NotificationService.notifyBookingStatus(newBooking._id, 'created');
-            return newBooking;
+            
+            // Format response
+            return {
+                bookingId: newBooking._id,
+                bookingCode: newBooking.bookingCode,
+                status: newBooking.status,
+                paymentStatus: newBooking.paymentStatus,
+                item: newBooking.item,
+                startDate: newBooking.startDate,
+                endDate: newBooking.endDate,
+                occupancy: newBooking.occupancy,
+                pricing: newBooking.pricing
+            };
         } catch (error) {
             await session.abortTransaction();
             throw new Error(error.message || 'Booking failed');
