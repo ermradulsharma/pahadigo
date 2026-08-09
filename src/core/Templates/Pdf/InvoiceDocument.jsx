@@ -48,8 +48,8 @@ const FakeSignature = () => (
 
 const styles = StyleSheet.create({
     page: { fontFamily: 'Helvetica', backgroundColor: WHITE_COLOR, color: TEXT_COLOR },
-    headerBackground: { backgroundColor: PRIMARY_COLOR, color: WHITE_COLOR, padding: 25, flexDirection: 'row', justifyContent: 'space-between' },
-    headerLeft: { width: '65%', flexDirection: 'row' },
+    headerBackground: { backgroundColor: PRIMARY_COLOR, color: WHITE_COLOR, padding: 20, flexDirection: 'row', justifyContent: 'space-between' },
+    headerLeft: { width: '55%', flexDirection: 'row' },
     logoWrapper: { marginRight: 15 },
     headerTextWrapper: { flex: 1 },
     brandTitle: { fontSize: 20, fontWeight: 'bold', color: WHITE_COLOR },
@@ -57,21 +57,21 @@ const styles = StyleSheet.create({
     iconRow: { flexDirection: 'row', alignItems: 'center', marginBottom: 5 },
     iconText: { fontSize: 8, color: BORDER_COLOR, marginLeft: 8 },
     iconTextDark: { fontSize: 9, color: MUTED_TEXT, marginLeft: 8, lineHeight: 1.4 },
-    headerRightBox: { backgroundColor: WHITE_COLOR, borderRadius: 8, padding: 15, width: '30%', alignSelf: 'flex-start' },
+    headerRightBox: { backgroundColor: WHITE_COLOR, borderRadius: 8, padding: 12, width: '42%', alignSelf: 'flex-start' },
     invoiceTitle: { fontSize: 22, fontWeight: 'bold', color: PRIMARY_COLOR, marginBottom: 15 },
     infoRow: { display: 'flex', flexDirection: 'row', marginBottom: 8, alignItems: 'center', justifyContent: 'space-between' },
     infoLabel: { width: 55, fontSize: 8, fontWeight: 'bold', color: TEXT_COLOR },
     infoColon: { width: 10, fontSize: 8, fontWeight: 'bold', color: TEXT_COLOR },
-    infoValue: { flex: 1, fontSize: 8, color: PRIMARY_COLOR, fontWeight: 'bold', textAlign: 'right' },
-    billedContainer: { display: 'flex', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 25, marginTop: 20 },
-    billedBox: { display: 'flex', backgroundColor: WHITE_COLOR, borderWidth: 1, borderColor: BORDER_COLOR, borderRadius: 8, padding: 15, width: '48%' },
+    infoValue: { flex: 1, fontSize: 7.5, color: PRIMARY_COLOR, fontWeight: 'bold', textAlign: 'right' },
+    billedContainer: { display: 'flex', flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 25, marginTop: 15 },
+    billedBox: { display: 'flex', backgroundColor: WHITE_COLOR, borderWidth: 1, borderColor: BORDER_COLOR, borderRadius: 8, padding: 12, width: '48%' },
     billedTitleWrapper: { backgroundColor: LIGHT_PURPLE, padding: 8, borderRadius: 6, marginRight: 10 },
     billedTitleRow: { display: 'flex', flexDirection: 'row', alignItems: 'center', marginBottom: 15 },
     billedTitle: { fontSize: 11, fontWeight: 'bold', color: PRIMARY_COLOR },
-    billedName: { fontSize: 11, fontWeight: 'bold', color: PRIMARY_COLOR, marginBottom: 8 },
+    billedName: { fontSize: 11, fontWeight: 'bold', color: PRIMARY_COLOR, marginBottom: 6 },
     billedText: { fontSize: 9, color: TEXT_COLOR, lineHeight: 1.4, marginBottom: 4 },
-    tableContainer: { marginHorizontal: 25, marginTop: 20, borderWidth: 1, borderColor: BORDER_COLOR, borderRadius: 6, overflow: 'hidden' },
-    tableHeader: { flexDirection: 'row', backgroundColor: PRIMARY_COLOR, paddingVertical: 12, paddingHorizontal: 10 },
+    tableContainer: { marginHorizontal: 25, marginTop: 15, borderWidth: 1, borderColor: BORDER_COLOR, borderRadius: 6, overflow: 'hidden' },
+    tableHeader: { flexDirection: 'row', backgroundColor: PRIMARY_COLOR, paddingVertical: 10, paddingHorizontal: 10 },
     th: { fontSize: 8, fontWeight: 'bold', color: WHITE_COLOR },
     tableRow: { flexDirection: 'row', paddingVertical: 8, paddingHorizontal: 8, alignItems: 'center' },
     td: { fontSize: 9, color: TEXT_COLOR },
@@ -82,7 +82,7 @@ const styles = StyleSheet.create({
     col5: { width: '10%', textAlign: 'center' },
     col6: { width: '12%', textAlign: 'center' },
     col7: { width: '13%', textAlign: 'center' },
-    bottomContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 25, marginTop: 25 },
+    bottomContainer: { flexDirection: 'row', justifyContent: 'space-between', paddingHorizontal: 25, marginTop: 15 },
     bottomLeft: { width: '48%' },
     bottomRight: { width: '48%' },
     sectionBlock: { marginBottom: 10 },
@@ -110,13 +110,17 @@ const styles = StyleSheet.create({
     wordsContent: { flex: 1 },
     wordsTitle: { fontSize: 7, fontWeight: 'bold', color: PRIMARY_COLOR, marginBottom: 4 },
     wordsValue: { fontSize: 8, color: TEXT_COLOR, lineHeight: 1.3 },
-    signatureBlock: { marginTop: 40, alignItems: 'center', alignSelf: 'flex-end', width: 180 },
+    signatureBlock: { marginTop: 25, alignItems: 'center', alignSelf: 'flex-end', width: 180 },
     signatureLine: { borderTopWidth: 1, borderTopColor: TEXT_COLOR, width: '100%', marginBottom: 5 },
     signatureTitle: { fontSize: 9, fontWeight: 'bold', color: PRIMARY_COLOR },
     signatureName: { fontSize: 8, color: TEXT_COLOR, marginTop: 2, fontStyle: 'italic' },
-    footer: { marginTop: 10, marginHorizontal: 10, padding: 15, display: 'flex', alignItems: 'center', flexDirection: 'row', justifyContent: 'center', backgroundColor: LIGHT_PURPLE, borderRadius: 6 },
+    footer: { marginTop: 8, marginHorizontal: 10, padding: 10, display: 'flex', alignItems: 'center', flexDirection: 'row', justifyContent: 'center', backgroundColor: LIGHT_PURPLE, borderRadius: 6 },
     footerIcon: { marginRight: 6 },
-    footerText: { fontSize: 8, color: PRIMARY_COLOR, fontWeight: 'bold' }
+    footerText: { fontSize: 8, color: PRIMARY_COLOR, fontWeight: 'bold' },
+    watermarkText1: { position: 'absolute', top: 150, left: 50, fontSize: 60, color: PRIMARY_COLOR, opacity: 0.04, transform: 'rotate(-45deg)', zIndex: -1, letterSpacing: 10 },
+    watermarkText2: { position: 'absolute', top: 450, left: 50, fontSize: 60, color: PRIMARY_COLOR, opacity: 0.04, transform: 'rotate(-45deg)', zIndex: -1, letterSpacing: 10 },
+    watermarkText3: { position: 'absolute', top: 750, left: 50, fontSize: 60, color: PRIMARY_COLOR, opacity: 0.04, transform: 'rotate(-45deg)', zIndex: -1, letterSpacing: 10 },
+    watermarkImage: { position: 'absolute', top: 350, left: 150, width: 300, opacity: 0.08, zIndex: -1 }
 });
 
 const InvoiceDocument = ({ booking, role = 'traveller' }) => {
@@ -125,7 +129,7 @@ const InvoiceDocument = ({ booking, role = 'traveller' }) => {
         const b = ['', '', 'Twenty', 'Thirty', 'Forty', 'Fifty', 'Sixty', 'Seventy', 'Eighty', 'Ninety'];
         if ((num = num.toString()).length > 9) return 'Amount too large';
         let n = ('000000000' + num).substr(-9).match(/^(\d{2})(\d{2})(\d{2})(\d{1})(\d{2})$/);
-        if (!n) return ''; 
+        if (!n) return '';
         let str = '';
         str += (n[1] != 0) ? (a[Number(n[1])] || b[n[1][0]] + ' ' + a[n[1][1]]) + 'Crore ' : '';
         str += (n[2] != 0) ? (a[Number(n[2])] || b[n[2][0]] + ' ' + a[n[2][1]]) + 'Lakh ' : '';
@@ -234,6 +238,10 @@ const InvoiceDocument = ({ booking, role = 'traveller' }) => {
     return (
         <Document>
             <Page size="A4" style={styles.page}>
+                <Text style={styles.watermarkText1}>TRIPDHARA</Text>
+                <Text style={styles.watermarkText2}>TRIPDHARA</Text>
+                <Text style={styles.watermarkText3}>TRIPDHARA</Text>
+                <Image src="/logo.png" style={styles.watermarkImage} />
                 <View style={styles.headerBackground}>
                     <View style={styles.headerLeft}>
                         <View style={styles.headerTextWrapper}>
@@ -328,6 +336,10 @@ const InvoiceDocument = ({ booking, role = 'traveller' }) => {
                             <View style={styles.numberedList}>
                                 <View style={styles.numberCircle}><Text style={styles.numberText}>4</Text></View>
                                 <Text style={styles.termsText}>Vendor is not liable for delays caused by unforeseen circumstances.</Text>
+                            </View>
+                            <View style={styles.numberedList}>
+                                <View style={styles.numberCircle}><Text style={styles.numberText}>5</Text></View>
+                                <Text style={styles.termsText}>Any local tourist fees, green tax, or entry passes required by local authorities are NOT included in this invoice and must be paid directly at the destination.</Text>
                             </View>
                         </View>
                         <View style={styles.sectionBlock}>

@@ -1,13 +1,12 @@
 'use client';
 
 import React from 'react';
-import { PDFViewer } from '@react-pdf/renderer';
-import InvoiceDocument from '@/core/Templates/Pdf/InvoiceDocument';
+import dynamic from 'next/dynamic';
 
-export default function InvoicePreview() {
-    return (
-        <PDFViewer style={{ width: '100%', height: '100%', border: 'none' }}>
-            <InvoiceDocument />
-        </PDFViewer>
-    );
+const InvoiceViewer = dynamic(() => import('./InvoiceViewer'), {
+    ssr: false,
+});
+
+export default function InvoicePreview({ booking }) {
+    return <InvoiceViewer booking={booking} />;
 }

@@ -1,16 +1,23 @@
-'use client';
+import InvoicePreview from './InvoicePreview';
+import connectDB from '@/core/Config/db';
+import Booking from '@/core/Models/Booking';
 
-import dynamic from 'next/dynamic';
+export default async function TestInvoicePage() {
+    await connectDB();
+    
+    // Fetch the latest booking to test with real data
+    const latestBooking = await Booking.findOne()
+        .sort({ createdAt: -1 })
+        .populate('user')
+        .populate('vendor')
+        .lean();
+        
+    // Convert DB object to plain JSON to pass from Server Component to Client Component
+    const serializedBooking = latestBooking ? JSON.parse(JSON.stringify(latestBooking)) : null;
 
-// We must dynamically import the viewer with ssr: false because it relies on browser APIs to render the PDF blob
-const InvoicePreview = dynamic(() => import('./InvoicePreview'), {
-    ssr: false,
-});
-
-export default function TestInvoicePage() {
     return (
         <div style={{ width: '100vw', height: '100vh' }}>
-            <InvoicePreview />
+            <InvoicePreview booking={serializedBooking} />
         </div>
     );
 }
