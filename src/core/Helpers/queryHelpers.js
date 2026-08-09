@@ -1,5 +1,5 @@
-import { User, Vendor, Booking, Package } from '@/core/Models/index.js';
-import { SCHEMA_KEYS } from '@/core/Constants/categories.js';
+import { User, Vendor, Booking, Package, Category } from '@/core/Models/index.js';
+import { SCHEMA_KEYS, CATEGORY_MAP } from '@/core/Constants/categories.js';
 
 /**
  * Generic helper to fetch a single document by ID with projection, population, and lean enabled.
@@ -111,6 +111,27 @@ export const getPackageById = async (id, select = '', populate = null) => {
 };
 
 /**
+ * Fetch a Category record by custom conditions.
+ */
+export const getCategoryBy = async (conditions, select = '', populate = null) => {
+    return await getBy(Category, conditions, select, populate);
+};
+
+/**
+ * Fetch a Category record by ID.
+ */
+export const getCategoryById = async (id, select = '', populate = null) => {
+    return await getById(Category, id, select, populate);
+};
+
+/**
+ * Fetch a Category record by slug.
+ */
+export const getCategoryBySlug = async (slug, select = '', populate = null) => {
+    return await getBy(Category, { slug: slug.toLowerCase() }, select, populate);
+};
+
+/**
  * Fetch a specific package item (subdocument) by its ID.
  */
 export const getPackageItemById = async (itemId, populate = null) => {
@@ -125,11 +146,15 @@ export const getPackageItemById = async (itemId, populate = null) => {
         if (Array.isArray(pkg[key])) {
             const item = pkg[key].find(i => i._id.toString() === itemId.toString());
             if (item) {
+                const categorySlug = Object.keys(CATEGORY_MAP).find(k => CATEGORY_MAP[k] === key) || key;
+                const category = await getCategoryBySlug(categorySlug, '_id');
+
                 return {
                     ...item,
                     category: key,
+                    categoryId: category ? category._id.toString() : null,
                     catalogId: pkg._id.toString(),
-                    vendor: pkg.vendor
+                    vendor: pkg.vendor.toString()
                 };
             }
         }
@@ -149,5 +174,8 @@ export default {
     getBookingById,
     getPackageBy,
     getPackageById,
-    getPackageItemById
+    getPackageItemById,
+    getCategoryBy,
+    getCategoryById,
+    getCategoryBySlug
 };

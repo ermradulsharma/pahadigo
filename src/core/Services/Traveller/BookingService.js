@@ -30,23 +30,43 @@ class BookingService {
         try {
             const config = await getAppConfig();
             const checkInDate = new Date(body.startDate);
-            const checkOutDate = new Date(body.endDate || body.startDate);
+            const checkOutDate = new Date(body.endDate);
             if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) throw new Error("Invalid startDate or endDate format. Use YYYY-MM-DD.");
 
             const packageItem = await PackageService.getAvailablePackageItem(itemId);
-
             if (!packageItem) throw new Error(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
 
             const travellerProfile = await getUserById(userId);
             if (!travellerProfile) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
 
             const { catalogId, category, vendor } = packageItem;
-            const vendorId = vendor?.id || vendor?._id || vendor;
-            const business = await BusinessService.getBusinessById(vendorId);
 
+            const vendorId = vendor?.id;
+
+            const business = await BusinessService.getBusinessById(vendorId);
             if (!business) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
+
             const pricingRules = packageItem.pricing || {};
+
+            // Price logic
+            let itemBaseprice = pricingRules.basePrice || 0;
+
+            let itemGST;
+            if (pricingRules.gst) {
+                itemGST = parseFloat(pricingRules.gst);
+            } else {
+                const taxKey = `tax_${category.replace(/-/g, '_')}`;
+                itemGST = parseFloat(config.tax[taxKey]);
+            }
+
+            let itemServiceTax;
+            if (pricingRules.serviceTax) {
+                itemServiceTax = parseFloat(pricingRules.serviceTax);
+            } else {
+                itemServiceTax = parseFloat(config.tax.service_tax);
+            }
+
 
             const adultsCount = parseInt(body.adults) || 1;
             const childrenCount = parseInt(body.children) || 0;
@@ -59,36 +79,62 @@ class BookingService {
 
             let calculatedSubTotal = 0;
             let requiredUnits = requestedUnits;
-            let baseItemRate = 0;
 
             const STAY_CATEGORIES = ['homestay', 'hotel', 'camping'];
             const ACTIVITY_CATEGORIES = ['trekking', 'rafting', 'bungeeJumping'];
             const RENTAL_CATEGORIES = ['bike-scooter-rental', 'chardham-tour', 'vehicleRental', 'chardhamTour'];
 
             if (STAY_CATEGORIES.includes(category)) {
-                baseItemRate = pricingRules.sellingPrice || 0;
-
                 if (category === 'homestay') {
                     requiredUnits = 1;
                 } else {
                     const maxCapacityPerUnit = parseInt(pricingRules.maxAdults) > 0 ? parseInt(pricingRules.maxAdults) : 2;
                     requiredUnits = Math.max(requestedUnits, Math.ceil(adultsCount / maxCapacityPerUnit));
                 }
-                calculatedSubTotal = baseItemRate * totalNights * requiredUnits;
+                calculatedSubTotal = itemBaseprice * totalNights * requiredUnits;
             } else if (ACTIVITY_CATEGORIES.includes(category)) {
-                baseItemRate = pricingRules.sellingPrice || 0;
-                const childRate = pricingRules.childPrice || baseItemRate;
-
-                calculatedSubTotal = (baseItemRate * adultsCount) + (childRate * childrenCount);
+                const maxFreeChildren = parseInt(pricingRules.maxChildren) || 0;
+                const childRate = pricingRules.childPrice || 0;
+                const chargeableChildren = childrenCount > maxFreeChildren ? childrenCount - maxFreeChildren : 0;
+                calculatedSubTotal = (itemBaseprice * adultsCount) + (childRate * chargeableChildren);
                 requiredUnits = adultsCount + childrenCount;
             } else {
-                baseItemRate = pricingRules.sellingPrice || 0;
                 const isRentalOrTour = RENTAL_CATEGORIES.includes(category);
                 const durationMultiplier = isRentalOrTour ? totalNights : 1;
-                calculatedSubTotal = baseItemRate * requiredUnits * durationMultiplier;
+                calculatedSubTotal = itemBaseprice * requiredUnits * durationMultiplier;
             }
 
             calculatedSubTotal = Math.round(calculatedSubTotal * 100) / 100;
+            let d = pricingRules.discountType;
+            let discountAmount = 0;
+            if (d === "percentage") {
+                discountAmount = calculatedSubTotal * ((pricingRules.discount || 0) / 100);
+            } else if (d === "flat") {
+                discountAmount = pricingRules.discount || 0;
+            }
+
+            const taxableAmount = Math.max(0, calculatedSubTotal - discountAmount);
+
+            let tax = 0;
+            if (pricingRules.gst) {
+                tax = taxableAmount * (pricingRules.gst / 100);
+            }
+
+            let serviceFee = 0;
+            if (pricingRules.serviceTax) {
+                const baseServiceFee = taxableAmount * (pricingRules.serviceTax / 100);
+                const gstOnServiceFee = baseServiceFee * ((config?.tax?.gst || 18) / 100);
+                serviceFee = baseServiceFee + gstOnServiceFee;
+            }
+
+            const baseAmount = pricingRules.basePrice || 0;
+            const appliedDiscount = Math.round(discountAmount * 100) / 100;
+            const appliedCouponCode = null;
+            const appliedCouponAmount = 0;
+            const appliedServiceFee = Math.round(serviceFee * 100) / 100;
+            const appliedTaxRate = pricingRules.gst || 0;
+            const calculatedTax = Math.round(tax * 100) / 100;
+            const grandTotal = Math.max(0, Math.round((calculatedSubTotal + calculatedTax + appliedServiceFee - appliedDiscount - appliedCouponAmount) * 100) / 100);
 
             const availabilityStatus = await InventoryService.checkAvailabilityRange(
                 vendorId.toString(), itemId, category, checkInDate, checkOutDate, requiredUnits
@@ -98,36 +144,6 @@ class BookingService {
                 throw new Error(RESPONSE_MESSAGES.BOOKING.SLOTS_NOT_AVAILABLE);
             }
 
-            const baseAmount = pricingRules.basePrice || baseItemRate || 0;
-            let d = pricingRules.discountType;
-            let discountAmount = 0;
-            if (d === "percentage") {
-                discountAmount = calculatedSubTotal * ((pricingRules.discount || 0) / 100);
-            } else if (d === "flat") {
-                discountAmount = pricingRules.discount || 0;
-            }
-
-            let tax = 0;
-            if (pricingRules.gst) {
-                const taxableAmount = Math.max(0, calculatedSubTotal - discountAmount);
-                tax = taxableAmount * (pricingRules.gst / 100);
-            }
-
-            let serviceFee = 0;
-            if (pricingRules.serviceTax) {
-                const baseServiceFee = calculatedSubTotal * (pricingRules.serviceTax / 100);
-                const gstOnServiceFee = baseServiceFee * ((config?.tax?.gst || 18) / 100);
-                serviceFee = baseServiceFee + gstOnServiceFee;
-            }
-
-            const appliedDiscount = Math.round(discountAmount * 100) / 100;
-            const appliedCouponCode = null;
-            const appliedCouponAmount = 0;
-            const appliedServiceFee = Math.round(serviceFee * 100) / 100;
-            const appliedTaxRate = pricingRules.gst || 0;
-            const calculatedTax = Math.round(tax * 100) / 100;
-
-            const grandTotal = Math.max(0, Math.round((calculatedSubTotal + calculatedTax + appliedServiceFee - appliedDiscount - appliedCouponAmount) * 100) / 100);
 
             let itemUrl = '';
             if (Array.isArray(packageItem.photos) && packageItem.photos.length > 0) {
@@ -150,7 +166,7 @@ class BookingService {
                         item: {
                             itemId: packageItem._id,
                             itemType: category,
-                            title: packageItem.title || packageItem.name || 'Package Item',
+                            title: packageItem.title,
                             url: itemUrl
                         },
                         traveller: {
@@ -170,11 +186,11 @@ class BookingService {
                         pricing: {
                             basePrice: baseAmount,
                             subTotal: calculatedSubTotal,
-                            serviceFee: appliedServiceFee,
                             discount: appliedDiscount,
                             coupon: appliedCouponCode,
                             couponAmount: Math.round(appliedCouponAmount),
                             taxRate: appliedTaxRate,
+                            serviceFee: appliedServiceFee,
                             tax: calculatedTax,
                             total: grandTotal
                         },
