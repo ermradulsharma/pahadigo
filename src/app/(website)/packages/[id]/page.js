@@ -6,7 +6,7 @@ import QuickStatsBar from '@/app/components/packages/QuickStatsBar.js';
 import connectDB from '@/core/Config/db.js';
 import Package from '@/core/Models/Package.js';
 import '@/core/Models/Vendor';
-import { MapPin, Clock, Mountain, CheckCircle, Info, ShieldCheck, Map, FileText, ShieldAlert, Check, UserCheck, Users, Home as HomeIcon, Key, Car, Fuel } from 'lucide-react';
+import { MapPin, Clock, Mountain, CheckCircle, Info, ShieldCheck, Map, FileText, ShieldAlert, Check, UserCheck, Users, Home as HomeIcon, Key, Car, Fuel, Star } from 'lucide-react';
 
 async function getServiceDetails(id) {
     try {
@@ -15,7 +15,6 @@ async function getServiceDetails(id) {
 
         const result = await res.json();
         const service = result.data;
-
         if (!service) return null;
 
         return {
@@ -112,7 +111,7 @@ export default async function ServiceDetailPage({ params }) {
     }
 
     return (
-        <div className="bg-gray-50 min-h-screen pb-10 font-sans">
+        <div className="bg-gray-50 min-h-screen pb-25 font-sans">
             <Navbar />
 
             {/* Hero Section */}
@@ -142,11 +141,10 @@ export default async function ServiceDetailPage({ params }) {
                 </div>
             </div>
 
-            <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-20 -mt-16 md:-mt-24 top-[7vh]">
+            <main className="max-w-7xl mx-auto p-4 sm:p-6 lg:p-5 relative z-20 -mt-16 md:-mt-24 top-[5vh]">
 
                 {/* Floating Quick Stats Bar Component */}
                 <QuickStatsBar service={service} />
-
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12">
 
                     {/* Main Content Area */}
@@ -269,7 +267,6 @@ export default async function ServiceDetailPage({ params }) {
                                     </div>
                                     Meet your Host
                                 </h3>
-
                                 <div className="flex flex-col sm:flex-row items-start gap-6 relative z-10">
                                     <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-full bg-gradient-to-tr from-primary-100 to-primary-200 flex items-center justify-center text-3xl font-black text-primary-700 border-4 border-white shadow-md flex-shrink-0 overflow-hidden">
                                         {service.vendor.profileImage ? (
@@ -296,6 +293,55 @@ export default async function ServiceDetailPage({ params }) {
                             </section>
                         )}
 
+                        {/* Reviews Section */}
+                        {service.reviews && service.reviews.length > 0 && (
+                            <section className="bg-white rounded-[2rem] p-8 md:p-10 shadow-sm border border-gray-100">
+                                <h3 className="text-2xl font-black text-gray-900 mb-8 flex items-center font-display tracking-tight">
+                                    <div className="w-10 h-10 rounded-xl bg-yellow-500 text-white flex items-center justify-center mr-4 shadow-sm">
+                                        <Star className="w-5 h-5 fill-current" />
+                                    </div>
+                                    Guest Reviews
+                                </h3>
+
+                                <div className="space-y-6">
+                                    {service.reviews.map((review) => (
+                                        <div key={review.id} className="pb-6 border-b border-gray-100 last:border-0 last:pb-0">
+                                            <div className="flex items-center mb-3">
+                                                <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center overflow-hidden mr-3">
+                                                    {review.user?.avatar ? (
+                                                        <img src={review.user.avatar} alt={review.user.name} className="w-full h-full object-cover" />
+                                                    ) : (
+                                                        review.user?.name?.[0]?.toUpperCase() || 'G'
+                                                    )}
+                                                </div>
+                                                <div>
+                                                    <h4 className="font-bold text-gray-900">{review.user?.name || 'Guest User'}</h4>
+                                                    <div className="flex items-center text-sm text-gray-500">
+                                                        <div className="flex text-yellow-400 mr-2">
+                                                            {[...Array(5)].map((_, i) => (
+                                                                <Star key={i} className={`w-3.5 h-3.5 ${i < review.rating ? 'fill-current' : 'text-gray-200'}`} />
+                                                            ))}
+                                                        </div>
+                                                        <span>{new Date(review.createdAt).toLocaleDateString()}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                            <p className="text-gray-700 leading-relaxed text-sm bg-gray-50/50 p-4 rounded-xl border border-gray-100">{review.comment}</p>
+
+                                            {review.reply && review.reply.comment && (
+                                                <div className="mt-4 ml-8 bg-primary-50/50 p-4 rounded-xl border border-primary-100/50">
+                                                    <div className="flex items-center mb-1 text-sm font-bold text-primary-800">
+                                                        <ShieldCheck className="w-4 h-4 mr-1" /> Host Reply
+                                                    </div>
+                                                    <p className="text-sm text-primary-900/80">{review.reply.comment}</p>
+                                                </div>
+                                            )}
+                                        </div>
+                                    ))}
+                                </div>
+                            </section>
+                        )}
+
                     </div>
 
                     {/* Sidebar Booking Card */}
@@ -303,21 +349,19 @@ export default async function ServiceDetailPage({ params }) {
                         <PackageBookingForm service={service} price={price} />
                     </div>
                 </div>
-            </main>
 
-            {/* Suggested Packages */}
-            {suggestions && suggestions.length > 0 && (
-                <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-                    <h2 className="text-3xl font-black text-gray-900 mb-8 font-display tracking-tight flex items-center">
-                        Similar Experiences
-                    </h2>
-                    <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-3">
-                        {suggestions.map((pkg, idx) => (
-                            <PackageCard key={pkg._id || pkg.id || idx} service={pkg} />
-                        ))}
-                    </div>
-                </section>
-            )}
+                {/* Suggested Packages */}
+                {suggestions && suggestions.length > 0 && (
+                    <section className="max-w-7xl mx-auto">
+                        <h2 className="text-2xl font-black text-gray-900 py-4 font-display">Similar Experiences</h2>
+                        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6 lg:gap-3">
+                            {suggestions.map((pkg, idx) => (
+                                <PackageCard key={pkg._id || pkg.id || idx} service={pkg} />
+                            ))}
+                        </div>
+                    </section>
+                )}
+            </main>
         </div>
     );
 }

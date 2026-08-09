@@ -49,7 +49,12 @@ class PackageService {
                 id: pkg.vendor._id,
                 ownerName: pkg.vendor.ownerName,
                 businessName: pkg.vendor.businessName,
-                address: pkg.vendor.address
+                address: pkg.vendor.address,
+                profileImage: pkg.vendor.profileImage,
+                profileType: pkg.vendor.profileType,
+                trustBadge: pkg.vendor.trustBadge,
+                businessAbout: pkg.vendor.businessAbout,
+                createdAt: pkg.vendor.createdAt
             };
         }
 
