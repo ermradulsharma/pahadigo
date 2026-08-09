@@ -195,7 +195,7 @@ class BookingService {
                             total: grandTotal
                         },
                         payout: {
-                            amount: Math.max(0, Math.round((calculatedSubTotal - appliedDiscount - appliedCouponAmount) * 100) / 100),
+                            amount: 0,
                             bankDetails: {
                                 accountHolderName: business.bankDetails?.accountHolderName || null,
                                 accountNumber: business.bankDetails?.accountNumber || null,
