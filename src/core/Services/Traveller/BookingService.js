@@ -116,23 +116,23 @@ class BookingService {
             const taxableAmount = Math.max(0, calculatedSubTotal - discountAmount);
 
             let tax = 0;
-            if (pricingRules.gst) {
-                tax = taxableAmount * (pricingRules.gst / 100);
+            if (itemGST) {
+                tax = taxableAmount * (itemGST / 100);
             }
 
             let serviceFee = 0;
-            if (pricingRules.serviceTax) {
-                const baseServiceFee = taxableAmount * (pricingRules.serviceTax / 100);
+            if (itemServiceTax) {
+                const baseServiceFee = taxableAmount * (itemServiceTax / 100);
                 const gstOnServiceFee = baseServiceFee * ((config?.tax?.gst || 18) / 100);
                 serviceFee = baseServiceFee + gstOnServiceFee;
             }
 
-            const baseAmount = pricingRules.basePrice || 0;
+            const baseAmount = itemBaseprice || 0;
             const appliedDiscount = Math.round(discountAmount * 100) / 100;
             const appliedCouponCode = null;
             const appliedCouponAmount = 0;
             const appliedServiceFee = Math.round(serviceFee * 100) / 100;
-            const appliedTaxRate = pricingRules.gst || 0;
+            const appliedTaxRate = itemGST || 0;
             const calculatedTax = Math.round(tax * 100) / 100;
             const grandTotal = Math.max(0, Math.round((calculatedSubTotal + calculatedTax + appliedServiceFee - appliedDiscount - appliedCouponAmount) * 100) / 100);
 
