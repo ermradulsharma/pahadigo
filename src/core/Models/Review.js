@@ -4,7 +4,11 @@ import { DEFAULTS } from '../Constants/index.js';
 const ReviewSchema = new mongoose.Schema({
   user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: DEFAULTS.TRUE },
   vendor: { type: mongoose.Schema.Types.ObjectId, ref: 'Vendor', required: DEFAULTS.TRUE },
-  package: { type: mongoose.Schema.Types.ObjectId, ref: 'Package', default: DEFAULTS.NULL },
+  item: {
+    itemId: { type: mongoose.Schema.Types.ObjectId, required: DEFAULTS.TRUE },
+    itemType: { type: String, required: DEFAULTS.TRUE },
+    title: { type: String }
+  },
   booking: { type: mongoose.Schema.Types.ObjectId, ref: 'Booking', required: DEFAULTS.TRUE },
   serviceId: { type: String, default: DEFAULTS.NULL },
   rating: { type: Number, required: DEFAULTS.TRUE, min: 1, max: 5 },

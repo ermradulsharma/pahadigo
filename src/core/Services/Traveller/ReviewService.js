@@ -30,7 +30,11 @@ class ReviewService {
             {
                 user: userId,
                 vendor: booking.vendor,
-                package: booking.package,
+                item: {
+                    itemId: booking.item.itemId,
+                    itemType: booking.item.itemType,
+                    title: booking.item.title
+                },
                 booking: bookingId,
                 rating,
                 comment,
