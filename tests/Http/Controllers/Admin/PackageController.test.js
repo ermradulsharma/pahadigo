@@ -11,7 +11,7 @@ describe('PackageController: updateServiceStatus tests', () => {
         jest.clearAllMocks();
         mockParams = { id: '69d8d1862cb6971e2e32781e' };
         mockReq = {
-            jsonBody: {
+            payload: {
                 vendorId: '69d8cf957ba7098746d85a45',
                 userId: '69d8cf697ba7098746d85a44',
                 status: true,
@@ -39,7 +39,7 @@ describe('PackageController: updateServiceStatus tests', () => {
     });
 
     it('[Validation] should return BAD_REQUEST if status is missing', async () => {
-        delete mockReq.jsonBody.status;
+        delete mockReq.payload.status;
         const errorSpy = jest.spyOn(PackageController, 'error');
 
         await PackageController.updateServiceStatus(mockReq, { params: mockParams });

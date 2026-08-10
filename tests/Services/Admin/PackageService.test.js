@@ -4,6 +4,7 @@ import mongoose from 'mongoose';
 const mockQuery = {
     populate: jest.fn().mockReturnThis(),
     lean: jest.fn().mockReturnThis(),
+    session: jest.fn().mockReturnThis(),
     then: jest.fn(function(resolve) { resolve(this._resolvedValue); }),
     _resolveWith: function(val) { this._resolvedValue = val; return this; }
 };

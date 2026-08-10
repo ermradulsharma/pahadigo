@@ -26,10 +26,11 @@ beforeAll(async () => {
 });
 
 afterAll(async () => {
-  if (mongoose.connection.readyState !== 0) {
-    await mongoose.connection.close();
+  try {
+    await mongoose.disconnect();
+  } catch (err) {
+    // ignore
   }
-  await mongoose.disconnect();
 });
 
 afterEach(async () => {
@@ -45,6 +46,7 @@ afterEach(async () => {
 // Suppress surgical noisy logs to keep test output clean
 const originalError = console.error;
 const originalLog = console.log;
+const originalWarn = console.warn;
 
 console.error = (...args) => {
   // Suppress only known expected noise from tests
@@ -76,4 +78,13 @@ console.log = (...args) => {
   const combinedMsg = args.map(arg => String(arg)).join(' ');
   if (noise.some(n => combinedMsg.includes(n))) return;
   originalLog(...args);
+};
+
+console.warn = (...args) => {
+  const noise = [
+    '[CACHE] Upstash Redis credentials not found'
+  ];
+  const combinedMsg = args.map(arg => String(arg)).join(' ');
+  if (noise.some(n => combinedMsg.includes(n))) return;
+  originalWarn(...args);
 };

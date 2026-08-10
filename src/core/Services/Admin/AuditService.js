@@ -25,7 +25,7 @@ class AuditService {
       };
       await AuditLog.create(logData);
     } catch (error) {
-      console.error("[AuditLog] Failed to log:", error.message);
+      // Intentionally silent or use a generic logging mechanism
     }
   }
 
@@ -49,7 +49,8 @@ class AuditService {
       .populate('userId', 'name email role')
       .sort({ createdAt: -1 })
       .skip((page - 1) * limit)
-      .limit(parseInt(limit));
+      .limit(parseInt(limit))
+      .lean();
 
     return {
       logs,

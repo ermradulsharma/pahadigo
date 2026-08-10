@@ -3,6 +3,7 @@ import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
 import { item } from '@/core/Helpers/package.js';
 import Vendor from '@/core/Models/Vendor.js';
+import { validate, schemas } from '@/core/Helpers/validation.js';
 
 /**
  * PackageController (Admin Role)
@@ -26,9 +27,11 @@ class PackageController extends Controller {
     // PATCH /admin/packages/:id/status
     async updateServiceStatus(req, { params }) {
         try {
-            const body = req.validData || req.jsonBody || await req.json();
-            const { vendorId, userId, serviceType, status } = body;
-            const serviceId = params?.id || body.serviceId;
+            const validation = validate(schemas.packageStatus, req.payload || {});
+            if (!validation.success) return this.error(HTTP_STATUS.BAD_REQUEST, validation.error);
+
+            const { vendorId, userId, serviceType, status } = validation.data;
+            const serviceId = params?.id || validation.data.serviceId;
 
             if (!serviceId || status === undefined) {
                 return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
@@ -55,8 +58,10 @@ class PackageController extends Controller {
     // PATCH /admin/packages/item/:id
     async updatePackageItem(req, { params }) {
         try {
-            const body = req.validData || req.jsonBody || await req.json();
-            const updatedItem = await PackageService.updatePackageItem(params.id, body || {});
+            const validation = validate(schemas.packageMutation, req.payload || {});
+            if (!validation.success) return this.error(HTTP_STATUS.BAD_REQUEST, validation.error);
+
+            const updatedItem = await PackageService.updatePackageItem(params.id, validation.data);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.ITEM.UPDATED, { item: updatedItem });
         } catch (error) {
             const status = error.message === "Item not found" ? HTTP_STATUS.NOT_FOUND : HTTP_STATUS.INTERNAL_SERVER_ERROR;
@@ -68,33 +73,37 @@ class PackageController extends Controller {
     // POST /admin/add-package
     async addPackageOnBehalf(req) {
         try {
-            const body = req.validData || req.jsonBody || await req.json();
-            const { vendorId, ...pkgData } = body;
+            const validation = validate(schemas.packageMutation, req.payload || {});
+            if (!validation.success) return this.error(HTTP_STATUS.BAD_REQUEST, validation.error);
+
+            const { vendorId, ...pkgData } = validation.data;
             if (!vendorId) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED);
 
             const pkg = await PackageService.createPackage(vendorId, pkgData);
             return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.PACKAGE.CREATED, { pkg });
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
     // POST /admin/packages/add-item
     async addPackageItemOnBehalf(req) {
         try {
-            const body = req.validData || req.jsonBody || await req.json();
-            const { vendorId, category, ...itemData } = body;
+            const validation = validate(schemas.packageMutation, req.payload || {});
+            if (!validation.success) return this.error(HTTP_STATUS.BAD_REQUEST, validation.error);
+
+            const { vendorId, category, ...itemData } = validation.data;
 
             if (!vendorId) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED);
             if (!category) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ITEM.CATEGORY_REQUIRED);
 
-            const vendor = await Vendor.findById(vendorId).select('user _id');
+            const vendor = await Vendor.findById(vendorId).select('user _id').lean();
             if (!vendor || !vendor.user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
             const newItem = await item(vendor.user, vendor._id, category, itemData);
             return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.ITEM.CREATED, newItem);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 }

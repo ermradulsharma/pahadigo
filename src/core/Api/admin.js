@@ -116,6 +116,17 @@ export const adminApi = (fetcher) => ({
         }
     },
 
+    blogs: {
+        getAll: (params) => {
+            const query = params ? `?${new URLSearchParams(params).toString()}` : '';
+            return fetcher(`/api/admin/blogs${query}`);
+        },
+        create: (data) => fetcher('/api/admin/blogs', { method: 'POST', body: prepareBody(data) }),
+        getById: (id) => fetcher(`/api/admin/blogs/${id}`),
+        update: (id, data) => fetcher(`/api/admin/blogs/${id}`, { method: 'PUT', body: prepareBody(data) }),
+        delete: (id) => fetcher(`/api/admin/blogs/${id}`, { method: 'DELETE' }),
+    },
+
     // Taxonomy Hub
     categories: {
         getAll: () => fetcher('/api/admin/categories'),

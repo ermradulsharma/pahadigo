@@ -1,5 +1,6 @@
 import Review from '@/core/Models/Review.js';
 import AuditService from '@/core/Services/Admin/AuditService.js';
+import AppError from '@/core/Helpers/AppError.js';
 
 /**
  * ReviewService (Admin Role)
@@ -10,11 +11,13 @@ class ReviewService {
     return await Review.find()
       .populate('user', 'name')
       .populate('vendor', 'businessName')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .lean();
   }
 
   async toggleReviewVisibility(reviewId, isVisible, req = null) {
-    const review = await Review.findByIdAndUpdate(reviewId, { isVisible }, { returnDocument: 'after' });
+    const review = await Review.findByIdAndUpdate(reviewId, { isVisible }, { new: true });
+    if (!review) throw new AppError('Review not found', 404);
     if (req && req.user) {
       await AuditService.logAction(req.user.id, 'UPDATE_VISIBILITY', 'REVIEW', reviewId, { isVisible }, req);
     }
@@ -22,8 +25,10 @@ class ReviewService {
   }
 
   async deleteReview(reviewId, req = null) {
+    const review = await Review.findByIdAndDelete(reviewId);
+    if (!review) throw new AppError('Review not found', 404);
     if (req && req.user) await AuditService.logAction(req.user.id, 'DELETE', 'REVIEW', reviewId, {}, req);
-    return await Review.findByIdAndDelete(reviewId);
+    return review;
   }
 }
 

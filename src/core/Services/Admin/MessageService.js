@@ -1,5 +1,6 @@
 import Message from '@/core/Models/Message.js';
 import Dispute from '@/core/Models/Dispute.js';
+import AppError from '@/core/Helpers/AppError.js';
 
 class MessageService {
     async getMessages(disputeId) {
@@ -14,8 +15,8 @@ class MessageService {
 
     async sendMessage(disputeId, senderId, senderModel, messageText, target = 'all', attachments = []) {
         // Ensure dispute exists
-        const dispute = await Dispute.findById(disputeId);
-        if (!dispute) throw new Error('Dispute not found');
+        const dispute = await Dispute.findById(disputeId).lean();
+        if (!dispute) throw new AppError('Dispute not found', 404);
 
         const newMessageEntry = {
             sender: senderId,

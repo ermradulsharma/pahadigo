@@ -11,7 +11,8 @@ const MockCategoryDocument = await import('@/core/Models/CategoryDocument.js').t
 MockCategoryDocument.find = jest.fn(() => ({
     sort: jest.fn().mockReturnThis(),
     skip: jest.fn().mockReturnThis(),
-    limit: jest.fn().mockResolvedValue([])
+    limit: jest.fn().mockReturnThis(),
+    lean: jest.fn().mockResolvedValue([])
 }));
 MockCategoryDocument.countDocuments = jest.fn().mockResolvedValue(0);
 MockCategoryDocument.findById = jest.fn();

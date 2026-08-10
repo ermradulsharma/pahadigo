@@ -1,5 +1,7 @@
 import Category from '@/core/Models/Category.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import CacheService from '@/core/Services/CacheService.js';
+import AppError from '@/core/Helpers/AppError.js';
 
 /**
  * CategoryService (Admin Role)
@@ -9,12 +11,14 @@ class CategoryService {
 
   async createCategory(data) {
     const category = new Category(data);
-    return await category.save();
+    await category.save();
+    await CacheService.delete('admin:categories:all');
+    return category;
   }
 
   async updateCategory(id, data) {
     const category = await Category.findById(id);
-    if (!category) throw new Error(RESPONSE_MESSAGES.CATEGORY.NOT_FOUND);
+    if (!category) throw new AppError(RESPONSE_MESSAGES.CATEGORY.NOT_FOUND, 404);
 
     Object.assign(category, data);
 
@@ -25,15 +29,25 @@ class CategoryService {
         .replace(/(^-|-$)+/g, '');
     }
 
-    return await category.save();
+    await category.save();
+    await CacheService.delete('admin:categories:all');
+    return category;
   }
 
   async deleteCategory(id) {
-    return await Category.findByIdAndDelete(id);
+    const deleted = await Category.findByIdAndDelete(id);
+    await CacheService.delete('admin:categories:all');
+    return deleted;
   }
 
   async listAllCategories() {
-    return await Category.find({}).sort({ name: 1 });
+    const cacheKey = 'admin:categories:all';
+    const cached = await CacheService.get(cacheKey);
+    if (cached) return cached;
+
+    const categories = await Category.find({}).sort({ name: 1 }).lean();
+    await CacheService.set(cacheKey, categories, 300);
+    return categories;
   }
 }
 

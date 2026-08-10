@@ -27,7 +27,7 @@
         "dev": "next dev",
         "lint": "next lint .",
         "start": "next start",
-        "test": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand",
+        "test": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --forceExit",
         "clean": "del *.txt && del *.log",
         "seed": "node src/core/Database/Seeders/ResetAndSeed.js"
     },

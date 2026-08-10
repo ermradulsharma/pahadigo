@@ -19,9 +19,9 @@ describe('OCRService', () => {
         const result = await OCRService.processDocument(Buffer.from('fake-buffer'));
 
         expect(result.idType).toBe('AADHAAR');
-        expect(result.name).toBe('AADHAAR'); // Based on current _extractName which takes line[0]
+        expect(result.name).toBe('JOHN DOE');
         expect(result.dob).toBe('01/01/1990');
-        expect(result.identifiedId).toBe('1234 5678 9012');
+        expect(result.identifiedId).toBe('123456789012');
         expect(result.error).toBe(false);
     });
 
@@ -37,16 +37,13 @@ describe('OCRService', () => {
         expect(result.error).toBe(false);
     });
 
-    test('processDocument should return error true on failure', async () => {
+    test('processDocument should throw AppError on failure', async () => {
         Tesseract.recognize.mockRejectedValue(new Error('OCR Error'));
         
-        // Mock console.error to avoid cluttering test output
         const consoleSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 
-        const result = await OCRService.processDocument(Buffer.from('fake-buffer'));
-
-        expect(result.error).toBe(true);
-        expect(result.text).toBe('');
+        await expect(OCRService.processDocument(Buffer.from('fake-buffer')))
+            .rejects.toThrow(/OCR Processing failed/);
         
         consoleSpy.mockRestore();
     });

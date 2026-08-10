@@ -1,16 +1,21 @@
 import { jest } from '@jest/globals';
 
+const mockQuery = {
+    sort: jest.fn().mockReturnThis(),
+    lean: jest.fn().mockResolvedValue([])
+};
+
 jest.unstable_mockModule('@/core/Models/Country.js', () => ({
     default: {
         create: jest.fn(),
-        find: jest.fn(() => ({ sort: jest.fn().mockResolvedValue([]) }))
+        find: jest.fn(() => mockQuery)
     }
 }));
 
 jest.unstable_mockModule('@/core/Models/State.js', () => ({
     default: {
         create: jest.fn(),
-        find: jest.fn(() => ({ sort: jest.fn().mockResolvedValue([]) }))
+        find: jest.fn(() => mockQuery)
     }
 }));
 

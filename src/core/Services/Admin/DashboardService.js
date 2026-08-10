@@ -11,6 +11,8 @@ import os from 'os';
 import { getStartDateByPeriod } from '@/core/Helpers/dateUtils.js';
 import { STATUS, USER_ROLES } from '@/core/Constants/index.js';
 import { SCHEMA_KEYS } from '@/core/Constants/categories.js';
+import CacheService from '@/core/Services/CacheService.js';
+import AppError from '@/core/Helpers/AppError.js';
 
 /**
  * DashboardService (Admin Role)
@@ -28,7 +30,7 @@ class DashboardService {
         try {
             dbStats = await mongoose.connection.db.stats();
         } catch (e) {
-            console.error("DB Stats fetch error:", e);
+            
         }
 
         return {
@@ -57,10 +59,10 @@ class DashboardService {
     }
 
     async getDashboardStats() {
-        const now = Date.now();
-        if (this._dashboardCache && (now - this._dashboardCacheTime < 60000)) {
-            return this._dashboardCache;
-        }
+        const cacheKey = 'admin:dashboard:stats';
+        const cachedData = await CacheService.get(cacheKey);
+        if (cachedData) return cachedData;
+        
         const startTime = Date.now();
         const [users, totalVendors, pendingVendors, categories, bookings, confirmedBookings, packageStats, dbStats] = await Promise.all([
             User.countDocuments({ role: USER_ROLES.TRAVELLER }),
@@ -192,8 +194,7 @@ class DashboardService {
                 storageLoad: Math.min(Math.round((dbStats.dataSize / (dbStats.storageSize || 1)) * 100), 100)
             }
         };
-        this._dashboardCache = result;
-        this._dashboardCacheTime = Date.now();
+        await CacheService.set(cacheKey, result, 60); // Cache for 60 seconds
         return result;
     }
 

@@ -1,10 +1,13 @@
-import { MongoMemoryServer } from 'mongodb-memory-server';
+import { MongoMemoryReplSet } from 'mongodb-memory-server';
 
 export default async function () {
-    const mongoServer = await MongoMemoryServer.create({
-        instance: {
-            launchTimeout: 240000
-        },
+    const mongoServer = await MongoMemoryReplSet.create({
+        replSet: { count: 1 },
+        instanceOpts: [
+            {
+                port: 27017,
+            }
+        ],
         binary: {
             skipMD5: true
         }

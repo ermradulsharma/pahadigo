@@ -1,5 +1,7 @@
 import CategoryDocument from '@/core/Models/CategoryDocument.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import CacheService from '@/core/Services/CacheService.js';
+import AppError from '@/core/Helpers/AppError.js';
 
 /**
  * CategoryDocumentService (Admin Role)
@@ -8,65 +10,64 @@ import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 class CategoryDocumentService {
 
   async create(data) {
-    try {
-      const document = new CategoryDocument(data);
-      return await document.save();
-    } catch (error) {
-      throw error;
-    }
+    const document = new CategoryDocument(data);
+    await document.save();
+    await CacheService.deletePattern('admin:category-docs:*');
+    return document;
   }
 
   async getAll(filter = {}, page = 1, limit = 10) {
-    try {
-      const safeLimit = Math.max(1, Math.min(parseInt(limit) || 10, 100));
-      const skip = (Math.max(1, parseInt(page) || 1) - 1) * safeLimit;
-      const docs = await CategoryDocument.find(filter)
-        .sort({ category_slug: 1, name: 1 })
-        .skip(skip)
-        .limit(safeLimit);
+    const safeLimit = Math.max(1, Math.min(parseInt(limit) || 10, 100));
+    const safePage = Math.max(1, parseInt(page) || 1);
+    
+    // Convert filter to string for cache key
+    const filterKey = Object.keys(filter).length > 0 ? JSON.stringify(filter) : 'all';
+    const cacheKey = `admin:category-docs:${filterKey}:p${safePage}:l${safeLimit}`;
+    
+    const cached = await CacheService.get(cacheKey);
+    if (cached) return cached;
 
-      const totalDocs = await CategoryDocument.countDocuments(filter);
+    const skip = (safePage - 1) * safeLimit;
+    const docs = await CategoryDocument.find(filter)
+      .sort({ category_slug: 1, name: 1 })
+      .skip(skip)
+      .limit(safeLimit)
+      .lean();
 
-      return {
-        docs,
-        totalDocs,
-        limit: safeLimit,
-        page: Math.max(1, parseInt(page) || 1),
-        totalPages: Math.ceil(totalDocs / safeLimit)
-      };
-    } catch (error) {
-      throw error;
-    }
+    const totalDocs = await CategoryDocument.countDocuments(filter);
+
+    const result = {
+      docs,
+      totalDocs,
+      limit: safeLimit,
+      page: safePage,
+      totalPages: Math.ceil(totalDocs / safeLimit)
+    };
+    
+    await CacheService.set(cacheKey, result, 300);
+    return result;
   }
 
   async getById(id) {
-    try {
-      const document = await CategoryDocument.findById(id);
-      if (!document) throw new Error(RESPONSE_MESSAGES.VENDOR.DOCUMENT_NOT_FOUND);
-      return document;
-    } catch (error) {
-      throw error;
-    }
+    const document = await CategoryDocument.findById(id).lean();
+    if (!document) throw new AppError(RESPONSE_MESSAGES.VENDOR.DOCUMENT_NOT_FOUND, 404);
+    return document;
   }
 
   async update(id, data) {
-    try {
-      const document = await CategoryDocument.findById(id);
-      if (!document) throw new Error(RESPONSE_MESSAGES.VENDOR.DOCUMENT_NOT_FOUND);
+    const document = await CategoryDocument.findById(id);
+    if (!document) throw new AppError(RESPONSE_MESSAGES.VENDOR.DOCUMENT_NOT_FOUND, 404);
 
-      Object.assign(document, data);
-      return await document.save();
-    } catch (error) {
-      throw error;
-    }
+    Object.assign(document, data);
+    await document.save();
+    await CacheService.deletePattern('admin:category-docs:*');
+    return document;
   }
 
   async delete(id) {
-    try {
-      return await CategoryDocument.findByIdAndDelete(id);
-    } catch (error) {
-      throw error;
-    }
+    const deleted = await CategoryDocument.findByIdAndDelete(id);
+    await CacheService.deletePattern('admin:category-docs:*');
+    return deleted;
   }
 }
 

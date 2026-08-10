@@ -4,15 +4,19 @@ const mockQuery = {
     sort: jest.fn().mockReturnThis(),
     select: jest.fn().mockReturnThis(),
     lean: jest.fn().mockReturnThis(),
+    populate: jest.fn().mockReturnThis(),
+    skip: jest.fn().mockReturnThis(),
+    limit: jest.fn().mockReturnThis(),
+    session: jest.fn().mockReturnThis(),
     then: jest.fn(function(resolve) {
-        resolve(this._resolvedValue || []);
+        resolve(this._resolvedValue !== undefined ? this._resolvedValue : []);
     })
 };
 
 jest.unstable_mockModule('@/models/User.js', () => ({
     default: {
         find: jest.fn(() => mockQuery),
-        findOne: jest.fn(),
+        findOne: jest.fn(() => mockQuery),
         create: jest.fn(),
         findByIdAndUpdate: jest.fn(),
         findByIdAndDelete: jest.fn()
@@ -49,7 +53,7 @@ describe('Industry Standard: TravellerService Business Logic Service', () => {
         it('[Success] should create a new traveller and log action', async () => {
             const data = { email: 'joe@test.com', name: 'Joe' };
             const req = { user: { id: 'admin1' } };
-            User.findOne.mockResolvedValue(null);
+            mockQuery._resolvedValue = null;
             User.create.mockResolvedValue({ _id: 'u1', ...data });
 
             const result = await TravellerService.createTraveller(data, req);
@@ -60,7 +64,7 @@ describe('Industry Standard: TravellerService Business Logic Service', () => {
         });
 
         it('[Failure] should throw error if email exists', async () => {
-            User.findOne.mockResolvedValue({ _id: 'u1' });
+            mockQuery._resolvedValue = { _id: 'u1' };
             await expect(TravellerService.createTraveller({ email: 'joe@test.com' }))
                 .rejects.toThrow();
         });

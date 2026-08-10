@@ -1,5 +1,6 @@
 import Setting from '@/core/Models/Setting.js';
 import { clearAppConfigCache } from '@/core/Lib/appConfig.js';
+import AppError from '@/core/Helpers/AppError.js';
 
 /**
  * SettingsService (Admin Role)
@@ -7,8 +8,11 @@ import { clearAppConfigCache } from '@/core/Lib/appConfig.js';
  */
 class SettingsService {
   async getSettings() {
-    let setting = await Setting.findOne();
-    if (!setting) setting = await Setting.create({});
+    let setting = await Setting.findOne().lean();
+    if (!setting) {
+      const newSetting = await Setting.create({});
+      setting = newSetting.toObject();
+    }
     return setting;
   }
 
@@ -26,10 +30,10 @@ class SettingsService {
     try {
       clearAppConfigCache();
     } catch (e) {
-      console.warn("[SettingsService] Failed to clear config cache:", e.message);
+      // Log failure but don't fail request
     }
 
-    return setting;
+    return setting.toObject();
   }
 }
 

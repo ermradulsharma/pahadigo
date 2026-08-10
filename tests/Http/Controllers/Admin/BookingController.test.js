@@ -47,7 +47,7 @@ describe('Industry Standard: BookingController API Controller', () => {
     });
 
     it('[Refund] should execute refund action', async () => {
-        mockReq.payload = { bookingId: '123', amount: 5000 };
+        mockReq.payload = { bookingId: '123', amount: 5000, reason: 'Customer requested' };
         mockBookingService.refundBooking.mockResolvedValue({ _id: '123' });
         const response = await BookingController.refundBooking(mockReq);
         expect(response.status).toBe(HTTP_STATUS.OK);

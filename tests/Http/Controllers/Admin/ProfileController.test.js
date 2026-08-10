@@ -45,7 +45,7 @@ describe('Admin ProfileController', () => {
             const mockUser = { id: 'admin123', firstName: 'Updated' };
             mockReq = createMockReq({ 
                 user: { id: 'admin123', role: 'admin' },
-                jsonBody: { firstName: 'Updated' }
+                payload: { firstName: 'Updated' }
             });
 
             jest.spyOn(BaseAuthService, 'updateUserProfile').mockResolvedValue(mockUser);
@@ -61,7 +61,7 @@ describe('Admin ProfileController', () => {
         test('should return 500 on service error', async () => {
             mockReq = createMockReq({ 
                 user: { id: 'admin123', role: 'admin' },
-                jsonBody: { firstName: 'Updated' }
+                payload: { firstName: 'Updated' }
             });
 
             jest.spyOn(BaseAuthService, 'updateUserProfile').mockRejectedValue(new Error('DB Error'));

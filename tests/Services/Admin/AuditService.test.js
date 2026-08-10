@@ -5,7 +5,11 @@ const mockQuery = {
     populate: jest.fn().mockReturnThis(),
     sort: jest.fn().mockReturnThis(),
     skip: jest.fn().mockReturnThis(),
-    limit: jest.fn().mockReturnThis()
+    limit: jest.fn().mockReturnThis(),
+    lean: jest.fn().mockReturnThis(),
+    then: jest.fn(function(resolve) {
+        resolve(this._resolvedValue || []);
+    })
 };
 
 jest.unstable_mockModule('@/models/AuditLog.js', () => ({
@@ -49,7 +53,7 @@ describe('Industry Standard: AuditService Logging', () => {
     describe('[getAuditLogs]', () => {
         it('[Success] should apply date range filters correctly', async () => {
             AuditLog.countDocuments.mockResolvedValue(10);
-            mockQuery.limit.mockResolvedValue([]);
+            mockQuery._resolvedValue = [];
 
             const filter = { startDate: '2024-01-01', endDate: '2024-01-31' };
             await AuditService.getAuditLogs(filter);

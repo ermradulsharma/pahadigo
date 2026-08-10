@@ -4,6 +4,8 @@ import Controller from '@/core/Controllers/Controller.js';
 import React from 'react';
 import { renderToStream } from '@react-pdf/renderer';
 import InvoiceDocument from '@/core/Templates/Pdf/InvoiceDocument.jsx';
+import { validate, schemas } from '@/core/Helpers/validation.js';
+import AppError from '@/core/Helpers/AppError.js';
 
 /**
  * BookingController (Admin Role)
@@ -22,6 +24,7 @@ class BookingController extends Controller {
             const result = await BookingService.getAllBookings(filter, page, limit);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.FETCHED, result);
         } catch (error) {
+            if (error instanceof AppError) return this.error(error.statusCode, error.message);
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
@@ -29,11 +32,14 @@ class BookingController extends Controller {
     // POST /admin/bookings/create
     async createBooking(req) {
         try {
-            const body = req.validData || req.jsonBody || await req.json();
-            const booking = await BookingService.createBookingByAdmin(body, req);
+            const validation = validate(schemas.adminBookingMutation, req.payload || {});
+            if (!validation.success) throw new AppError(validation.error, HTTP_STATUS.BAD_REQUEST);
+
+            const booking = await BookingService.createBookingByAdmin(validation.data, req);
             return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SUCCESS.CREATED, { booking });
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            if (error instanceof AppError) return this.error(error.statusCode, error.message);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -41,9 +47,10 @@ class BookingController extends Controller {
     async show(req, { params }) {
         try {
             const booking = await BookingService.getBookingById(params.id);
-            if (!booking) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
+            if (!booking) throw new AppError(RESPONSE_MESSAGES.BOOKING.NOT_FOUND, HTTP_STATUS.NOT_FOUND);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.FETCHED, { booking });
         } catch (error) {
+            if (error instanceof AppError) return this.error(error.statusCode, error.message);
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
@@ -51,20 +58,28 @@ class BookingController extends Controller {
     // POST /admin/payout
     async payoutBooking(req) {
         try {
-            const booking = await BookingService.payoutBooking(req.payload, req);
+            const validation = validate(schemas.adminPayout, req.payload || {});
+            if (!validation.success) throw new AppError(validation.error, HTTP_STATUS.BAD_REQUEST);
+
+            const booking = await BookingService.payoutBooking(validation.data, req);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PAYMENT.PAYOUT_MARKED, { booking });
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            if (error instanceof AppError) return this.error(error.statusCode, error.message);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
     // POST /admin/refund
     async refundBooking(req) {
         try {
-            const booking = await BookingService.refundBooking(req.payload, req);
+            const validation = validate(schemas.adminRefund, req.payload || {});
+            if (!validation.success) throw new AppError(validation.error, HTTP_STATUS.BAD_REQUEST);
+
+            const booking = await BookingService.refundBooking(validation.data, req);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.REFUNDED, { booking });
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            if (error instanceof AppError) return this.error(error.statusCode, error.message);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -82,6 +97,7 @@ class BookingController extends Controller {
             const result = await BookingService.getDisputes(filter, page, limit);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.DISPUTE.FETCHED, result);
         } catch (error) {
+            if (error instanceof AppError) return this.error(error.statusCode, error.message);
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
@@ -89,12 +105,15 @@ class BookingController extends Controller {
     // POST /admin/dispute/resolve
     async resolveDispute(req, { params }) {
         try {
-            const body = req.validData || req.jsonBody || await req.json();
-            const { decision, adminNotes } = body;
+            const validation = validate(schemas.disputeResolution, req.payload || {});
+            if (!validation.success) throw new AppError(validation.error, HTTP_STATUS.BAD_REQUEST);
+
+            const { decision, adminNotes } = validation.data;
             const dispute = await BookingService.resolveDispute(req.user.id, params.id, decision, adminNotes, req);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.DISPUTE.RESOLVED, { dispute });
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            if (error instanceof AppError) return this.error(error.statusCode, error.message);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -104,6 +123,7 @@ class BookingController extends Controller {
             const booking = await BookingService.generateAndSendInvoice(params.id);
             return this.success(HTTP_STATUS.OK, "Audit: Invoice Pipeline Executed Successfully.", { booking });
         } catch (error) {
+            if (error instanceof AppError) return this.error(error.statusCode, error.message);
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
@@ -112,9 +132,8 @@ class BookingController extends Controller {
     async downloadInvoice(req, { params }) {
         try {
             const booking = await BookingService.getBookingById(params.id);
-            console.log(booking);
-
-            if (!booking) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
+            if (!booking) throw new AppError(RESPONSE_MESSAGES.BOOKING.NOT_FOUND, HTTP_STATUS.NOT_FOUND);
+            
             const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
             const url = new URL(req.url, baseUrl);
             const role = url.searchParams.get('type') || 'traveller';
@@ -135,6 +154,7 @@ class BookingController extends Controller {
                 }
             });
         } catch (error) {
+            if (error instanceof AppError) return this.error(error.statusCode, error.message);
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }

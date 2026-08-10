@@ -286,6 +286,26 @@ export const schemas = {
         message: RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS
     }),
 
+    vendorCreate: z.object({
+        email: z.string().email(),
+        phone: z.string().min(10).optional(),
+        ownerName: z.string().min(2),
+        businessName: z.string().min(2),
+        password: z.string().min(6).optional()
+    }).passthrough(),
+
+    vendorUpdate: z.object({
+        name: z.string().optional(),
+        phone: z.string().optional(),
+        status: z.string().optional(),
+        isVerified: z.boolean().optional(),
+        isVendorVerified: z.boolean().optional(),
+        ownerName: z.string().optional(),
+        businessName: z.string().optional(),
+        isApproved: z.boolean().optional(),
+        isOperating: z.boolean().optional()
+    }).passthrough(),
+
     adminVendorApproval: z.object({
         vendorId: idString,
         status: moderationStatus.optional(),
@@ -361,6 +381,15 @@ export const schemas = {
     }).passthrough(),
 
     settingsUpdate: flexibleObject,
+
+    blog: z.object({
+        title: z.string().min(1, 'Title is required').max(150),
+        excerpt: z.string().max(300).optional(),
+        content: z.string().min(1, 'Content is required'),
+        coverImage: z.union([z.string().url(), z.literal('')]).optional(),
+        tags: z.array(z.string()).optional(),
+        status: z.enum(['draft', 'published']).optional()
+    }).passthrough(),
 
     policy: z.object({
         target: z.string().min(1).optional(),

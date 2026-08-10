@@ -3,6 +3,7 @@ import { jest } from '@jest/globals';
 const mockQuery = {
     populate: jest.fn().mockReturnThis(),
     sort: jest.fn().mockReturnThis(),
+    lean: jest.fn().mockReturnThis(),
     then: jest.fn(function(resolve) {
         resolve(this._resolvedValue || []);
     }),
@@ -58,7 +59,7 @@ describe('Industry Standard: ReviewService Business Logic Service', () => {
 
             const result = await ReviewService.toggleReviewVisibility(reviewId, true, req);
 
-            expect(Review.findByIdAndUpdate).toHaveBeenCalledWith(reviewId, { isVisible: true }, { returnDocument: 'after' });
+            expect(Review.findByIdAndUpdate).toHaveBeenCalledWith(reviewId, { isVisible: true }, { new: true });
             expect(AuditService.logAction).toHaveBeenCalledWith('admin1', 'UPDATE_VISIBILITY', 'REVIEW', reviewId, { isVisible: true }, req);
             expect(result).toEqual(updatedReview);
         });

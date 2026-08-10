@@ -4,12 +4,22 @@ jest.unstable_mockModule('@/models/Setting.js', () => {
     const mockSettingInstance = (data) => ({
         ...data,
         save: jest.fn().mockResolvedValue(true),
-        set: jest.fn(function(d) { Object.assign(this, d); })
+        set: jest.fn(function(d) { Object.assign(this, d); }),
+        toObject: jest.fn(function() { return this; })
     });
     
     const MockSetting = jest.fn().mockImplementation(mockSettingInstance);
-    MockSetting.findOne = jest.fn();
+    
+    const mockQuery = {
+        lean: jest.fn().mockReturnThis(),
+        then: jest.fn(function(resolve) {
+            resolve(this._resolvedValue || null);
+        })
+    };
+    
+    MockSetting.findOne = jest.fn(() => mockQuery);
     MockSetting.create = jest.fn();
+    MockSetting._mockQuery = mockQuery;
     
     return { default: MockSetting };
 });
@@ -30,7 +40,7 @@ describe('Industry Standard: SettingsService Business Logic Service', () => {
     describe('[getSettings]', () => {
         it('[Success] should return existing settings', async () => {
             const mockSetting = { _id: 's1', maintenanceMode: false };
-            Setting.findOne.mockResolvedValue(mockSetting);
+            Setting._mockQuery._resolvedValue = mockSetting;
 
             const result = await SettingsService.getSettings();
 
@@ -38,8 +48,8 @@ describe('Industry Standard: SettingsService Business Logic Service', () => {
         });
 
         it('[Success] should create new settings if none exist', async () => {
-            Setting.findOne.mockResolvedValue(null);
-            const mockNewSetting = { _id: 'snew' };
+            Setting._mockQuery._resolvedValue = null;
+            const mockNewSetting = { _id: 'snew', toObject: jest.fn().mockReturnThis() };
             Setting.create.mockResolvedValue(mockNewSetting);
 
             const result = await SettingsService.getSettings();
@@ -53,9 +63,10 @@ describe('Industry Standard: SettingsService Business Logic Service', () => {
         it('[Success] should update existing settings and clear cache', async () => {
             const mockSetting = { 
                 save: jest.fn().mockResolvedValue(true),
-                set: jest.fn(function(data) { Object.assign(this, data); })
+                set: jest.fn(function(data) { Object.assign(this, data); }),
+                toObject: jest.fn(function() { return this; })
             };
-            Setting.findOne.mockResolvedValue(mockSetting);
+            Setting._mockQuery._resolvedValue = mockSetting;
 
             await SettingsService.updateSettings({ maintenanceMode: true });
 
@@ -65,7 +76,7 @@ describe('Industry Standard: SettingsService Business Logic Service', () => {
         });
 
         it('[Success] should create new settings if none exist', async () => {
-            Setting.findOne.mockResolvedValue(null);
+            Setting._mockQuery._resolvedValue = null;
             
             const result = await SettingsService.updateSettings({ maintenanceMode: true });
 
