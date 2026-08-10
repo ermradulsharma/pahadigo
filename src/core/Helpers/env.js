@@ -1,6 +1,7 @@
 import fs from 'fs';
 import path from 'path';
 import { validateEnv } from '../Config/envValidator.js';
+import { getLogger } from '../Lib/logger.js';
 
 export const loadEnv = () => {
     try {
@@ -26,7 +27,7 @@ export const loadEnv = () => {
             });
         }
     } catch (e) {
-        console.error("Error loading .env", e);
+        getLogger().error({ err: e }, "Error loading .env");
     }
     
     // Validate the environment after variables are loaded

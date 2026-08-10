@@ -10,6 +10,7 @@ import { errorResponse, successResponse } from '@/core/Helpers/response.js';
 import { parseNestedFormData } from '@/core/Helpers/parseNestedFormData.js';
 import { validate } from '@/core/Helpers/validation.js';
 import AuditService from '@/core/Services/Admin/AuditService.js';
+import { getLogger } from '@/core/Lib/logger.js';
 
 const authRateLimiter = rateLimit({ limit: 5, windowMs: 60 * 1000 }); // 5 requests per minute
 const REQUEST_ID_HEADER = 'x-request-id';
@@ -20,11 +21,12 @@ const withRequestId = (response, requestId) => {
 };
 
 const logError = (message, error, metadata = {}) => {
-    console.error(message, {
+    const logger = getLogger(metadata.requestId);
+    logger.error({
         ...metadata,
-        error: error?.message || String(error),
+        err: error?.message || String(error),
         stack: process.env.NODE_ENV === 'development' ? error?.stack : undefined
-    });
+    }, message);
 };
 
 /**

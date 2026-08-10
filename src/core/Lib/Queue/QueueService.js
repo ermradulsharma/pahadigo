@@ -60,8 +60,25 @@ export const enqueuePushNotification = async (token, notification, data = {}) =>
     }
 };
 
+export const enqueueImageProcessing = async (imageUrl, folder, metadata = {}) => {
+    try {
+        const client = await getQStashClient();
+        await client.publishJSON({
+            url: getWebhookUrl(),
+            body: {
+                type: 'process_image',
+                payload: { imageUrl, folder, metadata }
+            }
+        });
+        return true;
+    } catch (error) {
+        return false;
+    }
+};
+
 export default {
     getQStashClient,
     enqueueInvoice,
-    enqueuePushNotification
+    enqueuePushNotification,
+    enqueueImageProcessing
 };

@@ -7,7 +7,10 @@ jest.unstable_mockModule('mongoose', () => {
             startTransaction: jest.fn(),
             commitTransaction: jest.fn(),
             abortTransaction: jest.fn(),
-            endSession: jest.fn()
+            endSession: jest.fn(),
+            withTransaction: jest.fn(async (cb) => {
+                return await cb();
+            })
         })),
         Types: { ObjectId: { isValid: jest.fn(() => true) } },
         Schema: Object.assign(

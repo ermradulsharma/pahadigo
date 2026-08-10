@@ -42,12 +42,16 @@ describe('User OTPService', () => {
     describe('verifyOTP', () => {
         test('should verify master OTP successfully', async () => {
             const identifier = 'test@test.com';
-            const mockUser = { _id: 'u1' };
+            const mockUser = { 
+                _id: 'u1',
+                save: jest.fn().mockResolvedValue(true)
+            };
             User.findOne.mockResolvedValue(mockUser);
 
             const result = await OTPService.verifyOTP(identifier, '999999');
 
             expect(result).toBe(mockUser);
+            expect(mockUser.save).toHaveBeenCalled();
         });
 
         test('should verify valid user OTP and clear it', async () => {

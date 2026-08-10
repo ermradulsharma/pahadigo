@@ -29,9 +29,13 @@ describe('BaseAuthService', () => {
             const mockVendor = { businessName: 'Test Biz' };
 
             User.findById.mockReturnValue({
-                select: jest.fn().mockResolvedValue(mockUser)
+                select: jest.fn().mockReturnValue({
+                    lean: jest.fn().mockResolvedValue(mockUser)
+                })
             });
-            Vendor.findOne.mockResolvedValue(mockVendor);
+            Vendor.findOne.mockReturnValue({
+                lean: jest.fn().mockResolvedValue(mockVendor)
+            });
 
             const result = await BaseAuthService.getUserProfile('u1');
 
@@ -42,7 +46,9 @@ describe('BaseAuthService', () => {
 
         test('should throw error if user not found', async () => {
             User.findById.mockReturnValue({
-                select: jest.fn().mockResolvedValue(null)
+                select: jest.fn().mockReturnValue({
+                    lean: jest.fn().mockResolvedValue(null)
+                })
             });
 
             await expect(BaseAuthService.getUserProfile('u1')).rejects.toThrow();

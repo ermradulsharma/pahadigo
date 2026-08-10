@@ -5,6 +5,7 @@ import { Ratelimit } from '@upstash/ratelimit';
 import { Redis as UpstashRedis } from '@upstash/redis';
 import { createClient } from 'redis';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
+import { getLogger } from '@/core/Lib/logger.js';
 
 // --- Upstash Ratelimit Setup ---
 const upstashRateLimiters = new Map();
@@ -35,12 +36,12 @@ const getStandardRedisClient = async (redisUrl) => {
             try {
                 if (standardRedisClient) await standardRedisClient.disconnect();
                 standardRedisClient = createClient({ url: redisUrl });
-                standardRedisClient.on('error', (err) => console.error('Standard Redis Client Error:', err));
+                standardRedisClient.on('error', (err) => getLogger().error({ err }, 'Standard Redis Client Error'));
                 await standardRedisClient.connect();
                 isStandardRedisConnected = true;
                 lastStandardRedisUrl = redisUrl;
             } catch (err) {
-                console.error("Failed to connect to Standard Redis:", err);
+                getLogger().error({ err }, 'Failed to connect to Standard Redis');
                 isStandardRedisConnected = false;
             }
         }
@@ -73,7 +74,7 @@ export const rateLimit = ({ limit = 5, windowMs = 60000, message = 'Too many req
                 }
                 return DEFAULTS.NULL;
             } catch (error) {
-                console.error("Upstash Redis Ratelimit Error, falling back...", error);
+                getLogger().error({ err: error }, 'Upstash Redis Ratelimit Error, falling back...');
             }
         }
 
@@ -102,7 +103,7 @@ export const rateLimit = ({ limit = 5, windowMs = 60000, message = 'Too many req
                     return DEFAULTS.NULL;
                 }
             } catch (error) {
-                console.error("Standard Redis Ratelimit Error, falling back to MongoDB...", error);
+                getLogger().error({ err: error }, 'Standard Redis Ratelimit Error, falling back to MongoDB...');
             }
         }
 
@@ -146,7 +147,7 @@ export const rateLimit = ({ limit = 5, windowMs = 60000, message = 'Too many req
             if (dbError.code === 11000) {
                 return DEFAULTS.NULL;
             }
-            console.error("MongoDB Ratelimit Error:", dbError);
+            getLogger().error({ err: dbError }, 'MongoDB Ratelimit Error');
             return DEFAULTS.NULL; // Fail open to not block valid traffic if DB struggles
         }
     };
