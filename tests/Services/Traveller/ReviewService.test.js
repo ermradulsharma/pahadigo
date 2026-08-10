@@ -26,7 +26,8 @@ describe('Traveller Review Service', () => {
             user: userId,
             vendor: 'vendor123',
             package: 'pkg123',
-            status: 'completed'
+            status: 'completed',
+            item: { itemId: 'item123', itemType: 'homestay', title: 'Test Item' }
         });
 
         Review.findOneAndUpdate.mockResolvedValue({ _id: 'rev123', ...data });
@@ -59,7 +60,8 @@ describe('Traveller Review Service', () => {
         Booking.findOne.mockResolvedValue({
             _id: 'book123',
             user: userId,
-            status: 'completed'
+            status: 'completed',
+            item: { itemId: 'item123', itemType: 'homestay', title: 'Test Item' }
         });
 
         Review.findOneAndUpdate.mockResolvedValue({ _id: 'rev123', rating: 4 });

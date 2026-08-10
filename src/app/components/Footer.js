@@ -1,6 +1,40 @@
+'use client';
+
 import Link from 'next/link';
+import { useState } from 'react';
+import { useToast } from '@/app/components/ui/ToastContext.js';
 
 export default function Footer() {
+    const [email, setEmail] = useState('');
+    const [isSubmitting, setIsSubmitting] = useState(false);
+    const toast = useToast();
+
+    const handleSubscribe = async (e) => {
+        e.preventDefault();
+        if (!email) return;
+
+        setIsSubmitting(true);
+
+        try {
+            const res = await fetch('/api/newsletter/subscribe', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email })
+            });
+            
+            if (res.ok) {
+                toast('Successfully subscribed to the newsletter!', 'success');
+                setEmail('');
+            } else {
+                toast('Failed to subscribe. Please try again.', 'error');
+            }
+        } catch (error) {
+            toast('An error occurred. Please try again later.', 'error');
+        } finally {
+            setIsSubmitting(false);
+        }
+    };
+
     return (
         <footer className="bg-gray-900 text-white pt-10">
             <div className="max-w-7xl mx-auto px-4">
@@ -52,14 +86,32 @@ export default function Footer() {
                     <div>
                         <h4 className="text-lg font-bold mb-6">Newsletter</h4>
                         <p className="text-gray-400 text-sm mb-4">Subscribe to get the latest offers and trekking guides.</p>
-                        <div className="flex">
-                            <input type="email" placeholder="Your email" className="bg-gray-800 text-white px-4 py-2 rounded-l-lg focus:outline-none w-full border border-gray-700 focus:border-primary-500" />
-                            <button className="bg-primary-600 px-4 py-2 rounded-r-lg hover:bg-primary-700 transition-colors">
-                                <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
-                                </svg>
+                        <form onSubmit={handleSubscribe} className="flex">
+                            <input type="email"
+                                placeholder="Your email"
+                                required
+                                value={email}
+                                onChange={(e) => setEmail(e.target.value)}
+                                disabled={isSubmitting}
+                                className="bg-gray-800 text-white px-4 py-2 rounded-l-lg focus:outline-none w-full border border-gray-700 focus:border-primary-500 disabled:opacity-50"
+                            />
+                            <button
+                                type="submit"
+                                disabled={isSubmitting}
+                                className="bg-primary-600 px-4 py-2 rounded-r-lg hover:bg-primary-700 transition-colors disabled:opacity-50 flex items-center justify-center min-w-[50px]"
+                            >
+                                {isSubmitting ? (
+                                    <svg className="animate-spin h-5 w-5 text-white" fill="none" viewBox="0 0 24 24">
+                                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                    </svg>
+                                ) : (
+                                    <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                                    </svg>
+                                )}
                             </button>
-                        </div>
+                        </form>
                     </div>
                 </div>
 

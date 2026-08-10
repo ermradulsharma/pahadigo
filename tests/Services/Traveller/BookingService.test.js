@@ -153,7 +153,17 @@ describe('BookingService Business Logic', () => {
                 }
             });
 
-            expect(result).toEqual(createdBooking);
+            expect(result).toEqual({
+                bookingId: createdBooking._id,
+                bookingCode: createdBooking.bookingCode,
+                status: createdBooking.status,
+                paymentStatus: createdBooking.paymentStatus,
+                item: createdBooking.item,
+                startDate: createdBooking.startDate,
+                endDate: createdBooking.endDate,
+                occupancy: createdBooking.occupancy,
+                pricing: createdBooking.pricing
+            });
             expect(Booking.create).toHaveBeenCalled();
             expect(InventoryService.checkAvailabilityRange).toHaveBeenCalledTimes(2); // initial check and final lock verification
         });

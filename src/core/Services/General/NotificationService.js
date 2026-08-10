@@ -142,6 +142,20 @@ class NotificationService {
         }
     }
 
+    /**
+     * Send welcome email for newsletter subscription
+     */
+    async sendNewsletterWelcomeEmail(email) {
+        try {
+            const html = await renderTemplate('Emails/newsletter.html', {});
+            await this._sendEmailHelper({ to: email, subject: `Welcome to the PahadiGo Newsletter!`, html: html });
+            return true;
+        } catch (error) {
+            console.error("[NotificationService] sendNewsletterWelcomeEmail Error:", error);
+            return false;
+        }
+    }
+
     async sendLoginAlertSMS(phone, details) {
         return true;
     }

@@ -55,6 +55,7 @@ const publicRoutes = [
 
   // General Capture Hub
   { method: 'POST', path: '/inquiries', handler: wrap(() => InquiryController, 'submitInquiry') },
+  { method: 'POST', path: '/newsletter/subscribe', handler: wrap(() => InquiryController, 'subscribeNewsletter') },
 
   // Payment Gateway Capture
   ...Router.group({ prefix: '/payment' }, [

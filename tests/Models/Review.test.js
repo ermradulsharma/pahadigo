@@ -11,6 +11,7 @@ describe('Industry Standard: Review Data Structure', () => {
             user: generateId(),
             vendor: generateId(),
             booking: generateId(),
+            item: { itemId: generateId(), itemType: 'hotel' },
             rating: 5,
             comment: 'Excellent experience!'
         };
