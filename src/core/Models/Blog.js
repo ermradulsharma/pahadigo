@@ -15,7 +15,6 @@ const blogSchema = new mongoose.Schema({
 });
 
 // Indexes for performance
-blogSchema.index({ slug: 1 });
 blogSchema.index({ status: 1 });
 blogSchema.index({ tags: 1 });
 blogSchema.index({ title: 'text', content: 'text' });

@@ -25,235 +25,236 @@ const generateBookingCode = () => `PH-${new Date().toISOString().split('T')[0].r
 class BookingService {
     async initiateBooking({ userId, body, itemId }) {
         const session = await mongoose.startSession();
-        session.startTransaction();
+        let finalResponse;
 
         try {
-            const config = await getAppConfig();
-            const checkInDate = new Date(body.startDate);
-            const checkOutDate = new Date(body.endDate);
-            if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) throw new Error("Invalid startDate or endDate format. Use YYYY-MM-DD.");
+            await session.withTransaction(async () => {
+                const config = await getAppConfig();
+                const checkInDate = new Date(body.startDate);
+                const checkOutDate = new Date(body.endDate);
+                if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) throw new Error("Invalid startDate or endDate format. Use YYYY-MM-DD.");
 
-            const packageItem = await PackageService.getAvailablePackageItem(itemId);
-            if (!packageItem) throw new Error(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
+                const packageItem = await PackageService.getAvailablePackageItem(itemId);
+                if (!packageItem) throw new Error(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
 
-            const travellerProfile = await getUserById(userId);
-            if (!travellerProfile) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
+                const travellerProfile = await getUserById(userId);
+                if (!travellerProfile) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
 
-            const { catalogId, category, vendor } = packageItem;
+                const { catalogId, category, vendor } = packageItem;
 
-            const vendorId = vendor?.id;
+                const vendorId = vendor?.id;
 
-            const business = await BusinessService.getBusinessById(vendorId);
-            if (!business) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-
-
-            const pricingRules = packageItem.pricing || {};
-
-            // Price logic
-            let itemBaseprice = pricingRules.basePrice || 0;
-
-            let itemGST;
-            if (pricingRules.gst) {
-                itemGST = parseFloat(pricingRules.gst);
-            } else {
-                const taxKey = `tax_${category.replace(/-/g, '_')}`;
-                itemGST = parseFloat(config.tax[taxKey]);
-            }
-
-            let itemServiceTax;
-            if (pricingRules.serviceTax) {
-                itemServiceTax = parseFloat(pricingRules.serviceTax);
-            } else {
-                itemServiceTax = parseFloat(config.tax.service_tax);
-            }
+                const business = await BusinessService.getBusinessById(vendorId);
+                if (!business) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
 
-            const adultsCount = parseInt(body.adults) || 1;
-            const childrenCount = parseInt(body.children) || 0;
-            const isSelfIncluded = body.includeMe === 'true' || body.includeMe === true;
-            const guestDetails = body.guestDetails || [];
+                const pricingRules = packageItem.pricing || {};
 
-            const timeDiff = checkOutDate.getTime() - checkInDate.getTime();
-            const totalNights = Math.max(1, Math.round(timeDiff / (1000 * 60 * 60 * 24)));
-            const requestedUnits = parseInt(body.units) > 0 ? parseInt(body.units) : 1;
+                // Price logic
+                let itemBaseprice = pricingRules.basePrice || 0;
 
-            let calculatedSubTotal = 0;
-            let requiredUnits = requestedUnits;
-
-            const STAY_CATEGORIES = ['homestay', 'hotel', 'camping'];
-            const ACTIVITY_CATEGORIES = ['trekking', 'rafting', 'bungeeJumping'];
-            const RENTAL_CATEGORIES = ['bike-scooter-rental', 'chardham-tour', 'vehicleRental', 'chardhamTour'];
-
-            if (STAY_CATEGORIES.includes(category)) {
-                if (category === 'homestay') {
-                    requiredUnits = 1;
+                let itemGST;
+                if (pricingRules.gst) {
+                    itemGST = parseFloat(pricingRules.gst);
                 } else {
-                    const maxCapacityPerUnit = parseInt(pricingRules.maxAdults) > 0 ? parseInt(pricingRules.maxAdults) : 2;
-                    requiredUnits = Math.max(requestedUnits, Math.ceil(adultsCount / maxCapacityPerUnit));
+                    const taxKey = `tax_${category.replace(/-/g, '_')}`;
+                    itemGST = parseFloat(config.tax[taxKey]);
                 }
-                calculatedSubTotal = itemBaseprice * totalNights * requiredUnits;
-            } else if (ACTIVITY_CATEGORIES.includes(category)) {
-                const maxFreeChildren = parseInt(pricingRules.maxChildren) || 0;
-                const childRate = pricingRules.childPrice || 0;
-                const chargeableChildren = childrenCount > maxFreeChildren ? childrenCount - maxFreeChildren : 0;
-                calculatedSubTotal = (itemBaseprice * adultsCount) + (childRate * chargeableChildren);
-                requiredUnits = adultsCount + childrenCount;
-            } else {
-                const isRentalOrTour = RENTAL_CATEGORIES.includes(category);
-                const durationMultiplier = isRentalOrTour ? totalNights : 1;
-                calculatedSubTotal = itemBaseprice * requiredUnits * durationMultiplier;
-            }
 
-            calculatedSubTotal = Math.round(calculatedSubTotal * 100) / 100;
-            let d = pricingRules.discountType;
-            let discountAmount = 0;
-            if (d === "percentage") {
-                discountAmount = calculatedSubTotal * ((pricingRules.discount || 0) / 100);
-            } else if (d === "flat") {
-                discountAmount = pricingRules.discount || 0;
-            }
-
-            const taxableAmount = Math.max(0, calculatedSubTotal - discountAmount);
-
-            let tax = 0;
-            if (itemGST) {
-                tax = taxableAmount * (itemGST / 100);
-            }
-
-            let serviceFee = 0;
-            if (itemServiceTax) {
-                const baseServiceFee = taxableAmount * (itemServiceTax / 100);
-                const gstOnServiceFee = baseServiceFee * ((config?.tax?.gst || 18) / 100);
-                serviceFee = baseServiceFee + gstOnServiceFee;
-            }
-
-            const baseAmount = itemBaseprice || 0;
-            const appliedDiscount = Math.round(discountAmount * 100) / 100;
-            const appliedCouponCode = null;
-            const appliedCouponAmount = 0;
-            const appliedServiceFee = Math.round(serviceFee * 100) / 100;
-            const appliedTaxRate = itemGST || 0;
-            const calculatedTax = Math.round(tax * 100) / 100;
-            const grandTotal = Math.max(0, Math.round((calculatedSubTotal + calculatedTax + appliedServiceFee - appliedDiscount - appliedCouponAmount) * 100) / 100);
-
-            const availabilityStatus = await InventoryService.checkAvailabilityRange(
-                vendorId.toString(), itemId, category, checkInDate, checkOutDate, requiredUnits
-            );
-
-            if (!availabilityStatus.available) {
-                throw new Error(RESPONSE_MESSAGES.BOOKING.SLOTS_NOT_AVAILABLE);
-            }
+                let itemServiceTax;
+                if (pricingRules.serviceTax) {
+                    itemServiceTax = parseFloat(pricingRules.serviceTax);
+                } else {
+                    itemServiceTax = parseFloat(config.tax.service_tax);
+                }
 
 
-            let itemUrl = '';
-            if (Array.isArray(packageItem.photos) && packageItem.photos.length > 0) {
-                itemUrl = packageItem.photos[0].url || packageItem.photos[0] || '';
-            }
-            if (typeof itemUrl !== 'string') itemUrl = '';
+                const adultsCount = parseInt(body.adults) || 1;
+                const childrenCount = parseInt(body.children) || 0;
+                const isSelfIncluded = body.includeMe === 'true' || body.includeMe === true;
+                const guestDetails = body.guestDetails || [];
 
-            let newBooking;
-            let attempts = 0;
-            const maxAttempts = 3;
+                const timeDiff = checkOutDate.getTime() - checkInDate.getTime();
+                const totalNights = Math.max(1, Math.round(timeDiff / (1000 * 60 * 60 * 24)));
+                const requestedUnits = parseInt(body.units) > 0 ? parseInt(body.units) : 1;
 
-            while (attempts < maxAttempts) {
-                try {
-                    const bookingCode = generateBookingCode();
-                    const [createdBooking] = await Booking.create([{
-                        bookingCode,
-                        user: userId,
-                        vendor: business._id, // reference to Vendor ID
-                        package: catalogId,
-                        item: {
-                            itemId: packageItem._id,
-                            itemType: category,
-                            title: packageItem.title,
-                            url: itemUrl
-                        },
-                        traveller: {
-                            name: travellerProfile.name,
-                            phone: travellerProfile.phone,
-                            email: travellerProfile.email
-                        },
-                        startDate: checkInDate,
-                        endDate: checkOutDate,
-                        occupancy: {
-                            adults: adultsCount,
-                            children: childrenCount,
-                            includeMe: isSelfIncluded,
-                            guestDetails,
-                            units: requiredUnits
-                        },
-                        pricing: {
-                            basePrice: baseAmount,
-                            subTotal: calculatedSubTotal,
-                            discount: appliedDiscount,
-                            coupon: appliedCouponCode,
-                            couponAmount: Math.round(appliedCouponAmount),
-                            taxRate: appliedTaxRate,
-                            serviceFee: appliedServiceFee,
-                            tax: calculatedTax,
-                            total: grandTotal
-                        },
-                        payout: {
-                            amount: 0,
-                            bankDetails: {
-                                accountHolderName: business.bankDetails?.accountHolderName || null,
-                                accountNumber: business.bankDetails?.accountNumber || null,
-                                ifscCode: business.bankDetails?.ifscCode || null,
-                                bankName: business.bankDetails?.bankName || null,
-                                razorpayContactId: business.bankDetails?.razorpayContactId || null,
-                                razorpayFundAccountId: business.bankDetails?.razorpayFundAccountId || null
-                            },
-                            businessName: business.businessName,
-                            ownerName: business.ownerName
-                        },
-                        status: BOOKING_STATUS.PENDING,
-                        paymentStatus: PAYMENT_STATUS.UNPAID,
-                        timeline: [{
-                            status: 'Booking Initiated',
-                            remarks: `Booking record ${bookingCode} created for ${requiredUnits} units. Awaiting payment.`,
-                            actor: userId
-                        }]
-                    }], { session });
+                let calculatedSubTotal = 0;
+                let requiredUnits = requestedUnits;
 
-                    newBooking = createdBooking;
-                    break;
-                } catch (err) {
-                    if (err.code === 11000 && err.message.includes('bookingCode')) {
-                        attempts++;
-                        if (attempts >= maxAttempts) {
-                            throw new Error('Unable to generate a unique booking code. Please try again.');
-                        }
+                const STAY_CATEGORIES = ['homestay', 'hotel', 'camping'];
+                const ACTIVITY_CATEGORIES = ['trekking', 'rafting', 'bungeeJumping'];
+                const RENTAL_CATEGORIES = ['bike-scooter-rental', 'chardham-tour', 'vehicleRental', 'chardhamTour'];
+
+                if (STAY_CATEGORIES.includes(category)) {
+                    if (category === 'homestay') {
+                        requiredUnits = 1;
                     } else {
-                        throw err;
+                        const maxCapacityPerUnit = parseInt(pricingRules.maxAdults) > 0 ? parseInt(pricingRules.maxAdults) : 2;
+                        requiredUnits = Math.max(requestedUnits, Math.ceil(adultsCount / maxCapacityPerUnit));
+                    }
+                    calculatedSubTotal = itemBaseprice * totalNights * requiredUnits;
+                } else if (ACTIVITY_CATEGORIES.includes(category)) {
+                    const maxFreeChildren = parseInt(pricingRules.maxChildren) || 0;
+                    const childRate = pricingRules.childPrice || 0;
+                    const chargeableChildren = childrenCount > maxFreeChildren ? childrenCount - maxFreeChildren : 0;
+                    calculatedSubTotal = (itemBaseprice * adultsCount) + (childRate * chargeableChildren);
+                    requiredUnits = adultsCount + childrenCount;
+                } else {
+                    const isRentalOrTour = RENTAL_CATEGORIES.includes(category);
+                    const durationMultiplier = isRentalOrTour ? totalNights : 1;
+                    calculatedSubTotal = itemBaseprice * requiredUnits * durationMultiplier;
+                }
+
+                calculatedSubTotal = Math.round(calculatedSubTotal * 100) / 100;
+                let d = pricingRules.discountType;
+                let discountAmount = 0;
+                if (d === "percentage") {
+                    discountAmount = calculatedSubTotal * ((pricingRules.discount || 0) / 100);
+                } else if (d === "flat") {
+                    discountAmount = pricingRules.discount || 0;
+                }
+
+                const taxableAmount = Math.max(0, calculatedSubTotal - discountAmount);
+
+                let tax = 0;
+                if (itemGST) {
+                    tax = taxableAmount * (itemGST / 100);
+                }
+
+                let serviceFee = 0;
+                if (itemServiceTax) {
+                    const baseServiceFee = taxableAmount * (itemServiceTax / 100);
+                    const gstOnServiceFee = baseServiceFee * ((config?.tax?.gst || 18) / 100);
+                    serviceFee = baseServiceFee + gstOnServiceFee;
+                }
+
+                const baseAmount = itemBaseprice || 0;
+                const appliedDiscount = Math.round(discountAmount * 100) / 100;
+                const appliedCouponCode = null;
+                const appliedCouponAmount = 0;
+                const appliedServiceFee = Math.round(serviceFee * 100) / 100;
+                const appliedTaxRate = itemGST || 0;
+                const calculatedTax = Math.round(tax * 100) / 100;
+                const grandTotal = Math.max(0, Math.round((calculatedSubTotal + calculatedTax + appliedServiceFee - appliedDiscount - appliedCouponAmount) * 100) / 100);
+
+                const availabilityStatus = await InventoryService.checkAvailabilityRange(
+                    vendorId.toString(), itemId, category, checkInDate, checkOutDate, requiredUnits
+                );
+
+                if (!availabilityStatus.available) {
+                    throw new Error(RESPONSE_MESSAGES.BOOKING.SLOTS_NOT_AVAILABLE);
+                }
+
+
+                let itemUrl = '';
+                if (Array.isArray(packageItem.photos) && packageItem.photos.length > 0) {
+                    itemUrl = packageItem.photos[0].url || packageItem.photos[0] || '';
+                }
+                if (typeof itemUrl !== 'string') itemUrl = '';
+
+                let newBooking;
+                let attempts = 0;
+                const maxAttempts = 3;
+
+                while (attempts < maxAttempts) {
+                    try {
+                        const bookingCode = generateBookingCode();
+                        const [createdBooking] = await Booking.create([{
+                            bookingCode,
+                            user: userId,
+                            vendor: business._id, // reference to Vendor ID
+                            package: catalogId,
+                            item: {
+                                itemId: packageItem._id,
+                                itemType: category,
+                                title: packageItem.title,
+                                url: itemUrl
+                            },
+                            traveller: {
+                                name: travellerProfile.name,
+                                phone: travellerProfile.phone,
+                                email: travellerProfile.email
+                            },
+                            startDate: checkInDate,
+                            endDate: checkOutDate,
+                            occupancy: {
+                                adults: adultsCount,
+                                children: childrenCount,
+                                includeMe: isSelfIncluded,
+                                guestDetails,
+                                units: requiredUnits
+                            },
+                            pricing: {
+                                basePrice: baseAmount,
+                                subTotal: calculatedSubTotal,
+                                discount: appliedDiscount,
+                                coupon: appliedCouponCode,
+                                couponAmount: Math.round(appliedCouponAmount),
+                                taxRate: appliedTaxRate,
+                                serviceFee: appliedServiceFee,
+                                tax: calculatedTax,
+                                total: grandTotal
+                            },
+                            payout: {
+                                amount: 0,
+                                bankDetails: {
+                                    accountHolderName: business.bankDetails?.accountHolderName || null,
+                                    accountNumber: business.bankDetails?.accountNumber || null,
+                                    ifscCode: business.bankDetails?.ifscCode || null,
+                                    bankName: business.bankDetails?.bankName || null,
+                                    razorpayContactId: business.bankDetails?.razorpayContactId || null,
+                                    razorpayFundAccountId: business.bankDetails?.razorpayFundAccountId || null
+                                },
+                                businessName: business.businessName,
+                                ownerName: business.ownerName
+                            },
+                            status: BOOKING_STATUS.PENDING,
+                            paymentStatus: PAYMENT_STATUS.UNPAID,
+                            timeline: [{
+                                status: 'Booking Initiated',
+                                remarks: `Booking record ${bookingCode} created for ${requiredUnits} units. Awaiting payment.`,
+                                actor: userId
+                            }]
+                        }], { session });
+
+                        newBooking = createdBooking;
+                        break;
+                    } catch (err) {
+                        if (err.code === 11000 && err.message.includes('bookingCode')) {
+                            attempts++;
+                            if (attempts >= maxAttempts) {
+                                throw new Error('Unable to generate a unique booking code. Please try again.');
+                            }
+                        } else {
+                            throw err;
+                        }
                     }
                 }
-            }
 
-            const finalCheck = await InventoryService.checkAvailabilityRange(
-                vendorId.toString(), itemId, category, checkInDate, checkOutDate, requiredUnits, session, newBooking._id
-            );
-            if (!finalCheck.available) {
-                throw new Error(`Inventory Conflict: Slots became unavailable.`);
-            }
+                const finalCheck = await InventoryService.checkAvailabilityRange(
+                    vendorId.toString(), itemId, category, checkInDate, checkOutDate, requiredUnits, session, newBooking._id
+                );
+                if (!finalCheck.available) {
+                    throw new Error(`Inventory Conflict: Slots became unavailable.`);
+                }
 
-            await session.commitTransaction();
-            NotificationService.notifyBookingStatus(newBooking._id, 'created');
-            
-            // Format response
-            return {
-                bookingId: newBooking._id,
-                bookingCode: newBooking.bookingCode,
-                status: newBooking.status,
-                paymentStatus: newBooking.paymentStatus,
-                item: newBooking.item,
-                startDate: newBooking.startDate,
-                endDate: newBooking.endDate,
-                occupancy: newBooking.occupancy,
-                pricing: newBooking.pricing
-            };
+                NotificationService.notifyBookingStatus(newBooking._id, 'created');
+                
+                // Format response
+                finalResponse = {
+                    bookingId: newBooking._id,
+                    bookingCode: newBooking.bookingCode,
+                    status: newBooking.status,
+                    paymentStatus: newBooking.paymentStatus,
+                    item: newBooking.item,
+                    startDate: newBooking.startDate,
+                    endDate: newBooking.endDate,
+                    occupancy: newBooking.occupancy,
+                    pricing: newBooking.pricing
+                };
+            });
+            return finalResponse;
         } catch (error) {
-            await session.abortTransaction();
             throw new Error(error.message || 'Booking failed');
         } finally {
             session.endSession();
@@ -390,32 +391,33 @@ class BookingService {
      */
     async refundBooking(bookingId, req = null) {
         const session = await mongoose.startSession();
-        session.startTransaction();
+        let finalBooking;
         try {
-            const booking = await Booking.findById(bookingId).session(session);
-            if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
+            await session.withTransaction(async () => {
+                const booking = await Booking.findById(bookingId).session(session);
+                if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
 
-            booking.status = BOOKING_STATUS.CANCELLED;
-            booking.paymentStatus = PAYMENT_STATUS.REFUND_PENDING;
+                booking.status = BOOKING_STATUS.CANCELLED;
+                booking.paymentStatus = PAYMENT_STATUS.REFUND_PENDING;
 
-            booking.cancellation = {
-                reason: req?.body?.reason || 'Cancelled by User',
-                date: new Date(),
-                actor: req?.user?.id
-            };
+                booking.cancellation = {
+                    reason: req?.body?.reason || 'Cancelled by User',
+                    date: new Date(),
+                    actor: req?.user?.id
+                };
 
-            booking.timeline.push({
-                status: 'Booking Cancelled',
-                remarks: `Refund of ₹${booking.pricing.total} processed.`,
-                actor: req?.user?.id
+                booking.timeline.push({
+                    status: 'Booking Cancelled',
+                    remarks: `Refund of ₹${booking.pricing.total} processed.`,
+                    actor: req?.user?.id
+                });
+                await booking.save({ session });
+
+                NotificationService.notifyBookingStatus(bookingId, 'cancelled');
+                finalBooking = booking;
             });
-            await booking.save({ session });
-
-            await session.commitTransaction();
-            NotificationService.notifyBookingStatus(bookingId, 'cancelled');
-            return booking;
+            return finalBooking;
         } catch (error) {
-            await session.abortTransaction();
             throw error;
         } finally {
             session.endSession();

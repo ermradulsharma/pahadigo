@@ -37,7 +37,7 @@ class PackageService {
     // Get Inventory
     async getInventory(userId, vendorId) {
         const catalog = await this.ensureCatalog(userId, vendorId);
-        const vendor = await Vendor.findById(vendorId);
+        const vendor = await Vendor.findById(vendorId).lean();
         const result = {};
         if (vendor && vendor.category && Array.isArray(vendor.category)) {
             vendor.category.forEach(c => {
@@ -61,7 +61,7 @@ class PackageService {
     // Find All Paginated
     async findAllPaginated(userId, vendorId, page = 1, limit = 10) {
         const catalog = await this.ensureCatalog(userId, vendorId);
-        const vendor = await Vendor.findById(vendorId);
+        const vendor = await Vendor.findById(vendorId).lean();
         const result = {
             catalogId: catalog._id,
             vendorId: catalog.vendor,
@@ -247,7 +247,7 @@ class PackageService {
 
     // Helper for controller
     async getPackageById(id) {
-        return await Package.findById(id);
+        return await Package.findById(id).lean();
     }
 }
 

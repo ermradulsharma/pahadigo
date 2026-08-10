@@ -15,7 +15,7 @@ import mongoose from 'mongoose';
  * Administration of system-wide reservations, dispute resolution, and payouts.
  */
 class BookingService {
-    
+
     async invalidateBookingCaches(bookingId = null) {
         await CacheService.del('admin:bookings:all');
         await CacheService.del('admin:disputes:all');
@@ -27,7 +27,7 @@ class BookingService {
     async getAllBookings(filter = {}, page = 1, limit = 10) {
         const query = {};
         if (filter.status && filter.status !== 'all') query.status = filter.status;
-        
+
         // Simple cache key based on query params
         const cacheKey = `admin:bookings:all:${JSON.stringify(filter)}:${page}:${limit}`;
         const cached = await CacheService.get(cacheKey);
@@ -42,7 +42,7 @@ class BookingService {
             .skip((page - 1) * limit)
             .limit(limit)
             .lean();
-            
+
         const result = { bookings, total, totalPages: Math.ceil(total / limit) };
         await CacheService.set(cacheKey, result, 1800); // 30 mins
         return result;
@@ -58,7 +58,7 @@ class BookingService {
             .populate('vendor', 'businessName ownerName phone email businessEmail')
             .populate('package', 'title price')
             .lean();
-            
+
         if (booking) await CacheService.set(cacheKey, booking, 1800);
         return booking;
     }
@@ -70,7 +70,7 @@ class BookingService {
 
         let attempts = 0;
         const maxAttempts = 3;
-        
+
         const session = await mongoose.startSession();
         let result = null;
 
@@ -134,19 +134,31 @@ class BookingService {
                 }
             }
         }
-        
+
         session.endSession();
         await this.invalidateBookingCaches();
         return result;
     }
 
-    async getPaymentHistory() {
-        return await Booking.find({ paymentStatus: { $in: ['paid', 'refunded', 'partially_refunded'] } })
+    async getPaymentHistory(filter = {}, page = 1, limit = 10) {
+        const query = { paymentStatus: { $in: ['paid', 'refunded', 'partially_refunded'] } };
+        
+        if (filter.search) {
+            // Optional search by bookingCode
+            query.bookingCode = { $regex: filter.search, $options: 'i' };
+        }
+
+        const total = await Booking.countDocuments(query);
+        const payments = await Booking.find(query)
             .select('bookingCode user vendor item pricing payment status occupancy payout createdAt')
             .populate('user', 'name email')
             .populate('vendor', 'businessName ownerName businessEmail bankDetails')
             .sort({ createdAt: -1 })
+            .skip((page - 1) * limit)
+            .limit(limit)
             .lean();
+
+        return { payments, total, totalPages: Math.ceil(total / limit) };
     }
 
     async payoutBooking(data, req = null) {
@@ -177,7 +189,7 @@ class BookingService {
             };
 
             updatedBooking = await Booking.findByIdAndUpdate(bookingId, snapshot, { session, new: true, lean: true });
-            
+
             if (req && req.user) {
                 await AuditService.logAction(req.user.id, 'PAYOUT', 'BOOKING', bookingId, { amount, transactionId }, req);
             }
@@ -196,7 +208,7 @@ class BookingService {
         // Fetch first to validate (outside transaction to avoid blocking during external API call)
         booking = await Booking.findById(bookingId).lean();
         if (!booking) throw new AppError("Booking not found", HTTP_STATUS.NOT_FOUND);
-        
+
         if (![PAYMENT_STATUS.PAID, PAYMENT_STATUS.REFUND_PENDING].includes(booking.paymentStatus.toLowerCase())) {
             throw new AppError("Only paid or refund-pending bookings can be refunded", HTTP_STATUS.BAD_REQUEST);
         }
@@ -329,11 +341,11 @@ class BookingService {
         // Notify outside transaction
         if (booking.user?.email) {
             Promise.resolve(NotificationService.sendInvoice(booking.user.email, booking._id, 'TRAVELLER'))
-                .catch(err => {});
+                .catch(err => { });
         }
         if (booking.vendor?.businessEmail) {
             Promise.resolve(NotificationService.sendInvoice(booking.vendor.businessEmail, booking._id, 'VENDOR'))
-                .catch(err => {});
+                .catch(err => { });
         }
 
         return booking.toObject(); // convert mongoose doc to plain obj

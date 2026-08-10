@@ -33,6 +33,7 @@ class OTPService {
             let user = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
             if (user) {
                 user.termsAccepted = true;
+                await user.save();
                 return user;
             }
         }

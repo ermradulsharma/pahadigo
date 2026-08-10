@@ -30,7 +30,7 @@ class DashboardService {
         try {
             dbStats = await mongoose.connection.db.stats();
         } catch (e) {
-            
+
         }
 
         return {
@@ -62,7 +62,7 @@ class DashboardService {
         const cacheKey = 'admin:dashboard:stats';
         const cachedData = await CacheService.get(cacheKey);
         if (cachedData) return cachedData;
-        
+
         const startTime = Date.now();
         const [users, totalVendors, pendingVendors, categories, bookings, confirmedBookings, packageStats, dbStats] = await Promise.all([
             User.countDocuments({ role: USER_ROLES.TRAVELLER }),

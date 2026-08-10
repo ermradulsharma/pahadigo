@@ -14,7 +14,7 @@ export default async function AdminDashboard() {
         DashboardService.getDashboardStats(),
         PackageService.getAllServices()
     ]);
-    
+
     // 2. Serialize to safely pass to Client Component (App Router requirement for Date/ObjectId)
     const initialStats = JSON.parse(JSON.stringify(rawStats || {}));
     const initialPackages = JSON.parse(JSON.stringify(rawPackages || []));
@@ -22,9 +22,9 @@ export default async function AdminDashboard() {
     // 3. Render Pure UI Shell wrapper
     return (
         <main>
-            <DashboardClientWrapper 
-                initialStats={initialStats} 
-                initialPackages={initialPackages} 
+            <DashboardClientWrapper
+                initialStats={initialStats}
+                initialPackages={initialPackages}
             />
         </main>
     );

@@ -7,11 +7,11 @@ import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
 class BaseAuthService {
     async verifyToken(token) {
         const decoded = await verifyToken(token);
-        const user = await User.findById(decoded.id).select('-password');
+        const user = await User.findById(decoded.id).select('-password').lean();
         if (!user) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
         let vendorData = {};
         if (user.role === USER_ROLES.VENDOR) {
-            const businessProfile = await Vendor.findOne({ user: user._id });
+            const businessProfile = await Vendor.findOne({ user: user._id }).lean();
             vendorData = { businessProfile };
         }
         return { user, ...vendorData };
@@ -25,14 +25,14 @@ class BaseAuthService {
     }
 
     async getUserProfile(userId) {
-        const user = await User.findById(userId).select('-password');
+        const user = await User.findById(userId).select('-password').lean();
         if (!user) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
         let vendorData = {};
         if (user.role === USER_ROLES.VENDOR) {
-            const businessProfile = await Vendor.findOne({ user: user._id });
+            const businessProfile = await Vendor.findOne({ user: user._id }).lean();
             vendorData = { businessProfile };
         }
-        return { ...user.toObject(), ...vendorData };
+        return { ...user, ...vendorData };
     }
 
     async updateUserProfile(userId, updates) {
