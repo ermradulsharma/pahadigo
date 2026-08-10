@@ -52,8 +52,8 @@ describe('Industry Standard: Admin VendorService Lifecycle', () => {
         expect(User.findByIdAndUpdate).toHaveBeenCalledWith('u1', expect.objectContaining({
             status: 'deleted',
             deletedBy: 'admin1'
-        }), { returnDocument: 'after' });
-        expect(Vendor.findByIdAndUpdate).toHaveBeenCalledWith('v1', { isApproved: false }, { returnDocument: 'after' });
+        }), { session: expect.anything() });
+        expect(Vendor.findByIdAndUpdate).toHaveBeenCalledWith('v1', { isApproved: false }, { session: expect.anything() });
     });
 
     it('[Approval] should update status and trigger trust calculation', async () => {
@@ -68,6 +68,6 @@ describe('Industry Standard: Admin VendorService Lifecycle', () => {
         await VendorService.updateVendorStatus('v1', 'approved');
 
         expect(mockV.isApproved).toBe(true);
-        expect(User.findByIdAndUpdate).toHaveBeenCalledWith('u1', { status: 'active' }, { returnDocument: 'after' });
+        expect(User.findByIdAndUpdate).toHaveBeenCalledWith('u1', { status: 'active' }, { session: expect.anything() });
     });
 });
