@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import chalk from 'chalk';
-import { getLogger } from '@/core/Lib/logger.js';
+import { getLogger } from '../Lib/logger.js';
 
 const envSchema = z.object({
     NODE_ENV: z.enum(['development', 'test', 'production']).default('development'),
