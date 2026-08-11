@@ -47,7 +47,8 @@ const buildRequestBody = (route) => {
             jsonSchema = { type: 'object', additionalProperties: true };
         }
     } catch (error) {
-        console.error("[OPENAPI ZOD ERROR]", error);
+        // Zod schemas with .transform() throw when converting to JSON schema.
+        // We gracefully fallback to a generic object schema without logging to keep console clean.
         jsonSchema = {
             type: 'object',
             additionalProperties: true,

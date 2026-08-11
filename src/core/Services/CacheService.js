@@ -57,6 +57,7 @@ class CacheService {
                 return data ? JSON.parse(data) : null;
             }
         } catch (err) {
+            if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
             getLogger().error({ err, key }, 'CacheService get error');
         }
         return null;
@@ -74,6 +75,7 @@ class CacheService {
                 return DEFAULTS.TRUE;
             }
         } catch (err) {
+            if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
             getLogger().error({ err, key }, 'CacheService set error');
         }
         return DEFAULTS.FALSE;
@@ -90,6 +92,7 @@ class CacheService {
                 return DEFAULTS.TRUE;
             }
         } catch (err) {
+            if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
             getLogger().error({ err, key }, 'CacheService delete error');
         }
         return DEFAULTS.FALSE;
@@ -116,6 +119,7 @@ class CacheService {
                 return DEFAULTS.TRUE;
             }
         } catch (err) {
+            if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
             getLogger().error({ err, pattern }, 'CacheService deletePattern error');
         }
         return DEFAULTS.FALSE;
