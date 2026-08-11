@@ -43,7 +43,8 @@ export default function LoginPage() {
 
       if (res.ok) {
         const data = response.data || response;
-        setToken(data.token, data.role, rememberMe);
+        const tokenToSet = data.tokens?.accessToken || data.token;
+        setToken(tokenToSet, data.role, rememberMe);
 
         if (data.role === 'admin') router.push('/admin');
         else if (data.role === 'vendor') router.push('/vendor');
