@@ -9,13 +9,17 @@ jest.unstable_mockModule('@/core/Models/User.js', () => ({
     }
 }));
 
-jest.unstable_mockModule('@/core/Helpers/jwt.js', () => ({
-    generateToken: jest.fn()
+
+
+jest.unstable_mockModule('@/core/Services/Auth/BaseAuthService.js', () => ({
+    default: {
+        generateAndSaveTokens: jest.fn()
+    }
 }));
 
 const { default: AuthService } = await import('@/services/Auth/Admin/AuthService.js');
 const { default: User } = await import('@/models/User.js');
-const { generateToken } = await import('@/helpers/jwt.js');
+const { default: BaseAuthService } = await import('@/core/Services/Auth/BaseAuthService.js');
 
 describe('Industry Standard: Admin AuthService Logic', () => {
     beforeEach(() => {
@@ -32,11 +36,14 @@ describe('Industry Standard: Admin AuthService Logic', () => {
             User.findOne.mockReturnValue({
                 select: jest.fn().mockResolvedValue(user)
             });
-            generateToken.mockResolvedValue('admin-token');
+            BaseAuthService.generateAndSaveTokens.mockResolvedValue({
+                accessToken: 'access-token',
+                refreshToken: 'refresh-token'
+            });
 
             const result = await AuthService.authenticateWithPassword({ email: 'admin@test.com', password: 'password' });
 
-            expect(result.token).toBe('admin-token');
+            expect(result.tokens.accessToken).toBe('access-token');
             expect(result.role).toBe('admin');
         });
 

@@ -99,6 +99,11 @@ describe('NotificationService', () => {
         expect(result).toBe(true);
     });
 
+    test('sendNewsletterWelcomeEmail should return true', async () => {
+        const result = await NotificationService.sendNewsletterWelcomeEmail('subscriber@test.com');
+        expect(result).toBe(true);
+    });
+
     describe('notifyBookingStatus', () => {
         test('should return false if booking is not found', async () => {
             mockBookingFindById.mockResolvedValueOnce(null);

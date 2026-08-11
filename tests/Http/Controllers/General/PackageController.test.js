@@ -97,6 +97,14 @@ describe('Industry Standard: PackageController API Controller', () => {
                 wishlistId: null
             }));
         });
+
+        test('should return 500 if an error occurs', async () => {
+            const req = createMockReq({ url: 'http://localhost/packages' });
+            jest.spyOn(PackageService, 'getAvailablePackagesByCategory').mockRejectedValue(new Error('DB Error'));
+            
+            const response = await PackageController.browsePackages(req);
+            expect(response.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        });
     });
 
     describe('getPackageDetails', () => {
@@ -170,6 +178,14 @@ describe('Industry Standard: PackageController API Controller', () => {
                 wishlistId: null
             }));
         });
+
+        test('should return 500 if an error occurs', async () => {
+            const req = createMockReq({ params: { id: 'pkg123' } });
+            jest.spyOn(PackageService, 'getAvailablePackageItem').mockRejectedValue(new Error('DB Error'));
+            
+            const response = await PackageController.getPackageDetails(req, { params: { id: 'pkg123' } });
+            expect(response.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
+        });
     });
 
     describe('searchNearby', () => {
@@ -205,6 +221,14 @@ describe('Industry Standard: PackageController API Controller', () => {
                 wishlist: true,
                 wishlistId: 'wish123'
             }));
+        });
+
+        test('should return 500 if an error occurs', async () => {
+            const req = createMockReq({ url: 'http://localhost/packages/nearby' });
+            jest.spyOn(PackageService, 'searchPackages').mockRejectedValue(new Error('DB Error'));
+            
+            const response = await PackageController.searchNearby(req);
+            expect(response.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
         });
     });
 });

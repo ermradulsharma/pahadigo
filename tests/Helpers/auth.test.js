@@ -4,12 +4,12 @@ describe('Auth Helper (Transformer)', () => {
     test('should transform nested user result with token', () => {
         const result = {
             user: { _id: 'u1', name: 'Test' },
-            token: 'jwt-token',
+            tokens: { accessToken: 'jwt-token' },
             role: 'vendor'
         };
         const transformed = transformAuthResponse(result);
         expect(transformed._id).toBe('u1');
-        expect(transformed.token).toBe('jwt-token');
+        expect(transformed.tokens.accessToken).toBe('jwt-token');
         expect(transformed.role).toBe('vendor');
     });
 

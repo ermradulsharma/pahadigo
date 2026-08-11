@@ -1,9 +1,35 @@
 import jwt from 'jsonwebtoken';
+import { randomUUID } from 'crypto';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { DEFAULTS } from '@/core/Constants/index.js';
 
 /**
- * Generates a JWT token using settings from appConfig.
+ * Generates an Access & Refresh token pair with unique JWT IDs (jti).
+ */
+const generateAuthTokens = async (payload, rememberMe = false) => {
+  const config = await getAppConfig();
+  const SECRET = config.jwt_secret;
+  if (!SECRET) throw new Error('JWT_SECRET is missing in appConfig');
+
+  // Short-lived Access Token (15 minutes)
+  const accessJti = randomUUID();
+  const accessToken = jwt.sign({ ...payload, jti: accessJti, type: 'access' }, SECRET, { expiresIn: '15m' });
+
+  // Long-lived Refresh Token (7 days, or 30 days if rememberMe)
+  const refreshJti = randomUUID();
+  const refreshExpiresIn = rememberMe ? '30d' : '7d';
+  const refreshToken = jwt.sign({ ...payload, jti: refreshJti, type: 'refresh' }, SECRET, { expiresIn: refreshExpiresIn });
+
+  return { 
+    accessToken, 
+    refreshToken,
+    accessJti,
+    refreshJti
+  };
+};
+
+/**
+ * Legacy generateToken for backward compatibility, heavily deprecated.
  */
 const generateToken = async (payload, expiresIn = '30d') => {
   const config = await getAppConfig();
@@ -13,7 +39,7 @@ const generateToken = async (payload, expiresIn = '30d') => {
 };
 
 /**
- * Verifies a JWT token using settings from appConfig.
+ * Verifies a JWT token. Returns decoded payload or null.
  */
 const verifyToken = async (token) => {
   const config = await getAppConfig();
@@ -26,6 +52,13 @@ const verifyToken = async (token) => {
   }
 };
 
-export { generateToken, verifyToken };
+/**
+ * Decodes a token without verifying signature (used for extracting jti from expired tokens).
+ */
+const decodeToken = (token) => {
+  return jwt.decode(token);
+};
 
-export default { generateToken, verifyToken };
+export { generateAuthTokens, generateToken, verifyToken, decodeToken };
+
+export default { generateAuthTokens, generateToken, verifyToken, decodeToken };

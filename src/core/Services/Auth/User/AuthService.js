@@ -2,7 +2,7 @@ import { USER_ROLES, AUTH_PROVIDERS, STATUS, RESPONSE_MESSAGES, VENDOR_STATUS, D
 import User from '@/core/Models/User.js';
 import Vendor from '@/core/Models/Vendor.js';
 import OTPService from '@/core/Services/Auth/User/OTPService.js';
-import { generateToken } from '@/core/Helpers/jwt.js';
+import BaseAuthService from '@/core/Services/Auth/BaseAuthService.js';
 import googleAuthLib from 'google-auth-library';
 const { OAuth2Client } = googleAuthLib;
 import { getAppConfig } from '@/core/Lib/appConfig.js';
@@ -104,8 +104,8 @@ class AuthService {
             vendorData = await this._getVendorStatus(user);
         }
 
-        const token = await generateToken({ id: user._id, role: user.role, identifier: user.email || user.phone });
-        return { token, role: user.role, isNewUser, user, ...vendorData };
+        const tokens = await BaseAuthService.generateAndSaveTokens(user, true);
+        return { tokens, role: user.role, isNewUser, user, ...vendorData };
     }
 
     async authenticateWithGoogle(idToken, targetRole) {
@@ -140,8 +140,8 @@ class AuthService {
 
         await this._handleDeactivation(user);
         let vendorData = user.role === USER_ROLES.VENDOR ? await this._getVendorStatus(user) : {};
-        const token = await generateToken({ id: user._id, role: user.role, email: user.email });
-        return { token, role: user.role, isNewUser, user, ...vendorData };
+        const tokens = await BaseAuthService.generateAndSaveTokens(user, true);
+        return { tokens, role: user.role, isNewUser, user, ...vendorData };
     }
 
     async authenticateWithFacebook(accessToken, targetRole) {
@@ -197,8 +197,8 @@ class AuthService {
 
         await this._handleDeactivation(user);
         let vendorData = user.role === USER_ROLES.VENDOR ? await this._getVendorStatus(user) : {};
-        const token = await generateToken({ id: user._id, role: user.role, email: user.email });
-        return { token, role: user.role, isNewUser, user, ...vendorData };
+        const tokens = await BaseAuthService.generateAndSaveTokens(user, true);
+        return { tokens, role: user.role, isNewUser, user, ...vendorData };
     }
 
     async authenticateWithApple(idToken, targetRole, appleUser, appleEmail) {
@@ -270,8 +270,8 @@ class AuthService {
 
         await this._handleDeactivation(user);
         let vendorData = user.role === USER_ROLES.VENDOR ? await this._getVendorStatus(user) : {};
-        const token = await generateToken({ id: user._id, role: user.role, email: user.email });
-        return { token, role: user.role, isNewUser, user, ...vendorData };
+        const tokens = await BaseAuthService.generateAndSaveTokens(user, true);
+        return { tokens, role: user.role, isNewUser, user, ...vendorData };
     }
 
     // Helper methods from old code

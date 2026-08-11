@@ -21,9 +21,13 @@ jest.unstable_mockModule('@/services/Auth/User/OTPService.js', () => ({
     }
 }));
 
-jest.unstable_mockModule('@/helpers/jwt.js', () => ({
-    generateToken: jest.fn()
+jest.unstable_mockModule('@/core/Services/Auth/BaseAuthService.js', () => ({
+    default: {
+        generateAndSaveTokens: jest.fn()
+    }
 }));
+
+
 
 let mockConfig = {
     facebook: { app_id: '12345' },
@@ -38,7 +42,7 @@ const { default: AuthService } = await import('@/services/Auth/User/AuthService.
 const { default: User } = await import('@/models/User.js');
 const { default: Vendor } = await import('@/models/Vendor.js');
 const { default: OTPService } = await import('@/services/Auth/User/OTPService.js');
-const { generateToken } = await import('@/helpers/jwt.js');
+const { default: BaseAuthService } = await import('@/core/Services/Auth/BaseAuthService.js');
 
 describe('Industry Standard: User AuthService Logic', () => {
     beforeEach(() => {
@@ -68,11 +72,11 @@ describe('Industry Standard: User AuthService Logic', () => {
             const identifier = '9876543210';
             OTPService.verifyOTP.mockResolvedValue({ termsAccepted: 'true' });
             User.findOne.mockResolvedValue({ _id: 'u1', role: 'traveller', preferences: {}, isModified: () => false });
-            generateToken.mockResolvedValue('mock-token');
+            BaseAuthService.generateAndSaveTokens.mockResolvedValue({ accessToken: 'mock-token' });
 
             const result = await AuthService.authenticateWithOTP({ identifier, otp: '123456' });
 
-            expect(result.token).toBe('mock-token');
+            expect(result.tokens.accessToken).toBe('mock-token');
             expect(result.role).toBe('traveller');
         });
 
@@ -81,7 +85,7 @@ describe('Industry Standard: User AuthService Logic', () => {
             OTPService.verifyOTP.mockResolvedValue({ role: 'traveller' });
             User.findOne.mockResolvedValue(null);
             User.create.mockResolvedValue({ _id: 'unew', role: 'traveller', email: identifier });
-            generateToken.mockResolvedValue('new-token');
+            BaseAuthService.generateAndSaveTokens.mockResolvedValue({ accessToken: 'new-token' });
 
             const result = await AuthService.authenticateWithOTP({ identifier, otp: '123456' });
 
@@ -120,10 +124,10 @@ describe('Industry Standard: User AuthService Logic', () => {
                 role: 'traveller',
                 isModified: () => false
             });
-            generateToken.mockResolvedValue('mock-token');
+            BaseAuthService.generateAndSaveTokens.mockResolvedValue({ accessToken: 'mock-token' });
 
             const result = await AuthService.authenticateWithFacebook('mock-access-token', 'traveller');
-            expect(result.token).toBe('mock-token');
+            expect(result.tokens.accessToken).toBe('mock-token');
             expect(result.role).toBe('traveller');
         });
 
@@ -170,10 +174,10 @@ describe('Industry Standard: User AuthService Logic', () => {
                 email: 'apple@test.com',
                 appleId: 'apple123'
             });
-            generateToken.mockResolvedValue('mock-token');
+            BaseAuthService.generateAndSaveTokens.mockResolvedValue({ accessToken: 'mock-token' });
 
             const result = await AuthService.authenticateWithApple('mock-id-token', 'traveller', { name: { firstName: 'Apple', lastName: 'User' } });
-            expect(result.token).toBe('mock-token');
+            expect(result.tokens.accessToken).toBe('mock-token');
             expect(User.create).toHaveBeenCalled();
         });
 

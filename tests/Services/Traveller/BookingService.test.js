@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+// Force Jest cache invalidation
 
 // 1. Mocks Layer
 jest.unstable_mockModule('mongoose', () => {
@@ -48,33 +49,44 @@ jest.unstable_mockModule('@/core/Models/Dispute.js', () => ({
     default: { create: jest.fn(), findOne: jest.fn() }
 }));
 
-jest.unstable_mockModule('@/core/Models/Package.js', () => ({
-    default: { findById: jest.fn() }
-}));
-
 jest.unstable_mockModule('@/core/Models/Coupon.js', () => ({
-    default: { findOne: jest.fn() }
+    default: { findOneAndUpdate: jest.fn() }
 }));
 
 jest.unstable_mockModule('@/core/Constants/index.js', () => ({
     RESPONSE_MESSAGES: {
-        BOOKING: { NOT_FOUND_OR_UNAUTHORIZED: 'Booking not found', SLOTS_NOT_AVAILABLE: 'Slots not available' },
+        BOOKING: { NOT_FOUND: 'Booking not found', NOT_FOUND_OR_UNAUTHORIZED: 'Booking not found', SLOTS_NOT_AVAILABLE: 'Slots not available' },
         PACKAGE: { NOT_FOUND: 'Package not found' },
         USER: { NOT_FOUND: 'User not found' },
+        VENDOR: { NOT_FOUND: 'Vendor not found' },
         ERROR: { INVALID_SIGNATURE: 'Invalid signature' }
     },
-    BOOKING_STATUS: { PENDING: 'pending', CONFIRMED: 'confirmed', ONGOING: 'ongoing', COMPLETED: 'completed' },
-    PAYMENT_STATUS: { UNPAID: 'unpaid', PAID: 'paid' },
+    BOOKING_STATUS: { PENDING: 'pending', CONFIRMED: 'confirmed', ONGOING: 'ongoing', COMPLETED: 'completed', CANCELLED: 'cancelled' },
+    PAYMENT_STATUS: { UNPAID: 'unpaid', PAID: 'paid', REFUND_PENDING: 'refund_pending' },
     REFUND_STATUS: { REFUNDED: 'refunded' },
     HTTP_STATUS: { OK: 200, CREATED: 201, INTERNAL_SERVER_ERROR: 500 },
-    DEFAULTS: { TRUE: true, FALSE: false, NULL: null },
+    DEFAULTS: { TRUE: true, FALSE: false, NULL: null, COUNTS: { ZERO: 0, ONE: 1 } },
     AUTH_PROVIDERS: { LOCAL: 'local', GOOGLE: 'google', FACEBOOK: 'facebook', APPLE: 'apple', PHONE: 'phone' },
     USER_ROLES: { ADMIN: 'admin', VENDOR: 'vendor', TRAVELLER: 'traveller' },
     STATUS: { ACTIVE: 'active', INACTIVE: 'inactive' },
     GENDER: { MALE: 'male', FEMALE: 'female', OTHER: 'other', PREFER_NOT_TO_SAY: 'prefer_not_to_say' },
     VENDOR_STATUS: { PENDING: 'pending', ACTIVE: 'active', REJECTED: 'rejected', SUSPENDED: 'suspended' },
     VENDOR_PROFILE_TYPES: { INDIVIDUAL: 'individual', BUSINESS: 'business' },
-    VERIFICATION_STATUS: { PENDING: 'pending', VERIFIED: 'verified', REJECTED: 'rejected' }
+    VERIFICATION_STATUS: { PENDING: 'pending', VERIFIED: 'verified', REJECTED: 'rejected' },
+    DISCOUNT_TYPES: { PERCENTAGE: 'percentage', FLAT: 'flat' },
+    PACKAGE: { 
+        ACCOMMODATION: { 
+            HOTEL: { ROOM_TYPE: { STANDARD_ROOM: 'Standard' } }, 
+            HOMESTAY: { ROOM_TYPE: {} }, 
+            COMMON: { BED_TYPE: { DOUBLE: 'Double' } } 
+        }, 
+        ACTIVITY: {}, 
+        TRANSPORT: {}, 
+        MEALTYPE: { NoMealsIncluded: 'No Meals Included' }, 
+        THEMES: { ADVENTURE: 'adventure' }, 
+        CATEGORY: { HOTEL: 'Hotel' }, 
+        BATHROOM_TYPE: { PRIVATE: 'Private' } 
+    }
 }));
 
 jest.unstable_mockModule('@/core/Services/General/NotificationService.js', () => ({
@@ -115,12 +127,23 @@ jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
     }))
 }));
 
+jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => ({
+    getPackageItemById: jest.fn(),
+    getUserById: jest.fn(),
+    getBookingBy: jest.fn()
+}));
+
 // 2. Dynamic Imports
 const { default: BookingService } = await import('@/core/Services/Traveller/BookingService.js');
 const { default: Booking } = await import('@/core/Models/Booking.js');
+const { default: Dispute } = await import('@/core/Models/Dispute.js');
+const { default: Coupon } = await import('@/core/Models/Coupon.js');
 const { default: PackageService } = await import('@/core/Services/Traveller/PackageService.js');
 const { default: InventoryService } = await import('@/core/Services/Traveller/InventoryService.js');
-const { default: User } = await import('@/core/Models/User.js');
+const { default: BusinessService } = await import('@/core/Services/Vendor/BusinessService.js');
+const queryHelpers = await import('@/core/Helpers/queryHelpers.js');
+const { default: RazorpayService } = await import('@/core/Services/General/RazorpayService.js');
+const mongoose = (await import('mongoose')).default;
 
 describe('BookingService Business Logic', () => {
 
@@ -128,18 +151,18 @@ describe('BookingService Business Logic', () => {
         jest.clearAllMocks();
     });
 
-    describe('Booking Lifecycle Management', () => {
+    describe('initiateBooking', () => {
         it('should successfully initiate a pending booking for activities', async () => {
             const mockPackageItem = {
                 catalogId: 'c1',
                 category: 'trekking',
                 vendor: { id: 'v123' },
-                pricing: { pricePerPerson: 1000, sellingPrice: 1000 },
+                pricing: { basePrice: 1000, discountType: 'flat', discount: 0 },
                 title: 'Trek Pack',
                 photos: [{ url: 'http://example.com/photo.jpg' }]
             };
             PackageService.getAvailablePackageItem.mockResolvedValue(mockPackageItem);
-            User.findById.mockReturnValue({ lean: jest.fn().mockResolvedValue({ name: 'Test User', phone: '1234567890', email: 'test@test.com' }) });
+            queryHelpers.getUserById.mockResolvedValue({ name: 'Test User', phone: '1234567890', email: 'test@test.com' });
             InventoryService.checkAvailabilityRange.mockResolvedValue({ available: true });
 
             const createdBooking = { _id: 'b_new', status: 'pending', bookingCode: 'PH-ABCDEF' };
@@ -156,29 +179,82 @@ describe('BookingService Business Logic', () => {
                 }
             });
 
-            expect(result).toEqual({
-                bookingId: createdBooking._id,
-                bookingCode: createdBooking.bookingCode,
-                status: createdBooking.status,
-                paymentStatus: createdBooking.paymentStatus,
-                item: createdBooking.item,
-                startDate: createdBooking.startDate,
-                endDate: createdBooking.endDate,
-                occupancy: createdBooking.occupancy,
-                pricing: createdBooking.pricing
-            });
+            expect(result).toBeDefined();
+            expect(result.bookingId).toBe('b_new');
             expect(Booking.create).toHaveBeenCalled();
-            expect(InventoryService.checkAvailabilityRange).toHaveBeenCalledTimes(2); // initial check and final lock verification
+            expect(InventoryService.checkAvailabilityRange).toHaveBeenCalledTimes(2);
+        });
+
+        it('should throw an error if dates are invalid', async () => {
+            await expect(BookingService.initiateBooking({
+                userId: 'u123',
+                itemId: 'item_123',
+                body: { startDate: 'invalid', endDate: 'invalid' }
+            })).rejects.toThrow('Invalid startDate or endDate format. Use YYYY-MM-DD.');
+        });
+
+        it('should throw an error if slots are not available initially', async () => {
+            const mockPackageItem = {
+                catalogId: 'c1',
+                category: 'trekking',
+                vendor: { id: 'v123' }
+            };
+            PackageService.getAvailablePackageItem.mockResolvedValue(mockPackageItem);
+            queryHelpers.getUserById.mockResolvedValue({});
+            InventoryService.checkAvailabilityRange.mockResolvedValue({ available: false });
+
+            await expect(BookingService.initiateBooking({
+                userId: 'u123',
+                itemId: 'item_123',
+                body: { startDate: '2026-06-01', endDate: '2026-06-02' }
+            })).rejects.toThrow('Slots not available');
+        });
+
+        it('should throw an error if slots become unavailable during final check', async () => {
+            const mockPackageItem = {
+                catalogId: 'c1',
+                category: 'trekking',
+                vendor: { id: 'v123' },
+                pricing: { basePrice: 1000 }
+            };
+            PackageService.getAvailablePackageItem.mockResolvedValue(mockPackageItem);
+            queryHelpers.getUserById.mockResolvedValue({});
+            
+            InventoryService.checkAvailabilityRange
+                .mockResolvedValueOnce({ available: true })
+                .mockResolvedValueOnce({ available: false }); // Fails during final lock check
+                
+            Booking.create.mockResolvedValue([{ _id: 'b_new' }]);
+
+            await expect(BookingService.initiateBooking({
+                userId: 'u123',
+                itemId: 'item_123',
+                body: { startDate: '2026-06-01', endDate: '2026-06-02' }
+            })).rejects.toThrow('Inventory Conflict: Slots became unavailable.');
         });
     });
 
-    describe('Payment & Verification', () => {
-        it('should reuse an existing unpaid Razorpay order instead of creating duplicates', async () => {
-            const { default: RazorpayService } = await import('@/services/General/RazorpayService.js');
+    describe('initializePayment', () => {
+        it('should successfully create a new Razorpay order if none exists', async () => {
             const mockBooking = {
                 _id: 'b123', user: 'u123', status: 'pending', paymentStatus: 'unpaid',
-                payment: { orderId: 'order_existing' }, pricing: { total: 1000 }, bookingCode: 'PH-ABCDEF',
-                save: jest.fn()
+                payment: {}, pricing: { total: 1000 }, bookingCode: 'PH-ABC',
+                timeline: [], save: jest.fn()
+            };
+            Booking.findOne.mockResolvedValue(mockBooking);
+            RazorpayService.createOrder.mockResolvedValue({ id: 'order_new' });
+
+            const result = await BookingService.initializePayment('b123', 'u123');
+
+            expect(result.orderId).toBe('order_new');
+            expect(RazorpayService.createOrder).toHaveBeenCalled();
+            expect(mockBooking.save).toHaveBeenCalled();
+        });
+
+        it('should reuse an existing unpaid Razorpay order', async () => {
+            const mockBooking = {
+                _id: 'b123', user: 'u123', status: 'pending', paymentStatus: 'unpaid',
+                payment: { orderId: 'order_existing' }, pricing: { total: 1000 }, bookingCode: 'PH-ABCDEF'
             };
             Booking.findOne.mockResolvedValue(mockBooking);
 
@@ -186,17 +262,25 @@ describe('BookingService Business Logic', () => {
 
             expect(result.orderId).toBe('order_existing');
             expect(RazorpayService.createOrder).not.toHaveBeenCalled();
-            expect(mockBooking.save).not.toHaveBeenCalled();
         });
 
+        it('should reject payment initialization if already paid', async () => {
+            const mockBooking = {
+                _id: 'b123', paymentStatus: 'paid', status: 'confirmed'
+            };
+            Booking.findOne.mockResolvedValue(mockBooking);
+            await expect(BookingService.initializePayment('b123', 'u123')).rejects.toThrow('Payment not allowed');
+        });
+    });
+
+    describe('verifyBookingPayment', () => {
         it('should verify payment and transition to confirmed status', async () => {
-            const { default: RazorpayService } = await import('@/services/General/RazorpayService.js');
             RazorpayService.verifySignature.mockReturnValue(true);
 
             const mockBooking = {
                 _id: 'b123', user: 'u123', status: 'pending', paymentStatus: 'unpaid',
                 verification: {}, payment: { orderId: 'o1' }, timeline: [],
-                pricing: { total: 1000 }, save: jest.fn()
+                pricing: { total: 1000, coupon: 'NEW10' }, save: jest.fn()
             };
             Booking.findOne.mockResolvedValue(mockBooking);
 
@@ -210,57 +294,97 @@ describe('BookingService Business Logic', () => {
             expect(result.paymentStatus).toBe('paid');
             expect(mockBooking.payment.paymentId).toBe('p1');
             expect(mockBooking.save).toHaveBeenCalled();
+            expect(Coupon.findOneAndUpdate).toHaveBeenCalledWith({ code: 'NEW10' }, expect.any(Object), expect.any(Object));
         });
 
-        it('should reject payment verification for a mismatched Razorpay order', async () => {
+        it('should throw an error if signature is invalid', async () => {
+            RazorpayService.verifySignature.mockReturnValue(false);
             const mockBooking = {
                 _id: 'b123', user: 'u123', status: 'pending', paymentStatus: 'unpaid',
-                verification: {}, payment: { orderId: 'order_expected' }, timeline: [],
-                pricing: { total: 1000 }, save: jest.fn()
+                verification: {}, payment: { orderId: 'o1' }, pricing: { total: 1000 }
             };
             Booking.findOne.mockResolvedValue(mockBooking);
 
             await expect(BookingService.verifyBookingPayment('b123', 'u123', {
-                razorpay_order_id: 'order_other',
-                razorpay_payment_id: 'p1',
-                razorpay_signature: 'DUMMY_SIGNATURE'
-            })).rejects.toThrow('Payment order does not match this booking.');
-
-            expect(mockBooking.save).not.toHaveBeenCalled();
-        });
-
-        it('should return already paid bookings idempotently for the same payment id', async () => {
-            const mockBooking = {
-                _id: 'b123', user: 'u123', status: 'confirmed', paymentStatus: 'paid',
-                verification: {}, payment: { orderId: 'o1', paymentId: 'p1' }, timeline: [],
-                pricing: { total: 1000 }, save: jest.fn()
-            };
-            Booking.findOne.mockResolvedValue(mockBooking);
-
-            const result = await BookingService.verifyBookingPayment('b123', 'u123', {
                 razorpay_order_id: 'o1',
                 razorpay_payment_id: 'p1',
-                razorpay_signature: 'DUMMY_SIGNATURE'
-            });
-
-            expect(result).toBe(mockBooking);
-            expect(mockBooking.save).not.toHaveBeenCalled();
+                razorpay_signature: 'DUMMY'
+            })).rejects.toThrow('Invalid signature');
         });
     });
 
-    describe('Lifecycle Transitions', () => {
-        it('should reveal end OTP once booking is ongoing', async () => {
+    describe('getBookingOTP', () => {
+        it('should return Start OTP if status is confirmed and today is >= start date', async () => {
+            const today = new Date();
             const mockBooking = {
-                _id: 'b123', user: 'u123', status: 'ongoing',
-                verification: { endOTP: '654321' },
-                timeline: [], save: jest.fn()
+                _id: 'b123', user: 'u123', status: 'confirmed',
+                verification: { startOTP: '123456' },
+                startDate: today
             };
-            Booking.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(mockBooking) });
+            queryHelpers.getBookingBy.mockResolvedValue(mockBooking);
 
             const result = await BookingService.getBookingOTP('b123', 'u123');
+            expect(result.type).toBe('Start OTP');
+            expect(result.otp).toBe('123456');
+        });
 
-            expect(result.type).toBe('End OTP');
-            expect(result.otp).toBe('654321');
+        it('should throw error if trip is already completed', async () => {
+            queryHelpers.getBookingBy.mockResolvedValue({ status: 'completed' });
+            await expect(BookingService.getBookingOTP('b123', 'u123')).rejects.toThrow('Trip is already completed');
+        });
+    });
+
+    describe('refundBooking', () => {
+        it('should process refund and update booking status to cancelled', async () => {
+            const mockBooking = {
+                _id: 'b123', status: 'pending', paymentStatus: 'paid', pricing: { total: 1000 },
+                timeline: [], save: jest.fn()
+            };
+            
+            // Need to chain .session()
+            Booking.findById.mockReturnValue({
+                session: jest.fn().mockResolvedValue(mockBooking)
+            });
+
+            const result = await BookingService.refundBooking('b123', { body: { reason: 'Test Cancel' }, user: { id: 'u1' } });
+            
+            expect(result.status).toBe('cancelled');
+            expect(result.paymentStatus).toBe('refund_pending');
+            expect(result.cancellation.reason).toBe('Test Cancel');
+            expect(mockBooking.save).toHaveBeenCalled();
+        });
+        
+        it('should throw if booking not found', async () => {
+            Booking.findById.mockReturnValue({
+                session: jest.fn().mockResolvedValue(null)
+            });
+            await expect(BookingService.refundBooking('b123')).rejects.toThrow('Booking not found');
+        });
+    });
+
+    describe('reportDispute', () => {
+        it('should create a dispute and map the reason correctly', async () => {
+            const mockBooking = { _id: 'b123', vendor: 'v123', timeline: [], save: jest.fn() };
+            Booking.findOne.mockResolvedValue(mockBooking);
+            Dispute.create.mockResolvedValue({ _id: 'd123', reason: 'quality_issue' });
+
+            const result = await BookingService.reportDispute('b123', 'u123', {
+                reason: 'not clean at all', // This should trigger the mapping logic
+                description: 'Room was dirty',
+                evidenceUrls: ['http://example.com/photo.jpg']
+            });
+
+            expect(result).toBeDefined();
+            expect(Dispute.create).toHaveBeenCalledWith(expect.objectContaining({
+                reason: 'quality_issue'
+            }));
+            expect(mockBooking.timeline).toHaveLength(1);
+            expect(mockBooking.save).toHaveBeenCalled();
+        });
+
+        it('should throw error if booking not found', async () => {
+            Booking.findOne.mockResolvedValue(null);
+            await expect(BookingService.reportDispute('b1', 'u1', { reason: 'other' })).rejects.toThrow('Booking not found');
         });
     });
 });

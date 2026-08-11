@@ -1,5 +1,5 @@
 import User from '@/core/Models/User.js';
-import { generateToken } from '@/core/Helpers/jwt.js';
+import BaseAuthService from '@/core/Services/Auth/BaseAuthService.js';
 import { USER_ROLES, RESPONSE_MESSAGES, STATUS, DEFAULTS } from '@/core/Constants/index.js';
 
 class AuthService {
@@ -20,11 +20,10 @@ class AuthService {
 
         await this._handleDeactivation(user);
 
-        const tokenExpiry = rememberMe ? '30d' : '1d';
-        const token = await generateToken({ id: user._id, role: user.role, email: user.email }, tokenExpiry);
+        const tokens = await BaseAuthService.generateAndSaveTokens(user, rememberMe);
 
         return {
-            token,
+            tokens,
             user: { ...user.toObject(), password: undefined },
             role: user.role
         };

@@ -1,7 +1,10 @@
 import { jest } from '@jest/globals';
 
 jest.unstable_mockModule('@/core/Helpers/jwt.js', () => ({
-    verifyToken: jest.fn()
+    verifyToken: jest.fn(),
+    generateToken: jest.fn(),
+    generateAuthTokens: jest.fn(),
+    decodeToken: jest.fn()
 }));
 
 jest.unstable_mockModule('@/core/Models/User.js', () => ({

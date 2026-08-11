@@ -18,7 +18,7 @@ export const transformAuthResponse = (result) => {
     // 2. Map Identity Meta (Fallbacks to user properties if missing from result root)
     return {
         ...user,
-        token: result.token || undefined,
+        tokens: result.tokens || undefined,
         role: result.role || user.role,
         isNewUser: result.isNewUser || DEFAULTS.FALSE,
         businessProfileStatus: result.businessProfileStatus || user.businessProfileStatus,

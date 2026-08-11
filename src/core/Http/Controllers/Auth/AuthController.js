@@ -136,7 +136,19 @@ class AuthController extends Controller {
     }
 
     async logout(req) {
-        return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGOUT_SUCCESS);
+        try {
+            const token = req.headers.get('authorization')?.split(' ')[1];
+            if (!token) return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGOUT_SUCCESS);
+
+            let body = {};
+            try { body = req.payload || req.validData || req.jsonBody || await parseBody(req); } catch(e){}
+            const refreshToken = body.refreshToken || null;
+
+            await BaseAuthService.logout(token, refreshToken);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGOUT_SUCCESS);
+        } catch (error) {
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGOUT_SUCCESS);
+        }
     }
 
     async verifyToken(req) {
@@ -152,10 +164,15 @@ class AuthController extends Controller {
 
     async refreshToken(req) {
         try {
-            const token = req.headers.get('authorization')?.split(' ')[1];
+            let body = {};
+            try { body = req.payload || req.validData || req.jsonBody || await parseBody(req); } catch(e){}
+            
+            let token = body.refreshToken;
+            if (!token) token = req.headers.get('authorization')?.split(' ')[1];
+
             if (!token) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.NO_TOKEN);
-            const result = await BaseAuthService.refreshToken(token);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.TOKEN_REFRESHED, result);
+            const tokens = await BaseAuthService.refreshToken(token);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.TOKEN_REFRESHED, { tokens });
         } catch (error) {
             return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
         }
