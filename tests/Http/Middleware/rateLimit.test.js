@@ -1,75 +1,136 @@
 import { jest } from '@jest/globals';
-import RateLimit from '@/core/Models/RateLimit.js';
-import { HTTP_STATUS } from '@/core/Constants/index.js';
 
-// Use unstable_mockModule for ESM Models
+jest.unstable_mockModule('@/core/Constants/index.js', () => ({
+    HTTP_STATUS: { TOO_MANY_REQUESTS: 429 },
+    DEFAULTS: { NULL: null, ARRAY: [], TRUE: true }
+}));
+
 jest.unstable_mockModule('@/core/Models/RateLimit.js', () => ({
     default: {
-        findOneAndUpdate: jest.fn(),
-        findOne: jest.fn(),
-        create: jest.fn()
+        findOneAndUpdate: jest.fn()
     }
 }));
 
-const { default: rateLimit } = await import('@/middleware/rateLimit.js');
-const { default: RateLimitMock } = await import('@/core/Models/RateLimit.js');
+jest.unstable_mockModule('@/core/Helpers/response.js', () => ({
+    errorResponse: jest.fn((status, msg, data, headers) => ({ status, msg, headers }))
+}));
 
-describe('Core Middleware: RateLimit', () => {
-    let mockReq;
+const mockLimit = jest.fn();
+jest.unstable_mockModule('@upstash/ratelimit', () => ({
+    Ratelimit: class {
+        constructor() { this.limit = mockLimit; }
+        static fixedWindow = jest.fn()
+    }
+}));
 
+jest.unstable_mockModule('@upstash/redis', () => ({
+    Redis: class {}
+}));
+
+const mockConnect = jest.fn();
+const mockMulti = jest.fn();
+const mockDisconnect = jest.fn();
+jest.unstable_mockModule('redis', () => ({
+    createClient: jest.fn(() => ({
+        connect: mockConnect,
+        disconnect: mockDisconnect,
+        on: jest.fn(),
+        multi: mockMulti
+    }))
+}));
+
+jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
+    getAppConfig: jest.fn()
+}));
+
+const mockError = jest.fn();
+jest.unstable_mockModule('@/core/Lib/logger.js', () => ({
+    getLogger: () => ({ error: mockError })
+}));
+
+const { rateLimit } = await import('@/core/Http/Middleware/rateLimit.js');
+const { getAppConfig } = await import('@/core/Lib/appConfig.js');
+const { default: RateLimit } = await import('@/core/Models/RateLimit.js');
+
+describe('RateLimit Middleware', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        mockReq = {
-            ip: '127.0.0.1',
-            url: 'http://localhost/api/test',
-            headers: { get: () => null }
-        };
+        getAppConfig.mockResolvedValue({ redis: {} });
     });
 
-    test('should allow request if under limit', async () => {
-        const middleware = rateLimit({ limit: 2, windowMs: 1000 });
-        const mockData = {
-            count: 1,
-            resetAt: new Date(Date.now() + 1000)
-        };
-        RateLimitMock.findOneAndUpdate.mockResolvedValue(mockData);
+    const createReq = () => ({
+        headers: { get: () => '1.2.3.4' },
+        url: 'http://localhost/api/test',
+        ip: '1.2.3.4'
+    });
 
-        const result = await middleware(mockReq);
-
+    it('should use MongoDB fallback if no redis config and succeed if under limit', async () => {
+        RateLimit.findOneAndUpdate.mockResolvedValue({ count: 1, resetAt: new Date() });
+        const middleware = rateLimit({ limit: 5 });
+        const result = await middleware(createReq());
         expect(result).toBeNull();
-        expect(RateLimitMock.findOneAndUpdate).toHaveBeenCalledWith(
-            { key: '127.0.0.1:/api/test' },
-            expect.any(Array),
-            expect.objectContaining({ upsert: true, returnDocument: 'after', updatePipeline: true })
-        );
     });
 
-    test('should block request if over limit', async () => {
-        const middleware = rateLimit({ limit: 1, windowMs: 1000 });
-        const mockData = {
-            count: 2,
-            resetAt: new Date(Date.now() + 1000)
-        };
-        RateLimitMock.findOneAndUpdate.mockResolvedValue(mockData);
-
-        const result = await middleware(mockReq);
-        const body = await result.json();
-
-        expect(result.status).toBe(HTTP_STATUS.TOO_MANY_REQUESTS);
-        expect(body.message).toContain('Too many requests');
+    it('should use MongoDB fallback and block if over limit', async () => {
+        RateLimit.findOneAndUpdate.mockResolvedValue({ count: 6, resetAt: new Date(Date.now() + 10000) });
+        const middleware = rateLimit({ limit: 5 });
+        const result = await middleware(createReq());
+        expect(result.status).toBe(429);
+        expect(result.headers['Retry-After']).toBeDefined();
     });
 
-    test('should reset count if window expired', async () => {
-        const middleware = rateLimit({ limit: 5, windowMs: 1000 });
-        const mockData = {
-            count: 1,
-            resetAt: new Date(Date.now() + 1000)
-        };
-        RateLimitMock.findOneAndUpdate.mockResolvedValue(mockData);
-
-        const result = await middleware(mockReq);
-
+    it('should fail open (return null) if MongoDB fails', async () => {
+        RateLimit.findOneAndUpdate.mockRejectedValue(new Error('DB Error'));
+        const middleware = rateLimit({ limit: 5 });
+        const result = await middleware(createReq());
         expect(result).toBeNull();
-        expect(mockData.count).toBe(1);
+        expect(mockError).toHaveBeenCalled();
+    });
+
+    it('should handle MongoDB 11000 duplicate key error gracefully', async () => {
+        const error = new Error('Dup');
+        error.code = 11000;
+        RateLimit.findOneAndUpdate.mockRejectedValue(error);
+        const middleware = rateLimit({ limit: 5 });
+        const result = await middleware(createReq());
+        expect(result).toBeNull();
+    });
+
+    it('should use Upstash Redis if configured and succeed', async () => {
+        getAppConfig.mockResolvedValue({ redis: { upstash_url: 'u', upstash_token: 't' } });
+        mockLimit.mockResolvedValue({ success: true, pending: Promise.resolve(), limit: 5, remaining: 4, reset: Date.now() + 10000 });
+        const middleware = rateLimit({ limit: 5 });
+        const result = await middleware(createReq());
+        expect(result).toBeNull();
+    });
+
+    it('should use Upstash Redis and block if over limit', async () => {
+        getAppConfig.mockResolvedValue({ redis: { upstash_url: 'u', upstash_token: 't' } });
+        mockLimit.mockResolvedValue({ success: false, limit: 5, remaining: 0, reset: Date.now() + 10000 });
+        const middleware = rateLimit({ limit: 5 });
+        const result = await middleware(createReq());
+        expect(result.status).toBe(429);
+    });
+
+    it('should use standard Redis if configured and succeed', async () => {
+        getAppConfig.mockResolvedValue({ redis: { standard_url: 'redis://localhost' } });
+        mockConnect.mockResolvedValue();
+        const mockExec = jest.fn().mockResolvedValue([1]);
+        mockMulti.mockReturnValue({ incr: jest.fn(), expire: jest.fn(), exec: mockExec });
+        
+        const middleware = rateLimit({ limit: 5 });
+        const result = await middleware(createReq());
+        expect(result).toBeNull();
+    });
+
+    it('should use standard Redis and block if over limit', async () => {
+        getAppConfig.mockResolvedValue({ redis: { standard_url: 'redis://localhost' } });
+        mockConnect.mockResolvedValue();
+        const mockExec = jest.fn().mockResolvedValue([6]); // Over limit of 5
+        mockMulti.mockReturnValue({ incr: jest.fn(), expire: jest.fn(), exec: mockExec });
+        
+        const middleware = rateLimit({ limit: 5 });
+        const result = await middleware(createReq());
+        expect(result.status).toBe(429);
     });
 });

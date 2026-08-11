@@ -1,178 +1,199 @@
 import { jest } from '@jest/globals';
+import os from 'os';
 
-// Define the mock chainable object
-const mockQuery = {
-    populate: jest.fn().mockReturnThis(),
-    sort: jest.fn().mockReturnThis(),
-    limit: jest.fn().mockReturnThis(),
-    select: jest.fn().mockReturnThis(),
-    lean: jest.fn().mockReturnThis(),
-    // Mongoose queries are thenable
-    then: jest.fn(function(resolve, reject) {
-        // By default, resolve with an empty array or as previously set
-        resolve(this._resolvedValue || []);
-    }),
-    // Helper to set what the next 'await' should return
-    _resolveWith: function(value) {
-        this._resolvedValue = value;
-        return this;
+jest.unstable_mockModule('mongoose', () => ({
+    default: {
+        connection: {
+            db: {
+                stats: jest.fn()
+            }
+        }
     }
+}));
+
+const mockCount = jest.fn();
+const mockAggregate = jest.fn();
+const mockFind = jest.fn();
+const mockPopulate = jest.fn();
+const mockSort = jest.fn();
+const mockLimit = jest.fn();
+const mockSelect = jest.fn();
+const mockLean = jest.fn();
+
+const chainableMock = () => {
+    const mock = {
+        populate: mockPopulate,
+        sort: mockSort,
+        limit: mockLimit,
+        select: mockSelect,
+        lean: mockLean
+    };
+    mockPopulate.mockReturnValue(mock);
+    mockSort.mockReturnValue(mock);
+    mockLimit.mockReturnValue(mock);
+    mockSelect.mockReturnValue(mock);
+    return mock;
 };
 
-jest.unstable_mockModule('@/models/User.js', () => ({
-    default: { countDocuments: jest.fn(), aggregate: jest.fn(), find: jest.fn(() => mockQuery) }
+jest.unstable_mockModule('@/core/Models/User.js', () => ({
+    default: { countDocuments: mockCount, aggregate: mockAggregate, find: mockFind }
 }));
-jest.unstable_mockModule('@/models/Vendor.js', () => ({
-    default: { countDocuments: jest.fn(), find: jest.fn(() => mockQuery), aggregate: jest.fn() }
+jest.unstable_mockModule('@/core/Models/Vendor.js', () => ({
+    default: { countDocuments: mockCount, aggregate: mockAggregate, find: mockFind }
 }));
-jest.unstable_mockModule('@/models/Booking.js', () => ({
-    default: { 
-        countDocuments: jest.fn(), 
-        find: jest.fn(() => mockQuery),
-        aggregate: jest.fn()
-    }
+jest.unstable_mockModule('@/core/Models/Booking.js', () => ({
+    default: { countDocuments: mockCount, aggregate: mockAggregate, find: mockFind }
 }));
-jest.unstable_mockModule('@/models/SearchLog.js', () => ({
-    default: { find: jest.fn(() => mockQuery), countDocuments: jest.fn(), aggregate: jest.fn() }
+jest.unstable_mockModule('@/core/Models/Package.js', () => ({
+    default: { aggregate: mockAggregate }
 }));
-jest.unstable_mockModule('@/models/Package.js', () => ({
-    default: { find: jest.fn(() => mockQuery), countDocuments: jest.fn(), aggregate: jest.fn() }
+jest.unstable_mockModule('@/core/Models/Category.js', () => ({
+    default: { countDocuments: mockCount }
 }));
-jest.unstable_mockModule('@/models/Category.js', () => ({
-    default: { countDocuments: jest.fn(), find: jest.fn(() => mockQuery), aggregate: jest.fn() }
+jest.unstable_mockModule('@/core/Models/Dispute.js', () => ({
+    default: { find: mockFind }
 }));
-jest.unstable_mockModule('@/models/Dispute.js', () => ({
-    default: { find: jest.fn(() => mockQuery), countDocuments: jest.fn(), aggregate: jest.fn() }
+jest.unstable_mockModule('@/core/Models/SearchLog.js', () => ({
+    default: { find: mockFind }
 }));
-jest.unstable_mockModule('@/models/AuditLog.js', () => ({
-    default: { find: jest.fn(() => mockQuery), countDocuments: jest.fn() }
+jest.unstable_mockModule('@/core/Models/AuditLog.js', () => ({
+    default: { find: mockFind }
 }));
 
-const { default: DashboardService } = await import('@/services/Admin/DashboardService.js');
-const { default: User } = await import('@/models/User.js');
-const { default: Booking } = await import('@/models/Booking.js');
-const { default: Vendor } = await import('@/models/Vendor.js');
-const { default: Package } = await import('@/models/Package.js');
-const { default: Category } = await import('@/models/Category.js');
-const { default: Dispute } = await import('@/models/Dispute.js');
-const { default: SearchLog } = await import('@/models/SearchLog.js');
-const { default: AuditLog } = await import('@/models/AuditLog.js');
-import mongoose from 'mongoose';
+jest.unstable_mockModule('@/core/Helpers/dateUtils.js', () => ({
+    getStartDateByPeriod: jest.fn(() => new Date('2023-01-01'))
+}));
 
-// Mock DB Stats globally
-if (!mongoose.connection.db) {
-    mongoose.connection.db = {};
-}
-mongoose.connection.db.stats = jest.fn().mockResolvedValue({ dataSize: 1024, storageSize: 2048 });
+jest.unstable_mockModule('@/core/Constants/index.js', () => ({
+    STATUS: { ACTIVE: 'active' },
+    USER_ROLES: { TRAVELLER: 'traveller' }
+}));
+jest.unstable_mockModule('@/core/Constants/categories.js', () => ({
+    SCHEMA_KEYS: { HOTEL: 'hotel' }
+}));
+jest.unstable_mockModule('@/core/Services/CacheService.js', () => ({
+    default: { get: jest.fn(), set: jest.fn() }
+}));
+jest.unstable_mockModule('@/core/Helpers/AppError.js', () => ({
+    default: class AppError extends Error {}
+}));
 
-describe('Industry Standard: DashboardService Analytics Logic', () => {
+const { default: DashboardService } = await import('@/core/Services/Admin/DashboardService.js');
+const { default: CacheService } = await import('@/core/Services/CacheService.js');
+const mongoose = (await import('mongoose')).default;
+
+describe('DashboardService', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        mockQuery._resolvedValue = []; // Reset default resolution
-        if (mongoose.connection.db) {
-            mongoose.connection.db.stats = jest.fn().mockResolvedValue({ dataSize: 1024, storageSize: 2048 });
-        }
+        mockFind.mockReturnValue(chainableMock());
+        mockLean.mockResolvedValue([]);
     });
 
-    it('[Stats] should aggregate system health and counts correctly', async () => {
-        User.countDocuments.mockResolvedValue(150);
-        const health = await DashboardService.getSystemHealth();
-        expect(health.activeUsers).toBe(150);
-        expect(health.status).toBe('healthy');
-    });
-
-    it('[Financials] should aggregate revenue from aggregate pipeline', async () => {
-        Booking.aggregate.mockResolvedValue([{ totalRevenue: 50000, pendingPayouts: 10000, refundsProcessed: 2000 }]);
-        const stats = await DashboardService.getFinancialStats();
-        expect(stats.totalRevenue).toBe(50000);
-        expect(stats.refundsProcessed).toBe(2000);
-    });
-
-    it('[DashboardStats] should aggregate all counts and recent data', async () => {
-        User.countDocuments.mockResolvedValue(100);
-        Vendor.countDocuments.mockResolvedValue(50);
-        Category.countDocuments.mockResolvedValue(10);
-        Booking.countDocuments.mockResolvedValue(200);
-        Booking.aggregate.mockResolvedValue([{ total: 100000 }]);
-        Package.aggregate.mockResolvedValue([{ count: 25 }]);
+    describe('getSystemHealth', () => {
+        it('should return system health metrics', async () => {
+            mongoose.connection.db.stats.mockResolvedValue({ collections: 5, dataSize: 100, storageSize: 200, objects: 50 });
+            mockCount.mockResolvedValue(10);
+            
+            const result = await DashboardService.getSystemHealth();
+            expect(result.status).toBe('healthy');
+            expect(result.database.collections).toBe(5);
+            expect(result.activeUsers).toBe(10);
+        });
         
-        // New metrics mocks
-        Vendor.aggregate.mockResolvedValue([{ _id: 'Dehradun', count: 10 }]);
-        Booking.find.mockReturnValue({
-            populate: jest.fn().mockReturnThis(),
-            sort: jest.fn().mockReturnThis(),
-            limit: jest.fn().mockReturnThis(),
-            lean: jest.fn().mockResolvedValue([])
+        it('should handle db stats error gracefully', async () => {
+            mongoose.connection.db.stats.mockRejectedValue(new Error('DB Error'));
+            const result = await DashboardService.getSystemHealth();
+            expect(result.database.collections).toBe(0);
         });
-        AuditLog.find.mockReturnValue({
-            populate: jest.fn().mockReturnThis(),
-            sort: jest.fn().mockReturnThis(),
-            limit: jest.fn().mockReturnThis(),
-            lean: jest.fn().mockResolvedValue([])
-        });
-        Dispute.find.mockReturnValue({
-            populate: jest.fn().mockReturnThis(),
-            limit: jest.fn().mockReturnThis(),
-            lean: jest.fn().mockResolvedValue([])
-        });
-
-        const stats = await DashboardService.getDashboardStats();
-
-        expect(stats.users).toBe(100);
-        expect(stats.totalVendors).toBe(50);
-        expect(stats.packages).toBe(25);
-        expect(stats.revenue).toBe(100000);
-        expect(stats.topTerritories).toBeDefined();
-        expect(stats.departures).toBeDefined();
-        expect(stats.systemHealth).toBeDefined();
-        expect(stats.systemHealth.storageLoad).toBe(50); // (1024/2048)*100
-        
-        expect(Vendor.find).toHaveBeenCalled();
-        expect(Booking.find).toHaveBeenCalled();
-        expect(AuditLog.find).toHaveBeenCalled();
     });
 
-    it('[Analytics] should aggregate data by period', async () => {
-        Booking.aggregate.mockResolvedValueOnce([{ _id: '2024-01-01', revenue: 5000 }]) // revenueData
-            .mockResolvedValueOnce([{ _id: 'confirmed', value: 10 }]) // bookingStatus
-            .mockResolvedValueOnce([{ _id: 'vendor1', totalRevenue: 10000, bookings: 5 }]); // topVendors
-        User.aggregate.mockResolvedValue([{ _id: '2024-01-01', travellers: 2, vendors: 1 }]);
-        Vendor.find.mockReturnValue({ lean: jest.fn().mockResolvedValue([{ _id: 'vendor1', businessName: 'Test Vendor' }]) });
-
-        const data = await DashboardService.getAnalyticsData('monthly');
-
-        expect(data.revenueData).toBeDefined();
-        expect(data.bookingStatus[0].name).toBe('CONFIRMED');
-        expect(data.userGrowth).toBeDefined();
-        expect(data.topVendors[0].name).toBe('Test Vendor');
-    });
-
-    it('[MapAnalytics] should get user distribution', async () => {
-        User.aggregate.mockResolvedValue([{ _id: 'Uttarakhand', count: 50 }]);
-        const data = await DashboardService.getMapAnalyticsData();
-        expect(data.userDistribution[0]._id).toBe('Uttarakhand');
-    });
-
-    it('[Calendar] should query bookings within date range', async () => {
-        const mockBooking = { _id: '1', startDate: new Date(), bookingDetails: { category: 'trekking' } };
-        Booking.find.mockReturnValue({
-            populate: jest.fn().mockReturnThis(),
-            lean: jest.fn().mockResolvedValue([mockBooking]),
-            then: jest.fn(resolve => resolve([mockBooking]))
+    describe('getDashboardStats', () => {
+        it('should return cached data if available', async () => {
+            CacheService.get.mockResolvedValue({ cached: true });
+            const result = await DashboardService.getDashboardStats();
+            expect(result.cached).toBe(true);
         });
 
-        const start = new Date('2024-01-01');
-        const end = new Date('2024-01-31');
-        const events = await DashboardService.getCalendarEvents(start, end);
-        
-        expect(Array.isArray(events)).toBe(true);
-        expect(events[0].type).toBe('booking');
+        it('should fetch and cache dashboard stats', async () => {
+            CacheService.get.mockResolvedValue(null);
+            mockCount.mockResolvedValue(5);
+            mockAggregate.mockImplementation((pipeline) => {
+                if (pipeline[0].$match?.paymentStatus) return Promise.resolve([{ total: 5000 }]);
+                if (pipeline[0].$project) return Promise.resolve([{ count: 10 }]); // Packages
+                if (pipeline[0].$match?.isApproved) return Promise.resolve([{ _id: 'Delhi', count: 5 }]); // Territories
+                return Promise.resolve([]);
+            });
+            mongoose.connection.db.stats.mockResolvedValue({ dataSize: 10, storageSize: 20 });
+            mockLean.mockResolvedValueOnce([{ user: { name: 'Test' }, item: { title: 'Trip' }, startDate: new Date() }]); // Departures
+            mockLean.mockResolvedValueOnce([{ userId: { name: 'Admin' }, action: 'UPDATE', target: 'USER', createdAt: new Date() }]); // Audit logs
+            mockLean.mockResolvedValueOnce([]); // recentBookings
+            mockLean.mockResolvedValueOnce([]); // recentVendors
+            mockLean.mockResolvedValueOnce([]); // disputes
+
+            const result = await DashboardService.getDashboardStats();
+            expect(result.revenue).toBe(5000);
+            expect(result.packages).toBe(10);
+            expect(result.topTerritories[0].name).toBe('Delhi');
+            expect(CacheService.set).toHaveBeenCalled();
+        });
     });
 
-    it('[SearchAnalytics] should fetch top and zero result searches', async () => {
-        mockQuery._resolveWith([{ query: 'trekking', count: 10 }]);
-        const data = await DashboardService.getSearchAnalytics();
-        expect(data.topSearches.length).toBe(1);
-        expect(data.zeroResultSearches).toBeDefined();
+    describe('getFinancialStats', () => {
+        it('should return financial stats', async () => {
+            mockAggregate.mockResolvedValue([{ totalRevenue: 1000, pendingPayouts: 200, refundsProcessed: 50 }]);
+            const result = await DashboardService.getFinancialStats();
+            expect(result.totalRevenue).toBe(1000);
+        });
+
+        it('should return default if no stats', async () => {
+            mockAggregate.mockResolvedValue([]);
+            const result = await DashboardService.getFinancialStats();
+            expect(result.totalRevenue).toBe(0);
+        });
+    });
+
+    describe('getAnalyticsData', () => {
+        it('should return analytics data and fill gaps', async () => {
+            mockAggregate.mockImplementation((pipeline) => {
+                if (pipeline[1]?.$group?._id === "$vendor") return Promise.resolve([{ _id: 'v1', totalRevenue: 500, bookings: 5 }]); // top vendors
+                if (pipeline[0].$match?.paymentStatus) return Promise.resolve([{ date: '2023-01-05', revenue: 100 }]); // revenue
+                if (pipeline[0].$group?._id === "$status") return Promise.resolve([{ _id: 'confirmed', value: 10 }]); // bookings
+                if (pipeline[0].$match?.role) return Promise.resolve([{ _id: '2023-01-05', travellers: 5, vendors: 2 }]); // users
+                return Promise.resolve([]);
+            });
+            mockLean.mockResolvedValue([{ _id: 'v1', businessName: 'Vendor 1' }]); // vendor names
+
+            const result = await DashboardService.getAnalyticsData('monthly');
+            expect(result.revenueData.length).toBeGreaterThan(0);
+            expect(result.topVendors[0].name).toBe('Vendor 1');
+            expect(result.topVendors[0].revenue).toBe(500);
+        });
+    });
+
+    describe('getMapAnalyticsData', () => {
+        it('should return user distribution', async () => {
+            mockAggregate.mockResolvedValue([{ _id: 'Delhi', count: 10 }]);
+            const result = await DashboardService.getMapAnalyticsData();
+            expect(result.userDistribution[0].count).toBe(10);
+        });
+    });
+
+    describe('getCalendarEvents', () => {
+        it('should return calendar events', async () => {
+            mockLean.mockResolvedValue([
+                { _id: 'b1', bookingDetails: { category: 'Hotel' }, startDate: new Date(), endDate: new Date(), user: { name: 'User' } }
+            ]);
+            const result = await DashboardService.getCalendarEvents(new Date(), new Date());
+            expect(result[0].title).toBe('Hotel');
+            expect(result[0].type).toBe('booking');
+        });
+    });
+
+    describe('getSearchAnalytics', () => {
+        it('should return search analytics', async () => {
+            mockLean.mockResolvedValue([{ query: 'Delhi', count: 5 }]);
+            const result = await DashboardService.getSearchAnalytics();
+            expect(result.topSearches[0].query).toBe('Delhi');
+        });
     });
 });
