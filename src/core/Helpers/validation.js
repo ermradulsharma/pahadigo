@@ -134,6 +134,8 @@ export const schemas = {
         reason: optionalString(500)
     }).passthrough(),
 
+    accountDeleteInitiate: z.object({}).passthrough(),
+
     passwordReset: z.object({
         email: z.string().email(RESPONSE_MESSAGES.VALIDATION.INVALID_EMAIL).optional(),
         token: z.string().min(1).optional(),

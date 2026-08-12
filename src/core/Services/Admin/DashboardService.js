@@ -23,7 +23,22 @@ class DashboardService {
         const freeMem = os.freemem();
         const totalMem = os.totalmem();
         const usedMem = totalMem - freeMem;
-        const loadAvg = os.loadavg();
+        let loadAvg = os.loadavg();
+        
+        // Windows fallback for CPU load since loadavg is always 0
+        if (loadAvg[0] === 0 && os.platform() === 'win32') {
+            const cpus = os.cpus();
+            let idle = 0;
+            let total = 0;
+            cpus.forEach(core => {
+                for (let type in core.times) {
+                    total += core.times[type];
+                }
+                idle += core.times.idle;
+            });
+            const cpuPercent = total > 0 ? ((total - idle) / total) : 0;
+            loadAvg = [cpuPercent, cpuPercent, cpuPercent];
+        }
 
         // Database stats
         let dbStats = { dataSize: 0, storageSize: 0, collections: 0 };

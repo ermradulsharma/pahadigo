@@ -65,12 +65,12 @@ export default function SystemHealthClientWrapper({ initialHealth }) {
     };
 
     return (
-        <div className="min-h-screen bg-[#050505] text-slate-300 relative selection:bg-indigo-500/30 selection:text-indigo-200">
-            {/* Ambient Background */}
-            <div className="absolute inset-0 bg-[linear-gradient(to_right,#1f2937_1px,transparent_1px),linear-gradient(to_bottom,#1f2937_1px,transparent_1px)] bg-[size:3rem_3rem] [mask-image:radial-gradient(ellipse_60%_50%_at_50%_0%,#000_70%,transparent_100%)] opacity-20 pointer-events-none"></div>
-            
-            <main className="max-w-[1500px] mx-auto px-6 lg:px-12 pt-12 pb-24 relative z-10">
-                <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 mb-10">
+        <motion.div 
+            initial={{ opacity: 0, y: 20 }}
+            animate={{ opacity: 1, y: 0 }}
+            className="p-6 lg:p-8 max-w-[1600px] mx-auto space-y-8 relative z-10"
+        >
+            <header className="flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 mb-10">
                     <div>
                         <div className="flex items-center gap-3 mb-3">
                             <div className="relative flex items-center justify-center w-12 h-12 rounded-xl bg-gray-900 border border-white/10 shadow-[0_0_30px_rgba(99,102,241,0.15)] group">
@@ -209,8 +209,7 @@ export default function SystemHealthClientWrapper({ initialHealth }) {
                         <p className="text-xs text-slate-500 mt-1">Last Update: {new Date(initialHealth?.timestamp || Date.now()).toLocaleTimeString()}</p>
                     </div>
                 </div>
-            </main>
-        </div>
+            </motion.div>
     );
 }
 
