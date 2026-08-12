@@ -22,7 +22,8 @@ const travellerRoutes = [
     // Core Identity & Lifecycle
     { method: 'GET', path: '/me', handler: wrap(() => AuthController, 'getUserProfile') },
     { method: 'PATCH', path: '/update', schema: schemas.profileUpdate, handler: wrap(() => AuthController, 'updateUserProfile') },
-    { method: 'DELETE', path: '/delete', handler: wrap(() => AuthController, 'deleteAccount') },
+    { method: 'POST', path: '/delete/initiate', handler: wrap(() => AuthController, 'initiateDeleteAccount') },
+    { method: 'DELETE', path: '/delete', schema: schemas.accountDelete, handler: wrap(() => AuthController, 'deleteAccount') },
     { method: 'POST', path: '/become-vendor', handler: wrap(() => AuthController, 'upgradeToVendor') },
     { method: 'PATCH', path: '/emergency-contacts', handler: wrap(() => SOSController, 'updateEmergencyContacts') },
     { method: 'PUT', path: '/token', schema: schemas.fcmToken, handler: wrap(() => ProfileController, 'updateFCMToken') },

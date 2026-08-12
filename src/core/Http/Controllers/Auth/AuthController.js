@@ -141,7 +141,7 @@ class AuthController extends Controller {
             if (!token) return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGOUT_SUCCESS);
 
             let body = {};
-            try { body = req.payload || req.validData || req.jsonBody || await parseBody(req); } catch(e){}
+            try { body = req.payload || req.validData || req.jsonBody || await parseBody(req); } catch (e) { }
             const refreshToken = body.refreshToken || null;
 
             await BaseAuthService.logout(token, refreshToken);
@@ -165,8 +165,8 @@ class AuthController extends Controller {
     async refreshToken(req) {
         try {
             let body = {};
-            try { body = req.payload || req.validData || req.jsonBody || await parseBody(req); } catch(e){}
-            
+            try { body = req.payload || req.validData || req.jsonBody || await parseBody(req); } catch (e) { }
+
             let token = body.refreshToken;
             if (!token) token = req.headers.get('authorization')?.split(' ')[1];
 
@@ -286,11 +286,38 @@ class AuthController extends Controller {
         }
     }
 
+    async initiateDeleteAccount(req) {
+        try {
+            if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
+            const user = await User.findById(req.user.id).lean();
+            if (!user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+
+            const identifier = user.email || user.phone;
+            if (!identifier) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.EITHER_IDENTIFIER_REQUIRED);
+
+            await OTPService.generateOTP(identifier, user.role, { action: 'delete_account' });
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.OTP_SENT);
+        } catch (error) {
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+        }
+    }
+
     async deleteAccount(req) {
         try {
             if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
-            let reason = null;
-            try { reason = (req.payload || req.validData || req.jsonBody || await parseBody(req)).reason; } catch (e) { }
+
+            const body = req.payload;
+            const { otp, reason } = body;
+
+            if (!otp) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
+
+            const user = await User.findById(req.user.id).lean();
+            if (!user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+
+            const identifier = user.email || user.phone;
+            const otpRecord = await OTPService.verifyOTP(identifier, otp);
+
+            if (!otpRecord) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.AUTH.INVALID_OTP);
 
             await BaseAuthService.deactivateUserAccount(req.user.id, reason);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED);

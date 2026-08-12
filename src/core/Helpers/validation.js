@@ -130,8 +130,9 @@ export const schemas = {
     }),
 
     accountDelete: z.object({
+        otp: z.string().min(4, RESPONSE_MESSAGES.VALIDATION.OTP_MIN_LENGTH),
         reason: optionalString(500)
-    }).optional().default({}),
+    }).passthrough(),
 
     passwordReset: z.object({
         email: z.string().email(RESPONSE_MESSAGES.VALIDATION.INVALID_EMAIL).optional(),

@@ -9,6 +9,7 @@ export default [
     { method: 'PATCH', path: '/update', schema: schemas.profileUpdate, handler: wrap(() => ProfileController, 'updateProfile') },
     { method: 'PATCH', path: '/status', schema: schemas.vendorStatusToggle, handler: wrap(() => ProfileController, 'toggleAccountStatus') },
     { method: 'PUT', path: '/token', schema: schemas.fcmToken, handler: wrap(() => ProfileController, 'updateFCMToken') },
+    { method: 'POST', path: '/delete/initiate', handler: wrap(() => AuthController, 'initiateDeleteAccount') },
     { method: 'DELETE', path: '/delete', schema: schemas.accountDelete, handler: wrap(() => AuthController, 'deleteAccount') },
     { method: 'POST', path: '/become-traveller', schema: schemas.settingsUpdate, handler: wrap(() => AuthController, 'downgradeToTraveller') },
     { method: 'PATCH', path: '/emergency-contacts', schema: schemas.emergencyContacts, handler: wrap(() => SOSController, 'updateEmergencyContacts') },
