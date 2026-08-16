@@ -52,35 +52,66 @@ class ProfileController extends Controller {
     // PATCH /vendor/update
     async updateProfile(req) {
         try {
-            const body = req.payload;
-            if (req.formDataBody?.get('profileImage')) {
-                const res = await uploadToCloudinary(req.formDataBody.get('profileImage'), `profile/${req.user.id}`);
-                body.profileImage = res.url;
-            }
-            const allowedFields = ['gender', 'dateOfBirth', 'bloodGroup', 'designation', 'bio', 'website', 'socialLinks', 'emergencyContacts', 'address', 'preferences', 'profileImage', 'expertise', 'medicalConditions', 'experience'];
+            const body = req.payload || {};
+            const allowedFields = [
+                'name', 'phone', 'gender', 'dateOfBirth', 'bloodGroup',
+                'designation', 'bio', 'website', 'socialLinks', 'emergencyContacts',
+                'address', 'preferences', 'profileImage', 'expertise',
+                'medicalConditions', 'experience'
+            ];
             const updates = {};
             Object.keys(body).forEach(key => {
                 if (allowedFields.includes(key)) updates[key] = body[key];
             });
-            if (body.emergencyContact && !body.emergencyContacts) {
-                updates.emergencyContacts = [body.emergencyContact];
+
+            // 1. Safe profile image handling (prevent Cloudinary error on invalid/placeholder file inputs)
+            const profileImgFile = req.formDataBody?.get('profileImage');
+            if (profileImgFile && typeof profileImgFile === 'object' && typeof profileImgFile.arrayBuffer === 'function' && profileImgFile.size > 0) {
+                const res = await uploadToCloudinary(profileImgFile, `profile/${req.user.id}`);
+                updates.profileImage = res.url;
+            } else if (typeof body.profileImage === 'string' && body.profileImage.trim() && !body.profileImage.startsWith('@postman')) {
+                updates.profileImage = body.profileImage.trim();
+            } else {
+                delete updates.profileImage;
             }
+
+            // 2. Emergency contacts normalization
+            if (body.emergencyContact && !body.emergencyContacts) {
+                const contact = typeof body.emergencyContact === 'object' ? body.emergencyContact : {};
+                updates.emergencyContacts = [{
+                    name: contact.name,
+                    phone: contact.phone,
+                    relationship: contact.relationship || contact.relation || null
+                }];
+            } else if (Array.isArray(updates.emergencyContacts)) {
+                updates.emergencyContacts = updates.emergencyContacts.map(c => ({
+                    name: c.name,
+                    phone: c.phone,
+                    relationship: c.relationship || c.relation || null
+                }));
+            }
+
+            // 3. Comma-separated array & primitive conversions
             if (updates.expertise && typeof updates.expertise === 'string') {
                 updates.expertise = updates.expertise.split(',').map(item => item.trim()).filter(Boolean);
             }
             if (updates.medicalConditions && typeof updates.medicalConditions === 'string') {
                 updates.medicalConditions = updates.medicalConditions.split(',').map(item => item.trim()).filter(Boolean);
             }
-
-            if (updates.address) {
-                mapToGeoJSON(updates.address, 'location');
+            if (updates.experience !== undefined) {
+                updates.experience = Number(updates.experience) || 0;
             }
 
-            const user = await User.findByIdAndUpdate(
-                req.user.id,
-                { $set: updates },
-                { returnDocument: 'after', runValidators: true }
-            ).select('-password');
+            // 4. Notifications boolean normalization
+            if (updates.preferences?.notifications) {
+                Object.keys(updates.preferences.notifications).forEach(key => {
+                    const val = updates.preferences.notifications[key];
+                    updates.preferences.notifications[key] = val === true || val === 'true' || val === '1' || val === 1;
+                });
+            }
+
+            // 5. Perform update via BaseAuthService (DRY principle)
+            const user = await BaseAuthService.updateUserProfile(req.user.id, updates);
 
             if (user?.email) UserEvents.emit('user.profile_updated', { identifier: user.email, userName: user.name });
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PERSONAL_UPDATED, user);

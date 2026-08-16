@@ -4,41 +4,30 @@ import { VERIFICATION_STATUS, USER_ROLES, AUTH_PROVIDERS, DEFAULTS, VENDOR_PROFI
 
 const VendorSchema = new mongoose.Schema({
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: DEFAULTS.TRUE, unique: DEFAULTS.TRUE },
-
-    // profile type
     profileType: { type: String, enum: Object.values(VENDOR_PROFILE_TYPES), default: VENDOR_PROFILE_TYPES.BUSINESS },
     profileImage: { type: String, default: DEFAULTS.NULL },
-
-    // owner name
     ownerName: { type: String, default: DEFAULTS.NULL },
 
-    // personal details
     personalNumber: { type: String, default: DEFAULTS.NULL },
     personalPanCard: { type: String, default: DEFAULTS.NULL },
     personalAbout: { type: String, default: DEFAULTS.NULL },
 
-    // business details
     businessName: { type: String, default: DEFAULTS.NULL },
     businessNumber: { type: String, default: DEFAULTS.NULL },
     businessRegistration: { type: String, default: DEFAULTS.NULL },
     gstNumber: { type: String, default: DEFAULTS.NULL },
     businessAbout: { type: String, default: DEFAULTS.NULL },
 
-
     isOperating: { type: Boolean, default: DEFAULTS.TRUE },
     isApproved: { type: Boolean, default: DEFAULTS.FALSE },
     status: { type: String, enum: Object.values(STATUS), default: DEFAULTS.VENDOR_VERIFICATION_STATUS },
-    // quality & trust
-    trustBadge: { type: String, enum: ['none', 'verified', 'super_partner'], default: 'none' },
 
-    // category
+    trustBadge: { type: String, enum: ['none', 'verified', 'super_partner'], default: 'none' },
     category: [{
         _id: { type: mongoose.Schema.Types.ObjectId, ref: 'Category', required: DEFAULTS.TRUE },
         name: { type: String, required: DEFAULTS.TRUE },
         slug: { type: String, required: DEFAULTS.TRUE },
     }],
-
-    // address
     address: {
         addressLine1: { type: String, default: DEFAULTS.NULL },
         addressLine2: { type: String, default: DEFAULTS.NULL },
@@ -53,8 +42,6 @@ const VendorSchema = new mongoose.Schema({
             coordinates: { type: [Number], default: [0, 0] }
         }
     },
-
-    // bank details
     bankDetails: {
         accountHolderName: { type: String, default: DEFAULTS.NULL },
         accountNumber: { type: String, default: DEFAULTS.NULL },
@@ -69,8 +56,6 @@ const VendorSchema = new mongoose.Schema({
             reason: { type: String, default: DEFAULTS.NULL }
         },
     },
-
-    // documents
     documents: {
         aadharCard: [{
             url: { type: String, default: DEFAULTS.NULL },
@@ -118,17 +103,5 @@ const VendorSchema = new mongoose.Schema({
 
 VendorSchema.index({ status: 1 });
 VendorSchema.index({ 'address.location': '2dsphere' });
-VendorSchema.index({
-    businessName: 'text',
-    ownerName: 'text',
-    'address.city': 'text',
-    'address.state': 'text'
-}, {
-    name: 'VendorTextIndex',
-    weights: {
-        businessName: 10,
-        ownerName: 5,
-        'address.city': 3
-    }
-});
+VendorSchema.index({ businessName: 'text', ownerName: 'text', 'address.city': 'text', 'address.state': 'text' }, { name: 'VendorTextIndex', weights: { businessName: 10, ownerName: 5, 'address.city': 3 } });
 export default mongoose.models.Vendor || mongoose.model('Vendor', VendorSchema);

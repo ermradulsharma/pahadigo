@@ -17,7 +17,10 @@ jest.unstable_mockModule('@upstash/redis', () => ({
 }));
 
 const mockStandardConnect = jest.fn();
-const mockStandardOn = jest.fn();
+const standardListeners = {};
+const mockStandardOn = jest.fn((event, handler) => {
+    standardListeners[event] = handler;
+});
 const mockStandardGet = jest.fn();
 const mockStandardSet = jest.fn();
 const mockStandardDel = jest.fn();
@@ -58,10 +61,14 @@ const { default: CacheService } = await import('@/core/Services/CacheService.js'
 describe('CacheService', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        for (const key of Object.keys(standardListeners)) {
+            delete standardListeners[key];
+        }
         CacheService.upstashClient = null;
         CacheService.standardClient = null;
         CacheService.isStandardConnected = false;
         CacheService.isInitialized = false;
+        CacheService.lastStandardErrorMsg = null;
     });
 
     describe('init', () => {
@@ -78,6 +85,30 @@ describe('CacheService', () => {
             await CacheService.init();
             expect(CacheService.upstashClient).toBeNull();
             expect(CacheService.standardClient).toBeDefined();
+            expect(CacheService.isStandardConnected).toBe(true);
+        });
+
+        it('should handle lifecycle events and suppress duplicate error logs', async () => {
+            getAppConfig.mockResolvedValue({ redis: { standard_url: 'std_url' } });
+            mockStandardConnect.mockResolvedValue();
+            await CacheService.init();
+
+            // Fire reconnecting event
+            standardListeners.reconnecting();
+            expect(CacheService.isStandardConnected).toBe(false);
+
+            // Fire error event with message
+            const err1 = new Error('ECONNRESET');
+            standardListeners.error(err1);
+            expect(CacheService.isStandardConnected).toBe(false);
+            expect(mockError).toHaveBeenCalledTimes(1);
+
+            // Duplicate error event with same message should be suppressed
+            standardListeners.error(err1);
+            expect(mockError).toHaveBeenCalledTimes(1);
+
+            // Fire ready event to recover connection
+            standardListeners.ready();
             expect(CacheService.isStandardConnected).toBe(true);
         });
 

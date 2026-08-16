@@ -28,9 +28,10 @@ class BusinessController extends Controller {
             const existingProfile = await BusinessService.getBusinessByUserId(req.user.id);
             if (existingProfile) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.PROFILE_ALREADY_EXISTS);
 
-            const body = req.payload;
-            if (req.formDataBody?.get('profile_image')) {
-                const res = await uploadToCloudinary(req.formDataBody.get('profile_image'), `vendor_profiles/${req.user.id}`);
+            const body = req.payload || {};
+            const profileImgFile = req.formDataBody?.get('profile_image');
+            if (profileImgFile && typeof profileImgFile === 'object' && typeof profileImgFile.arrayBuffer === 'function' && profileImgFile.size > 0) {
+                const res = await uploadToCloudinary(profileImgFile, `vendor_profiles/${req.user.id}`);
                 body.profileImage = res.url;
             }
 
@@ -45,9 +46,10 @@ class BusinessController extends Controller {
     // PATCH /vendor/business/profile/update/:id
     async updateProfile(req, { params }) {
         try {
-            const body = req.payload;
-            if (req.formDataBody?.get('profile_image')) {
-                const res = await uploadToCloudinary(req.formDataBody.get('profile_image'), `vendor_profiles/${req.user.id}`);
+            const body = req.payload || {};
+            const profileImgFile = req.formDataBody?.get('profile_image');
+            if (profileImgFile && typeof profileImgFile === 'object' && typeof profileImgFile.arrayBuffer === 'function' && profileImgFile.size > 0) {
+                const res = await uploadToCloudinary(profileImgFile, `vendor_profiles/${req.user.id}`);
                 body.profileImage = res.url;
             }
             const vendor = await BusinessService.syncBusinessProfile(req.user.id, body);

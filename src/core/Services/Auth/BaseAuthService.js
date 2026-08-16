@@ -113,6 +113,20 @@ class BaseAuthService {
         }
         const user = await User.findByIdAndUpdate(userId, updates, { returnDocument: 'after' });
         if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+
+        // Invalidate Redis caches so Admin panel and APIs immediately reflect fresh data
+        try {
+            await CacheService.del(`admin:vendors:${userId}`);
+            await CacheService.del('admin:vendors:all');
+            await CacheService.del(`user:profile:${userId}`);
+            const vendorProfile = await Vendor.findOne({ user: userId }).lean();
+            if (vendorProfile?._id) {
+                await CacheService.del(`admin:vendors:${vendorProfile._id}`);
+            }
+        } catch (cacheError) {
+            // Non-blocking cache flush error fallback
+        }
+
         return user;
     }
 

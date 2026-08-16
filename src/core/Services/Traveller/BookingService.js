@@ -53,18 +53,18 @@ class BookingService {
                 // Price logic
                 let itemBaseprice = pricingRules.basePrice || 0;
 
-                let itemGST;
+                let itemGST = 0;
                 if (pricingRules.gst) {
                     itemGST = parseFloat(pricingRules.gst);
-                } else {
+                } else if (pricingRules.gst !== undefined && pricingRules.gst !== null && pricingRules.gst !== '') {
                     const taxKey = `tax_${category.replace(/-/g, '_')}`;
                     itemGST = parseFloat(config.tax[taxKey]);
                 }
 
-                let itemServiceTax;
+                let itemServiceTax = 0;
                 if (pricingRules.serviceTax) {
                     itemServiceTax = parseFloat(pricingRules.serviceTax);
-                } else {
+                } else if (pricingRules.serviceTax !== undefined && pricingRules.serviceTax !== null && pricingRules.serviceTax !== '') {
                     itemServiceTax = parseFloat(config.tax.service_tax);
                 }
 
@@ -105,7 +105,9 @@ class BookingService {
                     calculatedSubTotal = itemBaseprice * requiredUnits * durationMultiplier;
                 }
 
-                calculatedSubTotal = Math.round(calculatedSubTotal * 100) / 100;
+                const toCent = (num) => Math.round((Number(num) + Number.EPSILON) * 100) / 100;
+
+                calculatedSubTotal = toCent(calculatedSubTotal);
                 let d = pricingRules.discountType;
                 let discountAmount = 0;
                 if (d === "percentage") {
@@ -114,12 +116,14 @@ class BookingService {
                     discountAmount = pricingRules.discount || 0;
                 }
 
-                const taxableAmount = Math.max(0, calculatedSubTotal - discountAmount);
+                const appliedDiscount = toCent(discountAmount);
+                const taxableAmount = Math.max(0, toCent(calculatedSubTotal - appliedDiscount));
 
                 let tax = 0;
                 if (itemGST) {
                     tax = taxableAmount * (itemGST / 100);
                 }
+                const calculatedTax = toCent(tax);
 
                 let serviceFee = 0;
                 if (itemServiceTax) {
@@ -127,15 +131,13 @@ class BookingService {
                     const gstOnServiceFee = baseServiceFee * ((config?.tax?.gst || 18) / 100);
                     serviceFee = baseServiceFee + gstOnServiceFee;
                 }
+                const appliedServiceFee = toCent(serviceFee);
 
                 const baseAmount = itemBaseprice || 0;
-                const appliedDiscount = Math.round(discountAmount * 100) / 100;
                 const appliedCouponCode = null;
                 const appliedCouponAmount = 0;
-                const appliedServiceFee = Math.round(serviceFee * 100) / 100;
                 const appliedTaxRate = itemGST || 0;
-                const calculatedTax = Math.round(tax * 100) / 100;
-                const grandTotal = Math.max(0, Math.round((calculatedSubTotal + calculatedTax + appliedServiceFee - appliedDiscount - appliedCouponAmount) * 100) / 100);
+                const grandTotal = Math.max(0, toCent(calculatedSubTotal + calculatedTax + appliedServiceFee - appliedDiscount - appliedCouponAmount));
 
                 const availabilityStatus = await InventoryService.checkAvailabilityRange(
                     vendorId.toString(), itemId, category, checkInDate, checkOutDate, requiredUnits
@@ -239,7 +241,7 @@ class BookingService {
                 }
 
                 NotificationService.notifyBookingStatus(newBooking._id, 'created');
-                
+
                 // Format response
                 finalResponse = {
                     bookingId: newBooking._id,

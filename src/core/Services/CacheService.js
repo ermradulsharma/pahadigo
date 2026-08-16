@@ -10,6 +10,7 @@ class CacheService {
         this.standardClient = null;
         this.isStandardConnected = false;
         this.isInitialized = false;
+        this.lastStandardErrorMsg = null;
     }
 
     async init() {
@@ -29,14 +30,54 @@ class CacheService {
             }
 
             if (REDIS.standard_url && !this.standardClient) {
-                this.standardClient = createClient({ url: REDIS.standard_url });
-                this.standardClient.on('error', (err) => getLogger().error({ err }, 'CacheService Standard Redis Client Error'));
+                this.standardClient = createClient({
+                    url: REDIS.standard_url,
+                    socket: {
+                        reconnectStrategy: (retries) => {
+                            if (retries > 20) {
+                                return new Error('Redis connection retries exhausted');
+                            }
+                            return Math.min(retries * 500, 5000);
+                        }
+                    }
+                });
+
+                this.standardClient.on('ready', () => {
+                    this.isStandardConnected = true;
+                    this.lastStandardErrorMsg = null;
+                });
+
+                this.standardClient.on('connect', () => {
+                    this.isStandardConnected = true;
+                });
+
+                this.standardClient.on('reconnecting', () => {
+                    this.isStandardConnected = false;
+                });
+
+                this.standardClient.on('end', () => {
+                    this.isStandardConnected = false;
+                });
+
+                this.standardClient.on('error', (err) => {
+                    this.isStandardConnected = false;
+                    const msg = err?.message || String(err);
+                    if (this.lastStandardErrorMsg !== msg) {
+                        this.lastStandardErrorMsg = msg;
+                        getLogger().error({ err }, 'CacheService Standard Redis Client Error');
+                    }
+                });
+
                 try {
                     await this.standardClient.connect();
                     this.isStandardConnected = true;
                 } catch (err) {
-                    getLogger().error({ err }, 'Failed to connect to CacheService Standard Redis');
                     this.isStandardConnected = false;
+                    const msg = err?.message || String(err);
+                    if (this.lastStandardErrorMsg !== msg) {
+                        this.lastStandardErrorMsg = msg;
+                        getLogger().error({ err }, 'Failed to connect to CacheService Standard Redis');
+                    }
                 }
             }
             this.isInitialized = true;
@@ -47,55 +88,76 @@ class CacheService {
 
     async get(key) {
         await this.init();
-        try {
-            if (this.upstashClient) {
+        if (this.upstashClient) {
+            try {
                 const data = await this.upstashClient.get(key);
-                // upstash automatically parses json sometimes, but just in case:
-                return data ? (typeof data === 'string' ? JSON.parse(data) : data) : null;
-            } else if (this.isStandardConnected) {
+                if (data) {
+                    return typeof data === 'string' ? JSON.parse(data) : data;
+                }
+            } catch (err) {
+                if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
+                getLogger().error({ err, key }, 'CacheService Upstash get error');
+            }
+        }
+        if (this.isStandardConnected) {
+            try {
                 const data = await this.standardClient.get(key);
                 return data ? JSON.parse(data) : null;
+            } catch (err) {
+                if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
+                getLogger().error({ err, key }, 'CacheService Standard get error');
             }
-        } catch (err) {
-            if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
-            getLogger().error({ err, key }, 'CacheService get error');
         }
         return null;
     }
 
     async set(key, value, ttlSeconds = 3600) {
         await this.init();
-        try {
-            if (this.upstashClient) {
+        let success = false;
+        if (this.upstashClient) {
+            try {
                 const stringValue = typeof value === 'string' ? value : JSON.stringify(value);
                 await this.upstashClient.set(key, stringValue, { ex: ttlSeconds });
-                return DEFAULTS.TRUE;
-            } else if (this.isStandardConnected) {
-                await this.standardClient.set(key, JSON.stringify(value), { EX: ttlSeconds });
-                return DEFAULTS.TRUE;
+                success = true;
+            } catch (err) {
+                if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
+                getLogger().error({ err, key }, 'CacheService Upstash set error');
             }
-        } catch (err) {
-            if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
-            getLogger().error({ err, key }, 'CacheService set error');
         }
-        return DEFAULTS.FALSE;
+        if (this.isStandardConnected) {
+            try {
+                await this.standardClient.set(key, JSON.stringify(value), { EX: ttlSeconds });
+                success = true;
+            } catch (err) {
+                if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
+                getLogger().error({ err, key }, 'CacheService Standard set error');
+            }
+        }
+        return success ? DEFAULTS.TRUE : DEFAULTS.FALSE;
     }
 
     async delete(key) {
         await this.init();
-        try {
-            if (this.upstashClient) {
+        let success = false;
+        if (this.upstashClient) {
+            try {
                 await this.upstashClient.del(key);
-                return DEFAULTS.TRUE;
-            } else if (this.isStandardConnected) {
-                await this.standardClient.del(key);
-                return DEFAULTS.TRUE;
+                success = true;
+            } catch (err) {
+                if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
+                getLogger().error({ err, key }, 'CacheService Upstash delete error');
             }
-        } catch (err) {
-            if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
-            getLogger().error({ err, key }, 'CacheService delete error');
         }
-        return DEFAULTS.FALSE;
+        if (this.isStandardConnected) {
+            try {
+                await this.standardClient.del(key);
+                success = true;
+            } catch (err) {
+                if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
+                getLogger().error({ err, key }, 'CacheService Standard delete error');
+            }
+        }
+        return success ? DEFAULTS.TRUE : DEFAULTS.FALSE;
     }
 
     async del(key) {
@@ -104,25 +166,32 @@ class CacheService {
 
     async deletePattern(pattern) {
         await this.init();
-        try {
-            if (this.upstashClient) {
+        let success = false;
+        if (this.upstashClient) {
+            try {
                 const keys = await this.upstashClient.keys(pattern);
                 if (keys.length > 0) {
                     await this.upstashClient.del(...keys);
                 }
-                return DEFAULTS.TRUE;
-            } else if (this.isStandardConnected) {
+                success = true;
+            } catch (err) {
+                if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
+                getLogger().error({ err, pattern }, 'CacheService Upstash deletePattern error');
+            }
+        }
+        if (this.isStandardConnected) {
+            try {
                 const keys = await this.standardClient.keys(pattern);
                 if (keys.length > 0) {
                     await this.standardClient.del(...keys);
                 }
-                return DEFAULTS.TRUE;
+                success = true;
+            } catch (err) {
+                if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
+                getLogger().error({ err, pattern }, 'CacheService Standard deletePattern error');
             }
-        } catch (err) {
-            if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
-            getLogger().error({ err, pattern }, 'CacheService deletePattern error');
         }
-        return DEFAULTS.FALSE;
+        return success ? DEFAULTS.TRUE : DEFAULTS.FALSE;
     }
 
     async getOrSet(key, fetchFn, ttlSeconds = 3600) {

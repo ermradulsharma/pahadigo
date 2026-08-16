@@ -128,7 +128,7 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
                 upstash_url: dbSettings.upstash_redis_rest_url || SYSTEM_ENV.UPSTASH_REDIS_REST_URL || DEFAULTS.NULL,
                 upstash_token: dbSettings.upstash_redis_rest_token || SYSTEM_ENV.UPSTASH_REDIS_REST_TOKEN || DEFAULTS.NULL,
                 upstash_tcp_url: dbSettings.upstash_redis_url || SYSTEM_ENV.REDIS_URL || DEFAULTS.NULL,
-                standard_url: dbSettings.pahadigo_redis_url || SYSTEM_ENV.PAHADIGO_REDIS_URL || DEFAULTS.NULL,
+                standard_url: dbSettings.pahadigo_redis_url || SYSTEM_ENV.PAHADIGO_REDIS_URL || SYSTEM_ENV.REDIS_URL || DEFAULTS.NULL,
             },
             api_url: dbSettings.api_url || APP_DETAILS.API_URL,
             debug_mode: dbSettings.debug_mode ?? isDebugString,

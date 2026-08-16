@@ -38,6 +38,8 @@ const UserSchema = new mongoose.Schema({
     // 4. SOCIAL CONNECTIVITY
     // ============================================
     socialLinks: {
+        linkedin: { type: String, default: DEFAULTS.NULL },
+        facebook: { type: String, default: DEFAULTS.NULL },
         twitter: { type: String, default: DEFAULTS.NULL },
         instagram: { type: String, default: DEFAULTS.NULL },
         youtube: { type: String, default: DEFAULTS.NULL },
