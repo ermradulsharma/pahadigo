@@ -1,6 +1,7 @@
 import { STATUS, RESPONSE_MESSAGES, DEFAULTS } from '@/core/Constants/index.js';
 import { verifyToken } from '@/core/Helpers/jwt.js';
 import User from '@/core/Models/User.js';
+import CacheService from '@/core/Services/CacheService.js';
 
 const authMiddleware = async (req) => {
     try {
@@ -10,6 +11,18 @@ const authMiddleware = async (req) => {
 
         const decoded = await verifyToken(token);
         if (!decoded) return { authorized: DEFAULTS.FALSE, message: RESPONSE_MESSAGES.AUTH.TOKEN_INVALID };
+
+        // Check Redis for blacklisted JTI (logout / token revocation)
+        if (decoded.jti) {
+            try {
+                const isBlacklisted = await CacheService.get(`blacklist:${decoded.jti}`);
+                if (isBlacklisted) {
+                    return { authorized: DEFAULTS.FALSE, message: RESPONSE_MESSAGES.AUTH.TOKEN_INVALID };
+                }
+            } catch (cacheErr) {
+                // Graceful fallback if cache service is unmocked or offline
+            }
+        }
 
         const user = await User.findById(decoded.id).select('status deletedAt role preferences').lean();
 

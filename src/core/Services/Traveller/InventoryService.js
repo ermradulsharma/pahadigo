@@ -1,6 +1,8 @@
 import { Inventory, Package, Booking } from '@/core/Models/index.js';
 import { formatDateKey, normalizeAvailability, determineDayStatus, calculateEffectivePrice } from '@/core/Helpers/InventoryHelper.js';
 import { getEffectiveDay } from '@/core/Services/Shared/InventoryCore.js';
+import CacheService from '@/core/Services/CacheService.js';
+
 
 /**
  * InventoryService (Traveller Role)
@@ -114,6 +116,11 @@ class InventoryService {
             }
         }
         await inv.save({ session });
+        try {
+            await CacheService.deletePattern(`inventory:${vendorId}:*`);
+        } catch (cErr) {
+            // Cache invalidation error should not break database operations
+        }
     }
 
     /**
@@ -137,6 +144,11 @@ class InventoryService {
             }
         }
         await inv.save({ session });
+        try {
+            await CacheService.deletePattern(`inventory:${vendorId}:*`);
+        } catch (cErr) {
+            // Cache invalidation error should not break database operations
+        }
     }
 }
 

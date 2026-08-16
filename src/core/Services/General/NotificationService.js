@@ -6,6 +6,7 @@ import User from '@/core/Models/User.js';
 import Vendor from '@/core/Models/Vendor.js';
 import { PushNotificationService } from '@/core/Services/PushNotificationService.js';
 import { enqueueInvoice, enqueuePushNotification } from '@/core/Lib/Queue/QueueService.js';
+import { getLogger } from '@/core/Lib/logger.js';
 
 /**
  * NotificationService - Centralized service for sending communications
@@ -162,7 +163,14 @@ class NotificationService {
 
     async notifyBookingStatus(bookingId, status) {
         try {
-            const booking = await Booking.findById(bookingId).lean();
+            if (!bookingId) return false;
+
+            let booking;
+            try {
+                booking = await Booking.findById(bookingId).lean();
+            } catch (findErr) {
+                return false;
+            }
             if (!booking) return false;
 
             const travellerId = booking.user;
@@ -219,39 +227,39 @@ class NotificationService {
 
             // Dispatch to Traveler
             if (travellerTitle && travellerBody) {
-                console.log(`\n🔔 [Push Notification INTENDED for Traveller] Title: "${travellerTitle}" | Body: "${travellerBody}"`);
+                getLogger().info({ travellerId, title: travellerTitle }, '[Push Notification INTENDED for Traveller]');
                 const travellerUser = await User.findById(travellerId).select('fcmToken').lean();
                 if (travellerUser && travellerUser.fcmToken) {
-                    console.log(`=> 🚀 Enqueueing Push Notification to Traveller (FCM Token: ${travellerUser.fcmToken.substring(0, 15)}...)`);
+                    getLogger().info({ fcmToken: travellerUser.fcmToken.substring(0, 15) }, '=> Enqueueing Push Notification to Traveller');
                     await enqueuePushNotification(
                         travellerUser.fcmToken,
                         { title: travellerTitle, body: travellerBody },
                         dataPayload
                     );
                 } else {
-                    console.log('=> ⚠️ Skipped sending Push Notification to Traveller: FCM Token not found in user profile.');
+                    getLogger().warn('=> Skipped sending Push Notification to Traveller: FCM Token not found in user profile');
                 }
             }
 
             // Dispatch to Vendor
             if (vendorUserId && vendorTitle && vendorBody) {
-                console.log(`\n🔔 [Push Notification INTENDED for Vendor] Title: "${vendorTitle}" | Body: "${vendorBody}"`);
+                getLogger().info({ vendorUserId, title: vendorTitle }, '[Push Notification INTENDED for Vendor]');
                 const vendorUser = await User.findById(vendorUserId).select('fcmToken').lean();
                 if (vendorUser && vendorUser.fcmToken) {
-                    console.log(`=> 🚀 Enqueueing Push Notification to Vendor (FCM Token: ${vendorUser.fcmToken.substring(0, 15)}...)`);
+                    getLogger().info({ fcmToken: vendorUser.fcmToken.substring(0, 15) }, '=> Enqueueing Push Notification to Vendor');
                     await enqueuePushNotification(
                         vendorUser.fcmToken,
                         { title: vendorTitle, body: vendorBody },
                         dataPayload
                     );
                 } else {
-                    console.log('=> ⚠️ Skipped sending Push Notification to Vendor: FCM Token not found in vendor profile.');
+                    getLogger().warn('=> Skipped sending Push Notification to Vendor: FCM Token not found in vendor profile');
                 }
             }
 
             return true;
         } catch (error) {
-            console.error('[NotificationService] notifyBookingStatus Error:', error);
+            getLogger().error({ err: error }, '[NotificationService] notifyBookingStatus Error');
             return false;
         }
     }
@@ -270,7 +278,7 @@ class NotificationService {
             await enqueueInvoice(email, bookingId, role);
             return true;
         } catch (error) {
-            console.error('[NotificationService] Failed to enqueue sendInvoice:', error);
+            getLogger().error({ err: error }, '[NotificationService] Failed to enqueue sendInvoice');
             return false;
         }
     }

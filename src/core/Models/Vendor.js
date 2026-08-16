@@ -118,4 +118,17 @@ const VendorSchema = new mongoose.Schema({
 
 VendorSchema.index({ status: 1 });
 VendorSchema.index({ 'address.location': '2dsphere' });
+VendorSchema.index({
+    businessName: 'text',
+    ownerName: 'text',
+    'address.city': 'text',
+    'address.state': 'text'
+}, {
+    name: 'VendorTextIndex',
+    weights: {
+        businessName: 10,
+        ownerName: 5,
+        'address.city': 3
+    }
+});
 export default mongoose.models.Vendor || mongoose.model('Vendor', VendorSchema);

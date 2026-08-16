@@ -7,7 +7,8 @@ class DocumentService {
    * Upload and synchronize business verification documents
    */
   async uploadVerificationFiles(userId, files) {
-    const vendor = await Vendor.findOne({ user: userId, deletedAt: null });
+    const query = Vendor.findOne({ user: userId, deletedAt: null });
+    const vendor = await (query?.lean ? query.lean() : query);
     if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
     const updatePayload = {};

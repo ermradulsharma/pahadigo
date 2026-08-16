@@ -12,7 +12,16 @@ jest.unstable_mockModule('@/core/Constants/index.js', () => ({
             AUTH_SERVICE_ERROR: 'Auth error'
         }
     },
-    DEFAULTS: { TRUE: true, FALSE: false }
+    DEFAULTS: { TRUE: true, FALSE: false },
+    APP_DETAILS: { NAME: 'PahadiGo', MAIL_FROM_EMAIL: 'info@pahadigo.co.in' },
+    APP_SECRETS: { JWT_SECRET: 'test_jwt_secret' },
+    SYSTEM_ENV: { NODE_ENV: 'test' }
+}));
+
+jest.unstable_mockModule('@/core/Services/CacheService.js', () => ({
+    default: {
+        get: jest.fn().mockResolvedValue(null)
+    }
 }));
 
 jest.unstable_mockModule('@/core/Helpers/jwt.js', () => ({

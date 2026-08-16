@@ -8,11 +8,13 @@ import Inquiry from '@/core/Models/Inquiry.js';
 class PolicyService {
   async getPolicies(target = null) {
     const filter = target ? { target } : {};
-    return await Policy.find(filter);
+    const query = Policy.find(filter);
+    return await (query?.lean ? query.lean() : query);
   }
 
   async getPolicy(target, type) {
-    return await Policy.findOne({ target, type });
+    const query = Policy.findOne({ target, type });
+    return await (query?.lean ? query.lean() : query);
   }
 
   async submitInquiry(data) {

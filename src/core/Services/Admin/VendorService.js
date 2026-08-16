@@ -270,6 +270,7 @@ class VendorService {
 
         await session.withTransaction(async () => {
             let vendor = await Vendor.findById(id).session(session).lean();
+            let vendorIdToClean = id;
             if (vendor) {
                 await User.findByIdAndUpdate(vendor.user, {
                     status: STATUS.DELETED,
@@ -288,8 +289,20 @@ class VendorService {
                         deletedReason: 'Admin initiated deletion'
                     }, { session });
                     const vendorProfile = await Vendor.findOne({ user: id }).session(session).lean();
-                    if (vendorProfile) await Vendor.findByIdAndUpdate(vendorProfile._id, { isApproved: false }, { session });
+                    if (vendorProfile) {
+                        vendorIdToClean = vendorProfile._id;
+                        await Vendor.findByIdAndUpdate(vendorProfile._id, { isApproved: false }, { session });
+                    }
                 }
+            }
+
+            // Cascade soft deletion to active packages
+            if (VendorPackage && typeof VendorPackage.updateMany === 'function') {
+                await VendorPackage.updateMany(
+                    { vendor: vendorIdToClean },
+                    { $set: { deletedAt: now } },
+                    { session }
+                );
             }
         });
 

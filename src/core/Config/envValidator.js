@@ -20,10 +20,14 @@ export const validateEnv = () => {
     if (process.env.NODE_ENV === 'test') return;
     const parsed = envSchema.safeParse(process.env);
     if (!parsed.success) {
+        const logger = getLogger();
         parsed.error.issues.forEach(issue => {
-            console.error(chalk.red(`  - ${issue.path.join('.')}: ${issue.message}`));
+            const msg = `  - ${issue.path.join('.')}: ${issue.message}`;
+            console.error(chalk.red(msg));
+            logger.error({ field: issue.path.join('.'), issue: issue.message }, `[ENV VALIDATION ERROR] ${issue.path.join('.')}: ${issue.message}`);
         });
         console.error(chalk.red.bold('\nExiting application due to critical environment failure.'));
+        logger.error('[ENV VALIDATION FAILED] Exiting application due to critical environment configuration failure.');
         process.exit(1);
     }
 };
