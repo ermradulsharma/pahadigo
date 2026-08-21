@@ -17,5 +17,6 @@ export * from './security.js';
 export { default as validation } from './validation.js';
 export * from './stringUtils.js';
 export * from './sellingPrice.js';
+export * from './mathUtils.js';
 
 

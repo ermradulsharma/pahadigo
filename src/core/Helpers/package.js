@@ -13,19 +13,19 @@ import { uploadToCloudinary } from './cloudinary.js';
  * creation or update, pricing/location formatting, saving, and inventory initialization.
  *
  * @param {string} userId - User ID of the vendor
- * @param {string} vendorId - Vendor ID
+ * @param {string} businessId - Business/Vendor ID
  * @param {string} category - Service/item category slug
  * @param {Object} itemDataOrUpdates - Body payload or updates
  * @param {string|null} itemId - Item ID (null for creation, string for updates)
  * @returns {Promise<Object>} Formatted saved item
  */
-export async function item(userId, vendorId, category, itemDataOrUpdates, itemId = null) {
+export async function item(userId, businessId, category, itemDataOrUpdates, itemId = null) {
     // 1. Validate vendor authorization for category
-    const vendor = await Vendor.findById(vendorId);
-    if (!vendor || !vendor.category) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+    const business = await Vendor.findById(businessId);
+    if (!business) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
     const allowed = new Set();
-    vendor.category.forEach(c => {
+    business.category.forEach(c => {
         if (!c.slug) return;
         const slug = c.slug.toLowerCase();
         allowed.add(slug);
@@ -35,9 +35,9 @@ export async function item(userId, vendorId, category, itemDataOrUpdates, itemId
     if (!allowedCategories.includes(category)) throw new Error(`Vendor not authorized to operate in category: ${category}`);
 
     // 2. Find or create package catalog
-    let pkg = await Package.findOne({ user: userId, vendor: vendorId });
+    let pkg = await Package.findOne({ user: userId, vendor: businessId });
     if (!pkg) {
-        const initialData = { user: userId, vendor: vendorId };
+        const initialData = { user: userId, vendor: businessId };
         Object.values(SCHEMA_KEYS).forEach(key => { initialData[key] = []; });
         pkg = await Package.create(initialData);
     }
@@ -53,7 +53,7 @@ export async function item(userId, vendorId, category, itemDataOrUpdates, itemId
         for (const photo of photoArray) {
             if (photo && typeof photo === 'object' && (photo instanceof File || photo.size > 0)) {
                 try {
-                    const uploaded = await uploadToCloudinary(photo, `packages/${vendorId}/${category}`);
+                    const uploaded = await uploadToCloudinary(photo, `packages/${businessId}/${category}`);
                     uploadResults.push({ url: uploaded.url, type: 'image' });
                 } catch (err) {
                     console.error(`[MEDIA_UPLOAD] Image upload failed:`, err);
@@ -72,12 +72,19 @@ export async function item(userId, vendorId, category, itemDataOrUpdates, itemId
         }
     }
 
-    // 4. Save or Update Subdocument
+    // 4. Pre-process and calculate Pricing BEFORE subdocument mutation
     let itemDoc;
+    const pricingInput = itemDataOrUpdates.pricing;
+
     if (itemId) {
-        // Update path
+        // Update path: Find subdocument first
         itemDoc = pkg[schemaKey].id(itemId);
         if (!itemDoc) throw new Error(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
+
+        if (pricingInput && typeof pricingInput === 'object') {
+            const currentPricing = itemDoc.pricing ? itemDoc.pricing.toObject() : {};
+            itemDataOrUpdates.pricing = await sellingPrice(pricingInput, category, currentPricing);
+        }
 
         // Flatten nested objects into dot notation so we do partial updates
         const flattenObject = (obj, prefix = '') => {
@@ -95,20 +102,17 @@ export async function item(userId, vendorId, category, itemDataOrUpdates, itemId
         const flatUpdates = flattenObject(itemDataOrUpdates);
         Object.keys(flatUpdates).forEach(key => itemDoc.set(key, flatUpdates[key]));
 
-        // Recalculate selling price if pricing fields were updated but sellingPrice wasn't explicitly supplied
-        const isPricingUpdated = Object.keys(itemDataOrUpdates).some(key => key.startsWith('pricing') || key === 'pricing');
-        const hasExplicitSellingPrice = (itemDataOrUpdates['pricing.sellingPrice'] !== undefined && itemDataOrUpdates['pricing.sellingPrice'] !== null && itemDataOrUpdates['pricing.sellingPrice'] !== '') || (itemDataOrUpdates.pricing && itemDataOrUpdates.pricing.sellingPrice !== undefined && itemDataOrUpdates.pricing.sellingPrice !== null && itemDataOrUpdates.pricing.sellingPrice !== '');
-        if (isPricingUpdated && !hasExplicitSellingPrice && itemDoc.pricing) itemDoc.pricing.sellingPrice = null;
-
     } else {
-        // Add path
+        // Add path: Map pricingInput into structured pricing object
+        if (pricingInput && typeof pricingInput === 'object') {
+            itemDataOrUpdates.pricing = await sellingPrice(pricingInput, category);
+        }
         const index = pkg[schemaKey].push(itemDataOrUpdates) - 1;
         itemDoc = pkg[schemaKey][index];
     }
 
     // 5. Apply Pre-save Formatting
     if (itemDoc.title) itemDoc.slug = slugify(itemDoc.title);
-    if (itemDoc.pricing) await sellingPrice(itemDoc.pricing, category);
     if (itemDoc.location) mapToGeoJSON(itemDoc.location);
     if (itemDoc.details && itemDoc.details.startPoint) mapToGeoJSON(itemDoc.details.startPoint);
     if (itemDoc.details && itemDoc.details.endPoint) mapToGeoJSON(itemDoc.details.endPoint);
@@ -122,7 +126,7 @@ export async function item(userId, vendorId, category, itemDataOrUpdates, itemId
     // 7. Initialize inventory for new items
     if (!itemId && savedItem && savedItem._id) {
         try {
-            await InventoryService.initializeFromItem(vendorId, savedItem._id, schemaKey);
+            await InventoryService.initializeFromItem(businessId, savedItem._id, schemaKey);
         } catch (invError) {
             console.error('Inventory Initialization Failed:', invError);
         }
@@ -130,7 +134,7 @@ export async function item(userId, vendorId, category, itemDataOrUpdates, itemId
 
     // 8. Format and return the result
     const itemObj = savedItem.toObject ? savedItem.toObject() : savedItem;
-    const categoryObj = vendor.category.find(c => c.slug === category) || { name: category, _id: "" };
+    const categoryObj = business.category.find(c => c.slug === category) || { name: category, _id: "" };
 
     return {
         id: itemObj._id,

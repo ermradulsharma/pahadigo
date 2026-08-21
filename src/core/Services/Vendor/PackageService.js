@@ -156,13 +156,13 @@ class PackageService {
         };
     }
     // Add Item
-    async addItem(userId, vendorId, category, itemData) {
-        return await item(userId, vendorId, category, itemData);
+    async addItem(userId, businessId, category, itemData) {
+        return await item(userId, businessId, category, itemData);
     }
 
     // Update Item
-    async updateItem(userId, vendorId, category, itemId, updates) {
-        return await item(userId, vendorId, category, updates, itemId);
+    async updateItem(userId, businessId, category, itemId, updates) {
+        return await item(userId, businessId, category, updates, itemId);
     }
 
     // Add Service Item

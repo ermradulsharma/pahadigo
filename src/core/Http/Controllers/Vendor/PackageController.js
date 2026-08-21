@@ -128,15 +128,16 @@ class PackageController extends Controller {
             if (!category) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ITEM.CATEGORY_REQUIRED);
 
             const userId = req.user.id;
-            const vendor = await Vendor.findOne({ user: userId }).select("_id");
-            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-
+            // const vendor = await Vendor.findOne({ user: userId }).select("_id");
+            const business = await Vendor.findOne({ user: userId }).select("_id");
+            if (!business) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+            const businessId = business.id;
             let itemData = body;
             let itemId = null;
             if (isUpdate) {
                 itemId = params?.itemId || body.itemId;
             }
-            await isUpdate ? await PackageService.updateItem(userId, vendor._id, category, itemId, itemData) : await PackageService.addItem(userId, vendor._id, category, itemData);
+            await isUpdate ? await PackageService.updateItem(userId, businessId, category, itemId, itemData) : await PackageService.addItem(userId, businessId, category, itemData);
             if (isUpdate) {
                 return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.ITEM.UPDATED);
             } else {

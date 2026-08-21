@@ -1,41 +1,45 @@
 import { getAppConfig } from '@/core/Lib/appConfig.js';
+import { toFixed2 } from './mathUtils.js';
 
-export async function sellingPrice(pricing, category = null) {
-    if (!pricing) return;
-    const basePrice = parseFloat(pricing.basePrice);
-    if (!isNaN(basePrice)) {
-        let gst = parseFloat(pricing.gst);
+export async function sellingPrice(pricingInput, category, currentPricing = {}) {
+    if (!pricingInput || typeof pricingInput !== 'object') return currentPricing;
 
-        // If GST is zero, null, or NaN, apply from setting based on category
-        if (!gst && category) {
-            const config = await getAppConfig();
-            const taxKey = `tax_${category.replace(/-/g, '_')}`;
-            gst = parseFloat(config.tax[taxKey]);
-            if (isNaN(gst)) gst = 0;
-            pricing.gst = gst; // Store the applied setting back to the pricing object
-        } else if (isNaN(gst)) {
-            gst = 0;
-        }
+    const currentBasePrice = currentPricing.basePrice || 0;
+    const basePrice = toFixed2(parseFloat(pricingInput.basePrice)) || toFixed2(parseFloat(currentBasePrice));
 
-        const discount = parseFloat(pricing.discount) || 0;
-        const discountType = pricing.discountType || 'flat';
+    // check GST is zero or null
+    const inputGST = pricingInput.gst !== undefined ? pricingInput.gst : (currentPricing.gst !== undefined ? currentPricing.gst : 0);
+    // const inputGST = pricingInput.gst || currentPricing.gst || 0;
+    const isProvided = inputGST !== undefined && inputGST !== null && String(inputGST).trim() !== '';
+    const parsedNumber = isProvided ? parseFloat(inputGST) : null;
+    const isParseGST = !isNaN(parsedNumber) ? parsedNumber : null;
+    const checkNullGST = !isProvided || isNaN(parsedNumber) || parsedNumber === 0;
 
-        let discountAmount = 0;
-        if (discountType === 'percentage') discountAmount = basePrice * (discount / 100);
-        if (discountType === 'flat') discountAmount = discount;
-        
-        const gstAmount = basePrice * (gst / 100);
-        const calculatedSellingPrice = Math.max(0, basePrice + gstAmount - discountAmount);
-        
-        const rawSellingPrice = pricing.sellingPrice;
-        const isSellingPriceEmpty =
-            rawSellingPrice === undefined ||
-            rawSellingPrice === null ||
-            rawSellingPrice === '' ||
-            (typeof rawSellingPrice === 'string' && rawSellingPrice.trim() === '') ||
-            (typeof rawSellingPrice === 'number' && rawSellingPrice === 0 && calculatedSellingPrice > 0) ||
-            (typeof rawSellingPrice === 'string' && parseFloat(rawSellingPrice) === 0 && calculatedSellingPrice > 0);
-            
-        if (isSellingPriceEmpty) pricing.sellingPrice = calculatedSellingPrice;
+    let finalGST;
+    if (checkNullGST) {
+        const config = await getAppConfig();
+        const taxKey = `tax_${category.replace(/-/g, '_')}`;
+        finalGST = parseFloat(config.tax[taxKey]) || 0;
+    } else {
+        finalGST = isParseGST;
     }
+    const sellingPrice = toFixed2(parseFloat(basePrice) * (1 + finalGST / 100));
+
+    const structuredPricing = {
+        ...currentPricing,
+        basePrice: basePrice,
+        gst: finalGST,
+        discountType: pricingInput.discountType || currentPricing.discountType || 'flat',
+        discount: toFixed2(parseFloat(pricingInput.discount)) || toFixed2(parseFloat(currentPricing.discount || 0)),
+        sellingPrice: sellingPrice,
+        maxGuests: parseInt(pricingInput.maxGuests, 10) || parseInt(currentPricing.maxGuests || 0),
+        maxAdults: parseInt(pricingInput.maxAdults, 10) || parseInt(currentPricing.maxAdults || 0),
+        maxChildren: parseInt(pricingInput.maxChildren, 10) || parseInt(currentPricing.maxChildren || 0),
+        childPrice: toFixed2(parseFloat(pricingInput.childPrice)) || toFixed2(parseFloat(currentPricing.childPrice || 0)),
+        extraBedAvailable: pricingInput.extraBedAvailable !== undefined ? Boolean(pricingInput.extraBedAvailable === true || pricingInput.extraBedAvailable === 'true') : (currentPricing.extraBedAvailable || false),
+        extraBedPrice: toFixed2(parseFloat(pricingInput.extraBedPrice)) || toFixed2(parseFloat(currentPricing.extraBedPrice || 0))
+    };
+    return structuredPricing;
 }
+
+export default sellingPrice;
