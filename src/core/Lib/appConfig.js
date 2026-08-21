@@ -41,6 +41,7 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
             redis: {
                 upstash_url: SYSTEM_ENV.UPSTASH_REDIS_REST_URL || DEFAULTS.NULL,
                 upstash_token: SYSTEM_ENV.UPSTASH_REDIS_REST_TOKEN || DEFAULTS.NULL,
+                upstash_tcp_url: SYSTEM_ENV.UPSTASH_REDIS_URL || DEFAULTS.NULL,
                 standard_url: SYSTEM_ENV.PAHADIGO_REDIS_URL || DEFAULTS.NULL,
             },
             api_url: APP_DETAILS.API_URL,
@@ -127,8 +128,8 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
             redis: {
                 upstash_url: dbSettings.upstash_redis_rest_url || SYSTEM_ENV.UPSTASH_REDIS_REST_URL || DEFAULTS.NULL,
                 upstash_token: dbSettings.upstash_redis_rest_token || SYSTEM_ENV.UPSTASH_REDIS_REST_TOKEN || DEFAULTS.NULL,
-                upstash_tcp_url: dbSettings.upstash_redis_url || SYSTEM_ENV.REDIS_URL || DEFAULTS.NULL,
-                standard_url: dbSettings.pahadigo_redis_url || SYSTEM_ENV.PAHADIGO_REDIS_URL || SYSTEM_ENV.REDIS_URL || DEFAULTS.NULL,
+                upstash_tcp_url: dbSettings.upstash_redis_url || SYSTEM_ENV.UPSTASH_REDIS_URL || DEFAULTS.NULL,
+                standard_url: dbSettings.pahadigo_redis_url || SYSTEM_ENV.PAHADIGO_REDIS_URL || DEFAULTS.NULL,
             },
             api_url: dbSettings.api_url || APP_DETAILS.API_URL,
             debug_mode: dbSettings.debug_mode ?? isDebugString,
@@ -154,17 +155,17 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
                 rate_on_google_store: dbSettings.rate_on_google_store || SYSTEM_ENV.RATE_ON_GOOGLE_STORE || DEFAULTS.NULL,
             },
             tax: {
-                gst: dbSettings.gst || parseFloat(SYSTEM_ENV.GST) || 0,
-                service_tax: dbSettings.service_tax || parseFloat(SYSTEM_ENV.SERVICE_TAX) || 0,
-                tax_homestay: dbSettings.tax_homestay ?? (parseFloat(SYSTEM_ENV.TAX_HOMESTAY) || 0),
-                tax_hotel: dbSettings.tax_hotel ?? (parseFloat(SYSTEM_ENV.TAX_HOTEL) || 0),
-                tax_camping: dbSettings.tax_camping ?? (parseFloat(SYSTEM_ENV.TAX_CAMPING) || 0),
-                tax_trekking: dbSettings.tax_trekking ?? (parseFloat(SYSTEM_ENV.TAX_TREKKING) || 0),
-                tax_rafting: dbSettings.tax_rafting ?? (parseFloat(SYSTEM_ENV.TAX_RAFTING) || 0),
-                tax_bungee_jumping: dbSettings.tax_bungee_jumping ?? (parseFloat(SYSTEM_ENV.TAX_BUNGEE_JUMPING) || 0),
-                tax_bike_scooter_rental: dbSettings.tax_bike_scooter_rental ?? (parseFloat(SYSTEM_ENV.TAX_BIKE_SCOOTER_RENTAL) || 0),
-                tax_chardham_tour: dbSettings.tax_chardham_tour ?? (parseFloat(SYSTEM_ENV.TAX_CHARDHAM_TOUR) || 0),
-                tax_custom_trip: dbSettings.tax_custom_trip ?? (parseFloat(SYSTEM_ENV.TAX_CUSTOM_TRIP) || 0)
+                gst: parseFloat(dbSettings.gst) || parseFloat(SYSTEM_ENV.GST) || 0,
+                service_tax: parseFloat(dbSettings.service_tax) || parseFloat(SYSTEM_ENV.SERVICE_TAX) || 0,
+                tax_homestay: parseFloat(dbSettings.tax_homestay) || parseFloat(SYSTEM_ENV.TAX_HOMESTAY) || 0,
+                tax_hotel: parseFloat(dbSettings.tax_hotel) || parseFloat(SYSTEM_ENV.TAX_HOTEL) || 0,
+                tax_camping: parseFloat(dbSettings.tax_camping) || parseFloat(SYSTEM_ENV.TAX_CAMPING) || 0,
+                tax_trekking: parseFloat(dbSettings.tax_trekking) || parseFloat(SYSTEM_ENV.TAX_TREKKING) || 0,
+                tax_rafting: parseFloat(dbSettings.tax_rafting) || parseFloat(SYSTEM_ENV.TAX_RAFTING) || 0,
+                tax_bungee_jumping: parseFloat(dbSettings.tax_bungee_jumping) || parseFloat(SYSTEM_ENV.TAX_BUNGEE_JUMPING) || 0,
+                tax_bike_scooter_rental: parseFloat(dbSettings.tax_bike_scooter_rental) || parseFloat(SYSTEM_ENV.TAX_BIKE_SCOOTER_RENTAL) || 0,
+                tax_chardham_tour: parseFloat(dbSettings.tax_chardham_tour) || parseFloat(SYSTEM_ENV.TAX_CHARDHAM_TOUR) || 0,
+                tax_custom_trip: parseFloat(dbSettings.tax_custom_trip) || parseFloat(SYSTEM_ENV.TAX_CUSTOM_TRIP) || 0
             },
             cloudinary: {
                 url: dbSettings.cloudinary_url || THIRD_PARTY_APIS.CLOUDINARY_URL || DEFAULTS.NULL,
@@ -209,6 +210,7 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
             redis: {
                 upstash_url: SYSTEM_ENV.UPSTASH_REDIS_REST_URL || DEFAULTS.NULL,
                 upstash_token: SYSTEM_ENV.UPSTASH_REDIS_REST_TOKEN || DEFAULTS.NULL,
+                upstash_tcp_url: SYSTEM_ENV.UPSTASH_REDIS_URL || DEFAULTS.NULL,
                 standard_url: SYSTEM_ENV.PAHADIGO_REDIS_URL || DEFAULTS.NULL,
             },
             api_url: APP_DETAILS.API_URL,
