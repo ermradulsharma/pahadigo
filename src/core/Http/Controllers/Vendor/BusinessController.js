@@ -30,7 +30,10 @@ class BusinessController extends Controller {
 
             const body = req.payload || {};
             const profileImgFile = req.formDataBody?.get('profile_image');
-            if (profileImgFile && typeof profileImgFile === 'object' && typeof profileImgFile.arrayBuffer === 'function' && profileImgFile.size > 0) {
+            const isPostmanPlaceholder = typeof profileImgFile === 'string' && profileImgFile.startsWith('@postman');
+            const isEmptyFile = profileImgFile && typeof profileImgFile === 'object' && profileImgFile.size === 0;
+
+            if (profileImgFile && !isPostmanPlaceholder && !isEmptyFile) {
                 const res = await uploadToCloudinary(profileImgFile, `vendor_profiles/${req.user.id}`);
                 body.profileImage = res.url;
             }
@@ -48,7 +51,10 @@ class BusinessController extends Controller {
         try {
             const body = req.payload || {};
             const profileImgFile = req.formDataBody?.get('profile_image');
-            if (profileImgFile && typeof profileImgFile === 'object' && typeof profileImgFile.arrayBuffer === 'function' && profileImgFile.size > 0) {
+            const isPostmanPlaceholder = typeof profileImgFile === 'string' && profileImgFile.startsWith('@postman');
+            const isEmptyFile = profileImgFile && typeof profileImgFile === 'object' && profileImgFile.size === 0;
+
+            if (profileImgFile && !isPostmanPlaceholder && !isEmptyFile) {
                 const res = await uploadToCloudinary(profileImgFile, `vendor_profiles/${req.user.id}`);
                 body.profileImage = res.url;
             }

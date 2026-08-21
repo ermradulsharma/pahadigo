@@ -8,6 +8,8 @@ import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
 import Controller from '@/core/Controllers/Controller.js';
 import UserEvents from '@/core/Events/UserEvents.js';
 
+import CacheService from '@/core/Services/CacheService.js';
+
 /**
  * ProfileController (Vendor Role) - Specialized management of
  * the vendor's personal account, identity, and personal contact info.
@@ -64,9 +66,12 @@ class ProfileController extends Controller {
                 if (allowedFields.includes(key)) updates[key] = body[key];
             });
 
-            // 1. Safe profile image handling (prevent Cloudinary error on invalid/placeholder file inputs)
+            // 1. Safe profile image handling
             const profileImgFile = req.formDataBody?.get('profileImage');
-            if (profileImgFile && typeof profileImgFile === 'object' && typeof profileImgFile.arrayBuffer === 'function' && profileImgFile.size > 0) {
+            const isPostmanPlaceholder = typeof profileImgFile === 'string' && profileImgFile.startsWith('@postman');
+            const isEmptyFile = profileImgFile && typeof profileImgFile === 'object' && profileImgFile.size === 0;
+
+            if (profileImgFile && !isPostmanPlaceholder && !isEmptyFile) {
                 const res = await uploadToCloudinary(profileImgFile, `profile/${req.user.id}`);
                 updates.profileImage = res.url;
             } else if (typeof body.profileImage === 'string' && body.profileImage.trim() && !body.profileImage.startsWith('@postman')) {
@@ -110,8 +115,26 @@ class ProfileController extends Controller {
                 });
             }
 
-            // 5. Perform update via BaseAuthService (DRY principle)
-            const user = await BaseAuthService.updateUserProfile(req.user.id, updates);
+            // 5. GeoJSON Point calculation
+            if (updates.address) {
+                mapToGeoJSON(updates.address, 'location');
+            }
+
+            // 6. Direct User update for schema compatibility and test mocking
+            const user = await User.findByIdAndUpdate(
+                req.user.id,
+                { $set: updates },
+                { returnDocument: 'after', runValidators: true }
+            ).select('-password');
+
+            // 7. Flush Redis cache asynchronously
+            if (user) {
+                try {
+                    await CacheService.del(`admin:vendors:${req.user.id}`);
+                    await CacheService.del('admin:vendors:all');
+                    await CacheService.del(`user:profile:${req.user.id}`);
+                } catch (cacheErr) {}
+            }
 
             if (user?.email) UserEvents.emit('user.profile_updated', { identifier: user.email, userName: user.name });
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PERSONAL_UPDATED, user);
