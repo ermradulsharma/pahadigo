@@ -33,14 +33,14 @@
         "seed:mass": "node src/core/Database/Seeders/MassSeeder.js"
     },
     "dependencies": {
-        "@react-pdf/renderer": "^4.6.1",
+        "@react-pdf/renderer": "^4.8.1",
         "@upstash/qstash": "^2.11.3",
         "@upstash/ratelimit": "^2.0.8",
         "@upstash/redis": "^1.38.2",
         "bcryptjs": "^3.0.3",
         "cloudinary": "^2.10.1",
         "country-state-city": "^3.2.1",
-        "find-my-way": "^9.8.0",
+        "find-my-way": "^9.9.0",
         "firebase-admin": "^14.3.0",
         "framer-motion": "^13.1.1",
         "google-auth-library": "^11.0.2",

@@ -6,6 +6,7 @@ import VendorDocument from '@/core/Models/VendorDocument.js';
 import { CATEGORY_MAP, SCHEMA_KEYS } from '@/core/Constants/categories.js';
 import MasterService from '@/core/Services/MasterService.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
+import { getItemDetailsPayload } from '@/core/Services/Shared/PackageCore.js';
 
 /**
  * PackageService (General Role)
@@ -21,44 +22,7 @@ class PackageService {
     }
 
     async getAvailablePackageItem(itemId) {
-        const item = await this.getPackageItem(itemId);
-        if (!item) return null;
-
-        const pkg = await Package.findById(item.catalogId).populate('vendor').lean();
-        if (!pkg || !(await this.masterService.isVendorActive(pkg.vendor))) return null;
-
-        // Check category specific verification for single item
-        const slug = Object.keys(CATEGORY_MAP).find(k => CATEGORY_MAP[k] === item.category) || item.category;
-        const isCategoryVerified = await VendorDocument.findOne({
-            vendor: pkg.vendor._id,
-            category_slug: slug,
-            status: 'verified'
-        });
-        if (!isCategoryVerified) return null;
-
-        if (item.isActive === false) return null;
-
-        const config = await getAppConfig();
-        if (item.pricing) {
-            item.pricing.gst = config.tax?.gst || 0;
-            item.pricing.serviceTax = config.tax?.service_tax || 0;
-        }
-
-        if (pkg.vendor) {
-            item.vendor = {
-                id: pkg.vendor._id,
-                ownerName: pkg.vendor.ownerName,
-                businessName: pkg.vendor.businessName,
-                address: pkg.vendor.address,
-                profileImage: pkg.vendor.profileImage,
-                profileType: pkg.vendor.profileType,
-                trustBadge: pkg.vendor.trustBadge,
-                businessAbout: pkg.vendor.businessAbout,
-                createdAt: pkg.vendor.createdAt
-            };
-        }
-
-        return item;
+        return await getItemDetailsPayload(itemId, this.masterService);
     }
 
     async getPackageItem(itemId) {
@@ -68,10 +32,7 @@ class PackageService {
             try { queryId = new mongoose.Types.ObjectId(itemId); } catch (e) { }
         }
 
-        const pkg = await Package.findOne({
-            $or: Object.values(SCHEMA_KEYS).map(key => ({ [`${key}._id`]: queryId }))
-        }).lean();
-
+        const pkg = await Package.findOne({ $or: Object.values(SCHEMA_KEYS).map(key => ({ [`${key}._id`]: queryId })) }).lean();
         if (!pkg) return null;
 
         for (const key of Object.values(SCHEMA_KEYS)) {

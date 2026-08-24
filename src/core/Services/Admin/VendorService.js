@@ -23,8 +23,10 @@ class VendorService {
     // Helper to invalidate vendor caches
     async invalidateVendorCaches(vendorId = null) {
         await CacheService.del('admin:vendors:all');
+        await CacheService.del('admin:dashboard:stats');
         if (vendorId) {
             await CacheService.del(`admin:vendors:${vendorId}`);
+            await CacheService.del(`user:profile:${vendorId}`);
         }
     }
 
@@ -332,6 +334,7 @@ class VendorService {
         session.endSession();
 
         NotificationService.notifyDocumentVerification(doc.vendor, "A Category Specific Document", status === 'approved' || status === 'verified');
+        await this.invalidateVendorCaches(doc.vendor);
         return doc;
     }
 

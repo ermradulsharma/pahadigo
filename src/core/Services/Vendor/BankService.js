@@ -2,8 +2,21 @@ import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import Vendor from '@/core/Models/Vendor.js';
 import RazorpayService from '@/core/Services/General/RazorpayService.js';
+import CacheService from '@/core/Services/CacheService.js';
 
 class BankService {
+    async invalidateVendorCaches(userId, vendorId = null) {
+        await CacheService.del('admin:vendors:all');
+        await CacheService.del('admin:dashboard:stats');
+        if (userId) {
+            await CacheService.del(`admin:vendors:${userId}`);
+            await CacheService.del(`user:profile:${userId}`);
+        }
+        if (vendorId) {
+            await CacheService.del(`admin:vendors:${vendorId}`);
+        }
+    }
+
     // Update Bank Details
     // Synchronize and update payout credentials
     async updateBankDetails(userId, bankData) {
@@ -58,17 +71,22 @@ class BankService {
             { $set: { bankDetails: updatePayload } },
             { returnDocument: 'after' }
         );
+        await this.invalidateVendorCaches(userId, vendor._id);
         return updatedVendor.bankDetails;
     }
 
     // Delete Bank Details
     // Remove financial credentials from profile
     async deleteBankDetails(userId) {
-        return await Vendor.findOneAndUpdate(
+        const vendor = await Vendor.findOneAndUpdate(
             { user: userId, deletedAt: null },
             { $unset: { bankDetails: "" } },
             { returnDocument: 'after' }
         ).populate('user', 'email phone role');
+        if (vendor) {
+            await this.invalidateVendorCaches(userId, vendor._id);
+        }
+        return vendor;
     }
 
     // --- INDUSTRY STANDARD ALIASES ---

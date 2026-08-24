@@ -7,6 +7,7 @@ import { CATEGORY_MAP, SCHEMA_KEYS } from '@/core/Constants/categories.js';
 import MasterService from '@/core/Services/MasterService.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { getPackageItemById } from '@/core/Helpers/queryHelpers.js';
+import { getItemDetailsPayload } from '@/core/Services/Shared/PackageCore.js';
 
 /**
  * PackageService (Traveller Role)
@@ -22,39 +23,7 @@ class PackageService {
     }
 
     async getAvailablePackageItem(itemId) {
-        const item = await this.getPackageItem(itemId);
-        if (!item) return null;
-
-        const pkg = await Package.findById(item.catalogId).populate('vendor').lean();
-        if (!pkg || !(await this.masterService.isVendorActive(pkg.vendor))) return null;
-
-        // Check category specific verification for single item
-        const slug = Object.keys(CATEGORY_MAP).find(k => CATEGORY_MAP[k] === item.category) || item.category;
-        const isCategoryVerified = await VendorDocument.findOne({
-            vendor: pkg.vendor._id,
-            category_slug: slug,
-            status: 'verified'
-        });
-        if (!isCategoryVerified) return null;
-
-        if (item.isActive === false) return null;
-
-        const config = await getAppConfig();
-        if (item.pricing) {
-            item.pricing.gst = config.tax?.gst || 0;
-            item.pricing.serviceTax = config.tax?.service_tax || 0;
-        }
-
-        if (pkg.vendor) {
-            item.vendor = {
-                id: pkg.vendor._id.toString(),
-                ownerName: pkg.vendor.ownerName,
-                businessName: pkg.vendor.businessName,
-                address: pkg.vendor.address
-            };
-        }
-
-        return item;
+        return await getItemDetailsPayload(itemId, this.masterService);
     }
 
     async getPackageItem(itemId) {

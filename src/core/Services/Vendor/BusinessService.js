@@ -9,11 +9,25 @@ import Dispute from '@/core/Models/Dispute.js';
 import Package from '@/core/Models/Package.js';
 import VendorClosure from '@/core/Models/VendorClosure.js';
 import { STATUS } from '@/core/Constants/index.js';
+import CacheService from '@/core/Services/CacheService.js';
 
 class BusinessService {
     // Constructor
     constructor() {
         this.activeStatus = STATUS.ACTIVE;
+    }
+
+    // Helper to invalidate vendor profile caches
+    async invalidateVendorCaches(userId, vendorId = null) {
+        await CacheService.del('admin:vendors:all');
+        await CacheService.del('admin:dashboard:stats');
+        if (userId) {
+            await CacheService.del(`admin:vendors:${userId}`);
+            await CacheService.del(`user:profile:${userId}`);
+        }
+        if (vendorId) {
+            await CacheService.del(`admin:vendors:${vendorId}`);
+        }
     }
 
     // Sync Business Profile (Handles Update/Create)
@@ -67,6 +81,9 @@ class BusinessService {
             { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true, runValidators: true }
         );
         await User.findByIdAndUpdate(userId, { vendorProfile: vendor._id, name: vendor.ownerName }, { returnDocument: 'after' });
+        
+        await this.invalidateVendorCaches(userId, vendor._id);
+
         return await vendor.populate('user', 'email phone role');
     }
 
@@ -87,7 +104,7 @@ class BusinessService {
 
     // Soft Delete Business Profile
     async removeBusinessProfile(userId, deletedBy) {
-        return await Vendor.findOneAndUpdate(
+        const vendor = await Vendor.findOneAndUpdate(
             { user: userId, deletedAt: null },
             {
                 deletedAt: new Date(),
@@ -95,6 +112,10 @@ class BusinessService {
             },
             { returnDocument: 'after' }
         );
+        if (vendor) {
+            await this.invalidateVendorCaches(userId, vendor._id);
+        }
+        return vendor;
     }
 
     // Logic to evaluate and update the trust badge based on performance
@@ -146,6 +167,7 @@ class BusinessService {
         if (vendor.trustBadge !== newBadge) {
             vendor.trustBadge = newBadge;
             await vendor.save();
+            await this.invalidateVendorCaches(vendor.user, vendor._id);
         }
 
         return newBadge;
@@ -153,20 +175,28 @@ class BusinessService {
 
     // Update Verification/Moderation Status
     async updateBusinessStatus(userId, status) {
-        return await Vendor.findOneAndUpdate(
+        const vendor = await Vendor.findOneAndUpdate(
             { user: userId, deletedAt: null },
             { status: status },
             { returnDocument: 'after' }
         );
+        if (vendor) {
+            await this.invalidateVendorCaches(userId, vendor._id);
+        }
+        return vendor;
     }
 
     // Toggle Operational/Availability status
     async toggleOperatingStatus(userId, isOperating) {
-        return await Vendor.findOneAndUpdate(
+        const vendor = await Vendor.findOneAndUpdate(
             { user: userId, deletedAt: null },
             { isOperating: isOperating },
             { returnDocument: 'after' }
         );
+        if (vendor) {
+            await this.invalidateVendorCaches(userId, vendor._id);
+        }
+        return vendor;
     }
 
     async getBusinessById(id) {

@@ -1,4 +1,4 @@
-import { User, Vendor, Booking, Package, Category } from '@/core/Models/index.js';
+import { User, Vendor, Booking, Package, Category, VendorDocument } from '@/core/Models/index.js';
 import { SCHEMA_KEYS, CATEGORY_MAP } from '@/core/Constants/categories.js';
 
 /**
@@ -80,6 +80,13 @@ export const getBusinessBy = async (conditions, select = '', populate = null) =>
  */
 export const getBusinessById = async (id, select = '', populate = null) => {
     return await getById(Vendor, id, select, populate);
+};
+
+/**
+ * Fetch VendorDocument records by custom conditions.
+ */
+export const getVendorDocumentsBy = async (conditions = {}, select = '', populate = null, sort = null) => {
+    return await getManyBy(VendorDocument, conditions, select, populate, sort);
 };
 
 /**
@@ -170,6 +177,7 @@ export default {
     getUserById,
     getBusinessBy,
     getBusinessById,
+    getVendorDocumentsBy,
     getBookingBy,
     getBookingById,
     getPackageBy,

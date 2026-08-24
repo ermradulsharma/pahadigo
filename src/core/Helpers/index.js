@@ -18,5 +18,7 @@ export { default as validation } from './validation.js';
 export * from './stringUtils.js';
 export * from './sellingPrice.js';
 export * from './mathUtils.js';
+export * from './categoryHelper.js';
+export * from './userProfileHelper.js';
 
 

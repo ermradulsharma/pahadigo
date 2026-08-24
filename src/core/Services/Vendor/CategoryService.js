@@ -4,6 +4,9 @@ import CategoryDocument from '@/core/Models/CategoryDocument.js';
 import VendorDocument from '@/core/Models/VendorDocument.js';
 import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
 import { RESPONSE_MESSAGES, VERIFICATION_STATUS } from '@/core/Constants/index.js';
+import CacheService from '@/core/Services/CacheService.js';
+import { getBusinessBy, getVendorDocumentsBy } from '@/core/Helpers/queryHelpers.js';
+import { evaluateCategoryDocumentStatus } from '@/core/Helpers/categoryHelper.js';
 
 /**
  * CategoryService (Vendor Scope) - Facilitates the lifecycle of business
@@ -11,10 +14,31 @@ import { RESPONSE_MESSAGES, VERIFICATION_STATUS } from '@/core/Constants/index.j
  */
 class CategoryService {
 
-    // List categories currently assigned to the vendor
+    // Helper to invalidate vendor profile caches
+    async invalidateVendorCaches(userId, vendorId = null) {
+        await CacheService.del('admin:vendors:all');
+        await CacheService.del('admin:dashboard:stats');
+        if (userId) {
+            await CacheService.del(`admin:vendors:${userId}`);
+            await CacheService.del(`user:profile:${userId}`);
+        }
+        if (vendorId) {
+            await CacheService.del(`admin:vendors:${vendorId}`);
+        }
+    }
+
+    // List categories currently assigned to the vendor along with document status summary
     async getAssignedCategories(userId) {
-        const vendor = await Vendor.findOne({ user: userId, deletedAt: null });
-        return vendor?.category || [];
+        const vendor = await getBusinessBy({ user: userId, deletedAt: null });
+        if (!vendor || !vendor.category) return [];
+
+        const docs = await getVendorDocumentsBy({ user: userId, vendor: vendor._id }, 'category_slug document_slug url status rejection_reason issue_date expiry_date createdAt');
+        const categoryReqs = await CategoryDocument.find({ isActive: true }).select('name slug category_slug').lean();
+        return vendor.category.map(cat => {
+            const catDocs = docs.filter(d => d.category_slug === cat.slug);
+            const catReqs = categoryReqs.filter(r => r.category_slug === cat.slug);
+            return evaluateCategoryDocumentStatus(cat, catDocs, catReqs);
+        });
     }
 
     // Assign a new business category to vendor profile
@@ -42,16 +66,22 @@ class CategoryService {
             name: categoryDoc.name
         });
 
-        return await vendor.save();
+        const saved = await vendor.save();
+        await this.invalidateVendorCaches(userId, vendor._id);
+        return saved;
     }
 
     // Remove a business category from vendor profile
     async removeCategoryFromVendor(userId, categorySlug) {
-        return await Vendor.findOneAndUpdate(
+        const vendor = await Vendor.findOneAndUpdate(
             { user: userId, deletedAt: null },
             { $pull: { category: { slug: categorySlug } } },
             { returnDocument: 'after' }
         );
+        if (vendor) {
+            await this.invalidateVendorCaches(userId, vendor._id);
+        }
+        return vendor;
     }
 
     // Get list of categories that the vendor hasn't chosen yet
@@ -130,6 +160,7 @@ class CategoryService {
         });
 
         const results = await Promise.all(uploadPromises);
+        await this.invalidateVendorCaches(userId, vendor._id);
         return results.filter(Boolean);
     }
 
