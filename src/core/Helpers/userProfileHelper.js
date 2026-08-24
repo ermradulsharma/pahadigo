@@ -56,7 +56,8 @@ export const userPayload = (u) => {
         dateOfBirth: u.dateOfBirth ? new Date(u.dateOfBirth).toISOString().split('T')[0] : '',
         address: addressPayload(u.address),
         location: getLocationPoint(u.address),
-        profileImage: u.profileImage || ''
+        profileImage: u.profileImage || '',
+        rating: u.rating || 0,
     };
 };
 
