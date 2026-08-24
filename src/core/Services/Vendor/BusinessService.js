@@ -1,12 +1,11 @@
 import Vendor from '@/core/Models/Vendor.js';
 import Category from '@/core/Models/Category.js';
-import { getBusinessBy, getBusinessById as qhGetBusinessById } from '@/core/Helpers/queryHelpers.js';
+import { getBusinessBy, getBusinessById as qhGetBusinessById, getBusinessByUserId as qhGetBusinessByUserId, getPackageBy, getManyBy } from '@/core/Helpers/queryHelpers.js';
 import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
 import User from '@/core/Models/User.js';
 import Review from '@/core/Models/Review.js';
 import Booking from '@/core/Models/Booking.js';
 import Dispute from '@/core/Models/Dispute.js';
-import Package from '@/core/Models/Package.js';
 import VendorClosure from '@/core/Models/VendorClosure.js';
 import { STATUS } from '@/core/Constants/index.js';
 import CacheService from '@/core/Services/CacheService.js';
@@ -58,7 +57,7 @@ class BusinessService {
             }
         }
         if (profileData.businessCategory && Array.isArray(profileData.businessCategory)) {
-            const categories = await Category.find({ slug: { $in: profileData.businessCategory } });
+            const categories = await getManyBy(Category, { slug: { $in: profileData.businessCategory } });
             updateData.category = categories.map(cat => ({
                 _id: cat._id,
                 name: cat.name,
@@ -87,11 +86,11 @@ class BusinessService {
         return await vendor.populate('user', 'email phone role');
     }
 
-    // Fetch Business Record by User ID
-    async getBusinessByUserId(userId) {
-        const vendor = await getBusinessBy({ user: userId, deletedAt: null }, '', { path: 'user', select: 'email phone role' });
+    // Fetch Business Record by User ID using queryHelpers
+    async getBusinessByUserId(userId, select = '', populate = { path: 'user', select: 'email phone role' }) {
+        const vendor = await qhGetBusinessByUserId(userId, select, populate);
         if (vendor) {
-            const closures = await VendorClosure.find({ vendor: vendor._id, isActive: true }).sort({ startDate: 1 });
+            const closures = await getManyBy(VendorClosure, { vendor: vendor._id, isActive: true }, '', null, { startDate: 1 });
             vendor.closurePeriods = closures;
         }
         return vendor;
@@ -128,7 +127,6 @@ class BusinessService {
         // Base criteria for "verified": Must be approved and documents verified
         const isAadharVerified = vendor.documents?.aadharCard?.[0]?.status === 'verified';
         const isPanVerified = vendor.documents?.panCard?.status === 'verified';
-        // For business profile type, registration must also be verified
         let isBusinessRegistrationVerified = true;
         if (vendor.profileType === 'business') {
             isBusinessRegistrationVerified = vendor.documents?.businessRegistration?.status === 'verified';
@@ -139,15 +137,14 @@ class BusinessService {
         if (isVerified) {
             newBadge = 'verified';
 
-            // Now evaluate for "super_partner"
-            // [BUGFIX] Searching by business ID (Vendor ID) instead of User ID
-            const catalog = await Package.findOne({ business: vendorId });
+            // Query vendor package using correct field schema name (vendor)
+            const catalog = await getPackageBy({ vendor: vendorId });
 
             if (catalog) {
                 const totalBookings = await Booking.countDocuments({ package: catalog._id, status: 'completed' });
 
                 if (totalBookings >= 10) {
-                    const disputeCount = await Dispute.countDocuments({ vendorId: vendorId, status: 'resolved_refunded' });
+                    const disputeCount = await Dispute.countDocuments({ vendor: vendorId, status: 'resolved_refunded' });
                     const disputeRate = disputeCount / totalBookings;
 
                     const reviewStats = await Review.aggregate([
@@ -199,8 +196,8 @@ class BusinessService {
         return vendor;
     }
 
-    async getBusinessById(id) {
-        return await qhGetBusinessById(id, '', { path: 'user', select: 'email phone role' });
+    async getBusinessById(id, select = '', populate = { path: 'user', select: 'email phone role' }) {
+        return await qhGetBusinessById(id, select, populate);
     }
 
     async getPublicBusinessProfile(id) {

@@ -3,6 +3,7 @@ import sharp from 'sharp';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { withRetry } from '@/core/Helpers/resilience.js';
+
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 const MAX_FILE_SIZE_MB = 5;
 const MAX_FILE_SIZE_BYTES = MAX_FILE_SIZE_MB * 1024 * 1024;
@@ -38,6 +39,26 @@ export const uploadToCloudinary = async (file, folder = 'general') => {
     } catch (error) {
         return Promise.reject({ status: HTTP_STATUS.INTERNAL_SERVER_ERROR, message: RESPONSE_MESSAGES.ERROR.SOMETHING_WENT_WRONG });
     }
+};
+
+/**
+ * Helper to extract file from formData and upload to Cloudinary if valid.
+ * @param {FormData|Map} formData - The request formDataBody or Map
+ * @param {string} fieldName - Field name in form-data (e.g. 'profile_image')
+ * @param {string} folder - Destination folder on Cloudinary
+ * @returns {Promise<string|null>} Uploaded image URL or null
+ */
+export const handleFormDataImageUpload = async (formData, fieldName, folder = 'general') => {
+    if (!formData) return null;
+    const file = typeof formData.get === 'function' ? formData.get(fieldName) : formData[fieldName];
+    const isPostmanPlaceholder = typeof file === 'string' && file.startsWith('@postman');
+    const isEmptyFile = file && typeof file === 'object' && file.size === 0;
+
+    if (file && !isPostmanPlaceholder && !isEmptyFile) {
+        const res = await uploadToCloudinary(file, folder);
+        return res?.url || null;
+    }
+    return null;
 };
 
 export default cloudinary;

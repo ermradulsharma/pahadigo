@@ -1,9 +1,10 @@
 import BusinessService from '@/core/Services/Vendor/BusinessService.js';
+import { getBusinessByUserId } from '@/core/Helpers/queryHelpers.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
-import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
+import { handleFormDataImageUpload } from '@/core/Helpers/cloudinary.js';
+import { businessDetailsFormat } from '@/core/Helpers/userProfileHelper.js';
 import Controller from '@/core/Controllers/Controller.js';
 import VendorEvents from '@/core/Events/VendorEvents.js';
-import User from '@/core/Models/User';
 
 /**
  * BusinessController (Vendor Role) - Specialized management of
@@ -14,9 +15,11 @@ class BusinessController extends Controller {
     // GET /vendor/business/profile
     async getProfile(req) {
         try {
-            const vendor = await BusinessService.getBusinessProfile(req.user.id);
+            const vendor = await getBusinessByUserId(req.user.id);
             if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, vendor);
+            const responseData = businessDetailsFormat(vendor);
+            if (vendor.closurePeriods) responseData.closurePeriods = vendor.closurePeriods;
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, responseData);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -25,22 +28,16 @@ class BusinessController extends Controller {
     // POST /vendor/business/profile/create
     async createProfile(req) {
         try {
-            const existingProfile = await BusinessService.getBusinessByUserId(req.user.id);
+            const existingProfile = await getBusinessByUserId(req.user.id);
             if (existingProfile) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.PROFILE_ALREADY_EXISTS);
 
             const body = req.payload || {};
-            const profileImgFile = req.formDataBody?.get('profile_image');
-            const isPostmanPlaceholder = typeof profileImgFile === 'string' && profileImgFile.startsWith('@postman');
-            const isEmptyFile = profileImgFile && typeof profileImgFile === 'object' && profileImgFile.size === 0;
-
-            if (profileImgFile && !isPostmanPlaceholder && !isEmptyFile) {
-                const res = await uploadToCloudinary(profileImgFile, `vendor_profiles/${req.user.id}`);
-                body.profileImage = res.url;
-            }
+            const profileImage = await handleFormDataImageUpload(req.formDataBody, 'profile_image', `vendor_profiles/${req.user.id}`);
+            if (profileImage) body.profileImage = profileImage;
 
             const vendor = await BusinessService.syncBusinessProfile(req.user.id, body);
             if (vendor.user?.email) VendorEvents.emit('vendor.profile_created', { identifier: vendor.user.email, businessName: vendor.businessName });
-            return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.PROFILE_INITIATED, vendor);
+            return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.PROFILE_INITIATED, businessDetailsFormat(vendor));
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -50,16 +47,11 @@ class BusinessController extends Controller {
     async updateProfile(req, { params }) {
         try {
             const body = req.payload || {};
-            const profileImgFile = req.formDataBody?.get('profile_image');
-            const isPostmanPlaceholder = typeof profileImgFile === 'string' && profileImgFile.startsWith('@postman');
-            const isEmptyFile = profileImgFile && typeof profileImgFile === 'object' && profileImgFile.size === 0;
+            const profileImage = await handleFormDataImageUpload(req.formDataBody, 'profile_image', `vendor_profiles/${req.user.id}`);
+            if (profileImage) body.profileImage = profileImage;
 
-            if (profileImgFile && !isPostmanPlaceholder && !isEmptyFile) {
-                const res = await uploadToCloudinary(profileImgFile, `vendor_profiles/${req.user.id}`);
-                body.profileImage = res.url;
-            }
             const vendor = await BusinessService.syncBusinessProfile(req.user.id, body);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PROFILE_UPDATED, vendor);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PROFILE_UPDATED, businessDetailsFormat(vendor));
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }

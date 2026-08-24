@@ -21,5 +21,6 @@ export * from './mathUtils.js';
 export * from './categoryHelper.js';
 export * from './userProfileHelper.js';
 export * from './bookingHelper.js';
+export * from './queryHelpers.js';
 
 

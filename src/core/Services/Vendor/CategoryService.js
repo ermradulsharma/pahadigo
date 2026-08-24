@@ -5,7 +5,7 @@ import VendorDocument from '@/core/Models/VendorDocument.js';
 import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
 import { RESPONSE_MESSAGES, VERIFICATION_STATUS } from '@/core/Constants/index.js';
 import CacheService from '@/core/Services/CacheService.js';
-import { getBusinessBy, getVendorDocumentsBy } from '@/core/Helpers/queryHelpers.js';
+import { getBusinessByUserId, getVendorDocumentsBy } from '@/core/Helpers/queryHelpers.js';
 import { evaluateCategoryDocumentStatus } from '@/core/Helpers/categoryHelper.js';
 
 /**
@@ -29,7 +29,7 @@ class CategoryService {
 
     // List categories currently assigned to the vendor along with document status summary
     async getAssignedCategories(userId) {
-        const vendor = await getBusinessBy({ user: userId, deletedAt: null });
+        const vendor = await getBusinessByUserId(userId);
         if (!vendor || !vendor.category) return [];
 
         const docs = await getVendorDocumentsBy({ user: userId, vendor: vendor._id }, 'category_slug document_slug url status rejection_reason issue_date expiry_date createdAt');

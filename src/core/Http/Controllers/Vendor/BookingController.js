@@ -1,5 +1,7 @@
-import BusinessService from '@/core/Services/Vendor/BusinessService.js';
+import Booking from '@/core/Models/Booking.js';
 import BookingService from '@/core/Services/Vendor/BookingService.js';
+import { getBookingById as qhGetBookingById, getBusinessByUserId, getManyBy } from '@/core/Helpers/queryHelpers.js';
+import { bookingPayload } from '@/core/Helpers/bookingHelper.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
 
@@ -13,7 +15,7 @@ class BookingController extends Controller {
     async verifyStartOTP(req, { params }) {
         try {
             const body = req.payload;
-            const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+            const vendor = await getBusinessByUserId(req.user.id);
             if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
             const result = await BookingService.verifyStartOTP(params.id, vendor._id, body.otp);
@@ -27,7 +29,7 @@ class BookingController extends Controller {
     async verifyEndOTP(req, { params }) {
         try {
             const body = req.payload;
-            const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+            const vendor = await getBusinessByUserId(req.user.id);
             if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
             const result = await BookingService.verifyEndOTP(params.id, vendor._id, body.otp);
@@ -41,7 +43,7 @@ class BookingController extends Controller {
     async syncOfflineOTPs(req) {
         try {
             const body = req.payload;
-            const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+            const vendor = await getBusinessByUserId(req.user.id);
             if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
             const result = await BookingService.syncOfflineVerifications(vendor._id, body.syncData);
@@ -54,11 +56,12 @@ class BookingController extends Controller {
     // GET /vendor/bookings
     async getBookings(req) {
         try {
-            const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+            const vendor = await getBusinessByUserId(req.user.id);
             if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-            const bookings = await BookingService.getVendorBookings(vendor._id);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, bookings);
+            const bookings = await getManyBy(Booking, { vendor: vendor._id }, '', ['user', { path: 'vendor', populate: { path: 'user' } }], { createdAt: -1 });
+            const responseData = bookings.map(b => bookingPayload(b));
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, responseData);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -67,13 +70,20 @@ class BookingController extends Controller {
     // GET /vendor/bookings/:id
     async getBookingById(req, { params }) {
         try {
-            const vendor = await BusinessService.getBusinessByUserId(req.user.id);
-            const booking = await BookingService.getBookingById(params.id);
+            const vendor = await getBusinessByUserId(req.user.id);
+            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-            if (!booking || String(booking.vendor) !== String(vendor._id)) {
+            const booking = await qhGetBookingById(params.id, '', ['user', { path: 'vendor', populate: { path: 'user' } }]);
+
+            const vendorIdStr = vendor._id ? vendor._id.toString() : String(vendor);
+            const bookingVendorStr = booking?.vendor?._id ? booking.vendor._id.toString() : String(booking?.vendor || '');
+
+            if (!booking || bookingVendorStr !== vendorIdStr) {
                 return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
             }
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, booking);
+
+            const responseData = bookingPayload(booking, { includeUser: true, includeBusiness: true });
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, responseData);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -83,7 +93,8 @@ class BookingController extends Controller {
     async updateBookingStatus(req, { params }) {
         try {
             const body = req.payload;
-            const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+            const vendor = await getBusinessByUserId(req.user.id);
+            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
             const result = await BookingService.updateBookingStatus(params.id, vendor._id, body.status);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.STATUS_UPDATED, result);
@@ -96,9 +107,10 @@ class BookingController extends Controller {
     async addTimelineEvent(req, { params }) {
         try {
             const body = req.payload;
-            const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+            const vendor = await getBusinessByUserId(req.user.id);
+            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-            const result = await BookingService.logTimelineEvent(params.id, body.title, body.description, vendor.user);
+            const result = await BookingService.logTimelineEvent(params.id, body.title, body.description, vendor.user || req.user.id);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.TIMELINE_ADDED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);

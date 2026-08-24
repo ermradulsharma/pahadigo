@@ -2,6 +2,21 @@ import { User, Vendor, Booking, Package, Category, VendorDocument } from '@/core
 import { SCHEMA_KEYS, CATEGORY_MAP } from '@/core/Constants/categories.js';
 
 /**
+ * Helper to ensure populated paths are included in explicit string projections.
+ */
+const ensurePopulatePathInSelect = (select, populate) => {
+    if (!select || typeof select !== 'string') return select;
+    if (!populate) return select;
+
+    let selectStr = select;
+    const paths = Array.isArray(populate) ? populate.map(p => (typeof p === 'string' ? p : p?.path)).filter(Boolean) : [typeof populate === 'string' ? populate : populate?.path].filter(Boolean);
+    for (const p of paths) {
+        if (!selectStr.split(/\s+/).includes(p)) selectStr = `${selectStr} ${p}`;
+    }
+    return selectStr;
+};
+
+/**
  * Generic helper to fetch a single document by ID with projection, population, and lean enabled.
  * @param {import('mongoose').Model} Model - The Mongoose model to query
  * @param {string|import('mongoose').Types.ObjectId} id - The document ID
@@ -12,7 +27,7 @@ import { SCHEMA_KEYS, CATEGORY_MAP } from '@/core/Constants/categories.js';
 export const getById = async (Model, id, select = '', populate = null) => {
     if (!id) return null;
     let query = Model.findById(id);
-    if (select) query = query.select(select);
+    if (select) query = query.select(ensurePopulatePathInSelect(select, populate));
     if (populate) query = query.populate(populate);
     return await query.lean();
 };
@@ -28,7 +43,7 @@ export const getById = async (Model, id, select = '', populate = null) => {
 export const getBy = async (Model, conditions, select = '', populate = null) => {
     if (!conditions || Object.keys(conditions).length === 0) return null;
     let query = Model.findOne(conditions);
-    if (select) query = query.select(select);
+    if (select) query = query.select(ensurePopulatePathInSelect(select, populate));
     if (populate) query = query.populate(populate);
     return await query.lean();
 };
@@ -44,7 +59,7 @@ export const getBy = async (Model, conditions, select = '', populate = null) => 
  */
 export const getManyBy = async (Model, conditions = {}, select = '', populate = null, sort = null) => {
     let query = Model.find(conditions);
-    if (select) query = query.select(select);
+    if (select) query = query.select(ensurePopulatePathInSelect(select, populate));
     if (populate) query = query.populate(populate);
     if (sort) query = query.sort(sort);
     return await query.lean();
@@ -80,6 +95,13 @@ export const getBusinessBy = async (conditions, select = '', populate = null) =>
  */
 export const getBusinessById = async (id, select = '', populate = null) => {
     return await getById(Vendor, id, select, populate);
+};
+
+/**
+ * Fetch a Vendor (Business) record by User ID.
+ */
+export const getBusinessByUserId = async (userId, select = '', populate = { path: 'user' }) => {
+    return await getBusinessBy({ user: userId, deletedAt: null }, select, populate);
 };
 
 /**
@@ -161,7 +183,7 @@ export const getPackageItemById = async (itemId, populate = null) => {
                     category: key,
                     categoryId: category ? category._id.toString() : null,
                     catalogId: pkg._id.toString(),
-                    vendor: pkg.vendor.toString()
+                    vendor: pkg.vendor?._id ? pkg.vendor._id.toString() : (pkg.vendor ? pkg.vendor.toString() : null)
                 };
             }
         }
@@ -177,6 +199,7 @@ export default {
     getUserById,
     getBusinessBy,
     getBusinessById,
+    getBusinessByUserId,
     getVendorDocumentsBy,
     getBookingBy,
     getBookingById,

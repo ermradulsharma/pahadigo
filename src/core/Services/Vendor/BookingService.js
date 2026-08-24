@@ -1,6 +1,4 @@
-import mongoose from 'mongoose';
 import Booking from '@/core/Models/Booking.js';
-import Package from '@/core/Models/Package.js';
 import NotificationService from '@/core/Services/General/NotificationService.js';
 import { RESPONSE_MESSAGES, BOOKING_STATUS, PAYMENT_STATUS } from '@/core/Constants/index.js';
 
@@ -117,24 +115,7 @@ class BookingService {
         return results;
     }
 
-    /**
-     * Fetch bookings belonging to a specific vendor's catalog
-     */
-    async getVendorBookings(vendorId) {
-        const catalog = await Package.findOne({ vendor: vendorId });
-        if (!catalog) return [];
 
-        return await Booking.find({ package: catalog._id })
-            .populate('user', 'name email phone')
-            .sort({ createdAt: -1 });
-    }
-
-    /**
-     * Retrieve a single booking by ID
-     */
-    async getBookingById(bookingId) {
-        return await Booking.findById(bookingId).populate('user', 'name email phone').populate('package', 'title');
-    }
 
     /**
      * Update operational status of a booking (Industry Standard)

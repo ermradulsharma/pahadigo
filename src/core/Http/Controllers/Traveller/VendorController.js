@@ -1,5 +1,5 @@
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
-import { getBusinessById, getBusinessBy, getPackageBy, getUserById } from "@/core/Helpers/queryHelpers.js";
+import { getBusinessById, getBusinessByUserId, getPackageBy, getUserById } from "@/core/Helpers/queryHelpers.js";
 import { itemsFormate } from '@/core/Helpers/package.js';
 import { businessPayload, userPayload, userBusinessPayload } from '@/core/Helpers/userProfileHelper.js';
 import Controller from '../Controller.js';
@@ -11,7 +11,7 @@ class VendorController extends Controller {
         try {
             const user = await getUserById(params.userId);
             if (!user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.USER.NOT_FOUND);
-            const business = await getBusinessBy({ user: params.userId });
+            const business = await getBusinessByUserId(params.userId);
             const responseData = userBusinessPayload(user, business);
             if (business && responseData?.businessDetails) {
                 const packages = await getPackageBy({ vendor: business._id }) || {};
