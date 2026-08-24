@@ -46,18 +46,22 @@ export const getLocationPoint = (addr) => {
  */
 export const userPayload = (u) => {
     if (!u) return null;
+    const isVendor = u.role === 'vendor';
+
     return {
         id: u._id ? u._id.toString() : (u.id || ''),
         name: u.name || '',
         email: u.email || '',
         phone: u.phone || '',
-        experience: typeof u.experience === 'number' ? `${u.experience} years` : (u.experience || ''),
-        designation: u.designation || '',
+        ...(isVendor ? {
+            experience: typeof u.experience === 'number' ? `${u.experience} years` : (u.experience || ''),
+            designation: u.designation || '',
+            rating: typeof u.rating === 'number' ? u.rating : (u.rating?.average || 0)
+        } : {}),
         dateOfBirth: u.dateOfBirth ? new Date(u.dateOfBirth).toISOString().split('T')[0] : '',
         address: addressPayload(u.address),
         location: getLocationPoint(u.address),
-        profileImage: u.profileImage || '',
-        rating: u.rating || 0,
+        profileImage: u.profileImage || ''
     };
 };
 

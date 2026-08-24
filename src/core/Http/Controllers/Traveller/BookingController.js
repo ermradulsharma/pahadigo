@@ -1,5 +1,6 @@
 import Booking from '@/core/Models/Booking.js';
 import { getBookingBy, getManyBy } from '@/core/Helpers/queryHelpers.js';
+import { bookingPayload } from '@/core/Helpers/bookingHelper.js';
 import PackageService from '@/core/Services/Traveller/PackageService.js';
 import BookingService from '@/core/Services/Traveller/BookingService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, PAYMENT_STATUS, BOOKING_STATUS } from '@/core/Constants/index.js';
@@ -23,7 +24,8 @@ class BookingController extends Controller {
                 ]
             };
             const bookings = await getManyBy(Booking, query, '', ['user', { path: 'vendor', populate: { path: 'user' } }], { createdAt: -1 });
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.FETCHED_HISTORICAL, bookings);
+            const responseData = bookings.map(b => bookingPayload(b));
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.FETCHED_HISTORICAL, responseData);
         } catch (error) {
             return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -51,7 +53,7 @@ class BookingController extends Controller {
                 { path: 'vendor', populate: { path: 'user' } }
             ]);
             if (!booking) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.FETCHED_DETAIL, booking);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.BOOKING.FETCHED_DETAIL, bookingPayload(booking, { includeUser: true, includeBusiness: true }));
         } catch (error) {
             return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -101,8 +103,6 @@ class BookingController extends Controller {
             return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
-
-
 
     // POST /traveller/bookings/:id/dispute
     async reportDispute(req, { params }) {

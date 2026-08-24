@@ -21,7 +21,6 @@ export async function getItemDetailsPayload(itemId, masterService = MasterServic
     const pkg = await Package.findById(item.catalogId).populate({ path: 'vendor', populate: { path: 'user' } }).lean();
     if (!pkg || !(await masterService.isVendorActive(pkg.vendor))) return null;
 
-    // Check category specific verification for single item
     const slug = Object.keys(CATEGORY_MAP).find(k => CATEGORY_MAP[k] === item.category) || item.category;
     const isCategoryVerified = await VendorDocument.findOne({ vendor: pkg.vendor._id, category_slug: slug, status: 'verified' });
     if (!isCategoryVerified) return null;
@@ -29,9 +28,7 @@ export async function getItemDetailsPayload(itemId, masterService = MasterServic
     if (item.isActive === false) return null;
 
     const config = await getAppConfig();
-    if (item.pricing) {
-        item.pricing.serviceTax = config.tax?.service_tax || 0;
-    }
+    if (item.pricing) item.pricing.serviceTax = config.tax?.service_tax || 0;
 
     if (pkg.vendor) {
         const businessObj = businessPayload(pkg.vendor);

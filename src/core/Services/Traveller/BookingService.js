@@ -14,6 +14,7 @@ import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { RESPONSE_MESSAGES, BOOKING_STATUS, PAYMENT_STATUS, REFUND_STATUS } from '@/core/Constants/index.js';
 import BusinessService from '@/core/Services/Vendor/BusinessService.js';
 import { getPackageItemById, getUserById, getBookingBy } from '@/core/Helpers/queryHelpers.js';
+import { bookingPayload } from '@/core/Helpers/bookingHelper.js';
 
 const generateNumericOTP = () => randomInt(100000, 1000000).toString();
 const generateBookingCode = () => `PH-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${randomBytes(4).toString('hex').toUpperCase()}`;
@@ -40,12 +41,10 @@ class BookingService {
                 const travellerProfile = await getUserById(userId);
                 if (!travellerProfile) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
 
-                const { catalogId, category, vendor } = packageItem;
-
-                const vendorId = vendor?.id;
-
-                const business = await BusinessService.getBusinessById(vendorId);
+                const { catalogId, category, business } = packageItem;
                 if (!business) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+                const businessId = business.id;
+                const businessAccountDetails = await getBusinessById(businessId, 'bankDetails businessName ownerName');
 
 
                 const pricingRules = packageItem.pricing || {};
@@ -120,9 +119,7 @@ class BookingService {
                 const taxableAmount = Math.max(0, toCent(calculatedSubTotal - appliedDiscount));
 
                 let tax = 0;
-                if (itemGST) {
-                    tax = taxableAmount * (itemGST / 100);
-                }
+                if (itemGST) tax = taxableAmount * (itemGST / 100);
                 const calculatedTax = toCent(tax);
 
                 let serviceFee = 0;
@@ -139,19 +136,12 @@ class BookingService {
                 const appliedTaxRate = itemGST || 0;
                 const grandTotal = Math.max(0, toCent(calculatedSubTotal + calculatedTax + appliedServiceFee - appliedDiscount - appliedCouponAmount));
 
-                const availabilityStatus = await InventoryService.checkAvailabilityRange(
-                    vendorId.toString(), itemId, category, checkInDate, checkOutDate, requiredUnits
-                );
-
-                if (!availabilityStatus.available) {
-                    throw new Error(RESPONSE_MESSAGES.BOOKING.SLOTS_NOT_AVAILABLE);
-                }
+                const availabilityStatus = await InventoryService.checkAvailabilityRange(businessId, itemId, category, checkInDate, checkOutDate, requiredUnits);
+                if (!availabilityStatus.available) throw new Error(RESPONSE_MESSAGES.BOOKING.SLOTS_NOT_AVAILABLE);
 
 
                 let itemUrl = '';
-                if (Array.isArray(packageItem.photos) && packageItem.photos.length > 0) {
-                    itemUrl = packageItem.photos[0].url || packageItem.photos[0] || '';
-                }
+                if (Array.isArray(packageItem.photos) && packageItem.photos.length > 0) itemUrl = packageItem.photos[0].url || packageItem.photos[0] || '';
                 if (typeof itemUrl !== 'string') itemUrl = '';
 
                 let newBooking;
@@ -164,7 +154,7 @@ class BookingService {
                         const [createdBooking] = await Booking.create([{
                             bookingCode,
                             user: userId,
-                            vendor: business._id, // reference to Vendor ID
+                            vendor: business.id,
                             package: catalogId,
                             item: {
                                 itemId: packageItem._id,
@@ -200,12 +190,12 @@ class BookingService {
                             payout: {
                                 amount: 0,
                                 bankDetails: {
-                                    accountHolderName: business.bankDetails?.accountHolderName || null,
-                                    accountNumber: business.bankDetails?.accountNumber || null,
-                                    ifscCode: business.bankDetails?.ifscCode || null,
-                                    bankName: business.bankDetails?.bankName || null,
-                                    razorpayContactId: business.bankDetails?.razorpayContactId || null,
-                                    razorpayFundAccountId: business.bankDetails?.razorpayFundAccountId || null
+                                    accountHolderName: businessAccountDetails?.bankDetails?.accountHolderName || null,
+                                    accountNumber: businessAccountDetails?.bankDetails?.accountNumber || null,
+                                    ifscCode: businessAccountDetails?.bankDetails?.ifscCode || null,
+                                    bankName: businessAccountDetails?.bankDetails?.bankName || null,
+                                    razorpayContactId: businessAccountDetails?.bankDetails?.razorpayContactId || null,
+                                    razorpayFundAccountId: businessAccountDetails?.bankDetails?.razorpayFundAccountId || null
                                 },
                                 businessName: business.businessName,
                                 ownerName: business.ownerName
@@ -233,27 +223,16 @@ class BookingService {
                     }
                 }
 
-                const finalCheck = await InventoryService.checkAvailabilityRange(
-                    vendorId.toString(), itemId, category, checkInDate, checkOutDate, requiredUnits, session, newBooking._id
-                );
-                if (!finalCheck.available) {
-                    throw new Error(`Inventory Conflict: Slots became unavailable.`);
-                }
+                const finalCheck = await InventoryService.checkAvailabilityRange(businessId, itemId, category, checkInDate, checkOutDate, requiredUnits, session, newBooking._id);
+                if (!finalCheck.available) throw new Error(`Inventory Conflict: Slots became unavailable.`);
 
                 NotificationService.notifyBookingStatus(newBooking._id, 'created');
 
-                // Format response
-                finalResponse = {
-                    bookingId: newBooking._id,
-                    bookingCode: newBooking.bookingCode,
-                    status: newBooking.status,
-                    paymentStatus: newBooking.paymentStatus,
-                    item: newBooking.item,
-                    startDate: newBooking.startDate,
-                    endDate: newBooking.endDate,
-                    occupancy: newBooking.occupancy,
-                    pricing: newBooking.pricing
-                };
+                // Format response with populated user & vendor details
+                const bookingObj = newBooking.toObject ? newBooking.toObject() : newBooking;
+                bookingObj.user = travellerProfile;
+                bookingObj.vendor = business;
+                finalResponse = bookingPayload(bookingObj);
             });
             return finalResponse;
         } catch (error) {
@@ -295,26 +274,19 @@ class BookingService {
     async verifyBookingPayment(bookingId, userId, paymentData) {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = paymentData || {};
 
-        const booking = await Booking.findOne({ _id: bookingId, user: userId });
+        const booking = await Booking.findOne({ _id: bookingId, user: userId }).populate('user').populate({ path: 'vendor', populate: { path: 'user' } });
         if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
 
-        if (!booking.payment?.orderId) {
-            throw new Error('Payment order has not been initialized for this booking.');
-        }
-
-        if (booking.payment.orderId !== razorpay_order_id) {
-            throw new Error('Payment order does not match this booking.');
-        }
+        if (!booking.payment?.orderId) throw new Error('Payment order has not been initialized for this booking.');
+        if (booking.payment.orderId !== razorpay_order_id) throw new Error('Payment order does not match this booking.');
 
         if (booking.paymentStatus === PAYMENT_STATUS.PAID || booking.status === BOOKING_STATUS.CONFIRMED) {
             const samePayment = !booking.payment.paymentId || booking.payment.paymentId === razorpay_payment_id;
-            if (samePayment) return booking;
+            if (samePayment) return bookingPayload(booking);
             throw new Error('This booking is already paid with a different payment id.');
         }
 
-        if (booking.payment.paymentId && booking.payment.paymentId !== razorpay_payment_id) {
-            throw new Error('A different payment attempt is already recorded for this booking.');
-        }
+        if (booking.payment.paymentId && booking.payment.paymentId !== razorpay_payment_id) throw new Error('A different payment attempt is already recorded for this booking.');
 
         const config = await getAppConfig();
         const isValid = RazorpayService.verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature, config.razorpay);
@@ -350,7 +322,7 @@ class BookingService {
         // 3. Notify Traveller & Vendor
         NotificationService.notifyBookingStatus(booking._id, 'confirmed');
 
-        return booking;
+        return bookingPayload(booking);
     }
 
     /**

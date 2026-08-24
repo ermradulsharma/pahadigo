@@ -20,5 +20,6 @@ export * from './sellingPrice.js';
 export * from './mathUtils.js';
 export * from './categoryHelper.js';
 export * from './userProfileHelper.js';
+export * from './bookingHelper.js';
 
 
