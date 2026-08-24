@@ -30,14 +30,23 @@ class CategoryService {
     // List categories currently assigned to the vendor along with document status summary
     async getAssignedCategories(userId) {
         const vendor = await getBusinessByUserId(userId);
-        if (!vendor || !vendor.category) return [];
+        if (!vendor || !vendor.category || vendor.category.length === 0) return [];
 
+        const assignedSlugs = vendor.category.map(c => c.slug);
+        const dbCategories = await Category.find({ slug: { $in: assignedSlugs } }).select('_id name slug').lean();
         const docs = await getVendorDocumentsBy({ user: userId, vendor: vendor._id }, 'category_slug document_slug url status rejection_reason issue_date expiry_date createdAt');
         const categoryReqs = await CategoryDocument.find({ isActive: true }).select('name slug category_slug').lean();
+
         return vendor.category.map(cat => {
+            const dbCat = dbCategories.find(c => c.slug === cat.slug);
+            const categoryObj = {
+                _id: dbCat?._id || cat._id || cat.id,
+                name: dbCat?.name || cat.name,
+                slug: cat.slug
+            };
             const catDocs = docs.filter(d => d.category_slug === cat.slug);
             const catReqs = categoryReqs.filter(r => r.category_slug === cat.slug);
-            return evaluateCategoryDocumentStatus(cat, catDocs, catReqs);
+            return evaluateCategoryDocumentStatus(categoryObj, catDocs, catReqs);
         });
     }
 
