@@ -1,6 +1,7 @@
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { getBusinessById, getBusinessBy, getPackageBy, getUserById } from "@/core/Helpers/queryHelpers.js";
 import { itemsFormate } from '@/core/Helpers/package.js';
+import { businessPayload, userPayload, userBusinessPayload } from '@/core/Helpers/userProfileHelper.js';
 import Controller from '../Controller.js';
 
 class VendorController extends Controller {
@@ -8,22 +9,14 @@ class VendorController extends Controller {
     // GET /traveller/profile/vendor/info/:userId
     async getVendorPersonalInfo(req, { params }) {
         try {
-            const user = await getUserById(params.userId, 'name email phone profileImage gender dateOfBirth bio address status isVendorVerified');
+            const user = await getUserById(params.userId);
             if (!user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.USER.NOT_FOUND);
-            let businessDetails = null;
-            const business = await getBusinessBy({ user: params.userId }, 'businessAbout businessName businessNumber businessRegistration profileImage gstNumber ownerName status trustBadge address');
-            if (business) {
+            const business = await getBusinessBy({ user: params.userId });
+            const responseData = userBusinessPayload(user, business);
+            if (business && responseData?.businessDetails) {
                 const packages = await getPackageBy({ vendor: business._id }) || {};
-                const items = itemsFormate(packages);
-                businessDetails = {
-                    ...business,
-                    items
-                };
+                responseData.businessDetails.items = itemsFormate(packages);
             }
-            const responseData = {
-                ...user,
-                businessDetails
-            };
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.USER.FETCHED, responseData);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -33,12 +26,12 @@ class VendorController extends Controller {
     // GET /traveller/profile/vendor/:businessId
     async getBusinessProfile(req, { params }) {
         try {
-            const business = await getBusinessById(params.businessId, 'businessAbout businessName businessNumber businessRegistration profileImage gstNumber ownerName status trustBadge address', { path: 'user', select: 'email phone profileImage isVendorVerified' });
+            const business = await getBusinessById(params.businessId, '', { path: 'user' });
             if (!business) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
             const packages = await getPackageBy({ vendor: params.businessId }) || {};
             const items = itemsFormate(packages);
             const responseData = {
-                ...business,
+                ...businessPayload(business),
                 items
             };
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, responseData);

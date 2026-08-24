@@ -61,14 +61,12 @@ export const userPayload = (u) => {
 };
 
 /**
- * Formats a vendor model (with populated user) into standard business API response structure.
- * @param {Object} vendor - The vendor object (lean, with populated user)
- * @returns {Object|null} Formatted business object or null
+ * Formats a raw vendor document into clean business details object without nested personalProfile.
+ * @param {Object} vendor - The Vendor object (lean)
+ * @returns {Object|null} Business details object or null
  */
-export const businessPayload = (vendor) => {
+export const businessDetailsFormat = (vendor) => {
     if (!vendor) return null;
-    const u = typeof vendor.user === 'object' && vendor.user !== null ? vendor.user : null;
-
     return {
         id: vendor._id ? vendor._id.toString() : (vendor.id || ''),
         ownerName: vendor.ownerName || '',
@@ -82,14 +80,49 @@ export const businessPayload = (vendor) => {
         profileType: vendor.profileType || 'business',
         trustBadge: vendor.trustBadge || 'none',
         businessAbout: vendor.businessAbout || '',
-        createdAt: vendor.createdAt || null,
+        createdAt: vendor.createdAt || null
+    };
+};
+
+/**
+ * Formats a vendor model (with populated user) into standard business API response structure.
+ * @param {Object} vendor - The vendor object (lean, with populated user)
+ * @returns {Object|null} Formatted business object or null
+ */
+export const businessPayload = (vendor) => {
+    if (!vendor) return null;
+    const u = typeof vendor.user === 'object' && vendor.user !== null ? vendor.user : null;
+    const b = businessDetailsFormat(vendor);
+    if (!b) return null;
+
+    return {
+        ...b,
         personalProfile: userPayload(u)
+    };
+};
+
+/**
+ * Formats a User model and optional Vendor/Business into an inverted (User-first) response payload with nested businessDetails.
+ * @param {Object} u - The User object (lean)
+ * @param {Object} vendor - The Vendor object (lean)
+ * @returns {Object|null} User-centric payload with businessDetails or null
+ */
+export const userBusinessPayload = (u, vendor = null) => {
+    if (!u) return null;
+    const baseUser = userPayload(u);
+    if (!baseUser) return null;
+
+    return {
+        ...baseUser,
+        businessDetails: businessDetailsFormat(vendor)
     };
 };
 
 export default {
     businessPayload,
     userPayload,
+    userBusinessPayload,
+    businessDetailsFormat,
     addressPayload,
     getLocationPoint
 };
