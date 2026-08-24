@@ -4,7 +4,8 @@ import Booking from '@/core/Models/Booking.js';
 import { successResponse, errorResponse } from '@/core/Helpers/response.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { EventEmitter } from 'events';
-import { getBookingById } from '@/core/Helpers/queryHelpers.js';
+import { getBookingById, getUserById } from '@/core/Helpers/queryHelpers.js';
+import { userPayload } from '@/core/Helpers/userProfileHelper.js';
 import User from '@/core/Models/User.js';
 import { PushNotificationService } from '@/core/Services/PushNotificationService.js';
 
@@ -14,6 +15,15 @@ chatEmitter.setMaxListeners(0);
 
 // Track active users listening to the chat SSE stream
 const activeSSEUsers = new Set();
+
+const formatConversation = (conv) => {
+    if (!conv) return null;
+    const c = typeof conv.toObject === 'function' ? conv.toObject() : { ...conv };
+    if (c.traveller && typeof c.traveller === 'object') c.traveller = userPayload(c.traveller);
+    if (c.vendor && typeof c.vendor === 'object') c.vendor = userPayload(c.vendor);
+    if (c.admin && typeof c.admin === 'object') c.admin = userPayload(c.admin);
+    return c;
+};
 
 class ChatController {
     /**
@@ -56,10 +66,13 @@ class ChatController {
             }
 
             // Check if conversation already exists
-            let conversation = await Conversation.findOne({ bookingId, type });
+            let conversation = await Conversation.findOne({ bookingId, type })
+                .populate('traveller')
+                .populate('vendor')
+                .populate('admin');
 
             if (!conversation) {
-                conversation = await Conversation.create({
+                const created = await Conversation.create({
                     bookingId,
                     type,
                     traveller: travellerUserId,
@@ -68,9 +81,14 @@ class ChatController {
                     lastMessage: '',
                     lastMessageAt: new Date()
                 });
+                conversation = await Conversation.findById(created._id)
+                    .populate('traveller')
+                    .populate('vendor')
+                    .populate('admin');
             }
 
-            return successResponse(HTTP_STATUS.OK, 'Conversation retrieved successfully.', conversation);
+            const responseData = formatConversation(conversation);
+            return successResponse(HTTP_STATUS.OK, 'Conversation retrieved successfully.', responseData);
         } catch (error) {
             console.error('[ChatController] createConversation error:', error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -91,7 +109,9 @@ class ChatController {
             }
 
             const conversations = await Conversation.find(query)
-                .populate('traveller vendor', 'firstName lastName email profileImage')
+                .populate('traveller')
+                .populate('vendor')
+                .populate('admin')
                 .populate({ path: 'bookingId', select: 'bookingCode' })
                 .sort({ lastMessageAt: -1 });
 
@@ -103,7 +123,7 @@ class ChatController {
                         sender: { $ne: req.user.id },
                         isRead: false
                     });
-                    const convObj = typeof conv.toObject === 'function' ? conv.toObject() : { ...conv };
+                    const convObj = formatConversation(conv);
                     convObj.unreadCount = unreadCount;
                     return convObj;
                 })
@@ -152,15 +172,22 @@ class ChatController {
                 query.createdAt = { $lt: new Date(before) };
             }
 
-            // Fetch messages with pagination
+            // Fetch messages with pagination and populate sender
             const messages = await ChatMessage.find(query)
+                .populate('sender')
                 .sort({ createdAt: -1 })
-                .limit(limit);
+                .limit(limit)
+                .lean();
 
             // Restore chronological order
             messages.reverse();
 
-            return successResponse(HTTP_STATUS.OK, 'Messages fetched successfully.', { conversation, messages });
+            const formattedMessages = messages.map(m => ({
+                ...m,
+                sender: typeof m.sender === 'object' && m.sender !== null ? userPayload(m.sender) : m.sender
+            }));
+
+            return successResponse(HTTP_STATUS.OK, 'Messages fetched successfully.', { conversation, messages: formattedMessages });
         } catch (error) {
             console.error('[ChatController] getMessages error:', error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -258,7 +285,11 @@ class ChatController {
                 console.error('[ChatController] Error sending offline push notification:', notifError);
             }
 
-            return successResponse(HTTP_STATUS.CREATED, 'Message sent successfully.', newMessage);
+            const senderUser = await getUserById(req.user.id);
+            const responseMessage = typeof newMessage.toObject === 'function' ? newMessage.toObject() : { ...newMessage };
+            responseMessage.sender = userPayload(senderUser);
+
+            return successResponse(HTTP_STATUS.CREATED, 'Message sent successfully.', responseMessage);
         } catch (error) {
             console.error('[ChatController] sendMessage error:', error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
