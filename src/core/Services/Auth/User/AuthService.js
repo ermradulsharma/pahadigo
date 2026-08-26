@@ -1,29 +1,27 @@
-import { USER_ROLES, AUTH_PROVIDERS, STATUS, RESPONSE_MESSAGES, VENDOR_STATUS, DEFAULTS } from '@/core/Constants/index.js';
 import User from '@/core/Models/User.js';
 import Vendor from '@/core/Models/Vendor.js';
 import OTPService from '@/core/Services/Auth/User/OTPService.js';
 import BaseAuthService from '@/core/Services/Auth/BaseAuthService.js';
 import googleAuthLib from 'google-auth-library';
-const { OAuth2Client } = googleAuthLib;
-import { getAppConfig } from '@/core/Lib/appConfig.js';
-import crypto from 'crypto';
-import jwt from 'jsonwebtoken';
 
+const { OAuth2Client } = googleAuthLib;
+
+import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { getBusinessBy } from "@/core/Helpers/queryHelpers.js";
 import { businessAuthResponse } from "@/core/Helpers/businessHelper.js";
 import { userAuthResponse } from "@/core/Helpers/userProfileHelper.js";
+import { USER_ROLES, AUTH_PROVIDERS, STATUS, RESPONSE_MESSAGES, VENDOR_STATUS, DEFAULTS } from '@/core/Constants/index.js';
+
+import crypto from 'crypto';
+import jwt from 'jsonwebtoken';
 
 async function getApplePublicKey(kid) {
     try {
         const response = await fetch('https://appleid.apple.com/auth/keys');
-        if (!response.ok) {
-            throw new Error('Failed to fetch Apple public keys');
-        }
+        if (!response.ok) throw new Error('Failed to fetch Apple public keys');
         const { keys } = await response.json();
         const key = keys.find(k => k.kid === kid);
-        if (!key) {
-            throw new Error('Matching Apple public key not found');
-        }
+        if (!key) throw new Error('Matching Apple public key not found');
         return crypto.createPublicKey({ format: 'jwk', key });
     } catch (err) {
         throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
