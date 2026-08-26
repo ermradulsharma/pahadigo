@@ -4,7 +4,7 @@ import { CATEGORY_MAP } from '@/core/Constants/categories.js';
 import MasterService from '@/core/Services/MasterService.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { getPackageItemById } from '@/core/Helpers/queryHelpers.js';
-import { businessPayload } from '@/core/Helpers/userProfileHelper.js';
+import { businessPayload } from '@/core/Helpers/index.js';
 
 /**
  * Shared core logic to retrieve an available package item with populated business & compliance checks.

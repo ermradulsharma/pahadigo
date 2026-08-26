@@ -9,6 +9,8 @@ import { getAppConfig } from '@/core/Lib/appConfig.js';
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
 
+import { getBusinessBy, businessAuthResponse, userAuthResponse } from "@/core/Helpers/index.js";
+
 async function getApplePublicKey(kid) {
     try {
         const response = await fetch('https://appleid.apple.com/auth/keys');
@@ -26,13 +28,11 @@ async function getApplePublicKey(kid) {
     }
 }
 
-
 class AuthService {
+
     async initiateOTP({ identifier, role, termsAccepted }) {
         const existingUser = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
-        if (existingUser && existingUser.role === USER_ROLES.ADMIN) {
-            throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
-        }
+        if (existingUser && existingUser.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
         if (existingUser && termsAccepted) {
             existingUser.termsAccepted = DEFAULTS.TRUE;
             existingUser.termsAcceptedAt = new Date();
@@ -42,36 +42,27 @@ class AuthService {
     }
 
     async authenticateWithOTP({ identifier, otp, targetRole }) {
-        const otpRecord = await OTPService.verifyOTP(identifier, otp);
-        if (!otpRecord) {
-            throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_OTP);
-        }
+        const record = await OTPService.verifyOTP(identifier, otp);
+        if (!record) throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_OTP);
 
-        const { termsAccepted } = otpRecord;
+        const { termsAccepted } = record;
         const isTermsAccepted = termsAccepted === DEFAULTS.TRUE || termsAccepted === 'true';
         const isEmail = identifier.includes('@');
         const normalizedEmail = isEmail ? identifier.toLowerCase().trim() : null;
         const normalizedPhone = !isEmail ? identifier.trim() : null;
 
-        let role = otpRecord.role;
-        if (role === 'master') {
-            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
-            role = (targetRole && validRoles.includes(targetRole)) ? targetRole : USER_ROLES.TRAVELLER;
-        }
+        let userRole = record.role;
+        if (userRole === 'master') userRole = this._resolveRole(targetRole);
 
         let user = await User.findOne({ $or: [{ email: normalizedEmail || identifier }, { phone: normalizedPhone || identifier }] });
 
         // Security Validation: Admins cannot use OTP Login
-        if (user && user.role === USER_ROLES.ADMIN) {
-            throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
-        }
+        if (user && user.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
 
         let isNewUser = (!user || !user.isVerified);
         if (!user) {
-            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
-            const userRole = (role && validRoles.includes(role)) ? role : USER_ROLES.TRAVELLER;
             const payload = {
-                role: userRole,
+                role: this._resolveRole(userRole),
                 isVerified: DEFAULTS.TRUE,
                 authProvider: normalizedEmail ? AUTH_PROVIDERS.LOCAL : AUTH_PROVIDERS.PHONE,
                 termsAccepted: isTermsAccepted,
@@ -85,10 +76,7 @@ class AuthService {
                 user.isVerified = DEFAULTS.TRUE;
                 user.authProvider = normalizedEmail ? AUTH_PROVIDERS.LOCAL : AUTH_PROVIDERS.PHONE;
             }
-            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
-            if (role && validRoles.includes(role) && user.role !== role) {
-                user.role = role;
-            }
+            if (userRole && [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR].includes(userRole) && user.role !== userRole) user.role = userRole;
             if (isTermsAccepted && !user.termsAccepted) {
                 user.termsAccepted = DEFAULTS.TRUE;
                 user.termsAcceptedAt = new Date();
@@ -96,16 +84,7 @@ class AuthService {
             user.preferences.tempRole = null;
             if (user.isModified()) await user.save();
         }
-
-        await this._handleDeactivation(user);
-
-        let vendorData = {};
-        if (user.role === USER_ROLES.VENDOR) {
-            vendorData = await this._getVendorStatus(user);
-        }
-
-        const tokens = await BaseAuthService.generateAndSaveTokens(user, true);
-        return { tokens, role: user.role, isNewUser, user, ...vendorData };
+        return await this._finalizeAuthResponse(user, isNewUser);
     }
 
     async authenticateWithGoogle(idToken, targetRole) {
@@ -118,30 +97,8 @@ class AuthService {
         const payload = ticket.getPayload();
         const { email, name, sub: googleId } = payload;
 
-        let user = await User.findOne({ email });
-        let isNewUser = DEFAULTS.FALSE;
-
-        if (!user) {
-            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
-            const userRole = (targetRole && validRoles.includes(targetRole)) ? targetRole : USER_ROLES.TRAVELLER;
-            user = await User.create({
-                email, name, googleId, role: userRole, isVerified: DEFAULTS.TRUE, authProvider: AUTH_PROVIDERS.GOOGLE
-            });
-            isNewUser = DEFAULTS.TRUE;
-        } else {
-            if (!user.googleId) {
-                user.googleId = googleId;
-                user.authProvider = AUTH_PROVIDERS.GOOGLE;
-            }
-            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
-            if (targetRole && validRoles.includes(targetRole)) user.role = targetRole;
-            if (user.isModified()) await user.save();
-        }
-
-        await this._handleDeactivation(user);
-        let vendorData = user.role === USER_ROLES.VENDOR ? await this._getVendorStatus(user) : {};
-        const tokens = await BaseAuthService.generateAndSaveTokens(user, true);
-        return { tokens, role: user.role, isNewUser, user, ...vendorData };
+        const { user, isNewUser } = await this._findOrCreateSocialUser({ email, name, providerKey: 'googleId', providerId: googleId, authProvider: AUTH_PROVIDERS.GOOGLE, targetRole });
+        return await this._finalizeAuthResponse(user, isNewUser);
     }
 
     async authenticateWithFacebook(accessToken, targetRole) {
@@ -150,55 +107,15 @@ class AuthService {
         if (!facebookAppId) throw new Error(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
 
         const response = await fetch(`https://graph.facebook.com/me?fields=id,name,email&access_token=${accessToken}`);
-        if (!response.ok) {
-            throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
-        }
+        if (!response.ok) throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
+
         const payload = await response.json();
-        if (payload.error) {
-            throw new Error(payload.error.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
-        }
+        if (payload.error || !payload.id) throw new Error(payload.error?.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
+
         const { id: facebookId, name, email } = payload;
-        if (!facebookId) {
-            throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
-        }
 
-        let user = null;
-        if (email) {
-            user = await User.findOne({ $or: [{ facebookId }, { email }] });
-        } else {
-            user = await User.findOne({ facebookId });
-        }
-        let isNewUser = DEFAULTS.FALSE;
-
-        if (!user) {
-            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
-            const userRole = (targetRole && validRoles.includes(targetRole)) ? targetRole : USER_ROLES.TRAVELLER;
-            user = await User.create({
-                email: email || null,
-                name: name || null,
-                facebookId,
-                role: userRole,
-                isVerified: DEFAULTS.TRUE,
-                authProvider: AUTH_PROVIDERS.FACEBOOK
-            });
-            isNewUser = DEFAULTS.TRUE;
-        } else {
-            if (!user.facebookId) {
-                user.facebookId = facebookId;
-                user.authProvider = AUTH_PROVIDERS.FACEBOOK;
-            }
-            if (email && !user.email) {
-                user.email = email;
-            }
-            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
-            if (targetRole && validRoles.includes(targetRole)) user.role = targetRole;
-            if (user.isModified()) await user.save();
-        }
-
-        await this._handleDeactivation(user);
-        let vendorData = user.role === USER_ROLES.VENDOR ? await this._getVendorStatus(user) : {};
-        const tokens = await BaseAuthService.generateAndSaveTokens(user, true);
-        return { tokens, role: user.role, isNewUser, user, ...vendorData };
+        const { user, isNewUser } = await this._findOrCreateSocialUser({ email, name, providerKey: 'facebookId', providerId: facebookId, authProvider: AUTH_PROVIDERS.FACEBOOK, targetRole });
+        return await this._finalizeAuthResponse(user, isNewUser);
     }
 
     async authenticateWithApple(idToken, targetRole, appleUser, appleEmail) {
@@ -207,146 +124,78 @@ class AuthService {
         if (!appleClientId) throw new Error(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
 
         const decodedToken = jwt.decode(idToken, { complete: true });
-        if (!decodedToken || !decodedToken.header || !decodedToken.header.kid) {
-            throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
-        }
+        if (!decodedToken?.header?.kid) throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
 
         const applePublicKey = await getApplePublicKey(decodedToken.header.kid);
-        
         let payload;
         try {
-            payload = jwt.verify(idToken, applePublicKey, {
-                algorithms: ['RS256'],
-                issuer: 'https://appleid.apple.com',
-                audience: appleClientId
-            });
+            payload = jwt.verify(idToken, applePublicKey, { algorithms: ['RS256'], issuer: 'https://appleid.apple.com', audience: appleClientId });
         } catch (err) {
             throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
         }
 
         const appleId = payload.sub;
         const email = payload.email || appleEmail || null;
-        
-        let name = null;
-        if (appleUser && appleUser.name) {
-            name = [appleUser.name.firstName, appleUser.name.lastName].filter(Boolean).join(' ');
-        }
-        if (!name) {
-            name = email ? email.split('@')[0] : 'Apple User';
-        }
+        let name = appleUser?.name ? [appleUser.name.firstName, appleUser.name.lastName].filter(Boolean).join(' ') : (email ? email.split('@')[0] : 'Apple User');
 
-        let user = null;
-        if (email) {
-            user = await User.findOne({ $or: [{ appleId }, { email }] });
-        } else {
-            user = await User.findOne({ appleId });
-        }
-        let isNewUser = DEFAULTS.FALSE;
+        const { user, isNewUser } = await this._findOrCreateSocialUser({ email, name, providerKey: 'appleId', providerId: appleId, authProvider: AUTH_PROVIDERS.APPLE, targetRole });
 
-        if (!user) {
-            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
-            const userRole = (targetRole && validRoles.includes(targetRole)) ? targetRole : USER_ROLES.TRAVELLER;
-            user = await User.create({
-                email: email || null,
-                name: name || null,
-                appleId,
-                role: userRole,
-                isVerified: DEFAULTS.TRUE,
-                authProvider: AUTH_PROVIDERS.APPLE
-            });
-            isNewUser = DEFAULTS.TRUE;
-        } else {
-            if (!user.appleId) {
-                user.appleId = appleId;
-                user.authProvider = AUTH_PROVIDERS.APPLE;
-            }
-            if (email && !user.email) {
-                user.email = email;
-            }
-            const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
-            if (targetRole && validRoles.includes(targetRole)) user.role = targetRole;
-            if (user.isModified()) await user.save();
-        }
-
-        await this._handleDeactivation(user);
-        let vendorData = user.role === USER_ROLES.VENDOR ? await this._getVendorStatus(user) : {};
-        const tokens = await BaseAuthService.generateAndSaveTokens(user, true);
-        return { tokens, role: user.role, isNewUser, user, ...vendorData };
+        return await this._finalizeAuthResponse(user, isNewUser);
     }
 
-    // Helper methods from old code
-    async _getVendorStatus(user) {
-        const businessProfile = await Vendor.findOne({ user: user._id });
-        let status = businessProfile ? VENDOR_STATUS.UPLOAD_DOCUMENTS : VENDOR_STATUS.SET_PROFILE;
-        if (businessProfile?.documents?.aadharCard?.length > 0 && businessProfile.documents.panCard?.url) {
-            status = VENDOR_STATUS.COMPLETED;
+    // Helper methods
+    _resolveRole(role) {
+        const validRoles = [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR];
+        return (role && validRoles.includes(role)) ? role : USER_ROLES.TRAVELLER;
+    }
+
+    async _finalizeAuthResponse(user, isNewUser) {
+        await this._handleDeactivation(user);
+        const tokens = await BaseAuthService.generateAndSaveTokens(user, true);
+        const userFormat = userAuthResponse(user);
+        let vendorData = {};
+        if (user.role === USER_ROLES.VENDOR) vendorData = await this._getVendorStatus(user);
+        return { ...userFormat, tokens, isNewUser, ...vendorData };
+    }
+
+    async _findOrCreateSocialUser({ email, name, providerKey, providerId, authProvider, targetRole }) {
+        let user = null;
+        if (email) {
+            user = await User.findOne({ $or: [{ [providerKey]: providerId }, { email }] });
+        } else {
+            user = await User.findOne({ [providerKey]: providerId });
         }
-        return { businessProfileStatus: status, businessProfile };
+
+        let isNewUser = DEFAULTS.FALSE;
+        const userRole = this._resolveRole(targetRole);
+
+        if (!user) {
+            user = await User.create({ email: email || null, name: name || null, [providerKey]: providerId, role: userRole, isVerified: DEFAULTS.TRUE, authProvider });
+            isNewUser = DEFAULTS.TRUE;
+        } else {
+            if (!user[providerKey]) {
+                user[providerKey] = providerId;
+                user.authProvider = authProvider;
+            }
+            if (email && !user.email) user.email = email;
+            if (targetRole && [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR].includes(targetRole)) user.role = targetRole;
+            if (user.isModified()) await user.save();
+        }
+        return { user, isNewUser };
+    }
+
+    async _getVendorStatus(user) {
+        const business = await getBusinessBy({ user: user._id });
+        const businessData = businessAuthResponse(business);
+        const businessProfileStatus = businessData.profileStatus
+        return { businessProfileStatus, ...{ businessProfile: businessData } };
     }
 
     async _handleDeactivation(user) {
-        // 1. Status Activation Logic
         if (user.status === STATUS.INACTIVE) {
             user.status = STATUS.ACTIVE;
             await user.save();
         }
-
-        // 2. Deletion/Recovery Logic
-        if (user.deletedAt || user.status === STATUS.DELETED) {
-            const isSelfDeleted = !user.deletedBy || (user.deletedBy.toString() === user._id.toString());
-
-            if (isSelfDeleted) {
-                // Restore account if user deleted it themselves
-                user.deletedAt = DEFAULTS.NULL;
-                user.deletedBy = DEFAULTS.NULL;
-                user.status = STATUS.ACTIVE;
-                user.deletedReason = DEFAULTS.NULL;
-                await user.save();
-            } else {
-                // Block login if Admin deleted the account
-                throw new Error(RESPONSE_MESSAGES.AUTH.ACCOUNT_DELETED);
-            }
-        }
-    }
-
-    async toggleRole(userId) {
-        const user = await User.findById(userId);
-        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
-
-        if (user.role === USER_ROLES.ADMIN) {
-            throw new Error(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
-        }
-
-        const newRole = user.role === USER_ROLES.VENDOR ? USER_ROLES.TRAVELLER : USER_ROLES.VENDOR;
-        user.role = newRole;
-        await user.save();
-
-        let vendorData = user.role === USER_ROLES.VENDOR ? await this._getVendorStatus(user) : {};
-        return {
-            success: DEFAULTS.TRUE,
-            role: user.role,
-            user: { ...user.toObject(), password: undefined },
-            ...vendorData
-        };
-    }
-
-    async upgradeToVendor(userId) {
-        const user = await User.findById(userId);
-        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
-        if (user.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
-        user.preferences.tempRole = user.preferences?.tempRole === USER_ROLES.VENDOR ? null : USER_ROLES.VENDOR;
-        await user.save();
-        const vendorData = await this._getVendorStatus(user);
-        return true;
-    }
-
-    async downgradeToTraveller(userId) {
-        const user = await User.findById(userId);
-        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
-        if (user.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
-        user.preferences.tempRole = user.preferences?.tempRole === USER_ROLES.TRAVELLER ? null : USER_ROLES.TRAVELLER;
-        await user.save();
-        return true;
     }
 }
 

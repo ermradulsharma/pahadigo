@@ -29,21 +29,35 @@ jest.unstable_mockModule('@/services/MasterService.js', () => ({
     }
 }));
 
-jest.unstable_mockModule('mongoose', () => ({
-    default: {
+jest.unstable_mockModule('mongoose', () => {
+    const mockSchema = class {
+        constructor() {
+            this.index = jest.fn();
+            this.virtual = jest.fn().mockReturnThis();
+            this.set = jest.fn().mockReturnThis();
+            this.pre = jest.fn().mockReturnThis();
+            this.post = jest.fn().mockReturnThis();
+            this.methods = {};
+        }
+        static Types = { ObjectId: jest.fn(id => id) };
+    };
+    const mockMongoose = {
         Types: { ObjectId: jest.fn(id => id) },
         model: jest.fn(() => ({
             findOne: jest.fn().mockResolvedValue({ status: 'verified' })
         })),
         models: {},
-        Schema: class {
-            constructor() {
-                this.index = jest.fn();
-            }
-            static Types = { ObjectId: jest.fn(id => id) };
-        }
-    }
-}));
+        Schema: mockSchema
+    };
+    return {
+        __esModule: true,
+        default: mockMongoose,
+        Schema: mockSchema,
+        Types: mockMongoose.Types,
+        model: mockMongoose.model,
+        models: mockMongoose.models
+    };
+});
 
 jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
     getAppConfig: jest.fn().mockResolvedValue({ tax: { gst: 18, service_tax: 2 } })

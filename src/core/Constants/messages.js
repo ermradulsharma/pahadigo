@@ -186,7 +186,7 @@ export const RESPONSE_MESSAGES = {
         BANK_DETAILS_UPDATED: 'Financial information saved.',
         FETCHED: 'Vendor profile details retrieved.',
         ALREADY_EXISTS: 'A vendor record already exists for this user.',
-        CATEGORIES_FETCHED: 'Linked business categories retrieved.',
+        CATEGORIES_FETCHED: 'Linked business categories retrieved successfully.',
         ELIGIBLE_CATEGORIES_FETCHED: 'Available business categories retrieved.',
         CATEGORY_DOCS_FETCHED: 'Required compliance documents retrieved.',
         CATEGORY_DOCS_LIST_FETCHED: 'Category-specific requirements retrieved.',

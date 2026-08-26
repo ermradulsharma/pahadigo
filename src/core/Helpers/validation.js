@@ -439,11 +439,7 @@ export const validate = (schema, data) => {
         return { success: DEFAULTS.TRUE, data: validData };
     } catch (error) {
         if (error instanceof z.ZodError || error.name === 'ZodError') {
-            const issues = error.errors || error.issues || [];
-            return {
-                success: DEFAULTS.FALSE,
-                error: issues.map(err => `${(err.path || []).join('.')}: ${err.message}`).join(', ') || RESPONSE_MESSAGES.ERROR.VALIDATION
-            };
+            return { success: DEFAULTS.FALSE, error: RESPONSE_MESSAGES.ERROR.VALIDATION };
         }
         return { success: DEFAULTS.FALSE, error: RESPONSE_MESSAGES.ERROR.VALIDATION };
     }

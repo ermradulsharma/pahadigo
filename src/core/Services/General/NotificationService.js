@@ -47,7 +47,7 @@ class NotificationService {
      */
     async sendOTPEmail(email, otp) {
         try {
-            const html = await renderTemplate('Emails/auth-otp.html', { OTP: otp });
+            const html = await renderTemplate('Emails/otp.html', { OTP: otp });
             await this._sendEmailHelper({ to: email, subject: `PahadiGo OTP Verification`, html: html });
             return true;
         } catch (error) {
@@ -74,15 +74,56 @@ class NotificationService {
      */
     async sendLoginAlertEmail(email, details) {
         try {
-            const html = await renderTemplate('Emails/login-alert.html', {
-                DEVICE: details.device || 'Unknown Device',
+            const config = await getAppConfig();
+            const securityUrl = config?.app?.url ? `${config.app.url}/security` : 'https://pahadigo.com/security';
+            const html = await renderTemplate('Emails/alert.html', {
+                NAME: details.name || 'Traveler',
+                ACCOUNT_IDENTIFIER: details.accountIdentifier || email,
+                AUTH_METHOD: details.authMethod || 'OTP Verification',
+                ROLE: details.role || 'User',
+                DEVICE: details.summary || details.device || 'Unknown Device',
+                DEVICE_NAME: details.device || 'Unknown Device',
+                DEVICE_TYPE: details.deviceType || 'Device',
+                BROWSER: details.browser || 'Browser',
+                OS: details.os || 'OS',
                 IP: details.ip || 'Unknown IP',
-                TIME: details.time || new Date().toLocaleString()
+                LOCATION: details.location || 'Unknown Location',
+                TIME: details.loginTime || new Date().toLocaleString(),
+                SECURITY_URL: securityUrl
             });
-            await this._sendEmailHelper({ to: email, subject: `PahadiGo: New Login Alert`, html: html });
+            await this._sendEmailHelper({ to: email, subject: `PahadiGo Security Alert: New sign-in detected`, html: html });
             return true;
         } catch (error) {
             console.error("[NotificationService] sendLoginAlertEmail Error:", error);
+            return false;
+        }
+    }
+
+    /**
+     * Send login alert SMS
+     */
+    async sendLoginAlertSMS(phone, details) {
+        const message = `PahadiGo Alert: Your account was logged in from ${details.device} (${details.location}) at ${details.loginTime}. If this wasn't you, please secure your account.`;
+        return await this.sendSMS(phone, message);
+    }
+
+    /**
+     * Send welcome email to new user
+     */
+    async sendWelcomeEmail(email, userData = {}) {
+        try {
+            const config = await getAppConfig();
+            const exploreUrl = config?.app?.url ? `${config.app.url}/explore` : 'https://pahadigo.com/explore';
+            const html = await renderTemplate('Emails/welcome.html', {
+                NAME: userData.name || 'Traveler',
+                ACCOUNT_IDENTIFIER: email,
+                JOIN_DATE: new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' }),
+                EXPLORE_URL: exploreUrl
+            });
+            await this._sendEmailHelper({ to: email, subject: `Welcome to PahadiGo!`, html: html });
+            return true;
+        } catch (error) {
+            console.error("[NotificationService] sendWelcomeEmail Error:", error);
             return false;
         }
     }

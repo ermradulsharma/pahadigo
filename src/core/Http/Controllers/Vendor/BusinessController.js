@@ -1,5 +1,5 @@
 import BusinessService from '@/core/Services/Vendor/BusinessService.js';
-import { getBusinessByUserId } from '@/core/Helpers/queryHelpers.js';
+import { getBusinessById, getBusinessByUserId } from '@/core/Helpers/queryHelpers.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { handleFormDataImageUpload } from '@/core/Helpers/cloudinary.js';
 import { businessDetailsFormat } from '@/core/Helpers/userProfileHelper.js';
@@ -12,11 +12,22 @@ import VendorEvents from '@/core/Events/VendorEvents.js';
  */
 class BusinessController extends Controller {
 
+    /**
+     * Private Helper: Prepare request payload & process optional profile image upload (DRY)
+     */
+    async _prepareProfileBody(req) {
+        const body = req.payload || {};
+        const profileImage = await handleFormDataImageUpload(req.formDataBody, 'profile_image', `vendor_profiles/${req.user.id}`);
+        if (profileImage) body.profileImage = profileImage;
+        return body;
+    }
+
     // GET /vendor/business/profile
     async getProfile(req) {
         try {
             const vendor = await getBusinessByUserId(req.user.id);
             if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+
             const responseData = businessDetailsFormat(vendor);
             if (vendor.closurePeriods) responseData.closurePeriods = vendor.closurePeriods;
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, responseData);
@@ -25,41 +36,61 @@ class BusinessController extends Controller {
         }
     }
 
-    // POST /vendor/business/profile/create
+    // POST /vendor/business/profile/create (Onboarding - strictly 1-time creation)
     async createProfile(req) {
         try {
-            const existingProfile = await getBusinessByUserId(req.user.id);
+            const userId = req.user.id;
+            const existingProfile = await getBusinessByUserId(userId);
             if (existingProfile) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.PROFILE_ALREADY_EXISTS);
 
-            const body = req.payload || {};
-            const profileImage = await handleFormDataImageUpload(req.formDataBody, 'profile_image', `vendor_profiles/${req.user.id}`);
-            if (profileImage) body.profileImage = profileImage;
-
-            const vendor = await BusinessService.syncBusinessProfile(req.user.id, body);
+            const body = await this._prepareProfileBody(req);
+            const vendor = await BusinessService.syncBusinessProfile(userId, body);
             if (vendor.user?.email) VendorEvents.emit('vendor.profile_created', { identifier: vendor.user.email, businessName: vendor.businessName });
-            return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.PROFILE_INITIATED, businessDetailsFormat(vendor));
+
+            return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.PROFILE_INITIATED, vendor);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
-    // PATCH /vendor/business/profile/update/:id
+    // PATCH /vendor/business/profile/update/:id (Updates - check existence by params.id)
     async updateProfile(req, { params }) {
         try {
-            const body = req.payload || {};
-            const profileImage = await handleFormDataImageUpload(req.formDataBody, 'profile_image', `vendor_profiles/${req.user.id}`);
-            if (profileImage) body.profileImage = profileImage;
+            // Check if businessId and userId are provided
+            const businessId = params?.id;
+            const userId = req.user?.id;
+            if (!businessId || !userId) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.INVALID_ID);
 
-            const vendor = await BusinessService.syncBusinessProfile(req.user.id, body);
+            // Check if business exists
+            const existingProfile = await getBusinessById(businessId);
+            if (!existingProfile) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+
+            // Check if business belongs to the user
+            const ownerUserId = existingProfile.user?._id ? existingProfile.user._id.toString() : (existingProfile.user ? existingProfile.user.toString() : null);
+            if (ownerUserId !== userId) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.ERROR.UNAUTHORIZED);
+
+            // Prepare request payload & process optional profile image upload (DRY)
+            const body = await this._prepareProfileBody(req);
+
+            // Update business profile
+            const vendor = await BusinessService.syncBusinessProfile(userId, body);
+
+            // Emit event if email is present
+            if (vendor.user?.email) VendorEvents.emit('vendor.profile_updated', { identifier: vendor.user.email, businessName: vendor.businessName });
+
+            // Return success response
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PROFILE_UPDATED, businessDetailsFormat(vendor));
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
-    // DELETE /vendor/business/profile/delete/:id
+    // DELETE /vendor/business/profile/delete/:id (Delete - check existence by params.id)
     async deleteProfile(req, { params }) {
         try {
+            const existingVendor = (params?.id ? await getBusinessById(params.id) : null) || await getBusinessByUserId(req.user.id);
+            if (!existingVendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+
             const result = await BusinessService.removeBusinessProfile(req.user.id);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PROFILE_DELETED, result);
         } catch (error) {
@@ -67,10 +98,13 @@ class BusinessController extends Controller {
         }
     }
 
-    // PATCH /vendor/business/profile/status/:id
+    // PATCH /vendor/business/profile/status/:id (Status Toggle - check existence by params.id)
     async updateOperatingStatus(req, { params }) {
         try {
-            const body = req.payload;
+            const existingVendor = (params?.id ? await getBusinessById(params.id) : null) || await getBusinessByUserId(req.user.id);
+            if (!existingVendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+
+            const body = req.payload || {};
             if (body.isOperating === undefined) {
                 return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.OPERATING_STATUS_REQUIRED);
             }

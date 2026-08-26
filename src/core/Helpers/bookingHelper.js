@@ -1,4 +1,4 @@
-import { businessPayload, userPayload } from './userProfileHelper.js';
+import { businessPayload, userPayload } from './index.js';
 
 /**
  * Booking Payload Formatting Helpers

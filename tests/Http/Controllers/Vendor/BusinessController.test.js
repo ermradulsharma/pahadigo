@@ -11,7 +11,8 @@ jest.unstable_mockModule('@/core/Services/Vendor/BusinessService.js', () => ({
 }));
 
 jest.unstable_mockModule('@/core/Helpers/cloudinary.js', () => ({
-    uploadToCloudinary: jest.fn()
+    uploadToCloudinary: jest.fn(),
+    handleFormDataImageUpload: jest.fn()
 }));
 
 jest.unstable_mockModule('@/core/Events/VendorEvents.js', () => ({
@@ -74,7 +75,7 @@ describe('Vendor BusinessController', () => {
             const body = await response.json();
 
             expect(response.status).toBe(HTTP_STATUS.CREATED);
-            expect(body.data._id).toBe('v1');
+            expect(body.data.id).toBe('v1');
             expect(VendorEvents.emit).toHaveBeenCalledWith('vendor.profile_created', expect.any(Object));
         });
 

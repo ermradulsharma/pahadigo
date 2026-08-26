@@ -52,6 +52,9 @@ jest.unstable_mockModule('@/core/Models/VendorClosure.js', () => ({
 jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => ({
     getBusinessBy: jest.fn(),
     getBusinessById: jest.fn(),
+    getBusinessByUserId: jest.fn(),
+    getManyBy: jest.fn(),
+    getPackageBy: jest.fn()
 }));
 
 jest.unstable_mockModule('@/core/Helpers/geoUtils.js', () => ({
@@ -114,19 +117,19 @@ describe('BusinessService', () => {
     describe('getBusinessByUserId & getBusinessProfile', () => {
         it('should fetch business profile with closures', async () => {
             const mockVendor = { _id: 'v1' };
-            queryHelpers.getBusinessBy.mockResolvedValue(mockVendor);
+            queryHelpers.getBusinessByUserId.mockResolvedValue(mockVendor);
             
             const mockClosures = [{ _id: 'closure1' }];
             VendorClosure.find.mockReturnValue({ sort: jest.fn().mockResolvedValue(mockClosures) });
 
             const result = await BusinessService.getBusinessProfile('u1');
             
-            expect(queryHelpers.getBusinessBy).toHaveBeenCalledWith({ user: 'u1', deletedAt: null }, '', expect.any(Object));
+            expect(queryHelpers.getBusinessByUserId).toHaveBeenCalledWith('u1', '', expect.any(Object));
             expect(result.closurePeriods).toEqual(mockClosures);
         });
 
         it('should return null if no business is found', async () => {
-            queryHelpers.getBusinessBy.mockResolvedValue(null);
+            queryHelpers.getBusinessByUserId.mockResolvedValue(null);
             const result = await BusinessService.getBusinessProfile('u1');
             expect(result).toBeNull();
         });

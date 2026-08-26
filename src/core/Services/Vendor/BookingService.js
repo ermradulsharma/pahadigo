@@ -115,8 +115,6 @@ class BookingService {
         return results;
     }
 
-
-
     /**
      * Update operational status of a booking (Industry Standard)
      */

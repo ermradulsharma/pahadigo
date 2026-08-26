@@ -17,7 +17,7 @@ const envSchema = z.object({
 });
 
 export const validateEnv = () => {
-    if (process.env.NODE_ENV === 'test') return;
+    if (process.env.NODE_ENV === 'test' || process.env.JEST_WORKER_ID !== undefined) return;
     const parsed = envSchema.safeParse(process.env);
     if (!parsed.success) {
         const logger = getLogger();

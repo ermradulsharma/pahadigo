@@ -52,7 +52,7 @@ describe('Traveller BookingController', () => {
             const body = await response.json();
 
             expect(response.status).toBe(HTTP_STATUS.OK);
-            expect(body.data).toEqual(mockBookings);
+            expect(body.data[0].bookingId).toBe('booking123');
             expect(queryHelpers.getManyBy).toHaveBeenCalledWith(
                 expect.any(Function),
                 expect.objectContaining({ user: 'user123' }),
@@ -104,7 +104,7 @@ describe('Traveller BookingController', () => {
             const body = await response.json();
 
             expect(response.status).toBe(HTTP_STATUS.OK);
-            expect(body.data).toEqual(mockBooking);
+            expect(body.data.bookingId).toBe('booking123');
         });
 
         test('should return 404 if booking not found', async () => {

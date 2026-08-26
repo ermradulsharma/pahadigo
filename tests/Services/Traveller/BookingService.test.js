@@ -37,9 +37,21 @@ jest.unstable_mockModule('mongoose', () => {
     };
 });
 
-jest.unstable_mockModule('@/core/Models/Booking.js', () => ({
-    default: { create: jest.fn(), findOne: jest.fn(), findById: jest.fn(), find: jest.fn(() => ({ sort: jest.fn(() => Promise.resolve([])) })) }
-}));
+jest.unstable_mockModule('@/core/Models/Booking.js', () => {
+    const mockQuery = {
+        populate: jest.fn().mockReturnThis(),
+        exec: jest.fn(),
+        then: function(resolve, reject) { return Promise.resolve(this.mockDoc).then(resolve, reject); }
+    };
+    return {
+        default: { 
+            create: jest.fn(), 
+            findOne: jest.fn(() => mockQuery), 
+            findById: jest.fn(), 
+            find: jest.fn(() => ({ sort: jest.fn(() => Promise.resolve([])) })) 
+        }
+    };
+});
 
 jest.unstable_mockModule('@/core/Models/User.js', () => ({
     default: { findById: jest.fn() }
@@ -130,6 +142,7 @@ jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
 jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => ({
     getPackageItemById: jest.fn(),
     getUserById: jest.fn(),
+    getBusinessById: jest.fn(),
     getBookingBy: jest.fn()
 }));
 
@@ -156,6 +169,7 @@ describe('BookingService Business Logic', () => {
             const mockPackageItem = {
                 catalogId: 'c1',
                 category: 'trekking',
+                business: { id: 'v123' },
                 vendor: { id: 'v123' },
                 pricing: { basePrice: 1000, discountType: 'flat', discount: 0 },
                 title: 'Trek Pack',
@@ -197,7 +211,7 @@ describe('BookingService Business Logic', () => {
             const mockPackageItem = {
                 catalogId: 'c1',
                 category: 'trekking',
-                vendor: { id: 'v123' }
+                business: { id: 'v123' }
             };
             PackageService.getAvailablePackageItem.mockResolvedValue(mockPackageItem);
             queryHelpers.getUserById.mockResolvedValue({});
@@ -214,6 +228,7 @@ describe('BookingService Business Logic', () => {
             const mockPackageItem = {
                 catalogId: 'c1',
                 category: 'trekking',
+                business: { id: 'v123' },
                 vendor: { id: 'v123' },
                 pricing: { basePrice: 1000 }
             };

@@ -58,7 +58,7 @@ class BusinessService {
         }
         if (profileData.businessCategory && Array.isArray(profileData.businessCategory)) {
             const categories = await getManyBy(Category, { slug: { $in: profileData.businessCategory } });
-            updateData.category = categories.map(cat => ({
+            updateData.category = (categories || []).map(cat => ({
                 _id: cat._id,
                 name: cat.name,
                 slug: cat.slug
@@ -141,7 +141,7 @@ class BusinessService {
             const catalog = await getPackageBy({ vendor: vendorId });
 
             if (catalog) {
-                const totalBookings = await Booking.countDocuments({ package: catalog._id, status: 'completed' });
+                const totalBookings = await Booking.countDocuments({ vendor: vendorId, status: 'completed' });
 
                 if (totalBookings >= 10) {
                     const disputeCount = await Dispute.countDocuments({ vendor: vendorId, status: 'resolved_refunded' });

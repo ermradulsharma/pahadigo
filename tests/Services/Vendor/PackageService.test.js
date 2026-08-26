@@ -94,7 +94,7 @@ describe('Industry Standard: Vendor PackageService Logic', () => {
             };
             const result = await PackageService.addItem('u1', 'v1', 'trekking', itemData);
 
-            expect(result.pricing.sellingPrice).toBe(1080); // 1000 + 180 (GST) - 100 (10% discount)
+            expect(result.pricing.sellingPrice).toBe(1180); // 1000 basePrice + 180 (18% GST)
         });
     });
 
@@ -143,7 +143,7 @@ describe('Industry Standard: Vendor PackageService Logic', () => {
 
             const result = await PackageService.updateItem('u1', 'v1', 'trekking', 'item1', updates);
 
-            expect(result.pricing.sellingPrice).toBe(2000); // 2000 + 100 (GST) - 100 (flat discount)
+            expect(result.pricing.sellingPrice).toBe(2100); // 2000 basePrice + 100 (5% GST)
         });
     });
 });

@@ -9,7 +9,7 @@ import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { paginateArray } from '@/core/Helpers/queryUtils.js';
 import Controller from '@/core/Controllers/Controller.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
-import console from 'console';
+import { formatPackageItem } from '@/core/Helpers/package.js';
 
 /**
  * PackageController (General/Public Role) - Handles public browsing and search of packages.
@@ -44,34 +44,19 @@ class PackageController extends Controller {
                     }
                 }
                 if (sort === 'price_asc') {
-                    allItems.sort((a, b) => {
-                        const pA = a.pricing?.sellingPrice || 99999999;
-                        const pB = b.pricing?.sellingPrice || 99999999;
-                        return pA - pB;
-                    });
+                    allItems.sort((a, b) => (a.pricing?.sellingPrice || 99999999) - (b.pricing?.sellingPrice || 99999999));
                 } else if (sort === 'price_desc') {
-                    allItems.sort((a, b) => {
-                        const pA = a.pricing?.sellingPrice || 0;
-                        const pB = b.pricing?.sellingPrice || 0;
-                        return pB - pA;
-                    });
+                    allItems.sort((a, b) => (b.pricing?.sellingPrice || 0) - (a.pricing?.sellingPrice || 0));
                 } else {
                     allItems.sort((a, b) => (b.id || b._id).toString().localeCompare((a.id || a._id).toString()));
                 }
-                const itemsWithWishlist = allItems.map(item => {
-                    const itemIdStr = (item.id || item._id).toString();
-                    return {
-                        ...item,
-                        wishlist: wishlistMap.has(itemIdStr),
-                        wishlistId: wishlistMap.get(itemIdStr) || null
-                    };
-                });
+                const formattedItems = allItems.map(item => formatPackageItem(item, wishlistMap));
                 
                 if (query) {
                     await this._logSearch(query, req.user, allItems.length);
                 }
                 
-                const paginatedData = paginateArray(itemsWithWishlist, page, limit);
+                const paginatedData = paginateArray(formattedItems, page, limit);
                 return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, paginatedData);
             }
 
@@ -81,29 +66,14 @@ class PackageController extends Controller {
                 if (Array.isArray(items)) {
                     totalGrouped += items.length;
                     if (sort === 'price_asc') {
-                        items.sort((a, b) => {
-                            const pA = a.pricing?.sellingPrice || 99999999;
-                            const pB = b.pricing?.sellingPrice || 99999999;
-                            return pA - pB;
-                        });
+                        items.sort((a, b) => (a.pricing?.sellingPrice || 99999999) - (b.pricing?.sellingPrice || 99999999));
                     } else if (sort === 'price_desc') {
-                        items.sort((a, b) => {
-                            const pA = a.pricing?.sellingPrice || 0;
-                            const pB = b.pricing?.sellingPrice || 0;
-                            return pB - pA;
-                        });
+                        items.sort((a, b) => (b.pricing?.sellingPrice || 0) - (a.pricing?.sellingPrice || 0));
                     } else {
                         items.sort((a, b) => (b.id || b._id).toString().localeCompare((a.id || a._id).toString()));
                     }
-                    const itemsWithWishlist = items.map(item => {
-                        const itemIdStr = (item.id || item._id).toString();
-                        return {
-                            ...item,
-                            wishlist: wishlistMap.has(itemIdStr),
-                            wishlistId: wishlistMap.get(itemIdStr) || null
-                        };
-                    });
-                    categoryData[slug] = paginateArray(itemsWithWishlist, page, limit);
+                    const formattedItems = items.map(item => formatPackageItem(item, wishlistMap));
+                    categoryData[slug] = paginateArray(formattedItems, page, limit);
                 }
             }
             if (query) {

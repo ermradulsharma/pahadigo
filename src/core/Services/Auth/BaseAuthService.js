@@ -9,13 +9,10 @@ class BaseAuthService {
     async generateAndSaveTokens(user, rememberMe = false) {
         const payload = { id: user._id, role: user.role, email: user.email, identifier: user.email || user.phone };
         const tokens = await generateAuthTokens(payload, rememberMe);
-        
+
         // Save refresh token JTI in Redis for validation/blacklisting. Key: auth:refresh:{userId}:{jti}
         const ttl = rememberMe ? 30 * 24 * 60 * 60 : 7 * 24 * 60 * 60; // seconds
-        await CacheService.set(`auth:refresh:${user._id}:${tokens.refreshJti}`, {
-            createdAt: new Date().toISOString()
-        }, ttl);
-
+        await CacheService.set(`auth:refresh:${user._id}:${tokens.refreshJti}`, { createdAt: new Date().toISOString() }, ttl);
         return tokens;
     }
 
@@ -61,7 +58,7 @@ class BaseAuthService {
                 return true;
             }
         }
-        
+
         // Fallback: Invalidate all sessions for this user if no specific refresh token provided
         await CacheService.deletePattern(`auth:refresh:${accessDecoded.id}:*`);
         return true;
@@ -94,8 +91,8 @@ class BaseAuthService {
             const safePreferences = { ...updates.preferences };
             delete safePreferences.tempRole;
 
-            const existingPrefs = existingUser.preferences?.toObject 
-                ? existingUser.preferences.toObject() 
+            const existingPrefs = existingUser.preferences?.toObject
+                ? existingUser.preferences.toObject()
                 : (existingUser.preferences || {});
 
             updates.preferences = {

@@ -5,7 +5,9 @@ jest.unstable_mockModule('@/core/Services/PushNotificationService.js', () => ({
 }));
 
 jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => ({
-    getBookingById: jest.fn()
+    getBookingById: jest.fn(),
+    getUserById: jest.fn(),
+    getBusinessById: jest.fn()
 }));
 
 const { default: ChatController } = await import('@/core/Http/Controllers/General/ChatController.js');

@@ -29,19 +29,6 @@ export const getLocationPoint = (addr) => {
     return null;
 };
 
-export const getPoints = (addr) => {
-    if (!addr || typeof addr !== 'object') return null;
-    if (addr.location && Array.isArray(addr.location.coordinates) && addr.location.coordinates.length === 2) {
-        return addr.location.coordinates;
-    }
-    const lat = parseFloat(addr.latitude);
-    const lng = parseFloat(addr.longitude);
-    if (!isNaN(lat) && !isNaN(lng)) {
-        return [lng, lat];
-    }
-    return null;
-};
-
 /**
  * Maps standard latitude and longitude string/number values into a MongoDB GeoJSON Point object.
  * Mutates the original object by adding/updating the targeted property.
@@ -83,10 +70,4 @@ export const syncLocation = (locationObj) => {
     return locationObj;
 };
 
-export default {
-    addressPayload,
-    getLocationPoint,
-    getPoints,
-    mapToGeoJSON,
-    syncLocation
-};
+export default { addressPayload, getLocationPoint, mapToGeoJSON, syncLocation };

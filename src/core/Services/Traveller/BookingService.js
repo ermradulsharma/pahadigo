@@ -13,7 +13,7 @@ import InventoryService from '@/core/Services/Traveller/InventoryService.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { RESPONSE_MESSAGES, BOOKING_STATUS, PAYMENT_STATUS, REFUND_STATUS } from '@/core/Constants/index.js';
 import BusinessService from '@/core/Services/Vendor/BusinessService.js';
-import { getPackageItemById, getUserById, getBookingBy } from '@/core/Helpers/queryHelpers.js';
+import { getPackageItemById, getUserById, getBusinessById, getBookingBy } from '@/core/Helpers/queryHelpers.js';
 import { bookingPayload } from '@/core/Helpers/bookingHelper.js';
 
 const generateNumericOTP = () => randomInt(100000, 1000000).toString();
@@ -42,7 +42,7 @@ class BookingService {
                 if (!travellerProfile) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
 
                 const { catalogId, category, business } = packageItem;
-                if (!business) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+                if (!business?.id) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
                 const businessId = business.id;
                 const businessAccountDetails = await getBusinessById(businessId, 'bankDetails businessName ownerName');
 
@@ -274,7 +274,7 @@ class BookingService {
     async verifyBookingPayment(bookingId, userId, paymentData) {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = paymentData || {};
 
-        const booking = await Booking.findOne({ _id: bookingId, user: userId }).populate('user').populate({ path: 'vendor', populate: { path: 'user' } });
+        const booking = await getBookingBy({ _id: bookingId, user: userId }, '', ['user', { path: 'vendor', populate: { path: 'user' } }]);
         if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
 
         if (!booking.payment?.orderId) throw new Error('Payment order has not been initialized for this booking.');

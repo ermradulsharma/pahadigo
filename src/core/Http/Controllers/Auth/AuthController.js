@@ -6,9 +6,10 @@ import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
 import { schemas, validate } from '@/core/Helpers/validation.js';
 import User from '@/core/Models/User.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, USER_ROLES } from '@/core/Constants/index.js';
-import { transformAuthResponse } from '@/core/Helpers/index.js';
+import { transformAuthResponse, userAuthResponse, businessAuthResponse } from '@/core/Helpers/index.js';
 import AuthEvents from '@/core/Events/AuthEvents.js';
 import Controller from '@/core/Controllers/Controller.js';
+import requestContextMiddleware from '@/core/Http/Middleware/requestContext.js';
 
 /**
  * AuthController - Handles all authentication related logic.
@@ -60,7 +61,7 @@ class AuthController extends Controller {
     // POST /auth/login
     async authenticate(req) {
         try {
-            const body = req.validData || req.jsonBody || await parseBody(req);
+            const body = req.payload;
             const { email, password, rememberMe } = body;
             const result = await AdminAuthService.authenticateWithPassword({ email, password, rememberMe });
 
@@ -70,7 +71,7 @@ class AuthController extends Controller {
 
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, transformAuthResponse(result));
         } catch (error) {
-            return this.error(HTTP_STATUS.UNAUTHORIZED, error.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
+            return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
         }
     }
 
@@ -78,24 +79,23 @@ class AuthController extends Controller {
     // POST /auth/verify-otp
     async confirmOTP(req) {
         try {
-            const body = req.payload || req.validData || req.jsonBody || await parseBody(req);
-            const rawPayload = { identifier: body.email || body.phone, otp: body.otp, targetRole: body.role || body.targetRole };
+            const body = req.payload;
+            const payload = { identifier: body.email || body.phone, otp: body.otp, targetRole: body.role };
 
-            const validationResult = validate(schemas.otpLogin, rawPayload);
-            if (!validationResult.success) {
-                return this.error(HTTP_STATUS.BAD_REQUEST, validationResult.error);
-            }
+            const validationResult = validate(schemas.otpLogin, payload);
+            if (!validationResult.success) return this.error(HTTP_STATUS.BAD_REQUEST, validationResult.error);
 
             const { identifier, otp, targetRole } = validationResult.data;
             const result = await UserAuthService.authenticateWithOTP({ identifier, otp, targetRole });
 
-            const ip = req.headers.get('x-forwarded-for') || req.socket?.remoteAddress;
-            const device = req.headers.get('user-agent');
-            AuthEvents.emit('auth.login_success', { user: result.user, metadata: { ip, device, identifier } });
-
+            // const { ip, realIp, device, rawDevice, location } = requestContextMiddleware(req);
+            // AuthEvents.emit('auth.login_success', { user: result.user, metadata: { ip, realIp, device, rawDevice, location, identifier, authMethod: 'OTP Verification', role: result.user?.role } });
+            // if (result.isNewUser) {
+            //     AuthEvents.emit('auth.welcome', { identifier, user: result.user });
+            // }
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, transformAuthResponse(result));
         } catch (error) {
-            return this.error(HTTP_STATUS.UNAUTHORIZED, error.message || RESPONSE_MESSAGES.AUTH.INVALID_OTP);
+            return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.INVALID_OTP);
         }
     }
 
@@ -106,32 +106,56 @@ class AuthController extends Controller {
             const validationResult = validate(schemas.socialLogin, { token: body.id_token, role: body.role });
             if (!validationResult.success) return this.error(HTTP_STATUS.BAD_REQUEST, validationResult.error);
             const result = await UserAuthService.authenticateWithGoogle(validationResult.data.token, validationResult.data.role);
+
+            const { ip, realIp, device, rawDevice, location } = requestContextMiddleware(req);
+            const identifier = result.user?.email || result.user?.phone || '';
+            AuthEvents.emit('auth.login_success', { user: result.user, metadata: { ip, realIp, device, rawDevice, location, identifier, authMethod: 'Google OAuth', role: result.user?.role } });
+            if (result.isNewUser && identifier) {
+                AuthEvents.emit('auth.welcome', { identifier, user: result.user });
+            }
+
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, transformAuthResponse(result));
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
         }
     }
 
     async socialAuthenticateFacebook(req) {
         try {
-            const body = req.payload || req.validData || req.jsonBody || await parseBody(req);
+            const body = req.payload;
             const validationResult = validate(schemas.socialLogin, { token: body.accessToken, role: body.role });
             if (!validationResult.success) return this.error(HTTP_STATUS.BAD_REQUEST, validationResult.error);
             const result = await UserAuthService.authenticateWithFacebook(validationResult.data.token, validationResult.data.role);
+
+            const { ip, realIp, device, rawDevice, location } = requestContextMiddleware(req);
+            const identifier = result.user?.email || result.user?.phone || '';
+            AuthEvents.emit('auth.login_success', { user: result.user, metadata: { ip, realIp, device, rawDevice, location, identifier, authMethod: 'Facebook OAuth', role: result.user?.role } });
+            if (result.isNewUser && identifier) {
+                AuthEvents.emit('auth.welcome', { identifier, user: result.user });
+            }
+
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, transformAuthResponse(result));
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
         }
     }
 
     async socialAuthenticateApple(req) {
         try {
-            const body = req.payload || req.validData || req.jsonBody || await parseBody(req);
+            const body = req.payload;
             if (!body.idToken) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
             const result = await UserAuthService.authenticateWithApple(body.idToken, body.role, body.user, body.email);
+
+            const { ip, realIp, device, rawDevice, location } = requestContextMiddleware(req);
+            const identifier = result.user?.email || result.user?.phone || '';
+            AuthEvents.emit('auth.login_success', { user: result.user, metadata: { ip, realIp, device, rawDevice, location, identifier, authMethod: 'Apple OAuth', role: result.user?.role } });
+            if (result.isNewUser && identifier) {
+                AuthEvents.emit('auth.welcome', { identifier, user: result.user });
+            }
+
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, transformAuthResponse(result));
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
         }
     }
 
@@ -141,7 +165,7 @@ class AuthController extends Controller {
             if (!token) return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGOUT_SUCCESS);
 
             let body = {};
-            try { body = req.payload || req.validData || req.jsonBody || await parseBody(req); } catch (e) { }
+            try { body = req.payload; } catch (e) { }
             const refreshToken = body.refreshToken || null;
 
             await BaseAuthService.logout(token, refreshToken);
@@ -164,13 +188,11 @@ class AuthController extends Controller {
 
     async refreshToken(req) {
         try {
-            let body = {};
-            try { body = req.payload || req.validData || req.jsonBody || await parseBody(req); } catch (e) { }
-
+            const body = req.payload;
             let token = body.refreshToken;
             if (!token) token = req.headers.get('authorization')?.split(' ')[1];
-
             if (!token) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.NO_TOKEN);
+
             const tokens = await BaseAuthService.refreshToken(token);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.TOKEN_REFRESHED, { tokens });
         } catch (error) {
@@ -184,7 +206,7 @@ class AuthController extends Controller {
             const result = await UserAuthService.toggleRole(req.user.id);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.ROLE_SWITCHED, result);
         } catch (error) {
-            return this.error(HTTP_STATUS.BAD_REQUEST, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -220,7 +242,7 @@ class AuthController extends Controller {
 
     async forgotPassword(req) {
         try {
-            const body = req.payload || req.validData || req.jsonBody || await parseBody(req);
+            const body = req.payload;
             if (!body.email) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.EMAIL_REQUIRED);
             await AdminAuthService.initiatePasswordReset(body.email);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.PASSWORD_RESET_LINK_SENT);
@@ -232,7 +254,7 @@ class AuthController extends Controller {
     async resetPassword(req) {
         try {
             if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
-            const body = req.payload || req.validData || req.jsonBody || await parseBody(req);
+            const body = req.payload;
             if (!body.otp || !body.password) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
 
             const user = await User.findById(req.user.id);
@@ -252,7 +274,7 @@ class AuthController extends Controller {
     async changePassword(req) {
         try {
             if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
-            const body = req.payload || req.validData || req.jsonBody || await parseBody(req);
+            const body = req.payload;
             if (!body.oldPassword || !body.newPassword) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
 
             const user = await User.findById(req.user.id).select('+password');

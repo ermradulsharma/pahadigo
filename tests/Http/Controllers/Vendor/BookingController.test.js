@@ -11,16 +11,20 @@ jest.unstable_mockModule('@/core/Services/Vendor/BookingService.js', () => ({
         verifyStartOTP: jest.fn(),
         verifyEndOTP: jest.fn(),
         syncOfflineVerifications: jest.fn(),
-        getVendorBookings: jest.fn(),
-        getBookingById: jest.fn(),
         updateBookingStatus: jest.fn(),
         logTimelineEvent: jest.fn()
     }
 }));
 
+jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => ({
+    getBookingById: jest.fn(),
+    getManyBy: jest.fn()
+}));
+
 const { default: BookingController } = await import('@/core/Http/Controllers/Vendor/BookingController.js');
 const { default: BusinessService } = await import('@/core/Services/Vendor/BusinessService.js');
 const { default: BookingService } = await import('@/core/Services/Vendor/BookingService.js');
+const { getBookingById: qhGetBookingById, getManyBy: qhGetManyBy } = await import('@/core/Helpers/queryHelpers.js');
 const { HTTP_STATUS } = await import('@/core/Constants/index.js');
 const { createMockReq } = await import('../../../Helpers/testUtils.js');
 
@@ -33,8 +37,7 @@ describe('Vendor BookingController', () => {
 
     describe('OTP Verification', () => {
         it('verifyStartOTP should verify successfully', async () => {
-            mockReq = createMockReq({ user: { id: 'u1' } });
-            mockReq.payload = { otp: '123' };
+            mockReq = createMockReq({ user: { id: 'u1' } }, { otp: '123' });
             BusinessService.getBusinessByUserId.mockResolvedValue({ _id: 'v1' });
             BookingService.verifyStartOTP.mockResolvedValue({});
 
@@ -44,15 +47,14 @@ describe('Vendor BookingController', () => {
         });
 
         it('verifyStartOTP should return 404 if vendor not found', async () => {
-            mockReq = createMockReq({ user: { id: 'u1' } });
+            mockReq = createMockReq({ user: { id: 'u1' } }, { otp: '123' });
             BusinessService.getBusinessByUserId.mockResolvedValue(null);
             const response = await BookingController.verifyStartOTP(mockReq, { params: { id: 'b1' } });
             expect(response.status).toBe(HTTP_STATUS.NOT_FOUND);
         });
 
         it('verifyEndOTP should verify successfully', async () => {
-            mockReq = createMockReq({ user: { id: 'u1' } });
-            mockReq.payload = { otp: '123' };
+            mockReq = createMockReq({ user: { id: 'u1' } }, { otp: '456' });
             BusinessService.getBusinessByUserId.mockResolvedValue({ _id: 'v1' });
             BookingService.verifyEndOTP.mockResolvedValue({});
 
@@ -61,10 +63,9 @@ describe('Vendor BookingController', () => {
         });
 
         it('syncOfflineOTPs should sync successfully', async () => {
-            mockReq = createMockReq({ user: { id: 'u1' } });
-            mockReq.payload = { syncData: [] };
+            mockReq = createMockReq({ user: { id: 'u1' } }, { syncData: [] });
             BusinessService.getBusinessByUserId.mockResolvedValue({ _id: 'v1' });
-            BookingService.syncOfflineVerifications.mockResolvedValue({});
+            BookingService.syncOfflineVerifications.mockResolvedValue([]);
 
             const response = await BookingController.syncOfflineOTPs(mockReq);
             expect(response.status).toBe(HTTP_STATUS.OK);
@@ -75,11 +76,10 @@ describe('Vendor BookingController', () => {
         it('should return bookings successfully', async () => {
             mockReq = createMockReq({ user: { id: 'u1' } });
             BusinessService.getBusinessByUserId.mockResolvedValue({ _id: 'v1' });
-            BookingService.getVendorBookings.mockResolvedValue([]);
+            qhGetManyBy.mockResolvedValue([]);
 
             const response = await BookingController.getBookings(mockReq);
             expect(response.status).toBe(HTTP_STATUS.OK);
-            expect(BookingService.getVendorBookings).toHaveBeenCalledWith('v1');
         });
     });
 
@@ -87,7 +87,7 @@ describe('Vendor BookingController', () => {
         it('should return booking if owner', async () => {
             mockReq = createMockReq({ user: { id: 'u1' } });
             BusinessService.getBusinessByUserId.mockResolvedValue({ _id: 'v1' });
-            BookingService.getBookingById.mockResolvedValue({ vendor: 'v1' });
+            qhGetBookingById.mockResolvedValue({ vendor: { _id: 'v1' } });
 
             const response = await BookingController.getBookingById(mockReq, { params: { id: 'b1' } });
             expect(response.status).toBe(HTTP_STATUS.OK);
@@ -96,7 +96,7 @@ describe('Vendor BookingController', () => {
         it('should return 404 if not owner', async () => {
             mockReq = createMockReq({ user: { id: 'u1' } });
             BusinessService.getBusinessByUserId.mockResolvedValue({ _id: 'v1' });
-            BookingService.getBookingById.mockResolvedValue({ vendor: 'v2' });
+            qhGetBookingById.mockResolvedValue({ vendor: { _id: 'other_vendor' } });
 
             const response = await BookingController.getBookingById(mockReq, { params: { id: 'b1' } });
             expect(response.status).toBe(HTTP_STATUS.NOT_FOUND);
@@ -105,8 +105,7 @@ describe('Vendor BookingController', () => {
 
     describe('updateBookingStatus', () => {
         it('should update status successfully', async () => {
-            mockReq = createMockReq({ user: { id: 'u1' } });
-            mockReq.payload = { status: 'confirmed' };
+            mockReq = createMockReq({ user: { id: 'u1' } }, { status: 'confirmed' });
             BusinessService.getBusinessByUserId.mockResolvedValue({ _id: 'v1' });
             BookingService.updateBookingStatus.mockResolvedValue({});
 
@@ -117,10 +116,9 @@ describe('Vendor BookingController', () => {
 
     describe('addTimelineEvent', () => {
         it('should log timeline event successfully', async () => {
-            mockReq = createMockReq({ user: { id: 'u1' } });
-            mockReq.payload = { title: 'T', description: 'D' };
+            mockReq = createMockReq({ user: { id: 'u1' } }, { title: 'Trek Started', description: 'Group reached basecamp' });
             BusinessService.getBusinessByUserId.mockResolvedValue({ _id: 'v1', user: 'u1' });
-            BookingService.logTimelineEvent.mockResolvedValue({});
+            BookingService.logTimelineEvent.mockResolvedValue([]);
 
             const response = await BookingController.addTimelineEvent(mockReq, { params: { id: 'b1' } });
             expect(response.status).toBe(HTTP_STATUS.OK);

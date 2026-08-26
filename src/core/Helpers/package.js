@@ -82,7 +82,7 @@ export async function item(userId, businessId, category, itemDataOrUpdates, item
         if (!itemDoc) throw new Error(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
 
         if (pricingInput && typeof pricingInput === 'object') {
-            const currentPricing = itemDoc.pricing ? itemDoc.pricing.toObject() : {};
+            const currentPricing = itemDoc.pricing?.toObject?.() || itemDoc.pricing || {};
             itemDataOrUpdates.pricing = await sellingPrice(pricingInput, category, currentPricing);
         }
 
@@ -178,4 +178,59 @@ export function itemsFormate(packages) {
         }
     });
     return items;
+}
+
+/**
+ * Formats a raw package item into standardized public API response shape with wishlist indicator.
+ * @param {Object} item - Package item object
+ * @param {Map} wishlistMap - Map of user wishlisted item IDs
+ * @returns {Object} Standardized package item output
+ */
+export function formatPackageItem(item, wishlistMap = new Map()) {
+    const itemIdStr = (item.id || item._id).toString();
+    const isWishlisted = wishlistMap.has(itemIdStr);
+
+    let photoUrl = '';
+    if (Array.isArray(item.photos) && item.photos.length > 0) {
+        photoUrl = typeof item.photos[0] === 'string' ? item.photos[0] : (item.photos[0]?.url || '');
+    } else if (typeof item.photos === 'string') {
+        photoUrl = item.photos;
+    } else if (item.image) {
+        photoUrl = item.image;
+    }
+
+    let addressStr = '';
+    if (typeof item.location === 'string') {
+        addressStr = item.location;
+    } else if (item.location && typeof item.location === 'object') {
+        const parts = [
+            item.location.addressLine1 || item.location.street,
+            item.location.city,
+            item.location.state
+        ].filter(Boolean);
+        addressStr = parts.length > 0 ? parts.join(', ') : (item.location.address || item.location.name || '');
+    } else if (item.address) {
+        addressStr = typeof item.address === 'string' ? item.address : '';
+    }
+
+    const basePrice = item.pricing?.sellingPrice ?? item.pricing?.basePrice ?? item.pricePerNight ?? item.pricePerPerson ?? item.pricePerDay ?? 0;
+    const gstVal = typeof item.pricing?.gst === 'number' ? item.pricing.gst : 18;
+
+    return {
+        id: itemIdStr,
+        title: item.title || '',
+        categoryName: item.category_name || item.categoryName || '',
+        categoryId: item.category_id ? item.category_id.toString() : (item.categoryId || ''),
+        pricing: {
+            basePrice,
+            gst: gstVal
+        },
+        address: addressStr,
+        image: photoUrl,
+        rating: {
+            average: typeof item.rating === 'number' ? item.rating : (item.rating?.average || 0),
+            count: typeof item.rating === 'object' ? (item.rating?.count || 0) : 0
+        },
+        wishlist: isWishlisted
+    };
 }
