@@ -46,7 +46,9 @@ export const bookingPayload = (b, options = {}) => {
     if (b.verification?.startOTP || b.verification?.endOTP) {
         res.verification = {
             startOTP: b.verification?.startOTP || null,
-            endOTP: b.verification?.endOTP || null
+            isStartVerified: b.verification?.isStartVerified || false,
+            endOTP: b.verification?.endOTP || null,
+            isEndVerified: b.verification?.isEndVerified || false,
         };
     }
 
