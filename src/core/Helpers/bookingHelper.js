@@ -50,6 +50,17 @@ export const bookingPayload = (b, options = {}) => {
         };
     }
 
+    if (b.cancellation) {
+        res.cancellation = {
+            reason: b.cancellation.reason || null,
+            date: b.cancellation.date || null,
+            actor: b.cancellation.actor || null,
+            cancelledBy: b.cancellation.cancelledBy || null,
+            cancelledAt: b.cancellation.cancelledAt || null,
+            role: b.cancellation.role || null
+        }
+    }
+
     return res;
 };
 
