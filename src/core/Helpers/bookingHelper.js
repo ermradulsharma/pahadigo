@@ -48,7 +48,7 @@ export const bookingPayload = (b, options = {}) => {
             startOTP: b.verification?.startOTP || null,
             isStartVerified: b.verification?.isStartVerified || false,
             endOTP: b.verification?.endOTP || null,
-            isEndVerified: b.verification?.isEndVerified || false,
+            isEndVerified: b.verification?.isEndVerified || false
         };
     }
 
