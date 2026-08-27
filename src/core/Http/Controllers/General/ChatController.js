@@ -35,41 +35,21 @@ class ChatController {
             const bookingId = params?.bookingId;
             const { type } = req.payload;
 
-            if (!bookingId || !type) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Both bookingId and type are required.');
-            }
+            if (!bookingId || !type) return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Both bookingId and type are required.');
+            if (!['traveller-vendor', 'vendor-admin', 'traveller-admin'].includes(type)) return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Invalid conversation type.');
 
-            if (!['traveller-vendor', 'vendor-admin', 'traveller-admin'].includes(type)) {
-                return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Invalid conversation type.');
-            }
-
-            // Fetch and validate the booking, populating the vendor's user ID
             const booking = await getBookingById(bookingId, '', 'vendor');
-            if (!booking) {
-                return errorResponse(HTTP_STATUS.NOT_FOUND, 'Booking not found.');
-            }
-
-            if (!booking.vendor || !booking.vendor.user) {
-                return errorResponse(HTTP_STATUS.NOT_FOUND, 'Vendor user associated with booking not found.');
-            }
+            if (!booking) return errorResponse(HTTP_STATUS.NOT_FOUND, 'Booking not found.');
+            if (!booking.vendor || !booking.vendor.user) return errorResponse(HTTP_STATUS.NOT_FOUND, 'Vendor user associated with booking not found.');
 
             const vendorUserId = booking.vendor.user.toString();
             const travellerUserId = booking.user.toString();
 
-            // Verify the user has access to this booking
-            if (req.user.role === 'vendor' && req.user.id !== vendorUserId) {
-                return errorResponse(HTTP_STATUS.FORBIDDEN, 'You do not have access to this booking.');
-            } else if (req.user.role === 'traveller' && req.user.id !== travellerUserId) {
-                return errorResponse(HTTP_STATUS.FORBIDDEN, 'You do not have access to this booking.');
-            } else if (req.user.role !== 'admin' && req.user.role !== 'vendor' && req.user.role !== 'traveller') {
-                return errorResponse(HTTP_STATUS.FORBIDDEN, 'Access denied.');
-            }
+            if (req.user.role === 'vendor' && req.user.id !== vendorUserId) return errorResponse(HTTP_STATUS.FORBIDDEN, 'You do not have access to this booking.');
+            else if (req.user.role === 'traveller' && req.user.id !== travellerUserId) return errorResponse(HTTP_STATUS.FORBIDDEN, 'You do not have access to this booking.');
+            else if (req.user.role !== 'admin' && req.user.role !== 'vendor' && req.user.role !== 'traveller') return errorResponse(HTTP_STATUS.FORBIDDEN, 'Access denied.');
 
-            // Check if conversation already exists
-            let conversation = await Conversation.findOne({ bookingId, type })
-                .populate('traveller')
-                .populate('vendor')
-                .populate('admin');
+            let conversation = await Conversation.findOne({ bookingId, type }).populate('traveller').populate('vendor').populate('admin');
 
             if (!conversation) {
                 const created = await Conversation.create({
@@ -81,12 +61,8 @@ class ChatController {
                     lastMessage: '',
                     lastMessageAt: new Date()
                 });
-                conversation = await Conversation.findById(created._id)
-                    .populate('traveller')
-                    .populate('vendor')
-                    .populate('admin');
+                conversation = await Conversation.findById(created._id).populate('traveller').populate('vendor').populate('admin');
             }
-
             const responseData = formatConversation(conversation);
             return successResponse(HTTP_STATUS.OK, 'Conversation retrieved successfully.', responseData);
         } catch (error) {
@@ -102,27 +78,12 @@ class ChatController {
     async getConversations(req) {
         try {
             let query = {};
+            if (req.user.role !== 'admin') query = { $or: [{ traveller: req.user.id }, { vendor: req.user.id }] };
+            const conversations = await Conversation.find(query).populate('traveller').populate('vendor').populate('admin').populate({ path: 'bookingId', select: 'bookingCode' }).sort({ lastMessageAt: -1 });
 
-            if (req.user.role !== 'admin') {
-                // Find any conversations where the current user is either the traveller or vendor
-                query = { $or: [{ traveller: req.user.id }, { vendor: req.user.id }] };
-            }
-
-            const conversations = await Conversation.find(query)
-                .populate('traveller')
-                .populate('vendor')
-                .populate('admin')
-                .populate({ path: 'bookingId', select: 'bookingCode' })
-                .sort({ lastMessageAt: -1 });
-
-            // Calculate unread message count for each conversation relative to current user
             const conversationsWithUnread = await Promise.all(
                 conversations.map(async (conv) => {
-                    const unreadCount = await ChatMessage.countDocuments({
-                        conversation: conv._id,
-                        sender: { $ne: req.user.id },
-                        isRead: false
-                    });
+                    const unreadCount = await ChatMessage.countDocuments({ conversation: conv._id, sender: { $ne: req.user.id }, isRead: false });
                     const convObj = formatConversation(conv);
                     convObj.unreadCount = unreadCount;
                     return convObj;
@@ -147,22 +108,29 @@ class ChatController {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Conversation ID is required.');
             }
 
-            // Verify the user has access to this conversation
-            const conversation = await Conversation.findById(conversationId);
+            const conversation = await Conversation.findById(conversationId)
+                .populate('traveller')
+                .populate('vendor')
+                .populate('admin')
+                .populate({ path: 'bookingId', select: 'bookingCode' })
+                .lean();
+
             if (!conversation) {
                 return errorResponse(HTTP_STATUS.NOT_FOUND, 'Conversation not found.');
             }
 
+            const travellerId = conversation.traveller?._id ? conversation.traveller._id.toString() : (conversation.traveller?.id || conversation.traveller?.toString());
+            const vendorId = conversation.vendor?._id ? conversation.vendor._id.toString() : (conversation.vendor?.id || conversation.vendor?.toString());
+
             if (
                 req.user.role !== 'admin' &&
-                conversation.traveller.toString() !== req.user.id &&
-                conversation.vendor.toString() !== req.user.id
+                travellerId !== req.user.id &&
+                vendorId !== req.user.id
             ) {
                 return errorResponse(HTTP_STATUS.FORBIDDEN, 'Access denied to this conversation.');
             }
 
-            // Parse pagination query parameters
-            const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
             const url = new URL(req.url, baseUrl);
             const limit = parseInt(url.searchParams.get('limit') || '50', 10);
             const before = url.searchParams.get('before');
@@ -172,14 +140,12 @@ class ChatController {
                 query.createdAt = { $lt: new Date(before) };
             }
 
-            // Fetch messages with pagination and populate sender
             const messages = await ChatMessage.find(query)
                 .populate('sender')
                 .sort({ createdAt: -1 })
                 .limit(limit)
                 .lean();
 
-            // Restore chronological order
             messages.reverse();
 
             const formattedMessages = messages.map(m => ({
@@ -187,7 +153,12 @@ class ChatController {
                 sender: typeof m.sender === 'object' && m.sender !== null ? userPayload(m.sender) : m.sender
             }));
 
-            return successResponse(HTTP_STATUS.OK, 'Messages fetched successfully.', { conversation, messages: formattedMessages });
+            const formattedConversation = formatConversation(conversation);
+
+            return successResponse(HTTP_STATUS.OK, 'Messages fetched successfully.', {
+                conversation: formattedConversation,
+                messages: formattedMessages
+            });
         } catch (error) {
             console.error('[ChatController] getMessages error:', error);
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -211,7 +182,6 @@ class ChatController {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Message content or attachments are required.');
             }
 
-            // Verify conversation
             const conversation = await Conversation.findById(conversationId);
             if (!conversation) {
                 return errorResponse(HTTP_STATUS.NOT_FOUND, 'Conversation not found.');
@@ -227,7 +197,6 @@ class ChatController {
 
             const senderModel = req.user.role;
 
-            // Create new message
             const newMessage = await ChatMessage.create({
                 conversation: conversationId,
                 sender: req.user.id,
@@ -236,7 +205,6 @@ class ChatController {
                 attachments: attachments || []
             });
 
-            // Update the conversation's last message
             conversation.lastMessage = message || (hasAttachments ? '[Attachment]' : '');
             conversation.lastMessageAt = new Date();
             if (req.user.role === 'admin') {
@@ -244,16 +212,18 @@ class ChatController {
             }
             await conversation.save();
 
-            // Emit real-time live message to active SSE listeners
+            const senderUser = await getUserById(req.user.id);
+            const responseMessage = typeof newMessage.toObject === 'function' ? newMessage.toObject() : { ...newMessage };
+            responseMessage.sender = userPayload(senderUser);
+
             chatEmitter.emit('newMessage', {
                 conversationId: conversation._id.toString(),
                 travellerId: conversation.traveller.toString(),
                 vendorId: conversation.vendor.toString(),
                 type: conversation.type,
-                message: newMessage
+                message: responseMessage
             });
 
-            // Send push notification if the receiver is offline
             try {
                 let receiverId;
                 if (req.user.role === 'traveller') {
@@ -265,7 +235,6 @@ class ChatController {
                 if (receiverId && !activeSSEUsers.has(receiverId)) {
                     const receiverUser = await User.findById(receiverId).select('fcmToken').lean();
                     if (receiverUser && receiverUser.fcmToken) {
-                        const senderUser = await User.findById(req.user.id).select('name').lean();
                         const senderName = senderUser ? senderUser.name : 'Someone';
 
                         await PushNotificationService.sendToDevice(
@@ -284,10 +253,6 @@ class ChatController {
             } catch (notifError) {
                 console.error('[ChatController] Error sending offline push notification:', notifError);
             }
-
-            const senderUser = await getUserById(req.user.id);
-            const responseMessage = typeof newMessage.toObject === 'function' ? newMessage.toObject() : { ...newMessage };
-            responseMessage.sender = userPayload(senderUser);
 
             return successResponse(HTTP_STATUS.CREATED, 'Message sent successfully.', responseMessage);
         } catch (error) {
@@ -382,4 +347,3 @@ class ChatController {
 }
 
 export default new ChatController();
-
