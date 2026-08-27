@@ -1,3 +1,4 @@
+import User from '@/core/Models/User.js';
 import PackageService from '@/core/Services/General/PackageService.js';
 import SearchLog from '@/core/Models/SearchLog.js';
 import Category from '@/core/Models/Category.js';
@@ -7,6 +8,7 @@ import { CATEGORY_MAP } from '@/core/Constants/categories.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { paginateArray } from '@/core/Helpers/queryUtils.js';
 import Controller from '@/core/Controllers/Controller.js';
+import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { formatPackageItem } from '@/core/Helpers/package.js';
 
 /**
@@ -27,9 +29,12 @@ class PackageController extends Controller {
             const isFlat = url.searchParams.get('format') === 'flat';
 
             const packages = await PackageService.getAvailablePackagesByCategory(query, minPrice, maxPrice, sort);
-            const wishlistMap = await this._getWishlistMap(req.user?.id);
 
-            let totalCount = 0;
+            const wishlistMap = new Map();
+            if (req.user?.id) {
+                const userWishlist = await Wishlist.find({ user: req.user.id }).select('itemId').lean();
+                userWishlist.forEach(w => wishlistMap.set(w.itemId.toString(), w._id.toString()));
+            }
 
             if (isFlat) {
                 let allItems = [];
@@ -38,26 +43,42 @@ class PackageController extends Controller {
                         allItems = allItems.concat(items);
                     }
                 }
-                this._sortItems(allItems, sort);
-                totalCount = allItems.length;
+                if (sort === 'price_asc') {
+                    allItems.sort((a, b) => (a.pricing?.sellingPrice || 99999999) - (b.pricing?.sellingPrice || 99999999));
+                } else if (sort === 'price_desc') {
+                    allItems.sort((a, b) => (b.pricing?.sellingPrice || 0) - (a.pricing?.sellingPrice || 0));
+                } else {
+                    allItems.sort((a, b) => (b.id || b._id).toString().localeCompare((a.id || a._id).toString()));
+                }
                 const formattedItems = allItems.map(item => formatPackageItem(item, wishlistMap));
 
-                if (query) await this._logSearch(query, req.user, totalCount);
+                if (query) {
+                    await this._logSearch(query, req.user, allItems.length);
+                }
+
                 const paginatedData = paginateArray(formattedItems, page, limit);
                 return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, paginatedData);
             }
 
             const categoryData = {};
+            let totalGrouped = 0;
             for (const [slug, items] of Object.entries(packages)) {
                 if (Array.isArray(items)) {
-                    totalCount += items.length;
-                    this._sortItems(items, sort);
+                    totalGrouped += items.length;
+                    if (sort === 'price_asc') {
+                        items.sort((a, b) => (a.pricing?.sellingPrice || 99999999) - (b.pricing?.sellingPrice || 99999999));
+                    } else if (sort === 'price_desc') {
+                        items.sort((a, b) => (b.pricing?.sellingPrice || 0) - (a.pricing?.sellingPrice || 0));
+                    } else {
+                        items.sort((a, b) => (b.id || b._id).toString().localeCompare((a.id || a._id).toString()));
+                    }
                     const formattedItems = items.map(item => formatPackageItem(item, wishlistMap));
                     categoryData[slug] = paginateArray(formattedItems, page, limit);
                 }
             }
-
-            if (query) await this._logSearch(query, req.user, totalCount);
+            if (query) {
+                await this._logSearch(query, req.user, totalGrouped);
+            }
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, categoryData);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -68,7 +89,6 @@ class PackageController extends Controller {
         try {
             const item = await PackageService.getAvailablePackageItem(params.id);
             if (!item) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
-
             let isWishlisted = false;
             let wishlistId = null;
             if (req.user?.id) {
@@ -113,11 +133,19 @@ class PackageController extends Controller {
             const limit = url.searchParams.get('limit') === 'all' ? 0 : parseInt(url.searchParams.get('limit')) || 10;
 
             const rawResults = await PackageService.searchPackages(lat, lng, category, radius || 50);
-            const wishlistMap = await this._getWishlistMap(req.user?.id);
+
+            const config = await getAppConfig();
+            const gst = config.tax?.gst || 0;
+            const serviceTax = config.tax?.service_tax || 0;
 
             const results = {};
-            const categories = await Category.find({}).lean();
+            const wishlistMap = new Map();
+            if (req.user?.id) {
+                const userWishlist = await Wishlist.find({ user: req.user.id }).select('itemId').lean();
+                userWishlist.forEach(w => wishlistMap.set(w.itemId.toString(), w._id.toString()));
+            }
 
+            const categories = await Category.find({}).lean();
             categories.forEach(cat => {
                 const slug = cat.slug.toLowerCase();
                 if (category && slug !== category.toLowerCase()) return;
@@ -125,7 +153,22 @@ class PackageController extends Controller {
                 const categoryItems = rawResults.filter(item => item.category.toLowerCase() === schemaKey || item.category.toLowerCase() === slug);
 
                 if (categoryItems.length > 0) {
-                    const formatted = categoryItems.map(item => formatPackageItem(item, wishlistMap));
+                    const formatted = categoryItems.map(item => ({
+                        id: item._id,
+                        title: item.title,
+                        isActive: item.isActive,
+                        pricing: {
+                            ...(item.pricing || {}),
+                            gst: gst,
+                            serviceTax: serviceTax
+                        },
+                        location: item.location || {},
+                        photos: item.photos?.[0] || "",
+                        category_name: cat.name,
+                        category_slug: slug,
+                        wishlist: wishlistMap.has(item._id.toString()),
+                        wishlistId: wishlistMap.get(item._id.toString()) || null
+                    }));
                     results[slug] = paginateArray(formatted, page, limit);
                 }
             });
@@ -134,29 +177,6 @@ class PackageController extends Controller {
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
-    }
-
-    // Helper: Wishlist Map Loader (DRY)
-    async _getWishlistMap(userId) {
-        const wishlistMap = new Map();
-        if (userId) {
-            const userWishlist = await Wishlist.find({ user: userId }).select('itemId').lean();
-            userWishlist.forEach(w => wishlistMap.set(w.itemId.toString(), w._id.toString()));
-        }
-        return wishlistMap;
-    }
-
-    // Helper: Sorting (DRY)
-    _sortItems(items, sort) {
-        if (!Array.isArray(items)) return items;
-        if (sort === 'price_asc') {
-            items.sort((a, b) => (a.pricing?.sellingPrice || a.pricing?.basePrice || 99999999) - (b.pricing?.sellingPrice || b.pricing?.basePrice || 99999999));
-        } else if (sort === 'price_desc') {
-            items.sort((a, b) => (b.pricing?.sellingPrice || b.pricing?.basePrice || 0) - (a.pricing?.sellingPrice || a.pricing?.basePrice || 0));
-        } else {
-            items.sort((a, b) => (b.id || b._id || '').toString().localeCompare((a.id || a._id || '').toString()));
-        }
-        return items;
     }
 
     async _logSearch(query, user, resultsCount) {

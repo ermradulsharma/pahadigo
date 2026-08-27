@@ -1,6 +1,5 @@
 import { addressPayload, getLocationPoint } from './addressHelper.js';
 import { businessDetailsFormat, businessPayload, businessAuthResponse } from './businessHelper.js';
-export { businessDetailsFormat, businessPayload, businessAuthResponse };
 
 /**
  * Formats a User model instance into a standard user profile payload structure.
@@ -63,4 +62,5 @@ export function userAuthResponse(user) {
     };
 }
 
+export { businessDetailsFormat, businessPayload, businessAuthResponse };
 export default { userPayload, userBusinessPayload, userAuthResponse, businessDetailsFormat, businessPayload, addressPayload, getLocationPoint, businessAuthResponse };

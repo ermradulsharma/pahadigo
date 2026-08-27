@@ -7,6 +7,7 @@ import { slugify } from './stringUtils.js';
 import { sellingPrice } from './sellingPrice.js';
 import { mapToGeoJSON } from './geoUtils.js';
 import { uploadToCloudinary } from './cloudinary.js';
+import { addressPayload } from './addressHelper.js';
 
 /**
  * Unified item helper to handle authorization, catalog retrieval, photo upload,
@@ -187,49 +188,21 @@ export function itemsFormate(packages) {
  * @returns {Object} Standardized package item output
  */
 export function formatPackageItem(item, wishlistMap = new Map()) {
-    const itemIdStr = (item.id || item._id).toString();
-    const isWishlisted = wishlistMap.has(itemIdStr);
-
-    let photoUrl = '';
-    if (Array.isArray(item.photos) && item.photos.length > 0) {
-        photoUrl = typeof item.photos[0] === 'string' ? item.photos[0] : (item.photos[0]?.url || '');
-    } else if (typeof item.photos === 'string') {
-        photoUrl = item.photos;
-    } else if (item.image) {
-        photoUrl = item.image;
-    }
-
-    let addressStr = '';
-    if (typeof item.location === 'string') {
-        addressStr = item.location;
-    } else if (item.location && typeof item.location === 'object') {
-        const parts = [
-            item.location.addressLine1 || item.location.street,
-            item.location.city,
-            item.location.state
-        ].filter(Boolean);
-        addressStr = parts.length > 0 ? parts.join(', ') : (item.location.address || item.location.name || '');
-    } else if (item.address) {
-        addressStr = typeof item.address === 'string' ? item.address : '';
-    }
-
-    const basePrice = item.pricing?.sellingPrice ?? item.pricing?.basePrice ?? item.pricePerNight ?? item.pricePerPerson ?? item.pricePerDay ?? 0;
-    const gstVal = typeof item.pricing?.gst === 'number' ? item.pricing.gst : 18;
-
+    const isWishlisted = wishlistMap.has(item.id.toString());
     return {
-        id: itemIdStr,
-        title: item.title || '',
-        categoryName: item.category_name || item.categoryName || '',
-        categoryId: item.category_id ? item.category_id.toString() : (item.categoryId || ''),
+        id: item.id.toString(),
+        title: item.title,
+        categoryName: item.category_name,
+        categoryId: item.category_id.toString(),
         pricing: {
-            basePrice,
-            gst: gstVal
+            basePrice: item.pricing?.basePrice,
+            gst: item.pricing?.gst
         },
-        address: addressStr,
-        image: photoUrl,
+        address: item.location.address,
+        image: item.photos?.url,
         rating: {
-            average: typeof item.rating === 'number' ? item.rating : (item.rating?.average || 0),
-            count: typeof item.rating === 'object' ? (item.rating?.count || 0) : 0
+            average: item.rating?.average || 0,
+            count: item.rating?.count || 0
         },
         wishlist: isWishlisted
     };
