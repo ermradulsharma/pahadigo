@@ -23,9 +23,30 @@ jest.unstable_mockModule('@/core/Models/Vendor.js', () => ({
     }
 }));
 
+const mockGenerateAuthTokens = jest.fn().mockResolvedValue({ accessToken: 'access_token', refreshToken: 'refresh_token', refreshJti: 'jti123' });
+const mockVerifyToken = jest.fn().mockResolvedValue({ id: 'u1' });
+const mockGenerateToken = jest.fn().mockResolvedValue('token');
+const mockDecodeToken = jest.fn().mockReturnValue({ id: 'u1' });
+
 jest.unstable_mockModule('@/core/Helpers/jwt.js', () => ({
-    generateAccessToken: jest.fn(() => 'access_token'),
-    generateRefreshToken: jest.fn(() => 'refresh_token')
+    generateAuthTokens: mockGenerateAuthTokens,
+    generateToken: mockGenerateToken,
+    verifyToken: mockVerifyToken,
+    decodeToken: mockDecodeToken,
+    default: {
+        generateAuthTokens: mockGenerateAuthTokens,
+        generateToken: mockGenerateToken,
+        verifyToken: mockVerifyToken,
+        decodeToken: mockDecodeToken
+    }
+}));
+
+jest.unstable_mockModule('@/core/Services/CacheService.js', () => ({
+    __esModule: true,
+    default: {
+        set: jest.fn().mockResolvedValue('OK'),
+        get: jest.fn().mockResolvedValue(null)
+    }
 }));
 
 const { default: AuthService } = await import('@/core/Services/Auth/User/AuthService.js');

@@ -18,6 +18,8 @@ describe('envValidator', () => {
     });
 
     it('should pass validation when all required env vars are present', () => {
+        process.env.NODE_ENV = 'development';
+        delete process.env.JEST_WORKER_ID;
         process.env.MONGODB_URI = 'mongodb://localhost:27017/test';
         process.env.JWT_SECRET = 'supersecret_must_be_at_least_32_characters_long_for_security';
         
