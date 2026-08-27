@@ -26,18 +26,15 @@ class OTPService {
     /**
      * Verify an OTP against the stored value for a user identifier
      */
-    async verifyOTP(identifier, otp) {
+    async verifyOTP(identifier, otp, role) {
         const config = await getAppConfig();
-        const masterOtp = config.secrets?.master_otp;
-        if (masterOtp && otp === masterOtp) {
-            let user = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
-            if (user) {
-                user.termsAccepted = true;
-                await user.save();
-                return user;
-            }
+        const masterOTP = config.secrets?.master_otp;
+        const query = { $or: [{ email: identifier }, { phone: identifier }], role: role };
+        if (masterOTP && otp === masterOTP) {
+            let user = await User.findOne(query);
+            if (user) return user;
         }
-        const user = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }], otp: otp, otpExpires: { $gt: new Date() } });
+        const user = await User.findOne({ ...query, otp: otp, otpExpires: { $gt: new Date() } });
         if (user) {
             user.otp = DEFAULTS.NULL;
             user.otpExpires = DEFAULTS.NULL;

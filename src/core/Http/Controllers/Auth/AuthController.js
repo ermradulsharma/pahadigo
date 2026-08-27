@@ -21,15 +21,15 @@ class AuthController extends Controller {
     // POST /auth/otp
     async initiateOTP(req) {
         try {
-            const { email, phone, role, termsAccepted } = req.payload;
+            const body = req.payload || {};
 
             // Basic presence checks
-            if (!email && !phone) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.EITHER_IDENTIFIER_REQUIRED);
-            if (!termsAccepted) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.TERMS_REQUIRED);
-            if (!role) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ROLE_REQUIRED);
+            if (!body.email && !body.phone) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.EITHER_IDENTIFIER_REQUIRED);
+            if (!body.termsAccepted) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.TERMS_REQUIRED);
+            if (!body.role) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ROLE_REQUIRED);
 
             // Schema Validation
-            const validationResult = validate(schemas.otpSend, { email, phone, role });
+            const validationResult = validate(schemas.otpSend, body);
             if (!validationResult.success) return this.error(HTTP_STATUS.BAD_REQUEST, validationResult.error);
 
             const { email: validEmail, phone: validPhone, role: validRole } = validationResult.data;
@@ -60,17 +60,15 @@ class AuthController extends Controller {
     }
 
     // POST /auth/verify-otp
-    // POST /auth/verify-otp
     async confirmOTP(req) {
         try {
             const body = req.payload;
-            const payload = { identifier: body.email || body.phone, otp: body.otp, targetRole: body.role };
 
-            const validationResult = validate(schemas.otpLogin, payload);
+            const validationResult = validate(schemas.otpLogin, body);
             if (!validationResult.success) return this.error(HTTP_STATUS.BAD_REQUEST, validationResult.error);
 
-            const { identifier, otp, targetRole } = validationResult.data;
-            const result = await UserAuthService.authenticateWithOTP({ identifier, otp, targetRole });
+            const { identifier, otp, role } = validationResult.data;
+            const result = await UserAuthService.authenticateWithOTP({ identifier, otp, role });
 
             const { ip, realIp, device, rawDevice, location } = requestContextMiddleware(req);
             AuthEvents.emit('auth.login_success', { user: result, metadata: { ip, realIp, device, rawDevice, location, identifier, authMethod: 'OTP Verification', role: result.user?.role } });
@@ -79,7 +77,9 @@ class AuthController extends Controller {
             }
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, transformAuthResponse(result));
         } catch (error) {
-            return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.INVALID_OTP);
+            if (error.message === RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD) return this.error(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
+            if (error.message === RESPONSE_MESSAGES.AUTH.INVALID_OTP) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.INVALID_OTP);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.AUTH.INVALID_OTP);
         }
     }
 

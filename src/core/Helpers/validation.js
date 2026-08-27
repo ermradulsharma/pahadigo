@@ -21,29 +21,24 @@ export const schemas = {
     otpSend: z.object({
         email: z.string().email(RESPONSE_MESSAGES.VALIDATION.INVALID_EMAIL).optional(),
         phone: z.string().min(10, 'Phone must be at least 10 digits').optional(),
-        role: z.enum([USER_ROLES.TRAVELLER, USER_ROLES.VENDOR]).optional(),
-        termsAccepted: z.union([z.boolean(), z.literal('true'), z.literal('false')]).optional()
+        role: z.enum([USER_ROLES.TRAVELLER, USER_ROLES.VENDOR]),
+        termsAccepted: z.union([z.boolean(), z.literal('true'), z.literal('false')])
     }).refine(data => data.email || data.phone, {
         message: RESPONSE_MESSAGES.VALIDATION.EITHER_IDENTIFIER_REQUIRED,
-        path: ['email'] // attach error to email field
+        path: ['email']
     }),
 
     otpLogin: z.object({
-        identifier: z.string().optional(),
         email: z.string().email().optional(),
         phone: z.string().optional(),
         otp: z.string().min(4, RESPONSE_MESSAGES.VALIDATION.OTP_MIN_LENGTH),
-        targetRole: z.enum([USER_ROLES.TRAVELLER, USER_ROLES.VENDOR]).optional(),
-        role: z.enum([USER_ROLES.TRAVELLER, USER_ROLES.VENDOR]).optional()
-    }).refine(data => data.identifier || data.email || data.phone, {
+        role: z.enum([USER_ROLES.TRAVELLER, USER_ROLES.VENDOR])
+    }).refine(data => data.email || data.phone, {
         message: RESPONSE_MESSAGES.VALIDATION.EITHER_IDENTIFIER_REQUIRED,
-        path: ['identifier']
+        path: ['email']
     }).transform(data => {
         if (!data.identifier) {
             data.identifier = data.email || data.phone;
-        }
-        if (!data.targetRole && data.role) {
-            data.targetRole = data.role;
         }
         return data; // RESTORED return statement
     }),

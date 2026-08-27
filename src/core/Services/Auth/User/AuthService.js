@@ -41,8 +41,9 @@ class AuthService {
         return await OTPService.generateOTP(identifier, role, { termsAccepted });
     }
 
-    async authenticateWithOTP({ identifier, otp, targetRole }) {
-        const record = await OTPService.verifyOTP(identifier, otp);
+    async authenticateWithOTP({ identifier, otp, role }) {
+        const record = await OTPService.verifyOTP(identifier, otp, role);
+        console.log(record, "record");
         if (!record) throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_OTP);
 
         const { termsAccepted } = record;
@@ -51,13 +52,12 @@ class AuthService {
         const normalizedEmail = isEmail ? identifier.toLowerCase().trim() : null;
         const normalizedPhone = !isEmail ? identifier.trim() : null;
 
-        let userRole = record.role;
-        if (userRole === 'master') userRole = this._resolveRole(targetRole);
+        let userRole = this._resolveRole(record.role);
+        let user = await User.findOne({ $or: [{ email: normalizedEmail || identifier }, { phone: normalizedPhone || identifier }], role: userRole });
 
-        let user = await User.findOne({ $or: [{ email: normalizedEmail || identifier }, { phone: normalizedPhone || identifier }] });
-
-        // Security Validation: Admins cannot use OTP Login
-        if (user && user.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
+        // Security Validation: Admin accounts cannot use public OTP Login
+        const adminRoles = [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.DEVELOPER];
+        if (user && adminRoles.includes(user.role)) throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
 
         let isNewUser = (!user || !user.isVerified);
         if (!user) {
@@ -187,8 +187,8 @@ class AuthService {
     async _getVendorStatus(user) {
         const business = await getBusinessBy({ user: user._id });
         const businessData = businessAuthResponse(business);
-        const businessProfileStatus = businessData.profileStatus
-        return { businessProfileStatus, ...{ businessProfile: businessData } };
+        const businessProfileStatus = businessData ? businessData.profileStatus : VENDOR_STATUS.SET_PROFILE;
+        return { businessProfileStatus, businessProfile: businessData };
     }
 
     async _handleDeactivation(user) {
