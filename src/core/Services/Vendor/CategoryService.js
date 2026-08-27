@@ -55,7 +55,7 @@ class CategoryService {
         const slug = categoryData.slug || categoryData;
 
         // Fetch category from database instead of constants
-        const categoryDoc = await Category.findOne({ slug, isActive: true });
+        const categoryDoc = await Category.findOne({ slug, isActive: true }).lean();
         if (!categoryDoc) {
             throw new Error(RESPONSE_MESSAGES.CATEGORY.INVALID);
         }
@@ -95,15 +95,15 @@ class CategoryService {
 
     // Get list of categories that the vendor hasn't chosen yet
     async getEligibleCategories(userId) {
-        const allCategories = await Category.find({ isActive: true }).select('name slug description');
-        const vendor = await Vendor.findOne({ user: userId, deletedAt: null });
+        const allCategories = await Category.find({ isActive: true }).select('name slug description').lean();
+        const vendor = await Vendor.findOne({ user: userId, deletedAt: null }).lean();
         const assignedSlugs = vendor?.category?.map(c => c.slug) || [];
         return allCategories.filter(category => !assignedSlugs.includes(category.slug));
     }
 
     // Get real document requirements for a specific category (Only if assigned)
     async getDocuments(userId, categorySlug) {
-        const vendor = await Vendor.findOne({ user: userId, deletedAt: null });
+        const vendor = await Vendor.findOne({ user: userId, deletedAt: null }).lean();
         const isAssigned = vendor?.category?.some(c => c.slug === categorySlug);
         if (!isAssigned) {
             throw new Error(RESPONSE_MESSAGES.CATEGORY.NOT_ASSIGNED);
@@ -113,13 +113,13 @@ class CategoryService {
 
     // Get list of required documents for any category (Bypasses assignment check)
     async getRequirementsBySlug(categorySlug) {
-        const dbDocs = await CategoryDocument.find({ category_slug: categorySlug, isActive: true }).select('name slug isMandatory');
+        const dbDocs = await CategoryDocument.find({ category_slug: categorySlug, isActive: true }).select('name slug isMandatory').lean();
         return dbDocs;
     }
 
     // Submit/Upload documents for a specific category
     async uploadDocuments(userId, categorySlug, req) {
-        const vendor = await Vendor.findOne({ user: userId, deletedAt: null });
+        const vendor = await Vendor.findOne({ user: userId, deletedAt: null }).lean();
         const isAssigned = vendor?.category?.some(c => c.slug === categorySlug);
         if (!isAssigned) {
             throw new Error(RESPONSE_MESSAGES.CATEGORY.NOT_ASSIGNED);
@@ -175,12 +175,12 @@ class CategoryService {
 
     // Get list of all documents already uploaded by the vendor across all categories
     async getUploadedDocuments(userId) {
-        const vendor = await Vendor.findOne({ user: userId, deletedAt: null });
+        const vendor = await Vendor.findOne({ user: userId, deletedAt: null }).lean();
         if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
         return await VendorDocument.find({
             user: userId,
             vendor: vendor._id
-        }).select('category_slug document_slug url status rejection_reason createdAt');
+        }).select('category_slug document_slug url status rejection_reason createdAt').lean();
     }
 }
 

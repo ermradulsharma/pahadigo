@@ -1,4 +1,5 @@
 import { getMessaging } from '@/core/Lib/firebase.js';
+import { getLogger } from '@/core/Lib/logger.js';
 
 const sanitizeDataPayload = (data) => {
     const sanitized = {};
@@ -20,10 +21,11 @@ export class PushNotificationService {
      * @param {object} data - Custom data payload (key-value strings)
      */
     static async sendToDevice(token, notification, data = {}) {
+        const logger = getLogger();
         try {
             const messaging = await getMessaging();
             if (!messaging) {
-                console.warn('Firebase Messaging is not initialized. Cannot send notification.');
+                logger.warn('Firebase Messaging is not initialized. Cannot send notification.');
                 return { success: false, error: 'Firebase not initialized' };
             }
 
@@ -57,23 +59,23 @@ export class PushNotificationService {
                 }
             };
 
-            console.log('Sending FCM Payload:', JSON.stringify(payload, null, 2));
+            logger.debug({ payload }, 'Sending FCM Payload');
 
             const response = await messaging.send(payload);
-            console.log(`Successfully sent message to ${token}:`, response);
+            logger.info({ token, response }, `Successfully sent FCM push notification`);
             return { success: true, messageId: response };
         } catch (error) {
             // Handle common FCM token-related validation/expiration errors gracefully without printing full stack trace
-            const isInvalidToken = 
+            const isInvalidToken =
                 error.code === 'messaging/invalid-registration-token' ||
                 error.code === 'messaging/registration-token-not-registered' ||
-                (error.code === 'messaging/invalid-argument' && 
-                 error.message?.includes('registration token'));
+                (error.code === 'messaging/invalid-argument' &&
+                    error.message?.includes('registration token'));
 
             if (isInvalidToken) {
-                console.warn(`[PushNotificationService] Token is invalid or unregistered: ${token}`);
+                logger.warn({ token }, `[PushNotificationService] Token is invalid or unregistered`);
             } else {
-                console.error('Error sending push notification:', error);
+                logger.error({ err: error }, 'Error sending push notification');
             }
             return { success: false, error: error.message, code: error.code };
         }
@@ -86,6 +88,7 @@ export class PushNotificationService {
      * @param {object} data - Custom data payload
      */
     static async sendToMultiple(tokens, notification, data = {}) {
+        const logger = getLogger();
         if (!tokens || tokens.length === 0) return { success: false, error: 'No tokens provided' };
 
         try {
@@ -107,11 +110,11 @@ export class PushNotificationService {
 
             // sendEachForMulticast is the modern method for firebase-admin v12+
             const response = await messaging.sendEachForMulticast(payload);
-            console.log(`${response.successCount} messages sent successfully, ${response.failureCount} failed.`);
-            
+            logger.info({ successCount: response.successCount, failureCount: response.failureCount }, `Multicast push notifications dispatched`);
+
             return { success: true, response };
         } catch (error) {
-            console.error('Error sending multicast push notification:', error);
+            logger.error({ err: error }, 'Error sending multicast push notification');
             return { success: false, error: error.message };
         }
     }
@@ -123,6 +126,7 @@ export class PushNotificationService {
      * @param {object} data - Custom data payload
      */
     static async sendToTopic(topic, notification, data = {}) {
+        const logger = getLogger();
         try {
             const messaging = await getMessaging();
             if (!messaging) return { success: false, error: 'Firebase not initialized' };
@@ -137,10 +141,10 @@ export class PushNotificationService {
             };
 
             const response = await messaging.send(payload);
-            console.log(`Successfully sent message to topic ${topic}:`, response);
+            logger.info({ topic, response }, `Successfully sent push notification to topic`);
             return { success: true, messageId: response };
         } catch (error) {
-            console.error(`Error sending push notification to topic ${topic}:`, error);
+            logger.error({ err: error, topic }, `Error sending push notification to topic`);
             return { success: false, error: error.message };
         }
     }

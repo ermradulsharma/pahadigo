@@ -21,38 +21,23 @@ class AuthController extends Controller {
     // POST /auth/otp
     async initiateOTP(req) {
         try {
-            const body = req.payload;
-            const { email, phone, role, termsAccepted } = body;
+            const { email, phone, role, termsAccepted } = req.payload;
 
             // Basic presence checks
-            if (!email && !phone) {
-                return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.EITHER_IDENTIFIER_REQUIRED);
-            }
-
-            if (!(termsAccepted === true || termsAccepted === 'true')) {
-                return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.TERMS_REQUIRED);
-            }
+            if (!email && !phone) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.EITHER_IDENTIFIER_REQUIRED);
+            if (!termsAccepted) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.TERMS_REQUIRED);
+            if (!role) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ROLE_REQUIRED);
 
             // Schema Validation
             const validationResult = validate(schemas.otpSend, { email, phone, role });
-            if (!validationResult.success) {
-                return this.error(HTTP_STATUS.BAD_REQUEST, validationResult.error);
-            }
+            if (!validationResult.success) return this.error(HTTP_STATUS.BAD_REQUEST, validationResult.error);
 
             const { email: validEmail, phone: validPhone, role: validRole } = validationResult.data;
             const identifier = validEmail ? validEmail.toLowerCase().trim() : validPhone.trim();
-
-            const otp = await UserAuthService.initiateOTP({
-                identifier,
-                role: validRole || 'traveller',
-                termsAccepted: true
-            });
-
+            const otp = await UserAuthService.initiateOTP({ identifier, role: validRole, termsAccepted: true });
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.OTP_SENT, { otp, email: validEmail, phone: validPhone });
         } catch (error) {
-            if (error.message === RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD) {
-                return this.error(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
-            }
+            if (error.message === RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD) return this.error(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.AUTH.OTP_FAILED);
         }
     }
@@ -61,8 +46,7 @@ class AuthController extends Controller {
     // POST /auth/login
     async authenticate(req) {
         try {
-            const body = req.payload;
-            const { email, password, rememberMe } = body;
+            const { email, password, rememberMe } = req.payload;
             const result = await AdminAuthService.authenticateWithPassword({ email, password, rememberMe });
 
             const ip = req.headers.get('x-forwarded-for') || req.socket?.remoteAddress;
@@ -88,11 +72,11 @@ class AuthController extends Controller {
             const { identifier, otp, targetRole } = validationResult.data;
             const result = await UserAuthService.authenticateWithOTP({ identifier, otp, targetRole });
 
-            // const { ip, realIp, device, rawDevice, location } = requestContextMiddleware(req);
-            // AuthEvents.emit('auth.login_success', { user: result.user, metadata: { ip, realIp, device, rawDevice, location, identifier, authMethod: 'OTP Verification', role: result.user?.role } });
-            // if (result.isNewUser) {
-            //     AuthEvents.emit('auth.welcome', { identifier, user: result.user });
-            // }
+            const { ip, realIp, device, rawDevice, location } = requestContextMiddleware(req);
+            AuthEvents.emit('auth.login_success', { user: result, metadata: { ip, realIp, device, rawDevice, location, identifier, authMethod: 'OTP Verification', role: result.user?.role } });
+            if (result.isNewUser) {
+                AuthEvents.emit('auth.welcome', { identifier, user: result });
+            }
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, transformAuthResponse(result));
         } catch (error) {
             return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.INVALID_OTP);

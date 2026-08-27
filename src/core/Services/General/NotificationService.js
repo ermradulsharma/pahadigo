@@ -61,10 +61,10 @@ class NotificationService {
     async sendSMS(phone, message) {
         try {
             // Implement SMS Gateway logic here (e.g., MSG91, Twilio)
-            console.log(`[SMS SENT to ${phone}]: ${message}`);
+            getLogger().info({ phone }, `[SMS SENT]: ${message}`);
             return true;
         } catch (error) {
-            console.error("[NotificationService] sendSMS Error:", error);
+            getLogger().error({ err: error, phone }, "[NotificationService] sendSMS Error");
             return false;
         }
     }
@@ -75,21 +75,29 @@ class NotificationService {
     async sendLoginAlertEmail(email, details) {
         try {
             const config = await getAppConfig();
-            const securityUrl = config?.app?.url ? `${config.app.url}/security` : 'https://pahadigo.com/security';
+            const baseUrl = config?.app?.url || 'https://pahadigo.com';
+            const securityUrl = `${baseUrl}/security`;
+            const revokeUrl = details.sessionId ? `${baseUrl}/auth/revoke-session?id=${details.sessionId}` : `${baseUrl}/security`;
+
             const html = await renderTemplate('Emails/alert.html', {
-                NAME: details.name || 'Traveler',
-                ACCOUNT_IDENTIFIER: details.accountIdentifier || email,
-                AUTH_METHOD: details.authMethod || 'OTP Verification',
-                ROLE: details.role || 'User',
-                DEVICE: details.summary || details.device || 'Unknown Device',
-                DEVICE_NAME: details.device || 'Unknown Device',
-                DEVICE_TYPE: details.deviceType || 'Device',
-                BROWSER: details.browser || 'Browser',
-                OS: details.os || 'OS',
-                IP: details.ip || 'Unknown IP',
-                LOCATION: details.location || 'Unknown Location',
-                TIME: details.loginTime || new Date().toLocaleString(),
-                SECURITY_URL: securityUrl
+                NAME: details.name,
+                ACCOUNT_IDENTIFIER: details.accountIdentifier,
+                AUTH_METHOD: details.authMethod,
+                ROLE: details.role,
+                DEVICE: details.summary,
+                DEVICE_NAME: details.device,
+                DEVICE_TYPE: details.deviceType,
+                BROWSER: details.browser,
+                OS: details.os,
+                CARRIER: details.carrier,
+                APP_VERSION: details.appVersion,
+                IP: details.ip,
+                LOCATION: details.location,
+                DATACENTER: details.datacenter,
+                TIME: details.loginTime,
+                NEW_DEVICE_BADGE: Boolean(details.isNewDevice),
+                SECURITY_URL: securityUrl,
+                REVOKE_URL: revokeUrl
             });
             await this._sendEmailHelper({ to: email, subject: `PahadiGo Security Alert: New sign-in detected`, html: html });
             return true;
@@ -341,7 +349,7 @@ class NotificationService {
             const React = (await import('react')).default;
             const InvoiceDocument = (await import('@/core/Templates/Pdf/InvoiceDocument.jsx')).default;
 
-            console.log(`[NotificationService] Generating PDF stream for booking ${booking.bookingCode}...`);
+            getLogger().info({ bookingCode: booking.bookingCode }, `[NotificationService] Generating PDF stream for booking...`);
             const stream = await renderToStream(React.createElement(InvoiceDocument, { booking }));
 
             const chunks = [];
@@ -363,10 +371,10 @@ class NotificationService {
                 ]
             });
 
-            console.log(`[NotificationService] Invoice sent successfully to ${email}`);
+            getLogger().info({ email, bookingCode: booking.bookingCode }, `[NotificationService] Invoice sent successfully`);
             return true;
         } catch (error) {
-            console.error('[NotificationService] sendInvoice Error:', error);
+            getLogger().error({ err: error, email }, '[NotificationService] sendInvoice Error');
             return false;
         }
     }

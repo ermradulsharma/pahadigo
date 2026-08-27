@@ -29,9 +29,16 @@
             <p style="font-size: 15px; color: #4a5568; margin-bottom: 22px;">We detected a new sign-in to your PahadiGo
                 account <strong>({{ACCOUNT_IDENTIFIER}})</strong>. Here are the details of this activity:</p>
 
+            <!-- Security Alert Badges (If any) -->
+            {{#NEW_DEVICE_BADGE}}
+            <div style="display: inline-block; background-color: #fffaf0; border: 1px solid #feebc8; color: #c05621; font-weight: 600; font-size: 12px; padding: 6px 12px; border-radius: 20px; margin-bottom: 12px; margin-right: 6px;">
+                ⚡ New Device Detected
+            </div>
+            {{/NEW_DEVICE_BADGE}}
+
             <!-- Details Table Card -->
             <div
-                style="background-color: #f8fafc; border-radius: 10px; padding: 22px; margin: 22px 0; border: 1px solid #edf2f7; border-left: 5px solid #2e7d32;">
+                style="background-color: #f8fafc; border-radius: 10px; padding: 22px; margin: 15px 0 22px 0; border: 1px solid #edf2f7; border-left: 5px solid #2e7d32;">
                 <table style="width: 100%; font-size: 14px; border-collapse: collapse;">
                     <tr>
                         <td style="padding: 7px 0; color: #718096; width: 140px; font-weight: 500;">Account:</td>
@@ -53,12 +60,18 @@
                     </tr>
                     <tr>
                         <td style="padding: 7px 0; color: #718096;">Browser / App:</td>
-                        <td style="padding: 7px 0; color: #1a202c; font-weight: 600;">{{BROWSER}}</td>
+                        <td style="padding: 7px 0; color: #1a202c; font-weight: 600;">{{BROWSER}} {{#APP_VERSION}}({{APP_VERSION}}){{/APP_VERSION}}</td>
                     </tr>
                     <tr>
                         <td style="padding: 7px 0; color: #718096;">Operating System:</td>
                         <td style="padding: 7px 0; color: #1a202c; font-weight: 600;">{{OS}}</td>
                     </tr>
+                    {{#CARRIER}}
+                    <tr>
+                        <td style="padding: 7px 0; color: #718096;">Network / Carrier:</td>
+                        <td style="padding: 7px 0; color: #1a202c; font-weight: 600;">📶 {{CARRIER}}</td>
+                    </tr>
+                    {{/CARRIER}}
                     <tr>
                         <td style="padding: 7px 0; color: #718096;">IP Address:</td>
                         <td
@@ -69,6 +82,12 @@
                         <td style="padding: 7px 0; color: #718096;">Approx. Location:</td>
                         <td style="padding: 7px 0; color: #1a202c; font-weight: 600;">📍 {{LOCATION}}</td>
                     </tr>
+                    {{#DATACENTER}}
+                    <tr>
+                        <td style="padding: 7px 0; color: #718096;">Edge Datacenter:</td>
+                        <td style="padding: 7px 0; color: #718096; font-size: 13px;">🏢 {{DATACENTER}}</td>
+                    </tr>
+                    {{/DATACENTER}}
                     <tr>
                         <td style="padding: 7px 0; color: #718096;">Login Time:</td>
                         <td style="padding: 7px 0; color: #1a202c; font-weight: 600;">🕒 {{TIME}}</td>
@@ -81,14 +100,17 @@
 
             <!-- Security Warning Box -->
             <div
-                style="background-color: #fff5f5; border: 1px solid #fed7d7; border-radius: 8px; padding: 18px; margin-top: 20px; text-align: center;">
-                <p style="font-size: 14px; color: #c53030; font-weight: 700; margin: 0 0 10px 0;">Don't recognize this
+                style="background-color: #fff5f5; border: 1px solid #fed7d7; border-radius: 8px; padding: 20px; margin-top: 20px; text-align: center;">
+                <p style="font-size: 14px; color: #c53030; font-weight: 700; margin: 0 0 8px 0;">Don't recognize this
                     sign-in?</p>
-                <p style="font-size: 13px; color: #742a2a; margin: 0 0 15px 0;">If someone else logged into your
-                    account, please secure your password immediately to protect your bookings and profile details.</p>
-                <a href="{{SECURITY_URL}}"
-                    style="display: inline-block; background-color: #c53030; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 14px; padding: 10px 24px; border-radius: 6px; box-shadow: 0 2px 5px rgba(197, 48, 48, 0.3);">Secure
-                    Your Account</a>
+                <p style="font-size: 13px; color: #742a2a; margin: 0 0 16px 0;">If someone else logged into your
+                    account, please secure your password immediately or revoke this session.</p>
+                <div style="margin-top: 10px;">
+                    <a href="{{SECURITY_URL}}"
+                        style="display: inline-block; background-color: #c53030; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 13px; padding: 10px 20px; border-radius: 6px; margin: 4px; box-shadow: 0 2px 5px rgba(197, 48, 48, 0.3);">Secure Your Account</a>
+                    <a href="{{REVOKE_URL}}"
+                        style="display: inline-block; background-color: #4a5568; color: #ffffff; text-decoration: none; font-weight: 600; font-size: 13px; padding: 10px 20px; border-radius: 6px; margin: 4px;">Log Out Session</a>
+                </div>
             </div>
         </div>
 

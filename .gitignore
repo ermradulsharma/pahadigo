@@ -66,3 +66,5 @@ test_output.txt
 *.txt
 .vercel
 .env*
+/logs/
+*.log

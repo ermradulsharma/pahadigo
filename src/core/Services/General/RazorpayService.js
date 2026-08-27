@@ -1,12 +1,7 @@
 import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { withRetry } from '@/core/Helpers/resilience.js';
-
-const FALLBACK_RAZORPAY_KEY_ID = 'test_key_id';
-const FALLBACK_RAZORPAY_KEY_SECRET = 'test_key_secret';
-const FALLBACK_WEBHOOK_SECRET = 'test_webhook_secret';
-
-const allowFallbackCredentials = () => ['test', 'development'].includes(process.env.NODE_ENV);
+import { getAppConfig } from '@/core/Lib/appConfig.js';
 
 const safeCompare = (expected, received) => {
     const expectedBuffer = Buffer.from(expected);
@@ -22,28 +17,30 @@ class RazorpayService {
         this.razorpay = null;
     }
 
-    getCredentials(dynamicConfig = null) {
-        const keyId = dynamicConfig?.key_id || process.env.RAZORPAY_KEY_ID;
-        const keySecret = dynamicConfig?.key_secret || process.env.RAZORPAY_KEY_SECRET;
+    async getCredentials(dynamicConfig = null) {
+        if (dynamicConfig?.key_id && dynamicConfig?.key_secret) {
+            return { key_id: dynamicConfig.key_id, key_secret: dynamicConfig.key_secret };
+        }
+
+        const appConfig = await getAppConfig();
+        const keyId = appConfig?.razorpay?.key_id || process.env.RAZORPAY_KEY_ID;
+        const keySecret = appConfig?.razorpay?.key_secret || process.env.RAZORPAY_KEY_SECRET;
 
         if (keyId && keySecret) {
             return { key_id: keyId, key_secret: keySecret };
         }
 
-        if (allowFallbackCredentials()) {
-            return { key_id: FALLBACK_RAZORPAY_KEY_ID, key_secret: FALLBACK_RAZORPAY_KEY_SECRET };
-        }
-
-        throw new Error('Razorpay credentials are not configured.');
+        throw new Error('Razorpay credentials are not configured in environment or appConfig.');
     }
 
-    getClient(dynamicConfig = null) {
+    async getClient(dynamicConfig = null) {
+        const credentials = await this.getCredentials(dynamicConfig);
         if (dynamicConfig?.key_id && dynamicConfig?.key_secret) {
-            return new Razorpay(this.getCredentials(dynamicConfig));
+            return new Razorpay(credentials);
         }
 
         if (!this.razorpay) {
-            this.razorpay = new Razorpay(this.getCredentials());
+            this.razorpay = new Razorpay(credentials);
         }
 
         return this.razorpay;
@@ -54,7 +51,7 @@ class RazorpayService {
             throw new Error('A valid positive payment amount is required.');
         }
 
-        const client = this.getClient(dynamicConfig);
+        const client = await this.getClient(dynamicConfig);
         const options = {
             amount: Math.round(Number(amount) * 100),
             currency: "INR",
@@ -76,14 +73,10 @@ class RazorpayService {
         }
     }
 
-    verifySignature(orderId, paymentId, signature, dynamicConfig = null) {
+    async verifySignature(orderId, paymentId, signature, dynamicConfig = null) {
         if (!orderId || !paymentId || !signature) return false;
 
-        if (process.env.NODE_ENV === 'test' && signature === 'DUMMY_SIGNATURE') {
-            return true;
-        }
-
-        const { key_secret: secret } = this.getCredentials(dynamicConfig);
+        const { key_secret: secret } = await this.getCredentials(dynamicConfig);
         const body = `${orderId}|${paymentId}`;
         const expectedSignature = crypto
             .createHmac('sha256', secret)
@@ -99,7 +92,7 @@ class RazorpayService {
             throw new Error('A valid positive refund amount is required.');
         }
 
-        const client = this.getClient(dynamicConfig);
+        const client = await this.getClient(dynamicConfig);
         const options = {
             amount: Math.round(Number(amount) * 100),
             notes: { reason: "Admin initiated refund via platform" }
@@ -121,7 +114,8 @@ class RazorpayService {
     async verifyWebhookSignature(body, signature, secret = null) {
         if (!signature) return false;
 
-        const webhookSecret = secret || process.env.RAZORPAY_WEBHOOK_SECRET || (allowFallbackCredentials() ? FALLBACK_WEBHOOK_SECRET : null);
+        const appConfig = await getAppConfig();
+        const webhookSecret = secret || appConfig?.razorpay?.webhook_secret || process.env.RAZORPAY_WEBHOOK_SECRET;
         if (!webhookSecret) throw new Error('Razorpay webhook secret is not configured.');
 
         const expectedSignature = crypto
@@ -134,7 +128,7 @@ class RazorpayService {
 
     async getPaymentDetails(paymentId, dynamicConfig = null) {
         if (!paymentId) throw new Error('Payment id is required.');
-        const client = this.getClient(dynamicConfig);
+        const client = await this.getClient(dynamicConfig);
         try {
             return await client.payments.fetch(paymentId);
         } catch (error) {
@@ -144,7 +138,7 @@ class RazorpayService {
 
     async getOrderDetails(orderId, dynamicConfig = null) {
         if (!orderId) throw new Error('Order id is required.');
-        const client = this.getClient(dynamicConfig);
+        const client = await this.getClient(dynamicConfig);
         try {
             return await client.orders.fetch(orderId);
         } catch (error) {
@@ -154,7 +148,7 @@ class RazorpayService {
 
     async getRefundDetails(refundId, dynamicConfig = null) {
         if (!refundId) throw new Error('Refund id is required.');
-        const client = this.getClient(dynamicConfig);
+        const client = await this.getClient(dynamicConfig);
         try {
             return await client.refunds.fetch(refundId);
         } catch (error) {
@@ -170,7 +164,7 @@ class RazorpayService {
      * Create a Contact in RazorpayX (Step 1 for Payouts)
      */
     async createContact(data, dynamicConfig = null) {
-        const credentials = this.getCredentials(dynamicConfig);
+        const credentials = await this.getCredentials(dynamicConfig);
         const auth = Buffer.from(`${credentials.key_id}:${credentials.key_secret}`).toString('base64');
         try {
             const response = await fetch('https://api.razorpay.com/v1/contacts', {
@@ -203,7 +197,7 @@ class RazorpayService {
      * account_type can be 'bank_account' or 'vpa' (UPI)
      */
     async createFundAccount(data, dynamicConfig = null) {
-        const credentials = this.getCredentials(dynamicConfig);
+        const credentials = await this.getCredentials(dynamicConfig);
         const auth = Buffer.from(`${credentials.key_id}:${credentials.key_secret}`).toString('base64');
         try {
             const response = await fetch('https://api.razorpay.com/v1/fund_accounts', {
@@ -239,7 +233,7 @@ class RazorpayService {
             throw new Error('A valid positive payout amount is required.');
         }
         
-        const credentials = this.getCredentials(dynamicConfig);
+        const credentials = await this.getCredentials(dynamicConfig);
         const auth = Buffer.from(`${credentials.key_id}:${credentials.key_secret}`).toString('base64');
         try {
             const response = await fetch('https://api.razorpay.com/v1/payouts', {

@@ -40,36 +40,36 @@ AuthEvents.on('auth.welcome', async ({ identifier, user }) => {
  * Handle successful login event
  * Emits login security alerts via Email or SMS with rich device & geo metadata.
  */
-AuthEvents.on('auth.login_success', async ({ user, metadata }) => {
+AuthEvents.on('auth.login_success', async ({ user, metadata = {} }) => {
     try {
-        const { identifier, ip, realIp, device, rawDevice, location } = metadata || {};
+        const { identifier, realIp, ip, rawDevice = {}, location, appInfo = {}, cdn = {}, isNewDevice, isNewLocation, sessionId } = metadata;
         const isEmail = identifier?.includes('@');
-        const clientIp = realIp || ip || 'Unknown IP';
-        const rawDev = rawDevice || {};
 
         const loginDetails = {
-            name: user.name || 'Traveler',
-            accountIdentifier: user.email || user.phone || identifier || 'Your Account',
-            authMethod: metadata?.authMethod || 'OTP Verification',
-            role: metadata?.role || user.role || 'User',
-            device: rawDev.deviceName || (typeof device === 'string' ? device : 'Unknown Device'),
-            browser: rawDev.browser || 'Unknown Browser',
-            os: rawDev.os || 'Unknown OS',
-            deviceType: rawDev.deviceType || 'Mobile/Desktop',
-            summary: rawDev.summary || (typeof device === 'string' ? device : 'Unknown Device'),
+            name: user?.name,
+            accountIdentifier: user?.email || user?.phone || identifier,
+            authMethod: metadata.authMethod,
+            role: metadata.role || user?.role,
+            device: rawDevice.deviceName,
+            browser: rawDevice.browser,
+            os: rawDevice.os,
+            deviceType: rawDevice.deviceType,
+            summary: rawDevice.summary,
+            carrier: appInfo.carrier,
+            appVersion: appInfo.appVersion ? `${appInfo.appVersion} (${appInfo.platform})` : null,
+            datacenter: cdn.datacenter !== 'LOCAL' ? cdn.datacenter : null,
             loginAt: new Date().toISOString(),
-            loginTime: new Date().toLocaleString('en-IN', {
-                timeZone: 'Asia/Kolkata'
-            }),
-            ip: clientIp,
-            location: typeof location === 'string' ? location : (location?.summary || 'Unknown Location'),
-            isNewDevice: metadata?.isNewDevice || false,
-            isNewLocation: metadata?.isNewLocation || false
+            loginTime: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+            ip: realIp || ip,
+            location: typeof location === 'string' ? location : location?.summary,
+            isNewDevice,
+            isNewLocation,
+            sessionId
         };
 
-        if (isEmail && user.email) {
+        if (isEmail && user?.email) {
             await NotificationService.sendLoginAlertEmail(user.email, loginDetails);
-        } else if (!isEmail && user.phone) {
+        } else if (!isEmail && user?.phone) {
             await NotificationService.sendLoginAlertSMS(user.phone, loginDetails);
         }
     } catch (error) {

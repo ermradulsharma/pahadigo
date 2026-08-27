@@ -2,36 +2,29 @@ import { getRequestMetadata } from '@/core/Helpers/requestUtils.js';
 
 /**
  * Request Context Middleware
- * Extracts client IP, User-Agent, parsed Device Info, and Geo-Location from request headers.
+ * Extracts comprehensive client request context (IP, Protocol, Host, Device, Geo-Location, TLS/SSL, CDN Edge, Localization, App Info, Hardware, Client Hints, Security, Network, Bot Detection, Navigation).
  * 
- * @param {Request} req - Incoming request object
- * @returns {Object} { ip, realIp, device, rawDevice, location }
+ * @param {Request|Object} req - Incoming request object
+ * @returns {Object} Complete structured request context metadata
  */
-export const requestContextMiddleware = (req) => {
-    if (!req) {
-        return {
-            ip: '127.0.0.1',
-            realIp: '127.0.0.1',
-            device: 'System',
-            rawDevice: { os: 'System', browser: 'System', deviceName: 'System', summary: 'System' },
-            location: 'Local System'
-        };
+const requestContextMiddleware = (req) => {
+    const metadata = getRequestMetadata(req);
+
+    if (req && typeof req === 'object' && Object.isExtensible(req)) {
+        req.context = metadata;
+        req.clientIp = metadata.ipAddress;
+        req.realIp = metadata.realIp;
+        req.deviceInfo = metadata.device;
+        req.locationInfo = metadata.location;
     }
 
-    const { ipAddress, realIp, userAgent, device, location } = getRequestMetadata(req);
-
-    req.clientIp = ipAddress;
-    req.realIp = realIp;
-    req.userAgent = userAgent;
-    req.deviceInfo = device;
-    req.locationInfo = location;
-
     return {
-        ip: ipAddress,
-        realIp: realIp,
-        device: device.summary,
-        rawDevice: device,
-        location: location.summary
+        ...metadata,
+        ip: metadata.ipAddress,
+        device: metadata.device.summary,
+        rawDevice: metadata.device,
+        location: metadata.location.summary,
+        rawLocation: metadata.location
     };
 };
 

@@ -105,6 +105,7 @@ export const RESPONSE_MESSAGES = {
         ITEM_ID_REQUIRED: 'Service item identifier is required.',
         TERMS_REQUIRED: 'You must accept the Terms and Conditions to proceed.',
         ID_REQUIRED: 'Unique identifier is required for this action.',
+        ROLE_REQUIRED: 'Role is required.',
     },
     ERROR: {
         GENERIC: 'An unexpected error occurred. Please try again.',

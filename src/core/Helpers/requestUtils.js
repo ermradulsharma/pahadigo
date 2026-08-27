@@ -103,70 +103,213 @@ export const parseUserAgent = (uaString, customDevice = '') => {
 };
 
 /**
- * Enterprise-grade request metadata extractor (IP, User-Agent, Device Info & Geo Location).
- * Supports custom mobile device headers (`x-device-name`, `x-device-model`).
+ * Enterprise-grade request metadata extractor.
+ * Extracts IP, User-Agent, Device Details, Bot Detection, Client Hints, Geo-Location (City, Region, Country, Lat, Long, Postal, ASN),
+ * TLS/SSL Protocol & Cipher, HTTP Version, CDN Ray ID & Datacenter, Threat & Bot Scores, Network Latency (RTT, Downlink, ECT),
+ * Protocol, Host, Port, Localization (Accept-Language, Preferred Language, Timezone, Device Locale),
+ * Mobile App Client Info (App Version, Build Number, Platform, Device ID, Carrier, Bundle ID, SDK Version, App State),
+ * UI & Hardware State (Battery Level, Charging, Theme/Color Scheme, Orientation, Reduced Motion),
+ * Security Context (Auth Header Present, Auth Type, CSRF, Signature), Connection Metrics (SaveData, Encoding), and Timestamps.
  * 
  * @param {Object} req - Incoming HTTP request object
- * @returns {Object} { ipAddress, realIp, userAgent, device, location }
+ * @returns {Object} Full structured request metadata object
  */
 export const getRequestMetadata = (req) => {
-    if (!req) {
-        return {
-            ipAddress: '127.0.0.1',
-            realIp: '127.0.0.1',
-            userAgent: 'system',
-            device: parseUserAgent('system'),
-            location: { city: 'Unknown', country: 'Unknown', summary: 'Local System' }
-        };
-    }
+    const now = new Date();
+    const serverTimeMs = now.getTime();
 
     const getHeader = (name) => {
-        if (!req.headers) return null;
+        if (!req || !req.headers) return null;
         if (typeof req.headers.get === 'function') return req.headers.get(name);
         return req.headers[name] || req.headers[name.toLowerCase()];
     };
 
-    // IP Resolution with Cloudflare & Reverse Proxy Support
+    const safeDecode = (str) => {
+        if (!str) return '';
+        try { return decodeURIComponent(str); } catch { return str; }
+    };
+
+    // 1. IP & Network Resolution
     const rawIp =
         getHeader('cf-connecting-ip') ||
         getHeader('true-client-ip') ||
         getHeader('x-client-ip') ||
         getHeader('x-forwarded-for') ||
         getHeader('x-real-ip') ||
-        req.ip ||
-        req.socket?.remoteAddress ||
-        req.connection?.remoteAddress ||
+        req?.ip ||
+        req?.socket?.remoteAddress ||
+        req?.connection?.remoteAddress ||
         '127.0.0.1';
 
     let clientIp = String(rawIp).split(',')[0].trim();
     if (clientIp.startsWith('::ffff:')) clientIp = clientIp.substring(7);
+    if (clientIp === '::1') clientIp = '127.0.0.1';
 
-    // Custom Device Header Support (Passed from Mobile App)
-    const customDevice = getHeader('x-device-name') || getHeader('x-device-model') || getHeader('x-client-device') || '';
+    const protocol = getHeader('x-forwarded-proto') || (req?.socket?.encrypted ? 'https' : (req ? 'http' : 'https'));
+    const host = getHeader('x-forwarded-host') || getHeader('host') || 'localhost';
+    const port = getHeader('x-forwarded-port') || (protocol === 'https' ? '443' : '80');
+    const httpVersion = req?.httpVersion || getHeader('x-http-version') || '1.1';
 
-    // User Agent Resolution & Device Parsing
-    const rawAgent = getHeader('user-agent') || req.userAgent || 'unknown';
+    // 2. TLS / SSL & CDN Edge Context
+    const cfRay = getHeader('cf-ray') || null;
+    const datacenter = cfRay && cfRay.includes('-') ? cfRay.split('-').pop() : (getHeader('x-datacenter') || (req ? 'UNKNOWN' : 'LOCAL'));
+    const tlsVersion = getHeader('x-ssl-protocol') || getHeader('x-forwarded-tls-version') || (req?.socket?.encrypted ? 'TLSv1.3' : (req ? null : 'TLSv1.3'));
+    const tlsCipher = getHeader('cf-tls-cipher') || getHeader('x-ssl-cipher') || null;
+    const threatScore = parseInt(getHeader('cf-threat-score') || '0', 10);
+    const botScore = parseInt(getHeader('cf-bot-score') || '100', 10);
+
+    // 3. Client Hints (sec-ch-ua headers) & Theme Preferences
+    const secChUaMobile = getHeader('sec-ch-ua-mobile') === '?1';
+    const secChUaPlatform = safeDecode(getHeader('sec-ch-ua-platform')).replace(/"/g, '');
+    const secChUaModel = safeDecode(getHeader('sec-ch-ua-model')).replace(/"/g, '');
+    const secChUaArch = safeDecode(getHeader('sec-ch-ua-arch')).replace(/"/g, '');
+    const secChUaBitness = safeDecode(getHeader('sec-ch-ua-bitness')).replace(/"/g, '');
+    const prefersColorScheme = safeDecode(getHeader('sec-ch-prefers-color-scheme') || getHeader('x-color-scheme') || 'light').replace(/"/g, '');
+    const prefersReducedMotion = getHeader('sec-ch-prefers-reduced-motion') === 'reduce';
+
+    // 4. Device Parsing & Bot Detection
+    const customDevice = getHeader('x-device-name') || getHeader('x-device-model') || getHeader('x-client-device') || secChUaModel || '';
+    const rawAgent = getHeader('user-agent') || req?.userAgent || (req ? 'unknown' : 'system');
     const userAgent = String(rawAgent).trim();
     const device = parseUserAgent(userAgent, customDevice);
+    const isBot = req ? (/bot|crawler|spider|googlebot|bingbot|slurp|facebookexternalhit|whatsapp|postman/i.test(userAgent) || botScore < 30) : false;
 
-    // Geo Location Headers Resolution (Cloudflare, Vercel, GCP, Nginx headers)
-    const city = getHeader('cf-ipcity') || getHeader('x-vercel-ip-city') || getHeader('x-appengine-city') || '';
-    const region = getHeader('cf-region') || getHeader('x-vercel-ip-country-region') || getHeader('x-appengine-region') || '';
-    const country = getHeader('cf-ipcountry') || getHeader('x-vercel-ip-country') || getHeader('x-appengine-country') || '';
-    
+    // 5. Geo-Location & ISP (Cloudflare, Vercel, GCP, Nginx)
+    const city = safeDecode(getHeader('cf-ipcity') || getHeader('x-vercel-ip-city') || getHeader('x-appengine-city') || '');
+    const region = safeDecode(getHeader('cf-region') || getHeader('x-vercel-ip-country-region') || getHeader('x-appengine-region') || '');
+    const country = safeDecode(getHeader('cf-ipcountry') || getHeader('x-vercel-ip-country') || getHeader('x-appengine-country') || '');
+    const latitude = getHeader('cf-iplatitude') || getHeader('x-vercel-ip-latitude') || null;
+    const longitude = getHeader('cf-iplongitude') || getHeader('x-vercel-ip-longitude') || null;
+    const postalCode = getHeader('cf-postal-code') || getHeader('x-vercel-ip-postal-code') || null;
+    const asn = getHeader('cf-connecting-asn') || getHeader('x-asn') || null;
+
     const validGeoParts = [city, region, country].filter(p => p && p.trim().length > 0);
-    const locationSummary = validGeoParts.length > 0 ? validGeoParts.join(', ') : 'Unknown Location';
+    const locationSummary = validGeoParts.length > 0 ? validGeoParts.join(', ') : (req ? 'Unknown Location' : 'Local System');
+
+    // 6. Localization & Timezone
+    const acceptLanguage = getHeader('accept-language') || 'en-US';
+    const preferredLanguage = acceptLanguage.split(',')[0].split(';')[0].trim() || 'en';
+    const timezone = getHeader('x-timezone') || getHeader('x-user-timezone') || 'Asia/Kolkata';
+    const deviceLocale = getHeader('x-device-locale') || preferredLanguage || 'en_IN';
+
+    // 7. Mobile App Client Metadata, Carrier & SDK State
+    const appVersion = getHeader('x-app-version') || getHeader('x-client-version') || null;
+    const buildNumber = getHeader('x-app-build') || getHeader('x-build-number') || null;
+    const platform = getHeader('x-platform') || (secChUaPlatform || device.os || 'web').toLowerCase();
+    const deviceId = getHeader('x-device-id') || getHeader('x-installation-id') || getHeader('x-unique-id') || null;
+    const carrier = getHeader('x-carrier-name') || getHeader('x-network-operator') || null;
+    const bundleId = getHeader('x-app-bundle-id') || getHeader('x-bundle-id') || null;
+    const sdkVersion = getHeader('x-sdk-version') || null;
+    const appState = getHeader('x-app-state') || 'active';
+    const resolution = getHeader('x-screen-resolution') || null;
+
+    // 8. Hardware & UI State
+    const batteryLevel = getHeader('x-battery-level') || null;
+    const isCharging = getHeader('x-is-charging') ? getHeader('x-is-charging') === 'true' : null;
+    const orientation = getHeader('x-screen-orientation') || 'portrait';
+
+    // 9. Security Context
+    const authHeader = getHeader('authorization') || '';
+    const authPresent = Boolean(authHeader);
+    const authType = authHeader ? (authHeader.split(' ')[0] || 'Unknown') : null;
+    const csrfToken = getHeader('x-csrf-token') || getHeader('x-xsrf-token') || null;
+    const requestSignature = getHeader('x-signature') || getHeader('x-request-signature') || null;
+
+    // 10. Network Connection Metrics & Performance (RTT, Downlink, ECT)
+    const connectionType = getHeader('x-connection-type') || getHeader('netinfo') || null;
+    const saveData = getHeader('save-data') === 'on';
+    const acceptEncoding = getHeader('accept-encoding') || null;
+    const rtt = getHeader('rtt') ? parseInt(getHeader('rtt'), 10) : null;
+    const downlink = getHeader('downlink') ? parseFloat(getHeader('downlink')) : null;
+    const ect = getHeader('ect') || null;
+
+    // 11. Navigation Context & Client Timestamps
+    const referer = getHeader('referer') || null;
+    const origin = getHeader('origin') || null;
+    const clientTimestamp = getHeader('x-client-timestamp') || getHeader('x-request-timestamp') || null;
 
     return {
+        timestamp: now.toISOString(),
+        serverTimeMs,
+        clientTimestamp,
         ipAddress: clientIp || '127.0.0.1',
         realIp: clientIp || '127.0.0.1',
         userAgent: userAgent || 'unknown',
+        protocol,
+        host,
+        port,
+        httpVersion,
+        isBot,
         device,
         location: {
-            city: city || 'Unknown City',
-            region: region || 'Unknown Region',
-            country: country || 'Unknown Country',
+            city: city,
+            region: region,
+            country: country,
+            latitude,
+            longitude,
+            postalCode,
+            asn,
+            datacenter,
             summary: locationSummary
+        },
+        cdn: {
+            rayId: cfRay,
+            datacenter,
+            threatScore,
+            botScore
+        },
+        tls: {
+            version: tlsVersion,
+            cipher: tlsCipher
+        },
+        localization: {
+            acceptLanguage,
+            preferredLanguage,
+            timezone,
+            deviceLocale
+        },
+        appInfo: {
+            appVersion,
+            buildNumber,
+            platform,
+            deviceId,
+            carrier,
+            bundleId,
+            sdkVersion,
+            appState,
+            resolution
+        },
+        hardwareState: {
+            batteryLevel,
+            isCharging,
+            colorScheme: prefersColorScheme,
+            orientation,
+            reducedMotion: prefersReducedMotion
+        },
+        clientHints: {
+            mobile: secChUaMobile,
+            platform: secChUaPlatform || device.os,
+            model: secChUaModel || device.deviceName,
+            architecture: secChUaArch || null,
+            bitness: secChUaBitness || null
+        },
+        security: {
+            authPresent,
+            authType,
+            csrfToken,
+            requestSignature
+        },
+        network: {
+            connectionType,
+            saveData,
+            acceptEncoding,
+            rtt,
+            downlink,
+            ect
+        },
+        navigation: {
+            referer,
+            origin
         }
     };
 };

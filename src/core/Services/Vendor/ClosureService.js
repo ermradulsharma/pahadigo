@@ -17,7 +17,7 @@ class ClosureService {
   }
 
   async addClosurePeriod(userId, closureData) {
-    const vendor = await Vendor.findOne({ user: userId, deletedAt: null });
+    const vendor = await Vendor.findOne({ user: userId, deletedAt: null }).lean();
     if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
     const closure = await VendorClosure.create({
@@ -34,7 +34,7 @@ class ClosureService {
   }
 
   async getClosurePeriods(userId) {
-    return await VendorClosure.find({ user: userId, isActive: true }).sort({ startDate: 1 });
+    return await VendorClosure.find({ user: userId, isActive: true }).sort({ startDate: 1 }).lean();
   }
 
   async updateClosurePeriod(userId, closureId, updateData) {
