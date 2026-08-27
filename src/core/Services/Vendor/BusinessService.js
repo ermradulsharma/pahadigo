@@ -80,7 +80,7 @@ class BusinessService {
             { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true, runValidators: true }
         );
         await User.findByIdAndUpdate(userId, { vendorProfile: vendor._id, name: vendor.ownerName }, { returnDocument: 'after' });
-        
+
         await this.invalidateVendorCaches(userId, vendor._id);
 
         return await vendor.populate('user', 'email phone role');
@@ -105,10 +105,7 @@ class BusinessService {
     async removeBusinessProfile(userId, deletedBy) {
         const vendor = await Vendor.findOneAndUpdate(
             { user: userId, deletedAt: null },
-            {
-                deletedAt: new Date(),
-                deletedBy: deletedBy
-            },
+            { deletedAt: new Date(), deletedBy: deletedBy },
             { returnDocument: 'after' }
         );
         if (vendor) {

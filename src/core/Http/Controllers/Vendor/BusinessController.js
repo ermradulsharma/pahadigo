@@ -2,7 +2,7 @@ import BusinessService from '@/core/Services/Vendor/BusinessService.js';
 import { getBusinessById, getBusinessByUserId } from '@/core/Helpers/queryHelpers.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { handleFormDataImageUpload } from '@/core/Helpers/cloudinary.js';
-import { businessDetailsFormat } from '@/core/Helpers/userProfileHelper.js';
+import { businessAuthResponse } from '@/core/Helpers/userProfileHelper.js';
 import Controller from '@/core/Controllers/Controller.js';
 import VendorEvents from '@/core/Events/VendorEvents.js';
 
@@ -28,7 +28,7 @@ class BusinessController extends Controller {
             const vendor = await getBusinessByUserId(req.user.id);
             if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-            const responseData = businessDetailsFormat(vendor);
+            const responseData = businessAuthResponse(vendor);
             if (vendor.closurePeriods) responseData.closurePeriods = vendor.closurePeriods;
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, responseData);
         } catch (error) {
@@ -47,7 +47,7 @@ class BusinessController extends Controller {
             const vendor = await BusinessService.syncBusinessProfile(userId, body);
             if (vendor.user?.email) VendorEvents.emit('vendor.profile_created', { identifier: vendor.user.email, businessName: vendor.businessName });
 
-            return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.PROFILE_INITIATED, vendor);
+            return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.PROFILE_INITIATED, businessAuthResponse(vendor));
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -56,30 +56,20 @@ class BusinessController extends Controller {
     // PATCH /vendor/business/profile/update/:id (Updates - check existence by params.id)
     async updateProfile(req, { params }) {
         try {
-            // Check if businessId and userId are provided
-            const businessId = params?.id;
             const userId = req.user?.id;
-            if (!businessId || !userId) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.INVALID_ID);
+            if (!userId) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
 
-            // Check if business exists
-            const existingProfile = await getBusinessById(businessId);
+            const businessId = params?.id;
+            const existingProfile = (businessId ? await getBusinessById(businessId) : null) || await getBusinessByUserId(userId);
             if (!existingProfile) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-            // Check if business belongs to the user
             const ownerUserId = existingProfile.user?._id ? existingProfile.user._id.toString() : (existingProfile.user ? existingProfile.user.toString() : null);
             if (ownerUserId !== userId) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.ERROR.UNAUTHORIZED);
 
-            // Prepare request payload & process optional profile image upload (DRY)
             const body = await this._prepareProfileBody(req);
-
-            // Update business profile
             const vendor = await BusinessService.syncBusinessProfile(userId, body);
-
-            // Emit event if email is present
             if (vendor.user?.email) VendorEvents.emit('vendor.profile_updated', { identifier: vendor.user.email, businessName: vendor.businessName });
-
-            // Return success response
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PROFILE_UPDATED, businessDetailsFormat(vendor));
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PROFILE_UPDATED, businessAuthResponse(vendor));
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -88,10 +78,17 @@ class BusinessController extends Controller {
     // DELETE /vendor/business/profile/delete/:id (Delete - check existence by params.id)
     async deleteProfile(req, { params }) {
         try {
-            const existingVendor = (params?.id ? await getBusinessById(params.id) : null) || await getBusinessByUserId(req.user.id);
+            const userId = req.user?.id;
+            if (!userId) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
+
+            const businessId = params?.id;
+            const existingVendor = (businessId ? await getBusinessById(businessId) : null) || await getBusinessByUserId(userId);
             if (!existingVendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-            const result = await BusinessService.removeBusinessProfile(req.user.id);
+            const ownerUserId = existingVendor.user?._id ? existingVendor.user._id.toString() : (existingVendor.user ? existingVendor.user.toString() : null);
+            if (ownerUserId !== userId) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.ERROR.UNAUTHORIZED);
+
+            const result = await BusinessService.removeBusinessProfile(userId);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PROFILE_DELETED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);

@@ -42,47 +42,33 @@ class AuthService {
     }
 
     async authenticateWithOTP({ identifier, otp, role }) {
-        const record = await OTPService.verifyOTP(identifier, otp, role);
-        if (!record) throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_OTP);
+        const user = await OTPService.verifyOTP(identifier, otp, role);
+        if (!user) throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_OTP);
 
-        const { termsAccepted } = record;
+        const adminRoles = [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.DEVELOPER];
+        if (adminRoles.includes(user.role)) throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
+
+        const { termsAccepted } = user;
         const isTermsAccepted = termsAccepted === DEFAULTS.TRUE || termsAccepted === 'true';
         const isEmail = identifier.includes('@');
         const normalizedEmail = isEmail ? identifier.toLowerCase().trim() : null;
         const normalizedPhone = !isEmail ? identifier.trim() : null;
 
-        let userRole = this._resolveRole(record.role);
-        let user = await User.findOne({ $or: [{ email: normalizedEmail || identifier }, { phone: normalizedPhone || identifier }], role: userRole });
-
-        // Security Validation: Admin accounts cannot use public OTP Login
-        const adminRoles = [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.DEVELOPER];
-        if (user && adminRoles.includes(user.role)) throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
-
-        let isNewUser = (!user || !user.isVerified);
-        if (!user) {
-            const payload = {
-                role: this._resolveRole(userRole),
-                isVerified: DEFAULTS.TRUE,
-                authProvider: normalizedEmail ? AUTH_PROVIDERS.LOCAL : AUTH_PROVIDERS.PHONE,
-                termsAccepted: isTermsAccepted,
-                termsAcceptedAt: isTermsAccepted ? new Date() : null
-            };
-            if (normalizedEmail) payload.email = normalizedEmail;
-            if (normalizedPhone) payload.phone = normalizedPhone;
-            user = await User.create(payload);
-        } else {
-            if (isNewUser) {
-                user.isVerified = DEFAULTS.TRUE;
-                user.authProvider = normalizedEmail ? AUTH_PROVIDERS.LOCAL : AUTH_PROVIDERS.PHONE;
-            }
-            if (userRole && [USER_ROLES.TRAVELLER, USER_ROLES.VENDOR].includes(userRole) && user.role !== userRole) user.role = userRole;
-            if (isTermsAccepted && !user.termsAccepted) {
-                user.termsAccepted = DEFAULTS.TRUE;
-                user.termsAcceptedAt = new Date();
-            }
-            user.preferences.tempRole = null;
-            if (user.isModified()) await user.save();
+        const isNewUser = !user.isVerified;
+        if (isNewUser) {
+            user.isVerified = DEFAULTS.TRUE;
+            user.authProvider = normalizedEmail ? AUTH_PROVIDERS.LOCAL : AUTH_PROVIDERS.PHONE;
         }
+
+        if (normalizedEmail && !user.email) user.email = normalizedEmail;
+        if (normalizedPhone && !user.phone) user.phone = normalizedPhone;
+
+        if (isTermsAccepted && !user.termsAccepted) {
+            user.termsAccepted = DEFAULTS.TRUE;
+            user.termsAcceptedAt = new Date();
+        }
+        if (user.preferences) user.preferences.tempRole = null;
+        if (user.isModified()) await user.save();
         return await this._finalizeAuthResponse(user, isNewUser);
     }
 
