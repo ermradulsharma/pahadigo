@@ -81,7 +81,7 @@ describe('Traveller BookingController Unit Tests', () => {
     describe('getBookingById', () => {
         it('should return booking details if owner', async () => {
             mockReq = createMockReq({ user: { id: 'u123' } });
-            getBookingBy.mockResolvedValue({ _id: 'b1', user: 'u123', vendor: {}, verification: {} });
+            getBookingBy.mockResolvedValue({ _id: 'b1', user: 'u123', vendor: { _id: 'v1' }, verification: {} });
 
             const response = await BookingController.getBookingById(mockReq, { params: { id: 'b1' } });
             expect(response.status).toBe(HTTP_STATUS.OK);
