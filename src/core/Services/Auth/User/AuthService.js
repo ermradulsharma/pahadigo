@@ -43,7 +43,6 @@ class AuthService {
 
     async authenticateWithOTP({ identifier, otp, role }) {
         const record = await OTPService.verifyOTP(identifier, otp, role);
-        console.log(record, "record");
         if (!record) throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_OTP);
 
         const { termsAccepted } = record;
