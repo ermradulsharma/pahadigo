@@ -7,6 +7,7 @@ import crypto from 'crypto';
 
 describe('Integration: Financial Webhooks', () => {
     beforeAll(async () => {
+        process.env.RAZORPAY_WEBHOOK_SECRET = process.env.RAZORPAY_WEBHOOK_SECRET || 'test_webhook_secret';
         await connectDB();
     });
 
