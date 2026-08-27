@@ -22,7 +22,19 @@ jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => ({
     getBookingById: jest.fn(),
     getBusinessByUserId: jest.fn(),
     getBusinessById: jest.fn(),
-    getManyBy: jest.fn()
+    getManyBy: jest.fn(),
+    getPackageItemById: jest.fn(),
+    getById: jest.fn(),
+    getBy: jest.fn(),
+    getUserBy: jest.fn(),
+    getUserById: jest.fn(),
+    getBusinessBy: jest.fn(),
+    getBookingBy: jest.fn(),
+    getPackageBy: jest.fn(),
+    getPackageById: jest.fn(),
+    getCategoryBy: jest.fn(),
+    getCategoryById: jest.fn(),
+    getCategoryBySlug: jest.fn()
 }));
 
 const { default: BookingController } = await import('@/core/Http/Controllers/Vendor/BookingController.js');

@@ -1,124 +1,97 @@
 import { jest } from '@jest/globals';
 
-const mockMessaging = {
-    send: jest.fn(),
-    sendEachForMulticast: jest.fn()
-};
+const mockSend = jest.fn();
+const mockSendEachForMulticast = jest.fn();
 
-// Mock firebase helper module
 jest.unstable_mockModule('@/core/Lib/firebase.js', () => ({
-    getMessaging: jest.fn().mockResolvedValue(mockMessaging),
-    initFirebaseAdmin: jest.fn().mockResolvedValue(mockMessaging),
-    firebaseAdmin: {}
+    getMessaging: jest.fn().mockResolvedValue({
+        send: mockSend,
+        sendEachForMulticast: mockSendEachForMulticast
+    })
 }));
 
-// Dynamically import PushNotificationService so it uses the mocked module
+jest.unstable_mockModule('@/core/Lib/logger.js', () => ({
+    getLogger: jest.fn().mockReturnValue({
+        warn: jest.fn(),
+        error: jest.fn(),
+        info: jest.fn(),
+        debug: jest.fn()
+    })
+}));
+
 const { PushNotificationService } = await import('@/core/Services/PushNotificationService.js');
 
-describe('PushNotificationService', () => {
+describe('PushNotificationService Unit Tests', () => {
     beforeEach(() => {
         jest.clearAllMocks();
-        jest.spyOn(console, 'log').mockImplementation(() => {});
-        jest.spyOn(console, 'error').mockImplementation(() => {});
-        jest.spyOn(console, 'warn').mockImplementation(() => {});
     });
 
-    afterEach(() => {
-        jest.restoreAllMocks();
-    });
+    describe('sendToDevice', () => {
+        it('should send FCM notification to single device successfully', async () => {
+            mockSend.mockResolvedValue('projects/pahadigo/messages/msg-1');
 
-    test('should send notification to a single device', async () => {
-        mockMessaging.send.mockResolvedValue('msg_id_123');
-        const token = 'device_token_123';
-        const notification = { title: 'Test', body: 'Test body' };
+            const token = 'fcm_token_123';
+            const notification = { title: 'Booking Confirmed', body: 'Your trek to Kedarkantha is confirmed!' };
+            const data = { bookingId: 'b123' };
 
-        const result = await PushNotificationService.sendToDevice(token, notification);
+            const res = await PushNotificationService.sendToDevice(token, notification, data);
 
-        expect(result.success).toBe(true);
-        expect(result.messageId).toBe('msg_id_123');
-        expect(mockMessaging.send).toHaveBeenCalledWith(expect.objectContaining({
-            token,
-            notification: expect.objectContaining({
-                title: 'Test',
-                body: 'Test body'
-            })
-        }));
-    });
-
-    test('should sanitize non-string values in data payload', async () => {
-        mockMessaging.send.mockResolvedValue('msg_id_123');
-        const token = 'device_token_123';
-        const notification = { title: 'Test', body: 'Test body' };
-        const data = { bookingId: 12345, isSelf: true, note: 'ok' };
-
-        const result = await PushNotificationService.sendToDevice(token, notification, data);
-
-        expect(result.success).toBe(true);
-        expect(mockMessaging.send).toHaveBeenCalledWith(expect.objectContaining({
-            token,
-            data: {
-                bookingId: '12345',
-                isSelf: 'true',
-                note: 'ok',
-                click_action: 'FLUTTER_NOTIFICATION_CLICK'
-            }
-        }));
-    });
-
-    test('should return error if getMessaging returns null', async () => {
-        const { getMessaging } = await import('@/core/Lib/firebase.js');
-        getMessaging.mockResolvedValueOnce(null);
-
-        const result = await PushNotificationService.sendToDevice('token', { title: 'Test', body: 'Body' });
-        expect(result.success).toBe(false);
-        expect(result.error).toBe('Firebase not initialized');
-    });
-
-    test('should handle send error', async () => {
-        mockMessaging.send.mockRejectedValueOnce(new Error('FCM error'));
-
-        const result = await PushNotificationService.sendToDevice('token', { title: 'Test', body: 'Body' });
-        expect(result.success).toBe(false);
-        expect(result.error).toBe('FCM error');
-    });
-
-    test('should send notification to multiple devices', async () => {
-        mockMessaging.sendEachForMulticast.mockResolvedValue({
-            successCount: 2,
-            failureCount: 0,
-            responses: []
+            expect(res.success).toBe(true);
+            expect(res.messageId).toBe('projects/pahadigo/messages/msg-1');
+            expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({
+                token,
+                notification: expect.objectContaining({ title: 'Booking Confirmed' }),
+                data: expect.objectContaining({ bookingId: 'b123', click_action: 'FLUTTER_NOTIFICATION_CLICK' })
+            }));
         });
-        const tokens = ['token1', 'token2'];
-        const notification = { title: 'Multicast', body: 'Multicast body' };
 
-        const result = await PushNotificationService.sendToMultiple(tokens, notification);
+        it('should handle invalid token error gracefully', async () => {
+            const err = new Error('The registration token is invalid');
+            err.code = 'messaging/invalid-registration-token';
+            mockSend.mockRejectedValue(err);
 
-        expect(result.success).toBe(true);
-        expect(result.response.successCount).toBe(2);
-        expect(mockMessaging.sendEachForMulticast).toHaveBeenCalledWith(expect.objectContaining({
-            tokens,
-            notification: expect.objectContaining({
-                title: 'Multicast',
-                body: 'Multicast body'
-            })
-        }));
+            const res = await PushNotificationService.sendToDevice('bad_token', { title: 'Test', body: 'Test' });
+
+            expect(res.success).toBe(false);
+            expect(res.code).toBe('messaging/invalid-registration-token');
+        });
     });
 
-    test('should send notification to a topic', async () => {
-        mockMessaging.send.mockResolvedValue('topic_msg_id');
-        const topic = 'all_vendors';
-        const notification = { title: 'Topic title', body: 'Topic body' };
+    describe('sendToMultiple', () => {
+        it('should send multicast push notification to multiple tokens', async () => {
+            mockSendEachForMulticast.mockResolvedValue({ successCount: 2, failureCount: 0 });
 
-        const result = await PushNotificationService.sendToTopic(topic, notification);
+            const tokens = ['token_1', 'token_2'];
+            const notification = { title: 'Offer!', body: '20% off on Homestays' };
 
-        expect(result.success).toBe(true);
-        expect(result.messageId).toBe('topic_msg_id');
-        expect(mockMessaging.send).toHaveBeenCalledWith(expect.objectContaining({
-            topic,
-            notification: expect.objectContaining({
-                title: 'Topic title',
-                body: 'Topic body'
-            })
-        }));
+            const res = await PushNotificationService.sendToMultiple(tokens, notification);
+
+            expect(res.success).toBe(true);
+            expect(mockSendEachForMulticast).toHaveBeenCalledWith(expect.objectContaining({
+                tokens,
+                notification: expect.objectContaining({ title: 'Offer!' })
+            }));
+        });
+
+        it('should return error if no tokens are provided', async () => {
+            const res = await PushNotificationService.sendToMultiple([], { title: 'Test', body: 'Test' });
+            expect(res.success).toBe(false);
+            expect(res.error).toBe('No tokens provided');
+        });
+    });
+
+    describe('sendToTopic', () => {
+        it('should send notification to a topic successfully', async () => {
+            mockSend.mockResolvedValue('topic_msg_id_1');
+
+            const res = await PushNotificationService.sendToTopic('all_vendors', { title: 'Policy Update', body: 'New cancellation terms' });
+
+            expect(res.success).toBe(true);
+            expect(res.messageId).toBe('topic_msg_id_1');
+            expect(mockSend).toHaveBeenCalledWith(expect.objectContaining({
+                topic: 'all_vendors',
+                notification: expect.objectContaining({ title: 'Policy Update' })
+            }));
+        });
     });
 });

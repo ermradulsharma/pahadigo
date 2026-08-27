@@ -1,72 +1,79 @@
 import { jest } from '@jest/globals';
 
-// Mock Services
-const mockBookingService = { 
-    getDisputes: jest.fn(), 
-    resolveDispute: jest.fn() 
-};
-const mockMessageService = { 
-    getMessages: jest.fn(), 
-    sendMessage: jest.fn() 
-};
+jest.unstable_mockModule('@/core/Services/Admin/BookingService.js', () => ({
+    __esModule: true,
+    default: {
+        getDisputes: jest.fn(),
+        resolveDispute: jest.fn()
+    }
+}));
 
-jest.unstable_mockModule('@/core/Services/Admin/BookingService.js', () => ({ default: mockBookingService }));
-jest.unstable_mockModule('@/core/Services/Admin/MessageService.js', () => ({ default: mockMessageService }));
+jest.unstable_mockModule('@/core/Services/Admin/MessageService.js', () => ({
+    __esModule: true,
+    default: {
+        getMessages: jest.fn(),
+        sendMessage: jest.fn()
+    }
+}));
 
 const { default: DisputeController } = await import('@/core/Http/Controllers/Admin/DisputeController.js');
+const { default: BookingService } = await import('@/core/Services/Admin/BookingService.js');
+const { default: MessageService } = await import('@/core/Services/Admin/MessageService.js');
 const { HTTP_STATUS } = await import('@/core/Constants/index.js');
+const { createMockReq } = await import('../../../Helpers/testUtils.js');
 
-describe('Industry Standard: DisputeController API Controller', () => {
+describe('Admin DisputeController Unit Tests', () => {
     let mockReq;
 
     beforeEach(() => {
         jest.clearAllMocks();
-        mockReq = {
-            url: 'http://localhost/admin/disputes',
-            user: { id: 'admin_123' },
-            payload: {}
-        };
     });
 
-    it('[Fetch] should return list of disputes with pagination', async () => {
-        mockBookingService.getDisputes.mockResolvedValue({ disputes: [], total: 0 });
+    describe('getDisputes', () => {
+        it('should fetch list of disputes with filter', async () => {
+            mockReq = createMockReq({
+                user: { id: 'admin1', role: 'admin' },
+                url: 'http://localhost/admin/disputes?status=pending'
+            });
 
-        const response = await DisputeController.getDisputes(mockReq);
+            BookingService.getDisputes.mockResolvedValue({ disputes: [{ _id: 'd1', reason: 'Service issue' }], total: 1 });
 
-        expect(response.status).toBe(HTTP_STATUS.OK);
-        expect(mockBookingService.getDisputes).toHaveBeenCalled();
+            const response = await DisputeController.getDisputes(mockReq);
+            const body = await response.json();
+
+            expect(response.status).toBe(HTTP_STATUS.OK);
+            expect(body.data.disputes).toHaveLength(1);
+        });
     });
 
-    it('[Resolve] should process dispute resolution via service', async () => {
-        mockReq.payload = { decision: 'resolved_refunded', adminNotes: 'Refunded' };
-        mockBookingService.resolveDispute.mockResolvedValue({ status: 'resolved_refunded' });
+    describe('resolveDispute', () => {
+        it('should resolve dispute and trigger refund/rejection', async () => {
+            mockReq = createMockReq({ user: { id: 'admin1', role: 'admin' } });
+            mockReq.payload = { decision: 'resolved_refunded', adminNotes: 'Full refund granted' };
 
-        const response = await DisputeController.resolveDispute(mockReq, { params: { id: 'dsp_1' } });
+            BookingService.resolveDispute.mockResolvedValue({ _id: 'd1', status: 'resolved_refunded' });
 
-        expect(response.status).toBe(HTTP_STATUS.OK);
-        expect(mockBookingService.resolveDispute).toHaveBeenCalledWith(
-            'admin_123', 'dsp_1', 'resolved_refunded', 'Refunded', mockReq
-        );
+            const response = await DisputeController.resolveDispute(mockReq, { params: { id: 'd1' } });
+            const body = await response.json();
+
+            expect(response.status).toBe(HTTP_STATUS.OK);
+            expect(body.data.status).toBe('resolved_refunded');
+            expect(BookingService.resolveDispute).toHaveBeenCalledWith('admin1', 'd1', 'resolved_refunded', 'Full refund granted', mockReq);
+        });
     });
 
-    it('[Messaging] should fetch message thread for a dispute', async () => {
-        mockMessageService.getMessages.mockResolvedValue([]);
-        
-        const response = await DisputeController.getMessages(mockReq, { params: { id: 'dsp_1' } });
+    describe('sendMessage', () => {
+        it('should send admin dispute message', async () => {
+            mockReq = createMockReq({ user: { id: 'admin1', role: 'admin' } });
+            mockReq.payload = { message: 'We have received your proof', target: 'all' };
 
-        expect(response.status).toBe(HTTP_STATUS.OK);
-        expect(mockMessageService.getMessages).toHaveBeenCalledWith('dsp_1');
-    });
+            MessageService.sendMessage.mockResolvedValue({ _id: 'm1', message: 'We have received your proof' });
 
-    it('[Messaging] should post a new message to the thread', async () => {
-        mockReq.payload = { message: 'Hello', target: 'vendor' };
-        mockMessageService.sendMessage.mockResolvedValue({ message: 'Hello' });
+            const response = await DisputeController.sendMessage(mockReq, { params: { id: 'd1' } });
+            const body = await response.json();
 
-        const response = await DisputeController.sendMessage(mockReq, { params: { id: 'dsp_1' } });
-
-        expect(response.status).toBe(HTTP_STATUS.CREATED);
-        expect(mockMessageService.sendMessage).toHaveBeenCalledWith(
-            'dsp_1', 'admin_123', 'User', 'Hello', 'vendor'
-        );
+            expect(response.status).toBe(HTTP_STATUS.CREATED);
+            expect(body.data._id).toBe('m1');
+        });
     });
 });

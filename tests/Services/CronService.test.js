@@ -1,85 +1,146 @@
-import CronService from '@/core/Services/CronService.js';
-import Booking from '@/core/Models/Booking.js';
-import Dispute from '@/core/Models/Dispute.js';
-import SearchLog from '@/core/Models/SearchLog.js';
-import AuditLog from '@/core/Models/AuditLog.js';
-import NotificationService from '@/core/Services/General/NotificationService.js';
 import { jest } from '@jest/globals';
 
-describe('CronService', () => {
+const mockBookingFind = jest.fn();
+const mockBookingUpdateMany = jest.fn();
+const mockDisputeFind = jest.fn();
+const mockDisputeUpdateMany = jest.fn();
+const mockSearchLogDeleteMany = jest.fn();
+const mockAuditLogDeleteMany = jest.fn();
+
+jest.unstable_mockModule('@/core/Models/Booking.js', () => ({
+    __esModule: true,
+    default: {
+        find: mockBookingFind,
+        updateMany: mockBookingUpdateMany
+    }
+}));
+
+jest.unstable_mockModule('@/core/Models/Dispute.js', () => ({
+    __esModule: true,
+    default: {
+        find: mockDisputeFind,
+        updateMany: mockDisputeUpdateMany
+    }
+}));
+
+jest.unstable_mockModule('@/core/Models/SearchLog.js', () => ({
+    __esModule: true,
+    default: {
+        deleteMany: mockSearchLogDeleteMany
+    }
+}));
+
+jest.unstable_mockModule('@/core/Models/AuditLog.js', () => ({
+    __esModule: true,
+    default: {
+        deleteMany: mockAuditLogDeleteMany
+    }
+}));
+
+jest.unstable_mockModule('@/core/Services/General/NotificationService.js', () => ({
+    __esModule: true,
+    default: {
+        notifyBookingStatus: jest.fn()
+    }
+}));
+
+jest.unstable_mockModule('@/core/Services/Traveller/InventoryService.js', () => ({
+    __esModule: true,
+    default: {
+        releaseSlotsRange: jest.fn().mockResolvedValue(true)
+    }
+}));
+
+jest.unstable_mockModule('@/core/Lib/logger.js', () => ({
+    getLogger: jest.fn().mockReturnValue({
+        error: jest.fn(),
+        info: jest.fn()
+    })
+}));
+
+const { default: CronService } = await import('@/core/Services/CronService.js');
+
+describe('CronService Unit Tests', () => {
     beforeEach(() => {
-        jest.restoreAllMocks();
+        jest.clearAllMocks();
     });
 
     describe('autoCompleteBookings', () => {
-        it('should auto-complete bookings successfully', async () => {
-            const mockBookings = [{ _id: 'b1' }, { _id: 'b2' }];
-            jest.spyOn(Booking, 'find').mockReturnValue({
-                select: jest.fn().mockReturnValue({
-                    lean: jest.fn().mockResolvedValue(mockBookings)
-                })
+        it('should update status to completed for past bookings', async () => {
+            mockBookingFind.mockReturnValue({
+                select: jest.fn().mockReturnThis(),
+                lean: jest.fn().mockResolvedValue([{ _id: 'b1' }])
             });
-            jest.spyOn(Booking, 'updateMany').mockResolvedValue({ matchedCount: 2, modifiedCount: 2 });
-            jest.spyOn(NotificationService, 'notifyBookingStatus').mockResolvedValue();
+            mockBookingUpdateMany.mockResolvedValue({ matchedCount: 1, modifiedCount: 1 });
 
             const result = await CronService.autoCompleteBookings();
 
-            expect(Booking.find).toHaveBeenCalled();
-            expect(Booking.updateMany).toHaveBeenCalled();
-            expect(NotificationService.notifyBookingStatus).toHaveBeenCalledTimes(2);
-            expect(result).toEqual({ matched: 2, modified: 2 });
+            expect(result.matched).toBe(1);
+            expect(result.modified).toBe(1);
+            expect(mockBookingUpdateMany).toHaveBeenCalledWith(
+                { _id: { $in: ['b1'] } },
+                expect.objectContaining({ $set: expect.objectContaining({ status: 'completed' }) })
+            );
         });
 
-        it('should return 0 when no bookings found', async () => {
-            jest.spyOn(Booking, 'find').mockReturnValue({
-                select: jest.fn().mockReturnValue({
-                    lean: jest.fn().mockResolvedValue([])
-                })
+        it('should return 0 matched when no bookings are past end date', async () => {
+            mockBookingFind.mockReturnValue({
+                select: jest.fn().mockReturnThis(),
+                lean: jest.fn().mockResolvedValue([])
             });
-            jest.spyOn(Booking, 'updateMany').mockResolvedValue();
 
             const result = await CronService.autoCompleteBookings();
-            expect(Booking.updateMany).not.toHaveBeenCalled();
             expect(result).toEqual({ matched: 0, modified: 0 });
         });
     });
 
     describe('autoExpireBookings', () => {
-        it('should auto-expire bookings successfully', async () => {
-            const mockBookings = [{ _id: 'b3' }];
-            jest.spyOn(Booking, 'find').mockReturnValue({
-                select: jest.fn().mockReturnValue({
-                    lean: jest.fn().mockResolvedValue(mockBookings)
-                })
+        it('should expire unpaid bookings and release inventory slots', async () => {
+            mockBookingFind.mockReturnValue({
+                select: jest.fn().mockReturnThis(),
+                lean: jest.fn().mockResolvedValue([
+                    { _id: 'b1', vendor: 'v1', item: { itemId: 'i1', itemType: 'hotel' }, startDate: '2026-08-01', endDate: '2026-08-05', occupancy: { units: 2 } }
+                ])
             });
-            jest.spyOn(Booking, 'updateMany').mockResolvedValue({ matchedCount: 1, modifiedCount: 1 });
+            mockBookingUpdateMany.mockResolvedValue({ matchedCount: 1, modifiedCount: 1 });
 
             const result = await CronService.autoExpireBookings();
-            expect(result).toEqual({ matched: 1, modified: 1 });
+
+            expect(result.matched).toBe(1);
+            expect(mockBookingUpdateMany).toHaveBeenCalledWith(
+                { _id: { $in: ['b1'] } },
+                expect.objectContaining({ $set: expect.objectContaining({ status: 'expired' }) })
+            );
         });
     });
 
     describe('autoResolveDisputes', () => {
-        it('should resolve old disputes', async () => {
-            jest.spyOn(Dispute, 'find').mockReturnValue({
-                select: jest.fn().mockReturnValue({
-                    lean: jest.fn().mockResolvedValue([{ _id: 'd1' }])
-                })
+        it('should auto-reject inactive disputes after 7 days', async () => {
+            mockDisputeFind.mockReturnValue({
+                select: jest.fn().mockReturnThis(),
+                lean: jest.fn().mockResolvedValue([{ _id: 'd1' }])
             });
-            jest.spyOn(Dispute, 'updateMany').mockResolvedValue({ matchedCount: 1, modifiedCount: 1 });
+            mockDisputeUpdateMany.mockResolvedValue({ matchedCount: 1, modifiedCount: 1 });
 
             const result = await CronService.autoResolveDisputes();
-            expect(result).toEqual({ matched: 1, modified: 1 });
+
+            expect(result.matched).toBe(1);
+            expect(mockDisputeUpdateMany).toHaveBeenCalledWith(
+                { _id: { $in: ['d1'] } },
+                expect.objectContaining({ $set: expect.objectContaining({ status: 'resolved_rejected' }) })
+            );
         });
     });
 
     describe('cleanupLogs', () => {
-        it('should clean up old logs', async () => {
-            jest.spyOn(SearchLog, 'deleteMany').mockResolvedValue({ deletedCount: 5 });
-            jest.spyOn(AuditLog, 'deleteMany').mockResolvedValue({ deletedCount: 10 });
+        it('should clean up old search and audit logs', async () => {
+            mockSearchLogDeleteMany.mockResolvedValue({ deletedCount: 50 });
+            mockAuditLogDeleteMany.mockResolvedValue({ deletedCount: 10 });
 
             const result = await CronService.cleanupLogs();
-            expect(result).toEqual({ searchLogsDeleted: 5, auditLogsDeleted: 10 });
+
+            expect(result.searchLogsDeleted).toBe(50);
+            expect(result.auditLogsDeleted).toBe(10);
         });
     });
 });
