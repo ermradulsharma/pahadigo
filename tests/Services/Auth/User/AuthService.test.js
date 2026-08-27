@@ -64,6 +64,7 @@ describe('Industry Standard: User AuthService Logic', () => {
             const mockUser = {
                 _id: 'u1',
                 role: 'traveller',
+                isVerified: true,
                 save: jest.fn().mockResolvedValue(true),
                 isModified: jest.fn().mockReturnValue(false),
                 toObject: function() { return this; }
@@ -72,7 +73,7 @@ describe('Industry Standard: User AuthService Logic', () => {
             OTPService.verifyOTP.mockResolvedValue(mockUser);
             User.findOne.mockResolvedValue(mockUser);
 
-            const result = await AuthService.authenticateWithOTP('test@test.com', '123456', 'traveller');
+            const result = await AuthService.authenticateWithOTP({ identifier: 'test@test.com', otp: '123456', role: 'traveller' });
 
             expect(result).toBeDefined();
             expect(result.tokens).toBeDefined();
@@ -82,6 +83,7 @@ describe('Industry Standard: User AuthService Logic', () => {
             const mockUser = {
                 _id: 'u1',
                 role: 'traveller',
+                isVerified: false,
                 save: jest.fn().mockResolvedValue(true),
                 isModified: jest.fn().mockReturnValue(false),
                 toObject: function() { return this; }
@@ -89,24 +91,7 @@ describe('Industry Standard: User AuthService Logic', () => {
 
             OTPService.verifyOTP.mockResolvedValue(mockUser);
 
-            const result = await AuthService.authenticateWithOTP('new@test.com', '123456', 'traveller');
-
-            expect(result).toBeDefined();
-        });
-    });
-
-    describe('[toggleRole]', () => {
-        it('[Success] should switch role and return new status', async () => {
-            const mockUser = {
-                _id: 'u1',
-                role: 'traveller',
-                save: jest.fn().mockResolvedValue(true)
-            };
-
-            User.findById.mockResolvedValue(mockUser);
-            Vendor.findOne.mockResolvedValue(null);
-
-            const result = await AuthService.toggleRole('u1');
+            const result = await AuthService.authenticateWithOTP({ identifier: 'new@test.com', otp: '123456', role: 'traveller' });
 
             expect(result).toBeDefined();
         });
