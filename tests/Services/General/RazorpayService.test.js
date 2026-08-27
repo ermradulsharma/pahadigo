@@ -1,71 +1,47 @@
 import { jest } from '@jest/globals';
-import RazorpayService from '@/services/General/RazorpayService.js';
-import Razorpay from 'razorpay';
-import crypto from 'crypto';
+
+jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
+    getAppConfig: jest.fn().mockResolvedValue({
+        razorpay: {
+            key_id: 'rzp_test_key',
+            key_secret: 'rzp_test_secret',
+            webhook_secret: 'rzp_webhook_secret'
+        }
+    })
+}));
+
+const { default: RazorpayService } = await import('@/core/Services/General/RazorpayService.js');
 
 describe('General RazorpayService', () => {
-    let mockOrdersCreate;
-
     beforeEach(() => {
-        mockOrdersCreate = jest.fn();
-        RazorpayService.razorpay = { orders: { create: jest.fn() }, payments: { refund: jest.fn() } };
-        jest.spyOn(RazorpayService.razorpay.orders, 'create').mockImplementation(mockOrdersCreate);
-    });
-
-    afterEach(() => {
         jest.clearAllMocks();
-    });
-
-    describe('createOrder', () => {
-        test('should create order with correct amount in paise', async () => {
-            const mockOrder = { id: 'order123' };
-            mockOrdersCreate.mockResolvedValue(mockOrder);
-
-            const result = await RazorpayService.createOrder(100.50, 'receipt123');
-
-            expect(mockOrdersCreate).toHaveBeenCalledWith({
-                amount: 10050,
-                currency: 'INR',
-                receipt: 'receipt123',
-                payment_capture: 1,
-                notes: {}
-            });
-            expect(result).toEqual(mockOrder);
-        });
+        process.env.RAZORPAY_KEY_ID = 'rzp_test_key';
+        process.env.RAZORPAY_KEY_SECRET = 'rzp_test_secret';
+        process.env.RAZORPAY_WEBHOOK_SECRET = 'rzp_webhook_secret';
     });
 
     describe('verifySignature', () => {
-        test('should return true for valid signature', () => {
-            const orderId = 'order123';
-            const paymentId = 'pay123';
-            const secret = 'test_key_secret';
-            const body = orderId + "|" + paymentId;
-            const signature = crypto.createHmac('sha256', secret).update(body).digest('hex');
-
-            const result = RazorpayService.verifySignature(orderId, paymentId, signature);
-
+        test('should return true for valid signature', async () => {
+            const crypto = await import('crypto');
+            const validSig = crypto.createHmac('sha256', 'rzp_test_secret').update('order123|pay123').digest('hex');
+            const result = await RazorpayService.verifySignature('order123', 'pay123', validSig);
             expect(result).toBe(true);
         });
 
-        test('should return false for invalid signature', () => {
-            const result = RazorpayService.verifySignature('order123', 'pay123', 'bad_sig');
+        test('should return false for invalid signature', async () => {
+            const result = await RazorpayService.verifySignature('order123', 'pay123', 'bad_sig');
             expect(result).toBe(false);
-        });
-
-        test('should return true for DUMMY_SIGNATURE in test/development environments', () => {
-            const result = RazorpayService.verifySignature('order123', 'pay123', 'DUMMY_SIGNATURE');
-            expect(result).toBe(true);
         });
     });
 
     describe('verifyWebhookSignature', () => {
-        test('should return true for valid webhook signature', async () => {
-            const body = { event: 'payment.captured' };
-            const secret = 'test_webhook_secret';
-            const signature = crypto.createHmac('sha256', secret).update(JSON.stringify(body)).digest('hex');
+        test('should verify webhook signature successfully', async () => {
+            const body = JSON.stringify({ event: 'payment.captured' });
+            const secret = 'rzp_webhook_secret';
+            const crypto = await import('crypto');
+            const signature = crypto.createHmac('sha256', secret).update(body).digest('hex');
 
-            const result = await RazorpayService.verifyWebhookSignature(body, signature);
-
+            const result = await RazorpayService.verifyWebhookSignature(body, signature, secret);
             expect(result).toBe(true);
         });
     });

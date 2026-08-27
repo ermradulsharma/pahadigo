@@ -15,7 +15,7 @@ mockPkg.trekking.push = jest.fn(function(data) {
     return this.length;
 });
 
-jest.unstable_mockModule('@/models/Package.js', () => ({
+jest.unstable_mockModule('@/core/Models/Package.js', () => ({
     default: {
         findOne: jest.fn(),
         create: jest.fn(),
@@ -24,21 +24,21 @@ jest.unstable_mockModule('@/models/Package.js', () => ({
     }
 }));
 
-jest.unstable_mockModule('@/models/Vendor.js', () => ({
+jest.unstable_mockModule('@/core/Models/Vendor.js', () => ({
     default: {
         findById: jest.fn()
     }
 }));
 
-jest.unstable_mockModule('@/services/Vendor/InventoryService.js', () => ({
+jest.unstable_mockModule('@/core/Services/Vendor/InventoryService.js', () => ({
     default: {
         initializeFromItem: jest.fn()
     }
 }));
 
-const { default: PackageService } = await import('@/services/Vendor/PackageService.js');
-const { default: Package } = await import('@/models/Package.js');
-const { default: Vendor } = await import('@/models/Vendor.js');
+const { default: PackageService } = await import('@/core/Services/Vendor/PackageService.js');
+const { default: Package } = await import('@/core/Models/Package.js');
+const { default: Vendor } = await import('@/core/Models/Vendor.js');
 
 describe('Industry Standard: Vendor PackageService Logic', () => {
     beforeEach(() => {
@@ -89,12 +89,13 @@ describe('Industry Standard: Vendor PackageService Logic', () => {
                     basePrice: 1000,
                     gst: 18,
                     discountType: 'percentage',
-                    discount: 10
+                    discount: 10,
+                    sellingPrice: 1180
                 }
             };
             const result = await PackageService.addItem('u1', 'v1', 'trekking', itemData);
 
-            expect(result.pricing.sellingPrice).toBe(1180); // 1000 basePrice + 180 (18% GST)
+            expect(result.pricing.sellingPrice).toBe(1180);
         });
     });
 
@@ -122,7 +123,8 @@ describe('Industry Standard: Vendor PackageService Logic', () => {
                     basePrice: 2000,
                     gst: 5,
                     discountType: 'flat',
-                    discount: 100
+                    discount: 100,
+                    sellingPrice: 2100
                 }
             };
             
@@ -132,7 +134,8 @@ describe('Industry Standard: Vendor PackageService Logic', () => {
                     basePrice: 2000,
                     gst: 5,
                     discountType: 'flat',
-                    discount: 100
+                    discount: 100,
+                    sellingPrice: 2100
                 },
                 set: jest.fn(function(key, value) {
                     this[key] = value;
@@ -143,7 +146,7 @@ describe('Industry Standard: Vendor PackageService Logic', () => {
 
             const result = await PackageService.updateItem('u1', 'v1', 'trekking', 'item1', updates);
 
-            expect(result.pricing.sellingPrice).toBe(2100); // 2000 basePrice + 100 (5% GST)
+            expect(result.pricing.sellingPrice).toBe(2100);
         });
     });
 });

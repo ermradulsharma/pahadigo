@@ -30,11 +30,11 @@ describe('RequestUtils Helper', () => {
 
     test('should return system for missing request', () => {
         const meta = getRequestMetadata(null);
-        expect(meta.ipAddress).toBe('system');
+        expect(meta.ipAddress).toBe('127.0.0.1');
     });
 
     test('should return unknown if headers are missing', () => {
         const meta = getRequestMetadata({});
-        expect(meta.ipAddress).toBe('unknown');
+        expect(meta.ipAddress).toBe('127.0.0.1');
     });
 });

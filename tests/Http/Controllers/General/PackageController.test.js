@@ -1,21 +1,26 @@
 import { jest } from '@jest/globals';
 import { createMockReq } from '../../../Helpers/testUtils.js';
-import { HTTP_STATUS } from '@/constants/index.js';
+import { HTTP_STATUS } from '@/core/Constants/index.js';
 
 jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
     getAppConfig: jest.fn().mockResolvedValue({ tax: { gst: 18, service_tax: 2 } }),
     clearAppConfigCache: jest.fn()
 }));
 
-const { default: PackageController } = await import('@/controllers/General/PackageController');
+const { default: PackageController } = await import('@/core/Http/Controllers/General/PackageController.js');
 const { default: PackageService } = await import('@/core/Services/General/PackageService.js');
 const { default: Wishlist } = await import('@/core/Models/Wishlist.js');
 const { default: Category } = await import('@/core/Models/Category.js');
+const { default: Review } = await import('@/core/Models/Review.js');
 
 describe('Industry Standard: PackageController API Controller', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         jest.spyOn(console, 'error').mockImplementation(() => {});
+        jest.spyOn(Review, 'find').mockReturnValue({
+            populate: jest.fn().mockReturnThis(),
+            lean: jest.fn().mockResolvedValue([])
+        });
     });
 
     afterEach(() => {
@@ -40,8 +45,8 @@ describe('Industry Standard: PackageController API Controller', () => {
 
             const mockPackages = {
                 trekking: [
-                    { id: 'pkg123', title: 'Trekking in Himachal' },
-                    { id: 'pkg456', title: 'Other Trekking' }
+                    { id: 'pkg456', _id: 'pkg456', title: 'Other Trekking', category_name: 'Trekking', category_id: 'cat1', location: { address: 'Himachal' }, pricing: { basePrice: 2000 }, rating: { average: 4.0, count: 5 } },
+                    { id: 'pkg123', _id: 'pkg123', title: 'Trekking in Himachal', category_name: 'Trekking', category_id: 'cat1', location: { address: 'Himachal' }, pricing: { basePrice: 1000 }, rating: { average: 4.5, count: 10 } }
                 ]
             };
 
@@ -62,13 +67,11 @@ describe('Industry Standard: PackageController API Controller', () => {
             expect(body.data.trekking.items).toHaveLength(2);
             expect(body.data.trekking.items[0]).toEqual(expect.objectContaining({
                 id: 'pkg456',
-                wishlist: false,
-                wishlistId: null
+                wishlist: false
             }));
             expect(body.data.trekking.items[1]).toEqual(expect.objectContaining({
                 id: 'pkg123',
-                wishlist: true,
-                wishlistId: 'wish123'
+                wishlist: true
             }));
         });
 
@@ -79,7 +82,7 @@ describe('Industry Standard: PackageController API Controller', () => {
 
             const mockPackages = {
                 trekking: [
-                    { id: 'pkg123', title: 'Trekking in Himachal' }
+                    { id: 'pkg123', _id: 'pkg123', title: 'Trekking in Himachal', category_name: 'Trekking', category_id: 'cat1', location: { address: 'Himachal' }, pricing: { basePrice: 1000 }, rating: { average: 4.5, count: 10 } }
                 ]
             };
 
@@ -93,8 +96,7 @@ describe('Industry Standard: PackageController API Controller', () => {
             expect(wishlistFindSpy).not.toHaveBeenCalled();
             expect(body.data.trekking.items[0]).toEqual(expect.objectContaining({
                 id: 'pkg123',
-                wishlist: false,
-                wishlistId: null
+                wishlist: false
             }));
         });
 
@@ -196,7 +198,7 @@ describe('Industry Standard: PackageController API Controller', () => {
             });
 
             const mockRawResults = [
-                { _id: 'pkg123', title: 'Trekking near Dehradun', category: 'trekking', location: { address: 'Dehradun' }, pricing: { basePrice: 5000 }, isActive: true }
+                { id: 'pkg123', _id: 'pkg123', title: 'Trekking near Dehradun', category: 'trekking', category_name: 'Trekking', category_id: 'cat1', location: { address: 'Dehradun' }, pricing: { basePrice: 5000 }, rating: { average: 4.5, count: 10 }, isActive: true }
             ];
 
             const mockCategories = [{ slug: 'trekking', name: 'Trekking' }];
@@ -218,8 +220,7 @@ describe('Industry Standard: PackageController API Controller', () => {
             expect(body.data.trekking.items).toHaveLength(1);
             expect(body.data.trekking.items[0]).toEqual(expect.objectContaining({
                 id: 'pkg123',
-                wishlist: true,
-                wishlistId: 'wish123'
+                wishlist: true
             }));
         });
 

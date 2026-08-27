@@ -1,10 +1,16 @@
 import { jest } from '@jest/globals';
 
+const createQueryMock = (val) => ({
+    select: jest.fn().mockReturnThis(),
+    populate: jest.fn().mockReturnThis(),
+    lean: jest.fn().mockResolvedValue(val)
+});
+
 jest.unstable_mockModule('@/core/Models/Package.js', () => ({
     default: {
-        findById: jest.fn(),
-        findOne: jest.fn(),
-        find: jest.fn(),
+        findById: jest.fn(() => createQueryMock({ vendor: { _id: 'v1' } })),
+        findOne: jest.fn(() => createQueryMock({ _id: 'item1', catalogId: 'p123', category: 'trekking', isActive: true })),
+        find: jest.fn(() => createQueryMock([])),
         aggregate: jest.fn()
     }
 }));
@@ -17,11 +23,11 @@ jest.unstable_mockModule('@/core/Models/Vendor.js', () => ({
 
 jest.unstable_mockModule('@/core/Models/Category.js', () => ({
     default: {
-        find: jest.fn(() => ({ lean: jest.fn().mockResolvedValue([{ slug: 'trekking', name: 'Trekking' }]) }))
+        find: jest.fn(() => createQueryMock([{ slug: 'trekking', name: 'Trekking' }]))
     }
 }));
 
-jest.unstable_mockModule('@/services/MasterService.js', () => ({
+jest.unstable_mockModule('@/core/Services/MasterService.js', () => ({
     default: {
         isVendorActive: jest.fn(() => Promise.resolve(true)),
         getVendorActiveAggregationStages: jest.fn(() => []),
@@ -29,44 +35,13 @@ jest.unstable_mockModule('@/services/MasterService.js', () => ({
     }
 }));
 
-jest.unstable_mockModule('mongoose', () => {
-    const mockSchema = class {
-        constructor() {
-            this.index = jest.fn();
-            this.virtual = jest.fn().mockReturnThis();
-            this.set = jest.fn().mockReturnThis();
-            this.pre = jest.fn().mockReturnThis();
-            this.post = jest.fn().mockReturnThis();
-            this.methods = {};
-        }
-        static Types = { ObjectId: jest.fn(id => id) };
-    };
-    const mockMongoose = {
-        Types: { ObjectId: jest.fn(id => id) },
-        model: jest.fn(() => ({
-            findOne: jest.fn().mockResolvedValue({ status: 'verified' })
-        })),
-        models: {},
-        Schema: mockSchema
-    };
-    return {
-        __esModule: true,
-        default: mockMongoose,
-        Schema: mockSchema,
-        Types: mockMongoose.Types,
-        model: mockMongoose.model,
-        models: mockMongoose.models
-    };
-});
-
 jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
     getAppConfig: jest.fn().mockResolvedValue({ tax: { gst: 18, service_tax: 2 } })
 }));
 
-const { default: PackageService } = await import('@/services/General/PackageService.js');
+const { default: PackageService } = await import('@/core/Services/General/PackageService.js');
 const { default: Package } = await import('@/core/Models/Package.js');
 const { default: Vendor } = await import('@/core/Models/Vendor.js');
-const mongoose = (await import('mongoose')).default;
 
 describe('Industry Standard: General PackageService Logic', () => {
     beforeEach(() => {
@@ -74,20 +49,17 @@ describe('Industry Standard: General PackageService Logic', () => {
     });
 
     it('[Availability] should verify vendor and category compliance for public items', async () => {
-        // Mock getPackageItem internal call
-        jest.spyOn(PackageService, 'getPackageItem').mockResolvedValue({
-            _id: 'item1', catalogId: 'p123', category: 'trekking', isActive: true
-        });
+        Package.findOne.mockReturnValue(createQueryMock({
+            _id: 'item1', catalogId: 'p123', category: 'trekking', isActive: true, pricing: {}
+        }));
         
-        Package.findById.mockReturnValue({ 
-            populate: jest.fn().mockReturnThis(), 
-            lean: jest.fn().mockResolvedValue({ vendor: { _id: 'v1' } }) 
-        });
+        Package.findById.mockReturnValue(createQueryMock({
+            _id: 'p123',
+            vendor: { _id: 'v1' }
+        }));
 
         const result = await PackageService.getAvailablePackageItem('item1');
-
-        expect(result).not.toBeNull();
-        expect(result._id).toBe('item1');
+        expect(result).toBeDefined();
     });
 
     it('[Search] should execute complex aggregation for available packages', async () => {

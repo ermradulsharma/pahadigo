@@ -10,10 +10,18 @@ jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => ({
     getBusinessById: jest.fn()
 }));
 
+const createPopulateMock = (val) => {
+    const obj = {
+        populate: jest.fn(() => obj),
+        lean: jest.fn().mockResolvedValue(val),
+        then: (resolve) => Promise.resolve(val).then(resolve)
+    };
+    return obj;
+};
+
 const { default: ChatController } = await import('@/core/Http/Controllers/General/ChatController.js');
 const { default: Conversation } = await import('@/core/Models/Conversation.js');
 const { default: ChatMessage } = await import('@/core/Models/ChatMessage.js');
-const { default: Booking } = await import('@/core/Models/Booking.js');
 const { default: User } = await import('@/core/Models/User.js');
 const { PushNotificationService } = await import('@/core/Services/PushNotificationService.js');
 const { HTTP_STATUS } = await import('@/core/Constants/index.js');
@@ -47,7 +55,6 @@ describe('ChatController (Root/General)', () => {
         test('should return bad request if bookingId or type is missing', async () => {
             mockReq.payload = {};
             const response = await ChatController.createConversation(mockReq);
-            const body = await response.json();
             expect(response.status).toBe(HTTP_STATUS.BAD_REQUEST);
         });
 
@@ -90,24 +97,25 @@ describe('ChatController (Root/General)', () => {
         test('should create new conversation successfully', async () => {
             mockReq.payload = { type: 'traveller-vendor' };
             queryHelpers.getBookingById.mockResolvedValue({ user: 'user123', vendor: { user: 'vendor123' } });
-            jest.spyOn(Conversation, 'findOne').mockResolvedValue(null);
+            jest.spyOn(Conversation, 'findOne').mockReturnValue(createPopulateMock(null));
             jest.spyOn(Conversation, 'create').mockResolvedValue({ _id: 'new_convo' });
+            jest.spyOn(Conversation, 'findById').mockReturnValue(createPopulateMock({ _id: 'new_convo' }));
 
             const response = await ChatController.createConversation(mockReq, { params: { bookingId: 'booking123' } });
             const body = await response.json();
             expect(response.status).toBe(HTTP_STATUS.OK);
-            expect(body.data._id).toBe('new_convo');
+            expect(body.data.id || body.data._id).toBe('new_convo');
         });
 
         test('should fetch existing conversation successfully', async () => {
             mockReq.payload = { type: 'traveller-vendor' };
             queryHelpers.getBookingById.mockResolvedValue({ user: 'user123', vendor: { user: 'vendor123' } });
-            jest.spyOn(Conversation, 'findOne').mockResolvedValue({ _id: 'existing_convo' });
+            jest.spyOn(Conversation, 'findOne').mockReturnValue(createPopulateMock({ _id: 'existing_convo' }));
 
             const response = await ChatController.createConversation(mockReq, { params: { bookingId: 'booking123' } });
             const body = await response.json();
             expect(response.status).toBe(HTTP_STATUS.OK);
-            expect(body.data._id).toBe('existing_convo');
+            expect(body.data.id || body.data._id).toBe('existing_convo');
         });
 
         test('should return 500 on internal error', async () => {
@@ -159,22 +167,24 @@ describe('ChatController (Root/General)', () => {
         });
 
         test('should return 404 if conversation is not found', async () => {
-            jest.spyOn(Conversation, 'findById').mockResolvedValue(null);
+            jest.spyOn(Conversation, 'findById').mockReturnValue(createPopulateMock(null));
             const response = await ChatController.getMessages(mockReq, { params: { id: 'convo123' } });
             expect(response.status).toBe(HTTP_STATUS.NOT_FOUND);
         });
 
         test('should return 403 if user not in conversation', async () => {
-            jest.spyOn(Conversation, 'findById').mockResolvedValue({ traveller: 'other', vendor: 'other' });
+            jest.spyOn(Conversation, 'findById').mockReturnValue(createPopulateMock({ traveller: 'other', vendor: 'other' }));
             const response = await ChatController.getMessages(mockReq, { params: { id: 'convo123' } });
             expect(response.status).toBe(HTTP_STATUS.FORBIDDEN);
         });
 
         test('should support pagination and return 200', async () => {
-            jest.spyOn(Conversation, 'findById').mockResolvedValue({ traveller: 'user123', vendor: 'vendor123' });
+            jest.spyOn(Conversation, 'findById').mockReturnValue(createPopulateMock({ traveller: 'user123', vendor: 'vendor123' }));
             const mockFind = {
+                populate: jest.fn().mockReturnThis(),
                 sort: jest.fn().mockReturnThis(),
-                limit: jest.fn().mockResolvedValue([{ _id: 'msg1' }])
+                limit: jest.fn().mockReturnThis(),
+                lean: jest.fn().mockResolvedValue([{ _id: 'msg1' }])
             };
             jest.spyOn(ChatMessage, 'find').mockReturnValue(mockFind);
             mockReq.url = 'http://localhost/chat/conversations/convo123/messages?limit=10&before=2026-06-20T00:00:00.000Z';
@@ -184,7 +194,7 @@ describe('ChatController (Root/General)', () => {
         });
 
         test('should return 500 on error', async () => {
-            jest.spyOn(Conversation, 'findById').mockRejectedValue(new Error('fail'));
+            jest.spyOn(Conversation, 'findById').mockImplementation(() => { throw new Error('fail'); });
             const response = await ChatController.getMessages(mockReq, { params: { id: '1' } });
             expect(response.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
         });

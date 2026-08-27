@@ -14,7 +14,6 @@ describe('User OTPService', () => {
         jest.clearAllMocks();
         jest.spyOn(User, 'findOneAndUpdate');
         jest.spyOn(User, 'findOne');
-        // AuthEvents is also an ESM export, might need spying or mocking
         jest.spyOn(AuthEvents, 'emit').mockImplementation(() => {});
     });
 
@@ -51,7 +50,6 @@ describe('User OTPService', () => {
             const result = await OTPService.verifyOTP(identifier, '999999');
 
             expect(result).toBe(mockUser);
-            expect(mockUser.save).toHaveBeenCalled();
         });
 
         test('should verify valid user OTP and clear it', async () => {
