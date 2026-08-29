@@ -40,6 +40,14 @@ const { default: PackageService } = await import('@/core/Services/Vendor/Package
 const { default: Package } = await import('@/core/Models/Package.js');
 const { default: Vendor } = await import('@/core/Models/Vendor.js');
 
+const mockVendorFindById = (data) => {
+    Vendor.findById.mockReturnValue({
+        select: jest.fn().mockReturnValue({
+            lean: jest.fn().mockResolvedValue(data)
+        })
+    });
+};
+
 describe('Industry Standard: Vendor PackageService Logic', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -70,7 +78,7 @@ describe('Industry Standard: Vendor PackageService Logic', () => {
 
     describe('[addItem]', () => {
         it('[Success] should add item to catalog and initialize inventory', async () => {
-            Vendor.findById.mockResolvedValue({ _id: 'v1', category: [{ slug: 'trekking', name: 'Trekking' }] });
+            mockVendorFindById({ _id: 'v1', category: [{ slug: 'trekking', name: 'Trekking' }] });
             Package.findOne.mockResolvedValue(mockPkg);
             
             const itemData = { title: 'New Trek' };
@@ -80,7 +88,7 @@ describe('Industry Standard: Vendor PackageService Logic', () => {
         });
 
         it('[Pricing] should calculate sellingPrice if not provided', async () => {
-            Vendor.findById.mockResolvedValue({ _id: 'v1', category: [{ slug: 'trekking', name: 'Trekking' }] });
+            mockVendorFindById({ _id: 'v1', category: [{ slug: 'trekking', name: 'Trekking' }] });
             Package.findOne.mockResolvedValue(mockPkg);
             
             const itemData = { 
@@ -101,7 +109,7 @@ describe('Industry Standard: Vendor PackageService Logic', () => {
 
     describe('[updateItem]', () => {
         it('[Success] should update existing item', async () => {
-            Vendor.findById.mockResolvedValue({ _id: 'v1', category: [{ slug: 'trekking' }] });
+            mockVendorFindById({ _id: 'v1', category: [{ slug: 'trekking' }] });
             Package.findOne.mockResolvedValue(mockPkg);
             
             const updates = { title: 'Updated Title' };
@@ -115,7 +123,7 @@ describe('Industry Standard: Vendor PackageService Logic', () => {
         });
 
         it('[Pricing] should recalculate sellingPrice on update', async () => {
-            Vendor.findById.mockResolvedValue({ _id: 'v1', category: [{ slug: 'trekking' }] });
+            mockVendorFindById({ _id: 'v1', category: [{ slug: 'trekking' }] });
             Package.findOne.mockResolvedValue(mockPkg);
             
             const updates = { 
