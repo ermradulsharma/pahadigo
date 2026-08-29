@@ -3,27 +3,12 @@ import Image from 'next/image';
 import { Heart, Star, MapPin, ChevronRight } from 'lucide-react';
 
 export default function PackageCard({ service }) {
-    // Map strictly from Mongoose Model keys
-    const id = service._id || service.id;
-    const title = service.title || 'Amazing Experience';
-    const type = service.category || service.category_slug || service.category_name || service.serviceType || 'Package';
-    const location = service.location?.address || 'Explore India';
-    const price = service.pricing?.sellingPrice || service.pricing?.basePrice || 0;
-    
-    // Map image strictly from `photos` array in the model
-    let imageSrc = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2070&auto=format&fit=crop';
-    
-    if (service.photos && Array.isArray(service.photos) && service.photos.length > 0) {
-        if (service.photos[0]?.url && service.photos[0].url.trim() !== '') {
-            imageSrc = service.photos[0].url;
-        } else if (typeof service.photos[0] === 'string' && service.photos[0].trim() !== '') {
-            imageSrc = service.photos[0];
-        }
-    } else if (typeof service.photos === 'string' && service.photos.trim() !== '') {
-        imageSrc = service.photos;
-    } else if (service.photos && typeof service.photos === 'object' && service.photos.url) {
-        imageSrc = service.photos.url;
-    }
+    const id = service.id;
+    const title = service.title;
+    const type = service.category;
+    const location = service.location;
+    const price = service.pricing;
+    const imageSrc = service.photos[0].url || 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2070&auto=format&fit=crop';
 
     return (
         <Link href={`/packages/${id}`} className="group flex flex-col bg-white rounded-2xl shadow-sm hover:shadow-xl border border-gray-200/60 overflow-hidden transition-all duration-300 hover:-translate-y-1">

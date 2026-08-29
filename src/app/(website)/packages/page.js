@@ -1,22 +1,51 @@
 import { Suspense } from 'react';
 import Link from 'next/link';
-import Image from 'next/image';
-import { Heart, Search, MapPin, ChevronLeft, ChevronRight, Star, Filter, SlidersHorizontal, Check } from 'lucide-react';
+import { Search } from 'lucide-react';
 import { CATEGORY_SLUGS, CATEGORY_TITLES } from '@/core/Constants/categories.js';
 import PackageFilters from '@/app/components/packages/PackageFilters';
 import PackageSort from '@/app/components/packages/PackageSort';
 import PackageCard from '@/app/components/packages/PackageCard';
 import Pagination from '@/app/components/ui/Pagination';
 
+const DEFAULT_IMAGE = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2070&auto=format&fit=crop';
+
+function getReadableType(rawType) {
+    const key = Object.keys(CATEGORY_SLUGS).find(k => CATEGORY_SLUGS[k] === rawType?.toLowerCase());
+    return key ? CATEGORY_TITLES[key] : (rawType || 'Package').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+}
+
+function resolveImageUrl(photos) {
+    let imageUrl = '';
+    if (photos && photos.url) imageUrl = photos.url;
+    else if (Array.isArray(photos) && photos[0]) imageUrl = photos[0].url || photos[0];
+    else if (typeof photos === 'string') imageUrl = photos;
+
+    return (imageUrl && typeof imageUrl === 'string' && imageUrl.trim() !== '')
+        ? imageUrl
+        : DEFAULT_IMAGE;
+}
+
+function formatServiceItem(item, fallbackCategory = 'Package') {
+    // console.log("item", item);
+    const basePrice = item.pricing?.basePrice;
+    const gst = item.pricing?.gst || 0;
+    const sellingPrice = basePrice ? Math.round((basePrice * (1 + (gst / 100)) + Number.EPSILON) * 100) / 100 : 0;
+    return {
+        _id: item.id,
+        category: item.categoryName,
+        title: item.title,
+        pricing: sellingPrice,
+        location: item.address,
+        photos: [{ url: resolveImageUrl(item.photos) }],
+        vendor: item.vendor?.businessName || 'Verified Vendor'
+    };
+}
+
 export async function generateMetadata({ searchParams }) {
     const { category } = await searchParams || {};
-    const formattedCategory = category ? category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' ') : '';
-    const title = category 
-        ? `${formattedCategory} Packages & Trips in Himachal | PahadiGo` 
-        : 'Explore Himachal Tour Packages, Homestays & Cab Rentals | PahadiGo';
-    const description = category 
-        ? `Book verified ${formattedCategory} experiences in Himachal Pradesh. Compare pricing, verified host reviews, and itineraries on PahadiGo.` 
-        : 'Discover and book curated tour packages, cab rentals for Spiti & Leh, authentic homestays, and trekking adventures across Himachal Pradesh.';
+    const formattedCategory = category ? getReadableType(category) : '';
+    const title = category ? `${formattedCategory} Packages & Trips in Himachal | PahadiGo` : 'Explore Himachal Tour Packages, Homestays & Cab Rentals | PahadiGo';
+    const description = category ? `Book verified ${formattedCategory} experiences in Himachal Pradesh. Compare pricing, verified host reviews, and itineraries on PahadiGo.` : 'Discover and book curated tour packages, cab rentals for Spiti & Leh, authentic homestays, and trekking adventures across Himachal Pradesh.';
 
     return {
         title,
@@ -50,18 +79,10 @@ export async function generateMetadata({ searchParams }) {
 async function getServices(category, page = 1, q = '', maxPrice = '', sort = '') {
     try {
         let url = `${process.env.NEXT_PUBLIC_API_URL}/packages?limit=12&page=${page}`;
-        if (!category) {
-            url += '&format=flat';
-        }
-        if (q) {
-            url += `&q=${encodeURIComponent(q)}`;
-        }
-        if (maxPrice) {
-            url += `&maxPrice=${maxPrice}`;
-        }
-        if (sort) {
-            url += `&sort=${sort}`;
-        }
+        if (!category) url += '&format=flat';
+        if (q) url += `&q=${encodeURIComponent(q)}`;
+        if (maxPrice) url += `&maxPrice=${maxPrice}`;
+        if (sort) url += `&sort=${sort}`;
 
         const res = await fetch(url, { cache: 'no-store' });
         if (!res.ok) return { services: [], pagination: null };
@@ -72,82 +93,21 @@ async function getServices(category, page = 1, q = '', maxPrice = '', sort = '')
 
         if (!category && result.data && result.data.items) {
             pagination = result.data.pagination;
-            const items = result.data.items || [];
-
-            items.forEach(item => {
-                let imageUrl = '';
-                if (item.photos && item.photos.url) {
-                    imageUrl = item.photos.url;
-                } else if (Array.isArray(item.photos) && item.photos[0]) {
-                    imageUrl = item.photos[0].url || item.photos[0];
-                } else if (typeof item.photos === 'string') {
-                    imageUrl = item.photos;
-                }
-
-                if (!imageUrl || typeof imageUrl !== 'string' || imageUrl.trim() === '') {
-                    imageUrl = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2070&auto=format&fit=crop';
-                }
-
-                const getReadableType = (rawType) => {
-                    const key = Object.keys(CATEGORY_SLUGS).find(k => CATEGORY_SLUGS[k] === rawType?.toLowerCase());
-                    return key ? CATEGORY_TITLES[key] : (rawType || 'Package').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                };
-
-                allServices.push({
-                    _id: item.id || item._id,
-                    category: getReadableType(item.category_name || item.category || 'Package'),
-                    title: item.title || 'Package',
-                    pricing: { sellingPrice: item.pricing?.sellingPrice || 0 },
-                    location: { address: item.location?.address || item.location?.city || item.location || 'Unknown Location' },
-                    photos: [{ url: imageUrl }],
-                    vendor: item.vendor?.businessName || 'Verified Vendor'
-                });
-            });
+            allServices = (result.data.items || []).map(item => formatServiceItem(item));
         } else {
             const categoriesData = result.data || {};
             Object.entries(categoriesData).forEach(([slug, categoryObj]) => {
                 if (category && slug.toLowerCase() !== category.toLowerCase()) return;
-
-                if (categoryObj.pagination && !pagination) {
-                    pagination = categoryObj.pagination;
-                }
-
+                if (categoryObj.pagination && !pagination) pagination = categoryObj.pagination;
                 const items = categoryObj.items || [];
                 items.forEach(item => {
-                    let imageUrl = '';
-                    if (item.photos && item.photos.url) {
-                        imageUrl = item.photos.url;
-                    } else if (Array.isArray(item.photos) && item.photos[0]) {
-                        imageUrl = item.photos[0].url || item.photos[0];
-                    } else if (typeof item.photos === 'string') {
-                        imageUrl = item.photos;
-                    }
-
-                    if (!imageUrl || typeof imageUrl !== 'string' || imageUrl.trim() === '') {
-                        imageUrl = 'https://images.unsplash.com/photo-1464822759023-fed622ff2c3b?q=80&w=2070&auto=format&fit=crop';
-                    }
-
-                    const getReadableType = (rawType) => {
-                        const key = Object.keys(CATEGORY_SLUGS).find(k => CATEGORY_SLUGS[k] === rawType?.toLowerCase());
-                        return key ? CATEGORY_TITLES[key] : (rawType || 'Package').replace(/-/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
-                    };
-
-                    allServices.push({
-                        _id: item.id || item._id,
-                        category: getReadableType(item.category_name || slug),
-                        title: item.title,
-                        pricing: { sellingPrice: item.pricing?.sellingPrice || 0 },
-                        location: { address: item.location?.address || item.location?.city || item.location || 'Unknown Location' },
-                        photos: [{ url: imageUrl }],
-                        vendor: item.vendor?.businessName || 'Verified Vendor'
-                    });
+                    allServices.push(formatServiceItem(item, slug));
                 });
             });
         }
 
         return { services: allServices, pagination };
     } catch (error) {
-        console.error("Failed to fetch packages", error);
         return { services: [], pagination: null };
     }
 }
@@ -161,19 +121,15 @@ export default async function PackagesPage({ searchParams }) {
 
     // Filter categories to display
     const visibleCategories = Object.keys(CATEGORY_SLUGS).filter(key => key !== 'RIVER_RAFTING' && key !== 'BIKE_SCOOTER_RENTAL');
-
     return (
         <div className="bg-gray-50 min-h-screen font-sans">
             {/* Top Page Header (Clean, Typography Driven) */}
             <div className="bg-gray-900 pt-32 pb-16 relative overflow-hidden">
-                {/* Subtle dark gradient/pattern overlay */}
-                {/* <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/stardust.png')] opacity-20"></div>
-                <div className="absolute inset-0 bg-gradient-to-t from-gray-900 to-transparent opacity-80"></div> */}
                 <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
                     <div className="flex flex-col md:flex-row justify-between items-start md:items-end gap-6">
                         <div>
-                            <span className="text-primary-400 font-bold text-sm tracking-widest uppercase mb-3 block drop-shadow-sm">{category ? CATEGORY_TITLES[Object.keys(CATEGORY_SLUGS).find(k => CATEGORY_SLUGS[k] === category.toLowerCase())] || 'Explore' : 'Discover'}</span>
-                            <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight font-display drop-shadow-md">{category ? `${category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' ')} Experiences` : 'Explore the Himalayas'}</h1>
+                            <span className="text-primary-400 font-bold text-sm tracking-widest uppercase mb-3 block drop-shadow-sm">{category ? getReadableType(category) : 'Discover'}</span>
+                            <h1 className="text-4xl md:text-5xl font-extrabold text-white tracking-tight font-display drop-shadow-md">{category ? `${getReadableType(category)} Experiences` : 'Explore the Himalayas'}</h1>
                             <p className="text-gray-300 mt-4 text-lg max-w-2xl font-medium leading-relaxed">Curated adventures, stays, and rentals from top verified local vendors.</p>
                         </div>
                     </div>
@@ -221,3 +177,4 @@ export default async function PackagesPage({ searchParams }) {
         </div>
     );
 }
+
