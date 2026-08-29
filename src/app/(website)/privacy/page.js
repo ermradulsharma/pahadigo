@@ -5,7 +5,7 @@ import { sanitizeHTML } from '@/core/Helpers/security.js';
 import { Shield, Eye, Database, Lock, Mail, ChevronRight } from 'lucide-react';
 
 export const metadata = {
-    title: 'Privacy Policy | PahadiGo Data Protection & Security',
+    title: 'Privacy Policy - Data Protection & Security',
     description: 'Learn how PahadiGo collects, processes, and protects your personal data, payment information, and booking privacy in accordance with data protection laws.',
     keywords: [
         'PahadiGo Privacy Policy',

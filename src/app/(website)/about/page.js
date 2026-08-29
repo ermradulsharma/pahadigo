@@ -1,7 +1,7 @@
 import ClientAbout from './ClientAbout.js';
 
 export const metadata = {
-    title: 'About Us | PahadiGo - Empowering Himalayan Travel & Local Tourism',
+    title: 'About Us - Empowering Himalayan Travel & Local Tourism',
     description: 'Learn about PahadiGo, our mission to empower local Himalayan communities, host verified homestays, licensed cab drivers, and authentic trekking experiences across Himachal Pradesh.',
     keywords: [
         'About PahadiGo',

@@ -5,7 +5,7 @@ import { sanitizeHTML } from '@/core/Helpers/security.js';
 import { Shield, ChevronRight, FileText, CreditCard, AlertTriangle, Scale } from 'lucide-react';
 
 export const metadata = {
-    title: 'Terms of Service | PahadiGo Booking Terms & Conditions',
+    title: 'Terms of Service - Booking Terms & Conditions',
     description: 'Read PahadiGo terms of service, vendor booking agreements, cancellation terms, and user guidelines for Himalayan travel services.',
     keywords: [
         'PahadiGo Terms of Service',

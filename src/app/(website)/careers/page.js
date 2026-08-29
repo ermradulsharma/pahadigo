@@ -2,7 +2,7 @@ import Link from 'next/link';
 import PageHero from '@/components/PageHero.js';
 
 export const metadata = {
-    title: 'Careers | PahadiGo - Build the Future of Himalayan Travel',
+    title: 'Careers - Build the Future of Himalayan Travel',
     description: 'Join PahadiGo team and help build authentic, sustainable travel experiences across the Himalayas. Remote-first opportunities in engineering, marketing, operations, and product.',
     keywords: [
         'PahadiGo Careers',

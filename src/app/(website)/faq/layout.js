@@ -1,5 +1,5 @@
 export const metadata = {
-    title: 'Frequently Asked Questions (FAQ) | PahadiGo Help Center',
+    title: 'Frequently Asked Questions (FAQ) - Help Center',
     description: 'Find clear answers about booking tour packages, cab rentals for Spiti & Manali, verified homestays, trust & safety guarantees, and cancellation policies on PahadiGo.',
     keywords: [
         'PahadiGo FAQ',

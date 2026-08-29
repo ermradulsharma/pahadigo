@@ -3,7 +3,7 @@ import Link from 'next/link';
 import { TrendingUp, ShieldCheck, Banknote, MapPin, CheckCircle2, ArrowRight } from 'lucide-react';
 
 export const metadata = {
-    title: 'Partner With Us | PahadiGo Vendor & Host Registration',
+    title: 'Partner With Us - Vendor & Host Registration',
     description: 'Grow your Himalayan travel business with PahadiGo. Partner as a verified homestay host, cab operator, trekking guide, or adventure vendor with 0% setup fee.',
     keywords: [
         'Partner with PahadiGo',

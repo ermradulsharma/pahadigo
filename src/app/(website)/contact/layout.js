@@ -1,5 +1,5 @@
 export const metadata = {
-    title: 'Contact Us | PahadiGo Customer Support & Inquiries',
+    title: 'Contact Us - Customer Support & Inquiries',
     description: 'Get in touch with PahadiGo support team for booking assistance, custom Himachal tour itineraries, cab inquiries, or vendor partnership opportunities.',
     keywords: [
         'Contact PahadiGo',
