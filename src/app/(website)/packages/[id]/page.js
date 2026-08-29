@@ -138,22 +138,56 @@ export default async function ServiceDetailPage({ params }) {
 
     const jsonLd = {
         '@context': 'https://schema.org',
-        '@type': 'Product',
-        'name': title,
-        'description': service.description || title,
-        'image': imageUrl ? [imageUrl] : [],
-        'category': service.serviceType || service.category || 'Travel Package',
-        'offers': {
-            '@type': 'Offer',
-            'price': price,
-            'priceCurrency': 'INR',
-            'availability': 'https://schema.org/InStock',
-            'url': `https://pahadigo.co.in/packages/${id}`,
-            'seller': {
-                '@type': 'Organization',
-                'name': service.vendor?.businessName || 'PahadiGo Verified Partner'
+        '@graph': [
+            {
+                '@type': 'Product',
+                'name': title,
+                'description': service.description || title,
+                'image': imageUrl ? [imageUrl] : [],
+                'category': service.serviceType || service.category || 'Travel Package',
+                'offers': {
+                    '@type': 'Offer',
+                    'price': price,
+                    'priceCurrency': 'INR',
+                    'availability': 'https://schema.org/InStock',
+                    'url': `https://pahadigo.co.in/packages/${id}`,
+                    'seller': {
+                        '@type': 'Organization',
+                        'name': service.vendor?.businessName || 'PahadiGo Verified Partner'
+                    }
+                },
+                ...(service.reviews && service.reviews.length > 0 ? {
+                    'aggregateRating': {
+                        '@type': 'AggregateRating',
+                        'ratingValue': (service.reviews.reduce((acc, r) => acc + (r.rating || 5), 0) / service.reviews.length).toFixed(1),
+                        'reviewCount': service.reviews.length
+                    }
+                } : {})
+            },
+            {
+                '@type': 'BreadcrumbList',
+                'itemListElement': [
+                    {
+                        '@type': 'ListItem',
+                        'position': 1,
+                        'name': 'Home',
+                        'item': 'https://pahadigo.co.in'
+                    },
+                    {
+                        '@type': 'ListItem',
+                        'position': 2,
+                        'name': 'Packages',
+                        'item': 'https://pahadigo.co.in/packages'
+                    },
+                    {
+                        '@type': 'ListItem',
+                        'position': 3,
+                        'name': title,
+                        'item': `https://pahadigo.co.in/packages/${id}`
+                    }
+                ]
             }
-        }
+        ]
     };
 
     return (

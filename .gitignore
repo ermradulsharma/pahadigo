@@ -42,6 +42,9 @@ yarn-error.log*
 # vercel
 .vercel
 
+# audit
+pahadigo.co.in-audit/
+
 # typescript
 *.tsbuildinfo
 next-env.d.ts
