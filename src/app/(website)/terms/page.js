@@ -5,8 +5,23 @@ import { sanitizeHTML } from '@/core/Helpers/security.js';
 import { Shield, ChevronRight, FileText, CreditCard, AlertTriangle, Scale } from 'lucide-react';
 
 export const metadata = {
-    title: 'Terms of Service | PahadiGo',
-    description: 'Terms and conditions for using the PahadiGo platform and making bookings.',
+    title: 'Terms of Service | PahadiGo Booking Terms & Conditions',
+    description: 'Read PahadiGo terms of service, vendor booking agreements, cancellation terms, and user guidelines for Himalayan travel services.',
+    keywords: [
+        'PahadiGo Terms of Service',
+        'PahadiGo Terms and Conditions',
+        'Himachal Travel Booking Terms'
+    ],
+    openGraph: {
+        title: 'Terms of Service | PahadiGo',
+        description: 'Read PahadiGo terms of service and booking guidelines.',
+        url: 'https://pahadigo.co.in/terms',
+        siteName: 'PahadiGo',
+        type: 'website',
+    },
+    alternates: {
+        canonical: '/terms',
+    }
 };
 
 export default async function TermsOfService() {

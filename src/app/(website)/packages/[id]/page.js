@@ -34,16 +34,42 @@ export async function generateMetadata({ params }) {
 
     if (!service) {
         return {
-            title: 'Package Not Found'
+            title: 'Package Not Found | PahadiGo'
         };
     }
 
     const defaultTitle = service.roomType || service.campingType || service.trekkingName || service.stretchName || service.jumpName || service.model || service.tourName || service.title || 'Package Details';
+    const locationName = service.location?.address || service.location?.city || service.location || 'Himachal Pradesh';
+    const categoryName = service.serviceType || service.category || 'Package';
+    const title = service.seoMetadata?.metaTitle || `${defaultTitle} - ${categoryName} in ${locationName} | PahadiGo`;
+    const description = service.seoMetadata?.metaDescription || service.description || `Book ${defaultTitle} in ${locationName} at best rates on PahadiGo. Verified hosts, transparent pricing, and instant booking.`;
+
+    let imageUrl = '';
+    if (service.photos && service.photos.length > 0) {
+        imageUrl = service.photos[0].url || service.photos[0];
+    }
 
     return {
-        title: service.seoMetadata?.metaTitle || defaultTitle,
-        description: service.seoMetadata?.metaDescription || service.description || '',
-        keywords: service.seoMetadata?.keywords?.join(', ') || ''
+        title,
+        description,
+        keywords: service.seoMetadata?.keywords?.join(', ') || `${defaultTitle}, ${categoryName}, ${locationName}, PahadiGo`,
+        openGraph: {
+            title,
+            description,
+            url: `https://pahadigo.co.in/packages/${id}`,
+            siteName: 'PahadiGo',
+            images: imageUrl ? [{ url: imageUrl, alt: title }] : [],
+            type: 'website',
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title,
+            description,
+            images: imageUrl ? [imageUrl] : [],
+        },
+        alternates: {
+            canonical: `/packages/${id}`,
+        }
     };
 }
 
@@ -110,8 +136,32 @@ export default async function ServiceDetailPage({ params }) {
         console.error("Failed to fetch suggestions", err);
     }
 
+    const jsonLd = {
+        '@context': 'https://schema.org',
+        '@type': 'Product',
+        'name': title,
+        'description': service.description || title,
+        'image': imageUrl ? [imageUrl] : [],
+        'category': service.serviceType || service.category || 'Travel Package',
+        'offers': {
+            '@type': 'Offer',
+            'price': price,
+            'priceCurrency': 'INR',
+            'availability': 'https://schema.org/InStock',
+            'url': `https://pahadigo.co.in/packages/${id}`,
+            'seller': {
+                '@type': 'Organization',
+                'name': service.vendor?.businessName || 'PahadiGo Verified Partner'
+            }
+        }
+    };
+
     return (
         <div className="bg-gray-50 min-h-screen pb-25 font-sans">
+            <script
+                type="application/ld+json"
+                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
+            />
             <Navbar />
 
             {/* Hero Section */}

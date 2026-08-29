@@ -5,8 +5,23 @@ import { sanitizeHTML } from '@/core/Helpers/security.js';
 import { Shield, Eye, Database, Lock, Mail, ChevronRight } from 'lucide-react';
 
 export const metadata = {
-    title: 'Privacy Policy | PahadiGo',
-    description: 'Learn how PahadiGo collects, uses, and protects your personal information.',
+    title: 'Privacy Policy | PahadiGo Data Protection & Security',
+    description: 'Learn how PahadiGo collects, processes, and protects your personal data, payment information, and booking privacy in accordance with data protection laws.',
+    keywords: [
+        'PahadiGo Privacy Policy',
+        'Data Protection PahadiGo',
+        'User Data Security Travel'
+    ],
+    openGraph: {
+        title: 'Privacy Policy | PahadiGo',
+        description: 'Learn how PahadiGo protects your personal data and booking privacy.',
+        url: 'https://pahadigo.co.in/privacy',
+        siteName: 'PahadiGo',
+        type: 'website',
+    },
+    alternates: {
+        canonical: '/privacy',
+    }
 };
 
 export default async function PrivacyPolicy() {

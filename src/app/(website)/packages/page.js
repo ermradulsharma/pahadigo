@@ -10,9 +10,40 @@ import Pagination from '@/app/components/ui/Pagination';
 
 export async function generateMetadata({ searchParams }) {
     const { category } = await searchParams || {};
+    const formattedCategory = category ? category.charAt(0).toUpperCase() + category.slice(1).replace(/-/g, ' ') : '';
+    const title = category 
+        ? `${formattedCategory} Packages & Trips in Himachal | PahadiGo` 
+        : 'Explore Himachal Tour Packages, Homestays & Cab Rentals | PahadiGo';
+    const description = category 
+        ? `Book verified ${formattedCategory} experiences in Himachal Pradesh. Compare pricing, verified host reviews, and itineraries on PahadiGo.` 
+        : 'Discover and book curated tour packages, cab rentals for Spiti & Leh, authentic homestays, and trekking adventures across Himachal Pradesh.';
+
     return {
-        title: category ? `${category.charAt(0).toUpperCase() + category.slice(1)} Packages` : 'Explore Packages',
-        description: category ? `Hand-picked ${category} experiences from our top verified vendors.` : 'Discover the best homestays, camping, and adventure packages curated by top local vendors.'
+        title,
+        description,
+        keywords: [
+            category ? `${formattedCategory} Himachal` : 'Himachal Tour Packages',
+            'Manali Tour Packages',
+            'Spiti Valley Trip',
+            'Kasol Homestays',
+            'Himachal Cab Booking',
+            'PahadiGo Packages'
+        ],
+        openGraph: {
+            title,
+            description,
+            url: 'https://pahadigo.co.in/packages',
+            siteName: 'PahadiGo',
+            type: 'website',
+        },
+        twitter: {
+            card: 'summary_large_image',
+            title,
+            description,
+        },
+        alternates: {
+            canonical: '/packages',
+        }
     };
 }
 

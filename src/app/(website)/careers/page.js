@@ -2,8 +2,24 @@ import Link from 'next/link';
 import PageHero from '@/components/PageHero.js';
 
 export const metadata = {
-    title: 'Careers',
-    description: 'Join PahadiGo and help build the future of authentic and sustainable travel in the Himalayas.',
+    title: 'Careers | PahadiGo - Build the Future of Himalayan Travel',
+    description: 'Join PahadiGo team and help build authentic, sustainable travel experiences across the Himalayas. Remote-first opportunities in engineering, marketing, operations, and product.',
+    keywords: [
+        'PahadiGo Careers',
+        'Travel Tech Jobs India',
+        'Remote Jobs Himachal',
+        'PahadiGo Hiring'
+    ],
+    openGraph: {
+        title: 'Careers | PahadiGo',
+        description: 'Build the future of authentic Himalayan travel with PahadiGo.',
+        url: 'https://pahadigo.co.in/careers',
+        siteName: 'PahadiGo',
+        type: 'website',
+    },
+    alternates: {
+        canonical: '/careers',
+    }
 };
 
 export default function Careers() {
