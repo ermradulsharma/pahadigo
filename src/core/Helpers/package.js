@@ -7,7 +7,8 @@ import { slugify } from './stringUtils.js';
 import { sellingPrice } from './sellingPrice.js';
 import { mapToGeoJSON } from './geoUtils.js';
 import { uploadToCloudinary } from './cloudinary.js';
-import { addressPayload } from './addressHelper.js';
+import AppError from '@/core/Helpers/AppError.js';
+import { notifyIndexNow } from './indexNow.js';
 
 /**
  * Unified item helper to handle authorization, catalog retrieval, photo upload,
@@ -22,18 +23,18 @@ import { addressPayload } from './addressHelper.js';
  */
 export async function item(userId, businessId, category, itemDataOrUpdates, itemId = null) {
     // 1. Validate vendor authorization for category
-    const business = await Vendor.findById(businessId);
-    if (!business) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+    const business = await Vendor.findById(businessId).select('category').lean();
+    if (!business) throw AppError.notFound(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
     const allowed = new Set();
-    business.category.forEach(c => {
+    (business.category || []).forEach(c => {
         if (!c.slug) return;
         const slug = c.slug.toLowerCase();
         allowed.add(slug);
         if (CATEGORY_MAP[slug]) allowed.add(CATEGORY_MAP[slug]);
     });
     const allowedCategories = Array.from(allowed);
-    if (!allowedCategories.includes(category)) throw new Error(`Vendor not authorized to operate in category: ${category}`);
+    if (!allowedCategories.includes(category)) throw AppError.forbidden(`Vendor not authorized to operate in category: ${category}`);
 
     // 2. Find or create package catalog
     let pkg = await Package.findOne({ user: userId, vendor: businessId });
@@ -44,7 +45,7 @@ export async function item(userId, businessId, category, itemDataOrUpdates, item
     }
 
     const schemaKey = CATEGORY_MAP[category] || category;
-    if (pkg[schemaKey] === undefined) throw new Error(RESPONSE_MESSAGES.CATEGORY.INVALID);
+    if (pkg[schemaKey] === undefined) throw AppError.badRequest(RESPONSE_MESSAGES.CATEGORY.INVALID);
 
     // 3. Process and upload photos
     if (itemDataOrUpdates.photos) {
@@ -133,9 +134,14 @@ export async function item(userId, businessId, category, itemDataOrUpdates, item
         }
     }
 
+    // 8. Auto-notify IndexNow for Search Engine Indexation
+    if (savedItem && savedItem._id) {
+        notifyIndexNow([`https://pahadigo.co.in/packages/${savedItem._id}`]).catch(() => {});
+    }
+
     // 8. Format and return the result
     const itemObj = savedItem.toObject ? savedItem.toObject() : savedItem;
-    const categoryObj = business.category.find(c => c.slug === category) || { name: category, _id: "" };
+    const categoryObj = (business.category || []).find(c => c.slug === category) || { name: category, _id: "" };
 
     return {
         id: itemObj._id,

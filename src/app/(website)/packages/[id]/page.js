@@ -206,6 +206,13 @@ export default async function ServiceDetailPage({ params }) {
 
                 <div className="absolute bottom-0 left-0 w-full px-4 sm:px-6 lg:px-8 pb-24 md:pb-32 text-white z-10">
                     <div className="max-w-7xl mx-auto">
+                        <nav className="mb-4 flex items-center text-xs font-semibold text-white/80 gap-2">
+                            <a href="/" className="hover:text-white transition-colors">Home</a>
+                            <span>/</span>
+                            <a href="/packages" className="hover:text-white transition-colors">Packages</a>
+                            <span>/</span>
+                            <span className="text-white truncate max-w-[200px]">{title}</span>
+                        </nav>
                         <div className="mb-5 flex flex-wrap items-center gap-3">
                             <span className="px-4 py-1.5 bg-primary-600/90 backdrop-blur-md rounded-full text-xs font-black uppercase tracking-widest text-white shadow-[0_0_15px_rgba(var(--color-primary-600),0.5)]">
                                 {service.serviceType || service.category}
