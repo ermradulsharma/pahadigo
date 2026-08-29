@@ -26,7 +26,6 @@ function resolveImageUrl(photos) {
 }
 
 function formatServiceItem(item, fallbackCategory = 'Package') {
-    // console.log("item", item);
     const basePrice = item.pricing?.basePrice;
     const gst = item.pricing?.gst || 0;
     const sellingPrice = basePrice ? Math.round((basePrice * (1 + (gst / 100)) + Number.EPSILON) * 100) / 100 : 0;
