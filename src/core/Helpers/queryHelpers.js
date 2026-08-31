@@ -105,6 +105,13 @@ export const getBusinessByUserId = async (userId, select = '', populate = { path
 };
 
 /**
+ * Fetch a Vendor (Business) record by both its Vendor ID and User ID.
+ */
+export const getBusinessByIdAndUserId = async (id, userId, select = '', populate = { path: 'user' }) => {
+    return await getBusinessBy({ _id: id, user: userId, deletedAt: null }, select, populate);
+};
+
+/**
  * Fetch VendorDocument records by custom conditions.
  */
 export const getVendorDocumentsBy = async (conditions = {}, select = '', populate = null, sort = null) => {
@@ -200,6 +207,7 @@ export default {
     getBusinessBy,
     getBusinessById,
     getBusinessByUserId,
+    getBusinessByIdAndUserId,
     getVendorDocumentsBy,
     getBookingBy,
     getBookingById,

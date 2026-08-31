@@ -19,8 +19,8 @@ class ProfileController extends Controller {
     // GET /vendor/me
     async getProfile(req) {
         try {
-            const result = await BaseAuthService.getUserProfile(req.user.id);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, transformAuthResponse(result));
+            const result = await BaseAuthService.getUserProfile(req.user.id, true);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -69,18 +69,12 @@ class ProfileController extends Controller {
             }
 
             // 2. Emergency contacts normalization
-            if (body.emergencyContact && !body.emergencyContacts) {
-                const contact = typeof body.emergencyContact === 'object' ? body.emergencyContact : {};
-                updates.emergencyContacts = [{
-                    name: contact.name,
-                    phone: contact.phone,
-                    relationship: contact.relationship
-                }];
-            } else if (Array.isArray(updates.emergencyContacts)) {
-                updates.emergencyContacts = updates.emergencyContacts.map(c => ({
-                    name: c.name,
-                    phone: c.phone,
-                    relationship: c.relationship
+            if (updates.emergencyContacts) {
+                const list = Array.isArray(updates.emergencyContacts) ? updates.emergencyContacts : [updates.emergencyContacts];
+                updates.emergencyContacts = list.map(c => ({
+                    name: c?.name,
+                    phone: c?.phone,
+                    relationship: c?.relationship
                 }));
             }
 
@@ -104,7 +98,7 @@ class ProfileController extends Controller {
             const updatedProfile = await BaseAuthService.updateUserProfile(req.user.id, updates);
 
             if (updatedProfile?.email) UserEvents.emit('user.profile_updated', { identifier: updatedProfile.email, userName: updatedProfile.name });
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PERSONAL_UPDATED, transformAuthResponse(updatedProfile));
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PERSONAL_UPDATED, updatedProfile);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }

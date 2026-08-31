@@ -4,7 +4,7 @@ import Vendor from '@/core/Models/Vendor.js';
 import { verifyToken, generateToken, generateAuthTokens, decodeToken } from '@/core/Helpers/jwt.js';
 import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
 import CacheService from '@/core/Services/CacheService.js';
-import { userBusinessProfileById } from '@/core/Helpers/userProfileHelper.js';
+import { userBusinessProfileById, userProfileById } from '@/core/Helpers/userProfileHelper.js';
 
 class BaseAuthService {
     async generateAndSaveTokens(user, rememberMe = false) {
@@ -69,7 +69,7 @@ class BaseAuthService {
         const cacheKey = `user:profile:${userId}`;
         if (forceRefresh) await CacheService.delete(cacheKey);
         return await CacheService.getOrSet(cacheKey, async () => {
-            const profile = await userBusinessProfileById(userId);
+            const profile = await userProfileById(userId);
             if (!profile) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
             return profile;
         }, 3600);
@@ -113,7 +113,7 @@ class BaseAuthService {
         } catch (cacheError) {
             // Non-blocking cache flush error fallback
         }
-        return await userBusinessProfileById(userId);
+        return await userProfileById(userId);
     }
 
     async deactivateUserAccount(userId, reason = DEFAULTS.NULL) {

@@ -18,11 +18,14 @@ export const addressPayload = (addr) => {
  */
 export const getLocationPoint = (addr) => {
     if (!addr || typeof addr !== 'object') return null;
+    if (Array.isArray(addr.coordinates) && addr.coordinates.length === 2) {
+        return addr.coordinates;
+    }
     if (addr.location && Array.isArray(addr.location.coordinates) && addr.location.coordinates.length === 2) {
         return addr.location.coordinates;
     }
-    const lat = parseFloat(addr.latitude);
-    const lng = parseFloat(addr.longitude);
+    const lat = parseFloat(addr.latitude || addr.lat);
+    const lng = parseFloat(addr.longitude || addr.lng);
     if (!isNaN(lat) && !isNaN(lng)) {
         return [lng, lat];
     }

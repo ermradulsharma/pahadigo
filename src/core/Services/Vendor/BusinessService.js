@@ -102,10 +102,10 @@ class BusinessService {
     }
 
     // Soft Delete Business Profile
-    async removeBusinessProfile(userId, deletedBy) {
+    async removeBusinessProfile(userId, vendorId) {
         const vendor = await Vendor.findOneAndUpdate(
-            { user: userId, deletedAt: null },
-            { deletedAt: new Date(), deletedBy: deletedBy },
+            { user: userId, _id: vendorId, deletedAt: null },
+            { deletedAt: new Date(), deletedBy: userId },
             { returnDocument: 'after' }
         );
         if (vendor) {

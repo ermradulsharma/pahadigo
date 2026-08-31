@@ -176,6 +176,40 @@ class AuthService {
         return { businessProfileStatus, businessProfile: businessData };
     }
 
+    async toggleRole(userId) {
+        const user = await User.findById(userId);
+        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+        if (user.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
+
+        if (!user.preferences) user.preferences = {};
+        user.preferences.tempRole = user.preferences?.tempRole === USER_ROLES.VENDOR ? USER_ROLES.TRAVELLER : USER_ROLES.VENDOR;
+        await user.save();
+
+        return userAuthResponse(user);
+    }
+
+    async upgradeToVendor(userId) {
+        const user = await User.findById(userId);
+        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+        if (user.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
+        if (!user.preferences) user.preferences = {};
+        user.preferences.tempRole = USER_ROLES.VENDOR;
+        await user.save();
+
+        return userAuthResponse(user);
+    }
+
+    async downgradeToTraveller(userId) {
+        const user = await User.findById(userId);
+        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+        if (user.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
+        if (!user.preferences) user.preferences = {};
+        user.preferences.tempRole = USER_ROLES.TRAVELLER;
+        await user.save();
+
+        return userAuthResponse(user);
+    }
+
     async _handleDeactivation(user) {
         if (user.status === STATUS.INACTIVE) {
             user.status = STATUS.ACTIVE;

@@ -193,6 +193,35 @@ class NotificationService {
     }
 
     /**
+     * Send email to vendor acknowledging profile deletion
+     */
+    async sendVendorProfileDeletedEmail(email, businessName) {
+        try {
+            const html = `<p>Dear <strong>${businessName}</strong>,</p><p>Your vendor business profile on PahadiGo has been deleted successfully.</p><p>If this was not done by you, please contact support immediately.</p>`;
+            await this._sendEmailHelper({ to: email, toName: businessName, subject: `Vendor Profile Deleted - PahadiGo`, html });
+            return true;
+        } catch (error) {
+            console.error("[NotificationService] sendVendorProfileDeletedEmail Error:", error);
+            return false;
+        }
+    }
+
+    /**
+     * Send email to vendor acknowledging operating status update
+     */
+    async sendVendorOperatingStatusUpdatedEmail(email, businessName, isOperating) {
+        try {
+            const statusText = isOperating ? 'ONLINE / OPERATING' : 'OFFLINE / CLOSED';
+            const html = `<p>Dear <strong>${businessName}</strong>,</p><p>Your operational status on PahadiGo has been updated to <strong>${statusText}</strong>.</p>`;
+            await this._sendEmailHelper({ to: email, toName: businessName, subject: `Operating Status Updated (${statusText}) - PahadiGo`, html });
+            return true;
+        } catch (error) {
+            console.error("[NotificationService] sendVendorOperatingStatusUpdatedEmail Error:", error);
+            return false;
+        }
+    }
+
+    /**
      * Send welcome email for newsletter subscription
      */
     async sendNewsletterWelcomeEmail(email) {

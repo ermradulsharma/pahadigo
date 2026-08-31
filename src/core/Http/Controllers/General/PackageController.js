@@ -122,7 +122,10 @@ class PackageController extends Controller {
                 const slug = cat.slug.toLowerCase();
                 if (category && slug !== category.toLowerCase()) return;
                 const schemaKey = (CATEGORY_MAP[slug] || slug).toLowerCase();
-                const categoryItems = rawResults.filter(item => item.category.toLowerCase() === schemaKey || item.category.toLowerCase() === slug);
+                const categoryItems = rawResults.filter(item => {
+                    const itemCat = (item.category || '').toLowerCase();
+                    return itemCat === schemaKey || itemCat === slug;
+                });
 
                 if (categoryItems.length > 0) {
                     const formatted = categoryItems.map(item => formatPackageItem(item, wishlistMap));

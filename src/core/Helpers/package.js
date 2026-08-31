@@ -9,6 +9,7 @@ import { mapToGeoJSON } from './geoUtils.js';
 import { uploadToCloudinary } from './cloudinary.js';
 import AppError from '@/core/Helpers/AppError.js';
 import { notifyIndexNow } from './indexNow.js';
+import { getLocationPoint } from './addressHelper.js';
 
 /**
  * Unified item helper to handle authorization, catalog retrieval, photo upload,
@@ -136,7 +137,7 @@ export async function item(userId, businessId, category, itemDataOrUpdates, item
 
     // 8. Auto-notify IndexNow for Search Engine Indexation
     if (savedItem && savedItem._id) {
-        notifyIndexNow([`https://pahadigo.co.in/packages/${savedItem._id}`]).catch(() => {});
+        notifyIndexNow([`https://pahadigo.co.in/packages/${savedItem._id}`]).catch(() => { });
     }
 
     // 8. Format and return the result
@@ -194,18 +195,22 @@ export function itemsFormate(packages) {
  * @returns {Object} Standardized package item output
  */
 export function formatPackageItem(item, wishlistMap = new Map()) {
-    const isWishlisted = wishlistMap.has(item.id.toString());
+    if (!item) return null;
+    const itemId = (item.id || item._id)?.toString();
+    const isWishlisted = itemId ? wishlistMap.has(itemId) : false;
+    const categoryId = (item.categoryId || item.category_id || item.catalogId)?.toString() || '';
     return {
-        id: item.id.toString(),
+        id: itemId,
         title: item.title,
-        categoryName: item.category_name,
-        categoryId: item.category_id.toString(),
+        categoryName: item.categoryName || item.category_name || item.category,
+        categoryId: categoryId,
         pricing: {
-            basePrice: item.pricing?.basePrice,
-            gst: item.pricing?.gst
+            basePrice: item.pricing?.basePrice || 0,
+            gst: item.pricing?.gst || 0
         },
-        address: item.location.address,
-        image: item.photos?.url,
+        address: item.location?.address || '',
+        location: getLocationPoint(item.location),
+        image: item.photos?.url || (Array.isArray(item.photos) ? item.photos[0]?.url : item.photos),
         rating: {
             average: item.rating?.average || 0,
             count: item.rating?.count || 0
