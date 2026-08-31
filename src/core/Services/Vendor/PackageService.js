@@ -1,32 +1,61 @@
-import mongoose from 'mongoose';
 import Package from '@/core/Models/Package.js';
 import Vendor from '@/core/Models/Vendor.js';
-import Category from '@/core/Models/Category.js';
 import { CATEGORY_MAP, SCHEMA_KEYS } from '@/core/Constants/categories.js';
 import InventoryService from '@/core/Services/Vendor/InventoryService.js';
 import { formatInventoryItem } from '@/core/Helpers/InventoryHelper.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
-import { log } from 'console';
 import { item } from '@/core/Helpers/package.js';
 import { getPackageItemById } from '@/core/Helpers/queryHelpers.js';
 
-
+/**
+ * PackageService (Vendor Role) - Comprehensive management of vendor catalogs and service items.
+ */
 class PackageService {
 
     // Helper: Find or Create Catalog for Vendor (Composite lookup)
     async ensureCatalog(userId, vendorId) {
         if (!userId || !vendorId) throw new Error(RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
-
-        let pkg = await Package.findOne({ user: userId, vendor: vendorId });
+        let pkg = await Package.findOne({ user: userId, vendor: vendorId }).lean();
         if (!pkg) {
-            const initialData = {
-                user: userId,
-                vendor: vendorId
-            };
+            const initialData = { user: userId, vendor: vendorId };
             Object.values(SCHEMA_KEYS).forEach(key => { initialData[key] = []; });
-            pkg = await Package.create(initialData);
+            const createdPkg = await Package.create(initialData);
+            pkg = createdPkg.toObject ? createdPkg.toObject() : createdPkg;
         }
         return pkg;
+    }
+
+    // Helper: Internal catalog ownership verifier
+    async _verifyOwnership(id, userId, vendorId) {
+        const pkg = await Package.findById(id);
+        if (!pkg) throw new Error(RESPONSE_MESSAGES.PACKAGE.CATALOG_NOT_FOUND);
+        if (pkg.vendor.toString() !== vendorId.toString() || pkg.user.toString() !== userId.toString()) {
+            throw new Error(RESPONSE_MESSAGES.PACKAGE.CATALOG_UNAUTHORIZED);
+        }
+        return pkg;
+    }
+
+    // Helper: Formats inventory items for a vendor catalog
+    async _getFormattedInventory(userId, vendorId) {
+        const catalog = await this.ensureCatalog(userId, vendorId);
+        const vendor = await Vendor.findById(vendorId).select("category").lean();
+        const vendorCategories = vendor?.category || [];
+
+        const allItems = [];
+        const itemsByCategory = {};
+
+        vendorCategories.forEach(c => {
+            const slug = (c.slug || '').trim().toLowerCase();
+            const schemaKey = CATEGORY_MAP[slug] || slug;
+            const categoryItems = catalog[schemaKey] || [];
+            const formatted = categoryItems.map(item => this._formatItem(item, slug, vendorCategories));
+            const inventoryFormatted = categoryItems.map(item => formatInventoryItem(item, slug, vendorCategories));
+
+            itemsByCategory[slug] = inventoryFormatted;
+            allItems.push(...formatted);
+        });
+
+        return { catalog, vendorCategories, itemsByCategory, allItems };
     }
 
     // Get Catalog
@@ -36,21 +65,8 @@ class PackageService {
 
     // Get Inventory
     async getInventory(userId, vendorId) {
-        const catalog = await this.ensureCatalog(userId, vendorId);
-        const vendor = await Vendor.findById(vendorId).lean();
-        const result = {};
-        if (vendor && vendor.category && Array.isArray(vendor.category)) {
-            vendor.category.forEach(c => {
-                const slug = (c.slug || '').trim().toLowerCase();
-                const schemaKey = CATEGORY_MAP[slug] || slug;
-                const categoryItems = catalog[schemaKey] || [];
-                const items = categoryItems.map(item => {
-                    return formatInventoryItem(item, slug, vendor.category);
-                });
-                result[slug] = items;
-            });
-        }
-        return result;
+        const { itemsByCategory } = await this._getFormattedInventory(userId, vendorId);
+        return itemsByCategory;
     }
 
     // Find All
@@ -60,38 +76,24 @@ class PackageService {
 
     // Find All Paginated
     async findAllPaginated(userId, vendorId, page = 1, limit = 10) {
-        const catalog = await this.ensureCatalog(userId, vendorId);
-        const vendor = await Vendor.findById(vendorId).lean();
-        const result = {
+        const pageNum = Math.max(1, parseInt(page) || 1);
+        const limitNum = Math.max(1, parseInt(limit) || 10);
+
+        const { catalog, allItems } = await this._getFormattedInventory(userId, vendorId);
+        const total = allItems.length;
+        const startIndex = (pageNum - 1) * limitNum;
+
+        return {
             catalogId: catalog._id,
             vendorId: catalog.vendor,
-            items: [],
+            items: allItems.slice(startIndex, startIndex + limitNum),
             pagination: {
-                total: 0,
-                page,
-                limit,
-                totalPages: 0
+                total,
+                page: pageNum,
+                limit: limitNum,
+                totalPages: Math.ceil(total / limitNum) || 0
             }
         };
-
-        const allItems = [];
-        if (vendor && vendor.category && Array.isArray(vendor.category)) {
-            vendor.category.forEach(c => {
-                const slug = (c.slug || '').trim().toLowerCase();
-                const schemaKey = CATEGORY_MAP[slug] || slug;
-                const categoryItems = catalog[schemaKey] || [];
-                const items = categoryItems.map(item => {
-                    return this._formatItem(item, slug, vendor.category);
-                });
-                allItems.push(...items);
-            });
-        }
-        const total = allItems.length;
-        const startIndex = (page - 1) * limit;
-        result.items = allItems.slice(startIndex, startIndex + limit);
-        result.pagination.total = total;
-        result.pagination.totalPages = Math.ceil(total / limit);
-        return result;
     }
 
     // Compatibility helper for tests
@@ -100,44 +102,31 @@ class PackageService {
     }
 
     // Create Package
-    async initializeVendorPackage(userId, vendorId, data = {}) {
+    async initializeVendorPackage(userId, vendorId) {
         return await this.ensureCatalog(userId, vendorId);
     }
 
     // Update Package
     async updatePackage(id, userId, vendorId, data) {
-        const pkg = await Package.findById(id);
-        if (!pkg) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
-        if (pkg.vendor.toString() !== vendorId.toString() || pkg.user.toString() !== userId.toString()) {
-            throw new Error(RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
-        }
+        const pkg = await this._verifyOwnership(id, userId, vendorId);
         Object.assign(pkg, data);
         return await pkg.save();
     }
 
     // Delete Package
     async deletePackage(id, userId, vendorId) {
-        const pkg = await Package.findById(id);
-        if (!pkg) throw new Error(RESPONSE_MESSAGES.PACKAGE.CATALOG_NOT_FOUND);
-        if (pkg.vendor.toString() !== vendorId.toString() || pkg.user.toString() !== userId.toString()) {
-            throw new Error(RESPONSE_MESSAGES.PACKAGE.CATALOG_UNAUTHORIZED);
-        }
+        await this._verifyOwnership(id, userId, vendorId);
         return await Package.findByIdAndDelete(id);
     }
 
     // Update Package Status
     async updatePackageStatus(id, userId, vendorId, isActive) {
-        const pkg = await Package.findById(id);
-        if (!pkg) throw new Error(RESPONSE_MESSAGES.PACKAGE.CATALOG_NOT_FOUND);
-        if (pkg.vendor.toString() !== vendorId.toString() || pkg.user.toString() !== userId.toString()) {
-            throw new Error(RESPONSE_MESSAGES.PACKAGE.CATALOG_UNAUTHORIZED);
-        }
+        const pkg = await this._verifyOwnership(id, userId, vendorId);
         pkg.isActive = isActive;
         return await pkg.save();
     }
 
-
-    // Helper to format a single catalog item for general use (Add/Update/List)
+    // Helper to format a single catalog item
     _formatItem(item, categorySlug, vendorCategories = []) {
         const itemObj = item.toObject ? item.toObject() : item;
         const category = vendorCategories.find(c => c.slug === categorySlug) || { name: categorySlug, _id: "" };
@@ -155,6 +144,7 @@ class PackageService {
             category_id: category._id || ""
         };
     }
+
     // Add Item
     async addItem(userId, businessId, category, itemData) {
         return await item(userId, businessId, category, itemData);
@@ -165,21 +155,22 @@ class PackageService {
         return await item(userId, businessId, category, updates, itemId);
     }
 
-    // Add Service Item
+    // Aliases for Service Item calls
     async addServiceItem(userId, vendorId, category, itemData) {
         return await this.addItem(userId, vendorId, category, itemData);
     }
 
-    // Update Service Item
     async updateServiceItem(userId, vendorId, category, itemId, updates) {
         return await this.updateItem(userId, vendorId, category, itemId, updates);
     }
 
     // Remove Item
     async removeItem(userId, vendorId, category, itemId) {
-        const vendor = await Vendor.findById(vendorId);
+        const vendor = await Vendor.findById(vendorId).select("_id").lean();
         if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-        const pkg = await this.ensureCatalog(userId, vendorId);
+        const pkg = await Package.findOne({ user: userId, vendor: vendorId });
+        if (!pkg) throw new Error(RESPONSE_MESSAGES.PACKAGE.CATALOG_NOT_FOUND);
+
         const schemaKey = CATEGORY_MAP[category] || category;
         if (pkg[schemaKey] === undefined) {
             throw new Error(RESPONSE_MESSAGES.CATEGORY.INVALID);
@@ -195,9 +186,7 @@ class PackageService {
         return await this.updateItem(userId, vendorId, category, itemId, { isActive });
     }
 
-    /**
-     * Update range (Vendor Management).
-     */
+    // Update range (Vendor Management)
     async updateRange(userId, vendorId, itemId, serviceType, startDate, endDate, settings) {
         const start = new Date(startDate);
         const end = new Date(endDate);
@@ -208,9 +197,7 @@ class PackageService {
         return await InventoryService.update(vendorId, itemId, serviceType, updates);
     }
 
-    /**
-     * Update category range (Vendor Management).
-     */
+    // Update category range (Vendor Management)
     async updateCategoryRange(userId, vendorId, serviceType, startDate, endDate, settings) {
         const pkg = await Package.findOne({ user: userId, vendor: vendorId }).lean();
         if (!pkg || !pkg[serviceType]) return null;
@@ -225,9 +212,11 @@ class PackageService {
 
     // Toggle Category Status (Bulk)
     async toggleCategoryStatus(userId, vendorId, category, isActive) {
-        const vendor = await Vendor.findById(vendorId);
+        const vendor = await Vendor.findById(vendorId).select("_id").lean();
         if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-        const pkg = await this.ensureCatalog(userId, vendorId);
+        const pkg = await Package.findOne({ user: userId, vendor: vendorId });
+        if (!pkg) throw new Error(RESPONSE_MESSAGES.PACKAGE.CATALOG_NOT_FOUND);
+
         const schemaKey = CATEGORY_MAP[category] || category;
         if (pkg[schemaKey] === undefined) throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
 
@@ -243,7 +232,9 @@ class PackageService {
         return await getPackageItemById(itemId);
     }
 
-    async getPackageItem(itemId) { return this.findItem(itemId); }
+    async getPackageItem(itemId) {
+        return await this.findItem(itemId);
+    }
 
     // Helper for controller
     async getPackageById(id) {

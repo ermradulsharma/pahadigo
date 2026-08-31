@@ -1,16 +1,20 @@
-import BusinessService from '@/core/Services/Vendor/BusinessService.js';
 import PackageService from '@/core/Services/Vendor/PackageService.js';
 import { CATEGORY_MAP } from '@/core/Constants/categories.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
-import { VendorService } from '@/core/Services/Admin/index.js';
-import Vendor from '@/core/Models/Vendor.js';
+import { getBusinessByUserId } from '@/core/Helpers/queryHelpers.js';
 
 /**
  * PackageController (Vendor Role) - Comprehensive management of vendor catalogs and service items.
- * Fully synchronized with the modular route hub for enterprise-grade inventory management.
+ * Fully synchronized with modular route hubs for enterprise-grade inventory management.
  */
 class PackageController extends Controller {
+
+    // Helper: Resolves Vendor ID for logged-in user using queryHelpers
+    async _getVendorId(userId) {
+        const vendor = await getBusinessByUserId(userId, '_id');
+        return vendor?._id ? vendor._id.toString() : null;
+    }
 
     // GET /vendor/packages
     async getPackages(req) {
@@ -19,12 +23,11 @@ class PackageController extends Controller {
             const url = new URL(req.url, baseUrl);
             const page = parseInt(url.searchParams.get('page')) || 1;
             const limit = parseInt(url.searchParams.get('limit')) || 10;
-            const userId = req.user.id;
 
-            const vendor = await Vendor.findOne({ user: userId }).select("_id");
-            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+            const vendorId = await this._getVendorId(req.user.id);
+            if (!vendorId) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-            const packages = await PackageService.getPackages(userId, vendor._id, page, limit);
+            const packages = await PackageService.getPackages(req.user.id, vendorId, page, limit);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, packages);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -34,12 +37,10 @@ class PackageController extends Controller {
     // POST /vendor/packages
     async createPackage(req) {
         try {
-            const body = req.payload;
-            const userId = req.user.id;
-            const vendor = await Vendor.findOne({ user: userId }).select("_id");
-            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+            const vendorId = await this._getVendorId(req.user.id);
+            if (!vendorId) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-            const pkg = await PackageService.initializeVendorPackage(userId, vendor._id, body);
+            const pkg = await PackageService.initializeVendorPackage(req.user.id, vendorId);
             return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.PACKAGE.CREATED, pkg);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -49,15 +50,11 @@ class PackageController extends Controller {
     // GET /vendor/packages/:id
     async getPackageById(req, { params }) {
         try {
-            const userId = req.user.id;
-            const vendor = await Vendor.findOne({ user: userId }).select("_id");
-            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+            const vendorId = await this._getVendorId(req.user.id);
+            if (!vendorId) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
             const pkg = await PackageService.getPackageById(params.id);
-
-            if (!pkg || pkg.vendor.toString() !== vendor._id.toString()) {
-                return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.PACKAGE.NOT_FOUND_OR_UNAUTHORIZED);
-            }
+            if (!pkg || pkg.vendor.toString() !== vendorId) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.PACKAGE.NOT_FOUND_OR_UNAUTHORIZED);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, pkg);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -67,12 +64,10 @@ class PackageController extends Controller {
     // PUT /vendor/packages/:id
     async updatePackage(req, { params }) {
         try {
-            const body = req.payload;
-            const userId = req.user.id;
-            const vendor = await Vendor.findOne({ user: userId }).select("_id");
-            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+            const vendorId = await this._getVendorId(req.user.id);
+            if (!vendorId) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-            const pkg = await PackageService.updatePackage(params.id, userId, vendor._id, body);
+            const pkg = await PackageService.updatePackage(params.id, req.user.id, vendorId, req.payload);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.UPDATED, pkg);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -82,11 +77,10 @@ class PackageController extends Controller {
     // DELETE /vendor/packages/:id
     async deletePackage(req, { params }) {
         try {
-            const userId = req.user.id;
-            const vendor = await Vendor.findOne({ user: userId }).select("_id");
-            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+            const vendorId = await this._getVendorId(req.user.id);
+            if (!vendorId) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-            await PackageService.deletePackage(params.id, userId, vendor._id);
+            await PackageService.deletePackage(params.id, req.user.id, vendorId);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.DELETED);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -96,12 +90,10 @@ class PackageController extends Controller {
     // PUT /vendor/packages/:id/status
     async togglePackageStatus(req, { params }) {
         try {
-            const body = req.payload;
-            const userId = req.user.id;
-            const vendor = await Vendor.findOne({ user: userId }).select("_id");
-            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+            const vendorId = await this._getVendorId(req.user.id);
+            if (!vendorId) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-            const pkg = await PackageService.updatePackageStatus(params.id, userId, vendor._id, body.isActive);
+            const pkg = await PackageService.updatePackageStatus(params.id, req.user.id, vendorId, req.payload?.isActive);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.STATUS_UPDATED, pkg);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -120,72 +112,66 @@ class PackageController extends Controller {
         return this.savePackageItem(req, { params, isUpdate: true });
     }
 
-    // Unify package saving controller logic (both addition and update)
+    // Unified package saving controller logic (both addition and update)
     async savePackageItem(req, { params = {}, isUpdate } = {}) {
         try {
-            const body = req.payload;
+            const body = req.payload || {};
             const category = body.category;
             if (!category) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ITEM.CATEGORY_REQUIRED);
 
-            const userId = req.user.id;
-            // const vendor = await Vendor.findOne({ user: userId }).select("_id");
-            const business = await Vendor.findOne({ user: userId }).select("_id");
-            if (!business) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-            const businessId = business.id;
-            let itemData = body;
-            let itemId = null;
+            const vendorId = await this._getVendorId(req.user.id);
+            if (!vendorId) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+
+            const itemId = isUpdate ? (params?.itemId || body.itemId) : null;
             if (isUpdate) {
-                itemId = params?.itemId || body.itemId;
-            }
-            await isUpdate ? await PackageService.updateItem(userId, businessId, category, itemId, itemData) : await PackageService.addItem(userId, businessId, category, itemData);
-            if (isUpdate) {
+                await PackageService.updateItem(req.user.id, vendorId, category, itemId, body);
                 return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.ITEM.UPDATED);
             } else {
+                await PackageService.addItem(req.user.id, vendorId, category, body);
                 return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.ITEM.ADDED);
             }
         } catch (error) {
             if (error.name === 'ValidationError') {
                 return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
             }
-            console.error('[PackageController] savePackageItem error:', error);
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
     // GET /vendor/package/item/:category/:itemId
     async getPackageItem(req, { params } = {}) {
         try {
-            const userId = req.user.id;
-            const vendor = await Vendor.findOne({ user: userId }).select("_id");
-            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+            const vendorId = await this._getVendorId(req.user.id);
+            if (!vendorId) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+
             const { category, itemId } = params;
             const schemaKey = CATEGORY_MAP[category] || category;
-            const pkg = await PackageService.ensureCatalog(userId, vendor._id);
+            const pkg = await PackageService.ensureCatalog(req.user.id, vendorId);
             if (pkg[schemaKey] === undefined) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.CATEGORY.INVALID);
-            const item = pkg[schemaKey].id(itemId);
+
+            const item = Array.isArray(pkg[schemaKey]) ? pkg[schemaKey].find(i => i._id.toString() === itemId) : null;
             if (!item) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ITEM.NOT_FOUND);
+
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, item);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
-
-
     // DELETE /vendor/package/delete-item
     async removePackageItem(req, { params } = {}) {
         try {
-            const body = req.payload;
-            const userId = req.user.id;
-            const vendor = await Vendor.findOne({ user: userId }).select("_id");
-            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+            const body = req.payload || {};
+            const vendorId = await this._getVendorId(req.user.id);
+            if (!vendorId) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+
             const itemId = params.itemId || body.itemId;
             const category = (body.category || params.category || '').trim();
 
-            await PackageService.removeItem(userId, vendor._id, category, itemId);
+            await PackageService.removeItem(req.user.id, vendorId, category, itemId);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED);
         } catch (error) {
-            const status = error.message.toLowerCase().includes('authorized') ? HTTP_STATUS.FORBIDDEN : HTTP_STATUS.BAD_REQUEST;
+            const status = error.message?.toLowerCase().includes('authorized') ? HTTP_STATUS.FORBIDDEN : HTTP_STATUS.BAD_REQUEST;
             return this.error(status, error.message);
         }
     }
@@ -193,21 +179,18 @@ class PackageController extends Controller {
     // POST /vendor/package/toggle-item
     async togglePackageItemStatus(req, { params } = {}) {
         try {
-            const body = req.payload;
-            const userId = req.user.id;
-            const vendor = await Vendor.findOne({ user: userId }).select("_id");
-            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+            const body = req.payload || {};
+            const vendorId = await this._getVendorId(req.user.id);
+            if (!vendorId) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
             const itemId = params.itemId || body.itemId;
             const category = (body.category || '').trim();
-            let { isActive } = body;
-            if (typeof isActive === 'string') {
-                isActive = isActive.trim().toLowerCase() === 'true';
-            }
-            const result = await PackageService.toggleItemStatus(userId, vendor._id, category, itemId, isActive);
+            let isActive = body.isActive;
+            if (typeof isActive === 'string') isActive = isActive.trim().toLowerCase() === 'true';
+            const result = await PackageService.toggleItemStatus(req.user.id, vendorId, category, itemId, isActive);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.ITEM.STATUS_UPDATED, result);
         } catch (error) {
-            const status = error.message.toLowerCase().includes('authorized') ? HTTP_STATUS.FORBIDDEN : HTTP_STATUS.BAD_REQUEST;
+            const status = error.message?.toLowerCase().includes('authorized') ? HTTP_STATUS.FORBIDDEN : HTTP_STATUS.BAD_REQUEST;
             return this.error(status, error.message);
         }
     }
@@ -215,15 +198,14 @@ class PackageController extends Controller {
     // POST /vendor/package/toggle-category
     async toggleCategoryStatus(req) {
         try {
-            const body = req.payload;
-            const userId = req.user.id;
-            const vendor = await Vendor.findOne({ user: userId }).select("_id");
-            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+            const body = req.payload || {};
+            const vendorId = await this._getVendorId(req.user.id);
+            if (!vendorId) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
             const category = (body.category || '').trim();
             const { isActive } = body;
 
-            await PackageService.toggleCategoryStatus(userId, vendor._id, category, isActive);
+            await PackageService.toggleCategoryStatus(req.user.id, vendorId, category, isActive);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.CATEGORY_STATUS_UPDATED);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -233,4 +215,3 @@ class PackageController extends Controller {
 
 const packageController = new PackageController();
 export default packageController;
-

@@ -2,7 +2,7 @@ import BusinessService from '@/core/Services/Vendor/BusinessService.js';
 import { getBusinessById, getBusinessByUserId } from '@/core/Helpers/queryHelpers.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { handleFormDataImageUpload } from '@/core/Helpers/cloudinary.js';
-import { businessAuthResponse } from '@/core/Helpers/userProfileHelper.js';
+import { businessAuthResponse, businessDetailsFormat } from '@/core/Helpers/userProfileHelper.js';
 import Controller from '@/core/Controllers/Controller.js';
 import VendorEvents from '@/core/Events/VendorEvents.js';
 
@@ -98,17 +98,13 @@ class BusinessController extends Controller {
     // PATCH /vendor/business/profile/status/:id (Status Toggle - check existence by params.id)
     async updateOperatingStatus(req, { params }) {
         try {
-            const existingVendor = (params?.id ? await getBusinessById(params.id) : null) || await getBusinessByUserId(req.user.id);
-            if (!existingVendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+            const isOperating = req.payload?.isOperating === true || req.payload?.isOperating === 'true';
+            const businessId = params?.id;
 
-            const body = req.payload || {};
-            if (body.isOperating === undefined) {
-                return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.OPERATING_STATUS_REQUIRED);
-            }
+            const result = await BusinessService.toggleOperatingStatus(req.user.id, isOperating, businessId);
+            if (!result) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-            const isOperating = body.isOperating === 'true' || body.isOperating === true;
-            const result = await BusinessService.toggleOperatingStatus(req.user.id, isOperating);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.OPERATING_STATUS_UPDATED, result);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.OPERATING_STATUS_UPDATED, businessDetailsFormat(result));
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }

@@ -4,7 +4,6 @@ import { Heart, Star, MapPin, ChevronRight } from 'lucide-react';
 
 export default function PackageCard({ service = {} }) {
     // Safely extract scalar props to prevent React child rendering errors
-    console.log("service Card", service);
     const id = service._id || service.id;
     const title = service.title;
     const type = typeof service.category === 'string' ? service.category : service.categoryName;

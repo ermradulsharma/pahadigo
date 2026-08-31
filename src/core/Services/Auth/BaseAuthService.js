@@ -4,6 +4,7 @@ import Vendor from '@/core/Models/Vendor.js';
 import { verifyToken, generateToken, generateAuthTokens, decodeToken } from '@/core/Helpers/jwt.js';
 import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
 import CacheService from '@/core/Services/CacheService.js';
+import { userBusinessProfileById } from '@/core/Helpers/userProfileHelper.js';
 
 class BaseAuthService {
     async generateAndSaveTokens(user, rememberMe = false) {
@@ -64,23 +65,19 @@ class BaseAuthService {
         return true;
     }
 
-    async getUserProfile(userId) {
-        const user = await User.findById(userId).select('-password').lean();
-        if (!user) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
-        let vendorData = {};
-        if (user.role === USER_ROLES.VENDOR) {
-            const businessProfile = await Vendor.findOne({ user: user._id }).lean();
-            vendorData = { businessProfile };
-        }
-        return { ...user, ...vendorData };
+    async getUserProfile(userId, forceRefresh = false) {
+        const cacheKey = `user:profile:${userId}`;
+        if (forceRefresh) await CacheService.delete(cacheKey);
+        return await CacheService.getOrSet(cacheKey, async () => {
+            const profile = await userBusinessProfileById(userId);
+            if (!profile) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
+            return profile;
+        }, 3600);
     }
 
     async updateUserProfile(userId, updates) {
         const existingUser = await User.findById(userId);
-
-        if (!existingUser) {
-            throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
-        }
+        if (!existingUser) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
 
         // Security Whitelist: Strip sensitive security & role fields from updates
         const forbiddenFields = ['role', 'status', 'isVerified', 'isVendorVerified', 'deletedAt', 'deletedBy', 'deletedReason'];
@@ -90,11 +87,7 @@ class BaseAuthService {
             // Prevent tempRole injection via preferences
             const safePreferences = { ...updates.preferences };
             delete safePreferences.tempRole;
-
-            const existingPrefs = existingUser.preferences?.toObject
-                ? existingUser.preferences.toObject()
-                : (existingUser.preferences || {});
-
+            const existingPrefs = existingUser.preferences?.toObject() || existingUser.preferences || {};
             updates.preferences = {
                 ...existingPrefs,
                 ...safePreferences,
@@ -105,9 +98,8 @@ class BaseAuthService {
             };
         }
 
-        if (updates.address) {
-            mapToGeoJSON(updates.address, 'location');
-        }
+        if (updates.address) mapToGeoJSON(updates.address, 'location');
+
         const user = await User.findByIdAndUpdate(userId, updates, { returnDocument: 'after' });
         if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
 
@@ -117,14 +109,11 @@ class BaseAuthService {
             await CacheService.del('admin:vendors:all');
             await CacheService.del(`user:profile:${userId}`);
             const vendorProfile = await Vendor.findOne({ user: userId }).lean();
-            if (vendorProfile?._id) {
-                await CacheService.del(`admin:vendors:${vendorProfile._id}`);
-            }
+            if (vendorProfile?._id) await CacheService.del(`admin:vendors:${vendorProfile._id}`);
         } catch (cacheError) {
             // Non-blocking cache flush error fallback
         }
-
-        return user;
+        return await userBusinessProfileById(userId);
     }
 
     async deactivateUserAccount(userId, reason = DEFAULTS.NULL) {

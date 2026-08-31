@@ -181,15 +181,12 @@ class BusinessService {
     }
 
     // Toggle Operational/Availability status
-    async toggleOperatingStatus(userId, isOperating) {
-        const vendor = await Vendor.findOneAndUpdate(
-            { user: userId, deletedAt: null },
-            { isOperating: isOperating },
-            { returnDocument: 'after' }
-        );
-        if (vendor) {
-            await this.invalidateVendorCaches(userId, vendor._id);
-        }
+    async toggleOperatingStatus(userId, isOperating, businessId = null) {
+        const filter = { user: userId, deletedAt: null };
+        if (businessId) filter._id = businessId;
+
+        const vendor = await Vendor.findOneAndUpdate(filter, { isOperating: isOperating }, { returnDocument: 'after' });
+        if (vendor) await this.invalidateVendorCaches(userId, vendor._id);
         return vendor;
     }
 

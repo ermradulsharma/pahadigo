@@ -20,8 +20,10 @@ export function businessDetailsFormat(vendor) {
         location: getLocationPoint(vendor.address),
         profileImage: vendor.profileImage,
         profileType: vendor.profileType,
-        trustBadge: vendor.trustBadge,
         businessAbout: vendor.businessAbout,
+        trustBadge: vendor.trustBadge,
+        isOperating: vendor.isOperating,
+        status: vendor.status,
         createdAt: vendor.createdAt
     };
 }

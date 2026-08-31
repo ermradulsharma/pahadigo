@@ -22,7 +22,7 @@ class ProfileController extends Controller {
             const result = await BaseAuthService.getUserProfile(req.user.id);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, transformAuthResponse(result));
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -30,22 +30,16 @@ class ProfileController extends Controller {
     async toggleAccountStatus(req) {
         try {
             const { status } = req.payload;
-            if (typeof status !== 'boolean') {
-                return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.INVALID_REQUEST);
-            }
+            if (typeof status !== 'boolean') return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.INVALID_REQUEST);
+
             const user = await User.findById(req.user.id);
             if (!user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.NOT_FOUND);
-            if (status === true && (user.status === STATUS.BLOCKED || user.status === STATUS.SUSPENDED)) {
-                return this.error(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.VENDOR.ACCOUNT_RESTRICTED);
-            }
-            if (status === true) {
-                user.status = user.isVerified === true ? STATUS.ACTIVE : STATUS.PENDING;
-            } else {
-                user.status = STATUS.INACTIVE;
-            }
+            if (status === true && (user.status === STATUS.BLOCKED || user.status === STATUS.SUSPENDED)) return this.error(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.VENDOR.ACCOUNT_RESTRICTED);
+            if (status === true) user.status = user.isVerified === true ? STATUS.ACTIVE : STATUS.PENDING;
+            else user.status = STATUS.INACTIVE;
             await user.save();
             const message = status ? RESPONSE_MESSAGES.AUTH.ACTIVATED : RESPONSE_MESSAGES.AUTH.DEACTIVATED;
-            return this.success(HTTP_STATUS.OK, message, { status: user.status });
+            return this.success(HTTP_STATUS.OK, message, user.status);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
         }
@@ -67,17 +61,11 @@ class ProfileController extends Controller {
             });
 
             // 1. Safe profile image handling
-            const profileImgFile = req.formDataBody?.get('profileImage');
-            const isPostmanPlaceholder = typeof profileImgFile === 'string' && profileImgFile.startsWith('@postman');
-            const isEmptyFile = profileImgFile && typeof profileImgFile === 'object' && profileImgFile.size === 0;
+            const profileImgFile = req.payload?.profileImage;
 
-            if (profileImgFile && !isPostmanPlaceholder && !isEmptyFile) {
+            if (profileImgFile) {
                 const res = await uploadToCloudinary(profileImgFile, `profile/${req.user.id}`);
                 updates.profileImage = res.url;
-            } else if (typeof body.profileImage === 'string' && body.profileImage.trim() && !body.profileImage.startsWith('@postman')) {
-                updates.profileImage = body.profileImage.trim();
-            } else {
-                delete updates.profileImage;
             }
 
             // 2. Emergency contacts normalization
@@ -86,26 +74,20 @@ class ProfileController extends Controller {
                 updates.emergencyContacts = [{
                     name: contact.name,
                     phone: contact.phone,
-                    relationship: contact.relationship || contact.relation || null
+                    relationship: contact.relationship
                 }];
             } else if (Array.isArray(updates.emergencyContacts)) {
                 updates.emergencyContacts = updates.emergencyContacts.map(c => ({
                     name: c.name,
                     phone: c.phone,
-                    relationship: c.relationship || c.relation || null
+                    relationship: c.relationship
                 }));
             }
 
             // 3. Comma-separated array & primitive conversions
-            if (updates.expertise && typeof updates.expertise === 'string') {
-                updates.expertise = updates.expertise.split(',').map(item => item.trim()).filter(Boolean);
-            }
-            if (updates.medicalConditions && typeof updates.medicalConditions === 'string') {
-                updates.medicalConditions = updates.medicalConditions.split(',').map(item => item.trim()).filter(Boolean);
-            }
-            if (updates.experience !== undefined) {
-                updates.experience = Number(updates.experience) || 0;
-            }
+            if (updates.expertise && typeof updates.expertise === 'string') updates.expertise = updates.expertise.split(',').map(item => item.trim()).filter(Boolean);
+            if (updates.medicalConditions && typeof updates.medicalConditions === 'string') updates.medicalConditions = updates.medicalConditions.split(',').map(item => item.trim()).filter(Boolean);
+            if (updates.experience !== undefined) updates.experience = Number(updates.experience) || 0;
 
             // 4. Notifications boolean normalization
             if (updates.preferences?.notifications) {
@@ -116,28 +98,13 @@ class ProfileController extends Controller {
             }
 
             // 5. GeoJSON Point calculation
-            if (updates.address) {
-                mapToGeoJSON(updates.address, 'location');
-            }
+            if (updates.address) mapToGeoJSON(updates.address, 'location');
 
-            // 6. Direct User update for schema compatibility and test mocking
-            const user = await User.findByIdAndUpdate(
-                req.user.id,
-                { $set: updates },
-                { returnDocument: 'after', runValidators: true }
-            ).select('-password');
+            // 6. Delegate profile update to BaseAuthService for standardized response payload & Redis caching
+            const updatedProfile = await BaseAuthService.updateUserProfile(req.user.id, updates);
 
-            // 7. Flush Redis cache asynchronously
-            if (user) {
-                try {
-                    await CacheService.del(`admin:vendors:${req.user.id}`);
-                    await CacheService.del('admin:vendors:all');
-                    await CacheService.del(`user:profile:${req.user.id}`);
-                } catch (cacheErr) {}
-            }
-
-            if (user?.email) UserEvents.emit('user.profile_updated', { identifier: user.email, userName: user.name });
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PERSONAL_UPDATED, user);
+            if (updatedProfile?.email) UserEvents.emit('user.profile_updated', { identifier: updatedProfile.email, userName: updatedProfile.name });
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PERSONAL_UPDATED, transformAuthResponse(updatedProfile));
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -146,16 +113,13 @@ class ProfileController extends Controller {
     // POST /vendor/avatar
     async updateProfileImage(req) {
         try {
-            const formDataBody = req.formDataBody;
-            if (!formDataBody || !formDataBody.get('avatar')) {
-                return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
-            }
-            const avatarFile = formDataBody.get('avatar');
-            const result = await uploadToCloudinary(avatarFile, `vendor_avatars/${req.user.id}`);
-            const user = await User.findByIdAndUpdate(req.user.id, {
-                $set: { avatar: result.url }
-            }, { returnDocument: 'after' }).select('-password');
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PERSONAL_AVATAR_UPDATED, user);
+            const file = req.payload?.profileImage;
+            if (!file) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
+
+            const result = await uploadToCloudinary(file, `profile/${req.user.id}`);
+            const updatedProfile = await BaseAuthService.updateUserProfile(req.user.id, { profileImage: result.url });
+
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PERSONAL_AVATAR_UPDATED, transformAuthResponse(updatedProfile));
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -165,11 +129,10 @@ class ProfileController extends Controller {
     async updateFCMToken(req) {
         try {
             const { fcmToken } = req.payload || {};
-            if (!fcmToken) {
-                return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
-            }
-            const user = await User.findByIdAndUpdate(req.user.id, { $set: { fcmToken } }, { returnDocument: 'after' }).select('-password');
-            return this.success(HTTP_STATUS.OK, "FCM token updated successfully.", user);
+            if (!fcmToken) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
+
+            const updatedProfile = await BaseAuthService.updateUserProfile(req.user.id, { fcmToken });
+            return this.success(HTTP_STATUS.OK, "FCM token updated successfully.", transformAuthResponse(updatedProfile));
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
