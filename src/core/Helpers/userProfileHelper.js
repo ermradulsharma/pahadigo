@@ -1,8 +1,9 @@
 import User from '@/core/Models/User.js';
 import Vendor from '@/core/Models/Vendor.js';
+import VendorClosure from '@/core/Models/VendorClosure.js';
 import { USER_ROLES } from '@/core/Constants/index.js';
 import { addressPayload, getLocationPoint } from './addressHelper.js';
-import { businessDetailsFormat, businessPayload, businessAuthResponse } from './businessHelper.js';
+import { businessDetailsFormat } from './businessHelper.js';
 
 /**
  * Formats a User model instance into a standard user profile payload structure.
@@ -33,9 +34,34 @@ export function userPayload(u) {
             medicalConditions: u.medicalConditions,
             bloodGroup: u.bloodGroup
         })
-    }
-};
+    };
+}
 
+/**
+ * Formats a User model instance into a lightweight user details structure.
+ * @param {Object} u - The User object (lean)
+ * @returns {Object|null} Formatted user details object or null
+ */
+export function userDetailsPayload(u) {
+    if (!u || !u._id) return null;
+    return {
+        id: u._id.toString(),
+        name: u.name,
+        email: u.email,
+        phone: u.phone,
+        profileImage: u.profileImage,
+    };
+}
+
+/**
+ * Shared helper to fetch a lean User model instance by User ID without password.
+ * @param {String} id - The User ID
+ * @returns {Promise<Object|null>} Lean User document or null
+ */
+async function fetchUserById(id) {
+    if (!id) return null;
+    return await User.findById(id).select('-password').lean();
+}
 
 /**
  * Fetches and formats a User profile by User ID.
@@ -43,8 +69,7 @@ export function userPayload(u) {
  * @returns {Promise<Object|null>} Formatted user profile object or null
  */
 export async function userProfileById(id) {
-    if (!id) return null;
-    const u = await User.findById(id).select('-password').lean();
+    const u = await fetchUserById(id);
     return userPayload(u);
 }
 
@@ -54,13 +79,18 @@ export async function userProfileById(id) {
  * @returns {Promise<Object|null>} Formatted user profile with nested businessDetails or null
  */
 export async function userBusinessProfileById(id) {
-    if (!id) return null;
-    const u = await User.findById(id).select('-password').lean();
+    const u = await fetchUserById(id);
     if (!u) return null;
 
     let vendor = null;
     if (u.role === USER_ROLES.VENDOR) {
         vendor = await Vendor.findOne({ user: u._id }).lean();
+        if (vendor) {
+            vendor.closurePeriods = await VendorClosure.find({
+                $or: [{ vendor: vendor._id }, { user: u._id }],
+                isActive: true
+            }).sort({ startDate: 1 }).lean();
+        }
     }
     return userBusinessPayload(u, vendor);
 }
@@ -72,10 +102,14 @@ export async function userBusinessProfileById(id) {
  * @returns {Object|null} User-centric payload with businessDetails or null
  */
 export function userBusinessPayload(u, vendor = null) {
-    if (!u) return null;
     const baseUser = userPayload(u);
     if (!baseUser) return null;
-    return { ...baseUser, businessDetails: businessDetailsFormat(vendor) };
+    const businessDetails = businessDetailsFormat(vendor);
+    return {
+        ...baseUser,
+        businessDetails,
+        ...(vendor?.closurePeriods ? { closurePeriods: vendor.closurePeriods } : {})
+    };
 }
 
 /**
@@ -95,13 +129,17 @@ export function userAuthResponse(user) {
         role: user.role,
         tempRole: user.preferences?.tempRole,
         tempExtraData: user.preferences?.tempExtraData,
-        bio: user.bio,
-        isVerified: Boolean(user.isVerified),
-        status: user.status,
+        bio: user.bio ?? baseUser.bio,
         fcmToken: user.fcmToken
     };
 }
 
-export { userPayload, userProfileById, userBusinessProfileById, userBusinessPayload, userAuthResponse, businessDetailsFormat, businessPayload, businessAuthResponse };
+export default {
+    userPayload,
+    userDetailsPayload,
+    userProfileById,
+    userBusinessProfileById,
+    userBusinessPayload,
+    userAuthResponse
+};
 
-export default { userPayload, userProfileById, userBusinessProfileById, userBusinessPayload, userAuthResponse, businessDetailsFormat, businessPayload, addressPayload, getLocationPoint, businessAuthResponse };

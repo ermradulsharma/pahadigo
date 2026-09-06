@@ -2,7 +2,8 @@ import BusinessService from '@/core/Services/Vendor/BusinessService.js';
 import { getBusinessById, getBusinessByUserId, getBusinessByIdAndUserId } from '@/core/Helpers/queryHelpers.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { handleFormDataImageUpload } from '@/core/Helpers/cloudinary.js';
-import { businessAuthResponse, businessDetailsFormat } from '@/core/Helpers/userProfileHelper.js';
+import { businessAuthResponse, businessDetailsFormat } from '@/core/Helpers/businessHelper.js';
+import { userBusinessProfileById } from '@/core/Helpers/userProfileHelper.js';
 import Controller from '@/core/Controllers/Controller.js';
 import VendorEvents from '@/core/Events/VendorEvents.js';
 
@@ -25,12 +26,9 @@ class BusinessController extends Controller {
     // GET /vendor/business/profile
     async getProfile(req) {
         try {
-            const vendor = await getBusinessByUserId(req.user.id);
-            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-
-            const responseData = businessAuthResponse(vendor);
-            if (vendor.closurePeriods) responseData.closurePeriods = vendor.closurePeriods;
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, responseData);
+            const user = await userBusinessProfileById(req.user.id);
+            if (!user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.USER.NOT_FOUND);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, user);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }

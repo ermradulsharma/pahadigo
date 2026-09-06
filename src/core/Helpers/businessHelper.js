@@ -23,6 +23,7 @@ export function businessDetailsFormat(vendor) {
         businessAbout: vendor.businessAbout,
         trustBadge: vendor.trustBadge,
         isOperating: vendor.isOperating,
+        closurePeriods: vendor.closurePeriods || [],
         status: vendor.status,
         createdAt: vendor.createdAt
     };
