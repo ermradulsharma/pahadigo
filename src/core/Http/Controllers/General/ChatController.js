@@ -8,6 +8,7 @@ import { getBookingById, getUserById } from '@/core/Helpers/queryHelpers.js';
 import { userPayload } from '@/core/Helpers/userProfileHelper.js';
 import User from '@/core/Models/User.js';
 import { PushNotificationService } from '@/core/Services/PushNotificationService.js';
+import { getLogger } from '@/core/Lib/logger.js';
 
 // In-memory event emitter for live chat updates
 const chatEmitter = new EventEmitter();
@@ -66,7 +67,7 @@ class ChatController {
             const responseData = formatConversation(conversation);
             return successResponse(HTTP_STATUS.OK, 'Conversation retrieved successfully.', responseData);
         } catch (error) {
-            console.error('[ChatController] createConversation error:', error);
+            getLogger(req?.requestId).error({ err: error }, '[ChatController] createConversation error');
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
@@ -92,7 +93,7 @@ class ChatController {
 
             return successResponse(HTTP_STATUS.OK, 'Conversations fetched successfully.', conversationsWithUnread);
         } catch (error) {
-            console.error('[ChatController] getConversations error:', error);
+            getLogger(req?.requestId).error({ err: error }, '[ChatController] getConversations error');
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
@@ -160,7 +161,7 @@ class ChatController {
                 messages: formattedMessages
             });
         } catch (error) {
-            console.error('[ChatController] getMessages error:', error);
+            getLogger(req?.requestId).error({ err: error }, '[ChatController] getMessages error');
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
@@ -251,12 +252,12 @@ class ChatController {
                     }
                 }
             } catch (notifError) {
-                console.error('[ChatController] Error sending offline push notification:', notifError);
+                getLogger(req?.requestId).error({ err: notifError }, '[ChatController] Error sending offline push notification');
             }
 
             return successResponse(HTTP_STATUS.CREATED, 'Message sent successfully.', responseMessage);
         } catch (error) {
-            console.error('[ChatController] sendMessage error:', error);
+            getLogger(req?.requestId).error({ err: error }, '[ChatController] sendMessage error');
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
@@ -340,7 +341,7 @@ class ChatController {
 
             return successResponse(HTTP_STATUS.OK, 'Conversation marked as read.');
         } catch (error) {
-            console.error('[ChatController] markAsRead error:', error);
+            getLogger(req?.requestId).error({ err: error }, '[ChatController] markAsRead error');
             return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }

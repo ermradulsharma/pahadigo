@@ -5,6 +5,7 @@ import PackageService from '@/core/Services/Traveller/PackageService.js';
 import BookingService from '@/core/Services/Traveller/BookingService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, PAYMENT_STATUS, BOOKING_STATUS } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
+import { getLogger } from '@/core/Lib/logger.js';
 
 /**
  * BookingController (Traveller Role) - Specialized management of customer-facing
@@ -40,7 +41,7 @@ class BookingController extends Controller {
             const booking = await BookingService.initiateBooking({ userId, body, itemId });
             return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.BOOKING.CREATED, booking);
         } catch (error) {
-            console.error('Error in initiateBooking:', error);
+            getLogger(req?.requestId).error({ err: error }, 'Error in initiateBooking');
             return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
@@ -89,7 +90,7 @@ class BookingController extends Controller {
             const booking = await BookingService.verifyBookingPayment(params.id, req.user.id, body);
             return this.success(HTTP_STATUS.OK, 'Payment verified and OTPs generated.', booking);
         } catch (error) {
-            console.error('Error in verifyPayment:', error);
+            getLogger(req?.requestId).error({ err: error }, 'Error in verifyPayment');
             return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }

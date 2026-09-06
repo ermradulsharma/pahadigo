@@ -10,6 +10,7 @@ import { uploadToCloudinary } from './cloudinary.js';
 import AppError from '@/core/Helpers/AppError.js';
 import { notifyIndexNow } from './indexNow.js';
 import { getLocationPoint } from './addressHelper.js';
+import { getLogger } from '@/core/Lib/logger.js';
 
 /**
  * Unified item helper to handle authorization, catalog retrieval, photo upload,
@@ -59,7 +60,7 @@ export async function item(userId, businessId, category, itemDataOrUpdates, item
                     const uploaded = await uploadToCloudinary(photo, `packages/${businessId}/${category}`);
                     uploadResults.push({ url: uploaded.url, type: 'image' });
                 } catch (err) {
-                    console.error(`[MEDIA_UPLOAD] Image upload failed:`, err);
+                    getLogger().error({ err }, '[MEDIA_UPLOAD] Image upload failed');
                 }
             } else if (typeof photo === 'object' && photo.url) {
                 uploadResults.push(photo);
@@ -131,7 +132,7 @@ export async function item(userId, businessId, category, itemDataOrUpdates, item
         try {
             await InventoryService.initializeFromItem(businessId, savedItem._id, schemaKey);
         } catch (invError) {
-            console.error('Inventory Initialization Failed:', invError);
+            getLogger().error({ err: invError }, 'Inventory Initialization Failed');
         }
     }
 

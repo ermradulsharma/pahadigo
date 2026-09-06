@@ -8,7 +8,7 @@ import { BOOKING_STATUS, PAYMENT_STATUS, RESPONSE_MESSAGES } from '@/core/Consta
  */
 class BookingService {
   async getBookingById(id) {
-    return await Booking.findById(id).populate('package').populate('user');
+    return await Booking.findById(id).populate('package').populate('user').lean();
   }
 
   async updatePaymentStatus(orderId, paymentId, signatureOrStatus) {

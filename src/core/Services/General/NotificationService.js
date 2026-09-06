@@ -102,7 +102,7 @@ class NotificationService {
             await this._sendEmailHelper({ to: email, subject: `PahadiGo Security Alert: New sign-in detected`, html: html });
             return true;
         } catch (error) {
-            console.error("[NotificationService] sendLoginAlertEmail Error:", error);
+            getLogger().error({ err: error }, "[NotificationService] sendLoginAlertEmail Error");
             return false;
         }
     }
@@ -131,7 +131,7 @@ class NotificationService {
             await this._sendEmailHelper({ to: email, subject: `Welcome to PahadiGo!`, html: html });
             return true;
         } catch (error) {
-            console.error("[NotificationService] sendWelcomeEmail Error:", error);
+            getLogger().error({ err: error }, "[NotificationService] sendWelcomeEmail Error");
             return false;
         }
     }
@@ -145,7 +145,7 @@ class NotificationService {
             await this._sendEmailHelper({ to: email, toName: businessName, subject: `Welcome to PahadiGo!`, html: html });
             return true;
         } catch (error) {
-            console.error("[NotificationService] sendVendorWelcomeEmail Error:", error);
+            getLogger().error({ err: error }, "[NotificationService] sendVendorWelcomeEmail Error");
             return false;
         }
     }
@@ -159,7 +159,7 @@ class NotificationService {
             await this._sendEmailHelper({ to: email, toName: businessName, subject: `Documents Received - PahadiGo`, html: html });
             return true;
         } catch (error) {
-            console.error("[NotificationService] sendVendorDocumentsReceivedEmail Error:", error);
+            getLogger().error({ err: error }, "[NotificationService] sendVendorDocumentsReceivedEmail Error");
             return false;
         }
     }
@@ -173,7 +173,7 @@ class NotificationService {
             await this._sendEmailHelper({ to: email, toName: businessName, subject: `Bank Details Submitted - PahadiGo`, html: html });
             return true;
         } catch (error) {
-            console.error("[NotificationService] sendVendorBankAddedEmail Error:", error);
+            getLogger().error({ err: error }, "[NotificationService] sendVendorBankAddedEmail Error");
             return false;
         }
     }
@@ -187,7 +187,7 @@ class NotificationService {
             await this._sendEmailHelper({ to: email, toName: userName, subject: `Profile Updated - PahadiGo`, html: html });
             return true;
         } catch (error) {
-            console.error("[NotificationService] sendUserProfileUpdatedEmail Error:", error);
+            getLogger().error({ err: error }, "[NotificationService] sendUserProfileUpdatedEmail Error");
             return false;
         }
     }
@@ -201,7 +201,7 @@ class NotificationService {
             await this._sendEmailHelper({ to: email, toName: businessName, subject: `Vendor Profile Deleted - PahadiGo`, html });
             return true;
         } catch (error) {
-            console.error("[NotificationService] sendVendorProfileDeletedEmail Error:", error);
+            getLogger().error({ err: error }, "[NotificationService] sendVendorProfileDeletedEmail Error");
             return false;
         }
     }
@@ -216,7 +216,7 @@ class NotificationService {
             await this._sendEmailHelper({ to: email, toName: businessName, subject: `Operating Status Updated (${statusText}) - PahadiGo`, html });
             return true;
         } catch (error) {
-            console.error("[NotificationService] sendVendorOperatingStatusUpdatedEmail Error:", error);
+            getLogger().error({ err: error }, "[NotificationService] sendVendorOperatingStatusUpdatedEmail Error");
             return false;
         }
     }
@@ -230,7 +230,7 @@ class NotificationService {
             await this._sendEmailHelper({ to: email, subject: `Welcome to the PahadiGo Newsletter!`, html: html });
             return true;
         } catch (error) {
-            console.error("[NotificationService] sendNewsletterWelcomeEmail Error:", error);
+            getLogger().error({ err: error }, "[NotificationService] sendNewsletterWelcomeEmail Error");
             return false;
         }
     }
@@ -369,7 +369,7 @@ class NotificationService {
             const config = await getAppConfig();
             const booking = await Booking.findById(bookingId).populate('vendor user').lean();
             if (!booking) {
-                console.error(`[NotificationService] Invoice generation failed: Booking ${bookingId} not found`);
+                getLogger().error({ bookingId }, `[NotificationService] Invoice generation failed: Booking not found`);
                 return false;
             }
 

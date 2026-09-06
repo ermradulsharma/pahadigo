@@ -20,7 +20,7 @@ class BankService {
     // Update Bank Details
     // Synchronize and update payout credentials
     async updateBankDetails(userId, bankData) {
-        const vendor = await Vendor.findOne({ user: userId, deletedAt: null }).populate('user');
+        const vendor = await Vendor.findOne({ user: userId, deletedAt: null }).populate('user').lean();
         if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
         const updatePayload = { ...vendor.bankDetails };
         if (bankData.accountHolderName) updatePayload.accountHolderName = bankData.accountHolderName;

@@ -2,6 +2,7 @@ import SOSService from '@/core/Services/General/SOSService.js';
 import TravellerSOSService from '@/core/Services/Traveller/SOSService.js';
 import { successResponse, errorResponse } from '@/core/Helpers/response.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { getLogger } from '@/core/Lib/logger.js';
 
 /**
  * SOSController (General/Shared Role)
@@ -31,7 +32,7 @@ class SOSController {
         emergencyContacts: updatedUser.emergencyContacts,
       });
     } catch (error) {
-      console.error('[SOSController] updateEmergencyContacts error:', error);
+      getLogger(req?.requestId).error({ err: error }, '[SOSController] updateEmergencyContacts error');
       return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
   }
@@ -46,7 +47,7 @@ class SOSController {
       const alert = await TravellerSOSService.triggerSOS(req.user.id, location);
       return successResponse(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SOS.ALERT_TRIGGERED, { alertId: alert._id });
     } catch (error) {
-      console.error('[SOSController] triggerSOS error:', error);
+      getLogger(req?.requestId).error({ err: error }, '[SOSController] triggerSOS error');
       return errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
     }
   }

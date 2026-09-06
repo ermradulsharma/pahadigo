@@ -1,6 +1,7 @@
 import ReviewService from '@/core/Services/Traveller/ReviewService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
+import { getLogger } from '@/core/Lib/logger.js';
 
 /**
  * ReviewController (Traveller Role)
@@ -25,7 +26,7 @@ class ReviewController extends Controller {
             const review = await ReviewService.submitReview(req.user.id, { bookingId, rating, comment });
             return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.REVIEW.SUBMITTED, review);
         } catch (error) {
-            console.error('Error in submitReview:', error);
+            getLogger(req?.requestId).error({ err: error }, 'Error in submitReview');
             return this.error(HTTP_STATUS.BAD_REQUEST, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
