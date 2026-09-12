@@ -11,6 +11,73 @@ import AppError from '@/core/Helpers/AppError.js';
 import { notifyIndexNow } from './indexNow.js';
 import { getLocationPoint } from './addressHelper.js';
 import { getLogger } from '@/core/Lib/logger.js';
+import { getPackageBy } from './queryHelpers.js';
+
+/**
+ * Recursively flattens nested objects into dot notation for partial Mongoose subdocument updates.
+ * @param {Object} obj - Nested object to flatten
+ * @param {string} prefix - Key prefix
+ * @returns {Object} Flattened object with dot-notation keys
+ */
+export function flattenObject(obj, prefix = '') {
+    return Object.keys(obj).reduce((acc, k) => {
+        const pre = prefix.length ? prefix + '.' : '';
+        if (obj[k] !== null && typeof obj[k] === 'object' && obj[k].constructor === Object) {
+            Object.assign(acc, flattenObject(obj[k], pre + k));
+        } else {
+            acc[pre + k] = obj[k];
+        }
+        return acc;
+    }, {});
+}
+
+/**
+ * Processes photo inputs, uploading files/buffers to Cloudinary or formatting URL objects.
+ * @param {Array|Object|string} photos - Photo input(s)
+ * @param {string} uploadPath - Cloudinary folder path
+ * @returns {Promise<Array>} Standardized photo array
+ */
+export async function processItemPhotos(photos, uploadPath) {
+    if (!photos) return [];
+    const photoArray = Array.isArray(photos) ? photos : [photos];
+    const uploadResults = [];
+
+    for (const photo of photoArray) {
+        if (photo && typeof photo === 'object' && (photo instanceof File || photo.size > 0)) {
+            try {
+                const uploaded = await uploadToCloudinary(photo, uploadPath);
+                uploadResults.push({ url: uploaded.url, type: 'image' });
+            } catch (err) {
+                getLogger().error({ err }, '[MEDIA_UPLOAD] Image upload failed');
+            }
+        } else if (typeof photo === 'object' && photo.url) {
+            uploadResults.push(photo);
+        } else if (typeof photo === 'string' && photo.startsWith('http')) {
+            uploadResults.push({ url: photo, type: 'image' });
+        }
+    }
+
+    return uploadResults;
+}
+
+/**
+ * Finds or initializes a vendor's package catalog document.
+ * @param {string} userId - User ID
+ * @param {string} vendorId - Vendor ID
+ * @param {boolean} [lean=false] - Whether to return a lean JS object
+ * @returns {Promise<Object>} Package catalog document or object
+ */
+export async function findOrCreateCatalog(userId, vendorId, lean = false) {
+    if (!userId || !vendorId) throw new Error(RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
+    let pkg = lean ? await getPackageBy({ user: userId, vendor: vendorId }) : await Package.findOne({ user: userId, vendor: vendorId });
+    if (!pkg) {
+        const initialData = { user: userId, vendor: vendorId };
+        Object.values(SCHEMA_KEYS).forEach(key => { initialData[key] = []; });
+        const createdPkg = await Package.create(initialData);
+        pkg = lean ? (createdPkg.toObject ? createdPkg.toObject() : createdPkg) : createdPkg;
+    }
+    return pkg;
+}
 
 /**
  * Unified item helper to handle authorization, catalog retrieval, photo upload,
@@ -39,36 +106,14 @@ export async function item(userId, businessId, category, itemDataOrUpdates, item
     if (!allowedCategories.includes(category)) throw AppError.forbidden(`Vendor not authorized to operate in category: ${category}`);
 
     // 2. Find or create package catalog
-    let pkg = await Package.findOne({ user: userId, vendor: businessId });
-    if (!pkg) {
-        const initialData = { user: userId, vendor: businessId };
-        Object.values(SCHEMA_KEYS).forEach(key => { initialData[key] = []; });
-        pkg = await Package.create(initialData);
-    }
+    const pkg = await findOrCreateCatalog(userId, businessId);
 
     const schemaKey = CATEGORY_MAP[category] || category;
     if (pkg[schemaKey] === undefined) throw AppError.badRequest(RESPONSE_MESSAGES.CATEGORY.INVALID);
 
     // 3. Process and upload photos
     if (itemDataOrUpdates.photos) {
-        const photoArray = Array.isArray(itemDataOrUpdates.photos) ? itemDataOrUpdates.photos : [itemDataOrUpdates.photos];
-        const uploadResults = [];
-
-        for (const photo of photoArray) {
-            if (photo && typeof photo === 'object' && (photo instanceof File || photo.size > 0)) {
-                try {
-                    const uploaded = await uploadToCloudinary(photo, `packages/${businessId}/${category}`);
-                    uploadResults.push({ url: uploaded.url, type: 'image' });
-                } catch (err) {
-                    getLogger().error({ err }, '[MEDIA_UPLOAD] Image upload failed');
-                }
-            } else if (typeof photo === 'object' && photo.url) {
-                uploadResults.push(photo);
-            } else if (typeof photo === 'string' && photo.startsWith('http')) {
-                uploadResults.push({ url: photo, type: 'image' });
-            }
-        }
-
+        const uploadResults = await processItemPhotos(itemDataOrUpdates.photos, `packages/${businessId}/${category}`);
         if (uploadResults.length > 0) {
             itemDataOrUpdates.photos = uploadResults;
         } else if (!itemId) {
@@ -90,27 +135,13 @@ export async function item(userId, businessId, category, itemDataOrUpdates, item
             itemDataOrUpdates.pricing = await sellingPrice(pricingInput, category, currentPricing);
         }
 
-        // Flatten nested objects into dot notation so we do partial updates
-        const flattenObject = (obj, prefix = '') => {
-            return Object.keys(obj).reduce((acc, k) => {
-                const pre = prefix.length ? prefix + '.' : '';
-                if (obj[k] !== null && typeof obj[k] === 'object' && obj[k].constructor === Object) {
-                    Object.assign(acc, flattenObject(obj[k], pre + k));
-                } else {
-                    acc[pre + k] = obj[k];
-                }
-                return acc;
-            }, {});
-        };
-
         const flatUpdates = flattenObject(itemDataOrUpdates);
         Object.keys(flatUpdates).forEach(key => itemDoc.set(key, flatUpdates[key]));
 
     } else {
         // Add path: Map pricingInput into structured pricing object
-        if (pricingInput && typeof pricingInput === 'object') {
-            itemDataOrUpdates.pricing = await sellingPrice(pricingInput, category);
-        }
+        if (pricingInput && typeof pricingInput === 'object') itemDataOrUpdates.pricing = await sellingPrice(pricingInput, category);
+
         const index = pkg[schemaKey].push(itemDataOrUpdates) - 1;
         itemDoc = pkg[schemaKey][index];
     }
@@ -137,54 +168,72 @@ export async function item(userId, businessId, category, itemDataOrUpdates, item
     }
 
     // 8. Auto-notify IndexNow for Search Engine Indexation
-    if (savedItem && savedItem._id) {
-        notifyIndexNow([`https://pahadigo.co.in/packages/${savedItem._id}`]).catch(() => { });
-    }
+    if (savedItem && savedItem._id) notifyIndexNow([`https://pahadigo.co.in/packages/${savedItem._id}`]).catch(() => { });
 
-    // 8. Format and return the result
-    const itemObj = savedItem.toObject ? savedItem.toObject() : savedItem;
+    // 9. Format and return the result using normalizePackageItem
+    const base = normalizePackageItem(savedItem);
     const categoryObj = (business.category || []).find(c => c.slug === category) || { name: category, _id: "" };
 
     return {
-        id: itemObj._id,
-        title: itemObj.title,
-        slug: itemObj.slug,
-        isActive: itemObj.isActive,
-        availability: itemObj.availability || {},
-        pricing: itemObj.pricing || {},
-        location: itemObj.location || {},
-        photos: itemObj.photos?.[0] || "",
+        id: base.id,
+        title: base.title,
+        slug: base.slug,
+        isActive: base.isActive,
+        availability: base.itemObj.availability || {},
+        pricing: base.pricing,
+        address: base.address,
+        location: base.location,
+        photos: base.image,
         category_name: categoryObj.name || "",
         category_slug: category,
-        category_id: categoryObj._id || ""
+        category_id: categoryObj._id?.toString() || ""
     };
 }
 
+/**
+ * Core helper to normalize common package item properties (DRY single source of truth).
+ */
+export function normalizePackageItem(item, reviews = []) {
+    if (!item) return null;
+    const itemObj = item.toObject ? item.toObject() : item;
+    const reviewList = Array.isArray(reviews) && reviews.length > 0 ? reviews : (Array.isArray(itemObj.reviews) ? itemObj.reviews : []);
+
+    let rating = itemObj.rating || { average: 0, count: 0 };
+    if (reviewList.length > 0) {
+        const totalRating = reviewList.reduce((acc, r) => acc + (parseFloat(r.rating) || 0), 0);
+        const count = reviewList.length;
+        const average = Math.round((totalRating / count) * 10) / 10;
+        rating = { average, count };
+    }
+
+    return {
+        itemObj,
+        id: (itemObj.id || itemObj._id)?.toString() || '',
+        title: itemObj.title || '',
+        slug: itemObj.slug || '',
+        isActive: Boolean(itemObj.isActive),
+        pricing: {
+            basePrice: itemObj.pricing?.basePrice || 0,
+            gst: itemObj.pricing?.gst || 0,
+            sellingPrice: itemObj.pricing?.sellingPrice || 0
+        },
+        address: itemObj.location?.address || '',
+        location: getLocationPoint(itemObj.location),
+        image: itemObj.photos?.[0]?.url || itemObj.photos?.[0] || '',
+        rating,
+        reviews: reviewList
+    };
+}
+
+/**
+ * Formats package items grouped by schema keys.
+ */
 export function itemsFormate(packages) {
     const items = {};
+    if (!packages) return items;
     Object.values(SCHEMA_KEYS).forEach(key => {
-        if (packages[key] && Array.isArray(packages[key])) {
-            items[key] = packages[key].map(item => ({
-                _id: item._id,
-                title: item.title,
-                slug: item.slug,
-                description: item.description,
-                pricing: item.pricing ? {
-                    basePrice: item.pricing.basePrice,
-                    gst: item.pricing.gst,
-                    discountType: item.pricing.discountType,
-                    discount: item.pricing.discount,
-                    sellingPrice: item.pricing.sellingPrice
-                } : null,
-                location: item.location,
-                isActive: item.isActive,
-                photos: item.photos && item.photos.length > 0 ? item.photos[0] : null,
-                createdAt: item.createdAt,
-                updatedAt: item.updatedAt
-            }));
-        } else {
-            items[key] = [];
-        }
+        const catItems = packages[key];
+        items[key] = Array.isArray(catItems) ? catItems.map(item => vendorPackageItem(item)) : [];
     });
     return items;
 }
@@ -193,29 +242,78 @@ export function itemsFormate(packages) {
  * Formats a raw package item into standardized public API response shape with wishlist indicator.
  * @param {Object} item - Package item object
  * @param {Map} wishlistMap - Map of user wishlisted item IDs
+ * @param {Array} reviews - Optional reviews array
  * @returns {Object} Standardized package item output
  */
-export function formatPackageItem(item, wishlistMap = new Map()) {
-    if (!item) return null;
-    const itemId = (item.id || item._id)?.toString();
-    const isWishlisted = itemId ? wishlistMap.has(itemId) : false;
-    const categoryId = (item.categoryId || item.category_id || item.catalogId)?.toString() || '';
+export function formatPackageItem(item, wishlistMap = new Map(), reviews = []) {
+    const base = normalizePackageItem(item, reviews);
+    if (!base) return null;
+
+    const { itemObj, id, title, pricing, address, location, image, rating, reviews: reviewList } = base;
+    const isWishlisted = id ? wishlistMap.has(id) : false;
+    const categoryId = (itemObj.categoryId || itemObj.category_id || itemObj.catalogId)?.toString() || '';
+
     return {
-        id: itemId,
-        title: item.title,
-        categoryName: item.categoryName || item.category_name || item.category,
-        categoryId: categoryId,
-        pricing: {
-            basePrice: item.pricing?.basePrice || 0,
-            gst: item.pricing?.gst || 0
-        },
-        address: item.location?.address || '',
-        location: getLocationPoint(item.location),
-        image: item.photos?.url || (Array.isArray(item.photos) ? item.photos[0]?.url : item.photos),
-        rating: {
-            average: item.rating?.average || 0,
-            count: item.rating?.count || 0
-        },
+        id,
+        title,
+        categoryName: itemObj.categoryName || itemObj.category || '',
+        categoryId,
+        pricing,
+        address,
+        location,
+        image,
+        rating,
+        reviews: reviewList,
         wishlist: isWishlisted
     };
 }
+
+/**
+ * Formats a raw vendor catalog item into standardized vendor API response shape.
+ * @param {Object} item - Vendor package item (Mongoose doc or object)
+ * @param {string} [categorySlug=''] - Category slug
+ * @param {Array} [vendorCategories=[]] - Vendor categories array from Vendor model
+ * @returns {Object} Standardized vendor package item
+ */
+export function vendorPackagePayload(item, categorySlug = '', vendorCategories = []) {
+    const base = normalizePackageItem(item);
+    if (!base) return null;
+
+    const { id, title, slug, isActive, pricing, address, location, image } = base;
+    const category = vendorCategories.find(c => c.slug === categorySlug) || {};
+
+    return {
+        id,
+        title,
+        slug,
+        isActive,
+        pricing,
+        address,
+        location,
+        image,
+        category: {
+            id: category._id?.toString() || '',
+            name: category.name || categorySlug,
+            slug: categorySlug
+        }
+    };
+}
+
+/**
+ * Formats a single vendor package item response with calculated rating & reviews.
+ */
+export function vendorPackageItem(item, reviews = []) {
+    const base = normalizePackageItem(item, reviews);
+    if (!base) return null;
+
+    const { itemObj, address, location, rating, reviews: reviewList } = base;
+
+    return {
+        ...itemObj,
+        address,
+        location,
+        rating,
+        reviews: reviewList
+    };
+}
+

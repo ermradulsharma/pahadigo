@@ -10,7 +10,20 @@ class SOSController extends Controller {
   // PATCH /traveller/emergency-contacts
   async updateEmergencyContacts(req) {
     try {
-      const { emergencyContacts } = req.validData || req.jsonBody || await req.json();
+      const body = req.payload || req.jsonBody || await req.json();
+      const rawContacts = body?.emergencyContacts ?? body?.emergencyContact;
+
+      let emergencyContacts = null;
+      if (Array.isArray(rawContacts)) {
+        emergencyContacts = rawContacts;
+      } else if (rawContacts && typeof rawContacts === 'object') {
+        emergencyContacts = [rawContacts];
+      }
+
+      if (!emergencyContacts) {
+        return this.error(HTTP_STATUS.BAD_REQUEST, 'emergencyContacts must be an array.');
+      }
+
       const updatedUser = await SOSService.updateEmergencyContacts(req.user.id, emergencyContacts);
       return this.success(HTTP_STATUS.OK, 'Emergency contacts updated successfully.', { emergencyContacts: updatedUser.emergencyContacts });
     } catch (error) {

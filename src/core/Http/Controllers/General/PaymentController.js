@@ -30,7 +30,7 @@ class PaymentController extends Controller {
       const eventId = req.headers.get('x-razorpay-event-id');
       if (eventId) {
           const { default: WebhookEvent } = await import('@/core/Models/WebhookEvent.js');
-          const existingEvent = await WebhookEvent.findOne({ eventId });
+          const existingEvent = await WebhookEvent.findOne({ eventId }).lean();
           if (existingEvent) {
               return this.success(HTTP_STATUS.OK, 'Webhook already processed (Replay Protection)', { received: true });
           }

@@ -22,4 +22,9 @@ export const getStartDateByPeriod = (period = 'monthly') => {
     return startDate;
 };
 
-export default { getStartDateByPeriod };
+export const dateFormat = (date) => {
+    if (!date) return null;
+    return new Date(date)?.toISOString()?.split('T')?.[0];
+};
+
+export default { getStartDateByPeriod, dateFormat };

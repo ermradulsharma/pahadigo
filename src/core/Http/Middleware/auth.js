@@ -2,6 +2,7 @@ import { STATUS, RESPONSE_MESSAGES, DEFAULTS } from '@/core/Constants/index.js';
 import { verifyToken } from '@/core/Helpers/jwt.js';
 import User from '@/core/Models/User.js';
 import CacheService from '@/core/Services/CacheService.js';
+import { getLogger } from '@/core/Lib/logger.js';
 
 const authMiddleware = async (req) => {
     try {
@@ -20,7 +21,7 @@ const authMiddleware = async (req) => {
                     return { authorized: DEFAULTS.FALSE, message: RESPONSE_MESSAGES.AUTH.TOKEN_INVALID };
                 }
             } catch (cacheErr) {
-                // Graceful fallback if cache service is unmocked or offline
+                getLogger().error({ err: cacheErr, jti: decoded.jti }, '[AuthMiddleware] Redis token blacklist lookup failed');
             }
         }
 

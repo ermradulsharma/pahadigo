@@ -86,6 +86,11 @@ class CacheService {
         }
     }
 
+    async isAvailable() {
+        await this.init();
+        return Boolean(this.upstashClient || this.isStandardConnected);
+    }
+
     async get(key) {
         await this.init();
         if (this.upstashClient) {

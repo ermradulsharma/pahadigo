@@ -23,8 +23,8 @@ class RazorpayService {
         }
 
         const appConfig = await getAppConfig();
-        const keyId = appConfig?.razorpay?.key_id || process.env.RAZORPAY_KEY_ID;
-        const keySecret = appConfig?.razorpay?.key_secret || process.env.RAZORPAY_KEY_SECRET;
+        const keyId = appConfig?.razorpay?.key_id;
+        const keySecret = appConfig?.razorpay?.key_secret;
 
         if (keyId && keySecret) {
             return { key_id: keyId, key_secret: keySecret };
@@ -115,7 +115,7 @@ class RazorpayService {
         if (!signature) return false;
 
         const appConfig = await getAppConfig();
-        const webhookSecret = secret || appConfig?.razorpay?.webhook_secret || process.env.RAZORPAY_WEBHOOK_SECRET;
+        const webhookSecret = secret || appConfig?.razorpay?.webhook_secret;
         if (!webhookSecret) throw new Error('Razorpay webhook secret is not configured.');
 
         const expectedSignature = crypto

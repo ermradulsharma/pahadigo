@@ -13,7 +13,7 @@ class LocationService {
 
     const skip = (page - 1) * limit;
     const total = await Country.countDocuments({ status: 'active' });
-    const countries = await Country.find({ status: 'active' }).sort({ name: 1 }).skip(skip).limit(limit);
+    const countries = await Country.find({ status: 'active' }).sort({ name: 1 }).skip(skip).limit(limit).lean();
 
     return {
       countries,
@@ -22,7 +22,7 @@ class LocationService {
   }
 
   async getCountryById(id) {
-    return await Country.findById(id);
+    return await Country.findById(id).lean();
   }
 
   async getStatesByCountry(countryId, page = 1) {
@@ -30,7 +30,7 @@ class LocationService {
     const skip = (page - 1) * limit;
 
     const total = await State.countDocuments({ country: countryId, status: 'active' });
-    const states = await State.find({ country: countryId, status: 'active' }).sort({ name: 1 }).skip(skip).limit(limit);
+    const states = await State.find({ country: countryId, status: 'active' }).sort({ name: 1 }).skip(skip).limit(limit).lean();
 
     return {
       states,

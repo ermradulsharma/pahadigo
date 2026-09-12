@@ -1,4 +1,4 @@
-import { User, Vendor, Booking, Package, Category, VendorDocument } from '@/core/Models/index.js';
+import { User, Vendor, Booking, Package, Category, VendorDocument, VendorClosure, Review } from '@/core/Models/index.js';
 import { SCHEMA_KEYS, CATEGORY_MAP } from '@/core/Constants/categories.js';
 
 /**
@@ -87,7 +87,12 @@ export const getUserById = async (id, select = '', populate = null) => {
  * Fetch a Vendor (Business) record by custom conditions.
  */
 export const getBusinessBy = async (conditions, select = '', populate = null) => {
-    return await getBy(Vendor, conditions, select, populate);
+    const vendor = await getBy(Vendor, conditions, select, populate);
+    if (vendor && vendor._id) {
+        const closures = await getManyBy(VendorClosure, { vendor: vendor._id, isActive: true }, '', null, { startDate: 1 });
+        vendor.closurePeriods = closures;
+    }
+    return vendor;
 };
 
 /**
@@ -147,6 +152,13 @@ export const getPackageById = async (id, select = '', populate = null) => {
 };
 
 /**
+ * Fetch multiple Category records by custom conditions.
+ */
+export const getCategoriesBy = async (conditions = {}, select = '', populate = null, sort = null) => {
+    return await getManyBy(Category, conditions, select, populate, sort);
+};
+
+/**
  * Fetch a Category record by custom conditions.
  */
 export const getCategoryBy = async (conditions, select = '', populate = null) => {
@@ -161,11 +173,13 @@ export const getCategoryById = async (id, select = '', populate = null) => {
 };
 
 /**
- * Fetch a Category record by slug.
+ * Fetch a Category record by Slug.
  */
 export const getCategoryBySlug = async (slug, select = '', populate = null) => {
-    return await getBy(Category, { slug: slug.toLowerCase() }, select, populate);
+    if (!slug) return null;
+    return await getCategoryBy({ slug: (slug || '').toLowerCase() }, select, populate);
 };
+
 
 /**
  * Fetch a specific package item (subdocument) by its ID.
@@ -198,6 +212,21 @@ export const getPackageItemById = async (itemId, populate = null) => {
     return null;
 };
 
+/**
+ * Fetch Review records by custom conditions.
+ */
+export const getReviewsBy = async (conditions = {}, select = '', populate = null, sort = { createdAt: -1 }) => {
+    return await getManyBy(Review, conditions, select, populate, sort);
+};
+
+/**
+ * Fetch visible Review records for a specific package item ID.
+ */
+export const getReviewsByItemId = async (itemId, populate = { path: 'user', select: 'name profileImage' }) => {
+    if (!itemId) return [];
+    return await getReviewsBy({ 'item.itemId': itemId, isVisible: true }, '', populate);
+};
+
 export default {
     getById,
     getBy,
@@ -215,6 +244,9 @@ export default {
     getPackageById,
     getPackageItemById,
     getCategoryBy,
+    getCategoriesBy,
     getCategoryById,
-    getCategoryBySlug
+    getCategoryBySlug,
+    getReviewsBy,
+    getReviewsByItemId
 };

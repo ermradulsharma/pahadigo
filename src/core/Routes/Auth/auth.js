@@ -9,23 +9,28 @@ import { schemas } from '@/core/Helpers/validation.js';
  */
 const authRoutes = [
 
-  // Public Auth (Matches Line 31-43)
-  ...Router.group({ prefix: '/auth' }, [
-    { method: 'POST', path: '/otp', schema: schemas.otpSend, handler: wrap(() => AuthController, 'initiateOTP') },
-    { method: 'POST', path: '/verify', schema: schemas.otpLogin, handler: wrap(() => AuthController, 'confirmOTP') },
-    { method: 'GET', path: '/verify', handler: wrap(() => AuthController, 'verifyToken') },
-    { method: 'GET', path: '/refresh', handler: wrap(() => AuthController, 'refreshToken') },
-    { method: 'POST', path: '/login', schema: schemas.passwordLogin, handler: wrap(() => AuthController, 'authenticate') },
-    { method: 'POST', path: '/google', schema: schemas.googleLogin, handler: wrap(() => AuthController, 'socialAuthenticateGoogle') },
-    { method: 'POST', path: '/facebook', schema: schemas.facebookLogin, handler: wrap(() => AuthController, 'socialAuthenticateFacebook') },
-    { method: 'POST', path: '/apple', schema: schemas.appleLogin, handler: wrap(() => AuthController, 'socialAuthenticateApple') },
-    { method: 'POST', path: '/forget-password', schema: schemas.forgotPassword, handler: wrap(() => AuthController, 'forgotPassword') },
-  ]),
+    // Public Auth (Matches Line 31-43)
+    ...Router.group({ prefix: '/auth' }, [
+        { method: 'POST', path: '/otp', schema: schemas.otpSend, handler: wrap(() => AuthController, 'initiateOTP') },
+        { method: 'POST', path: '/verify', schema: schemas.otpLogin, handler: wrap(() => AuthController, 'confirmOTP') },
+        ...Router.group({ prefix: '/token' }, [
+            { method: 'GET', path: '/refresh', handler: wrap(() => AuthController, 'refreshToken') },
+        ]),
+        { method: 'POST', path: '/login', schema: schemas.passwordLogin, handler: wrap(() => AuthController, 'authenticate') },
+        { method: 'POST', path: '/google', schema: schemas.googleLogin, handler: wrap(() => AuthController, 'socialAuthenticateGoogle') },
+        { method: 'POST', path: '/facebook', schema: schemas.facebookLogin, handler: wrap(() => AuthController, 'socialAuthenticateFacebook') },
+        { method: 'POST', path: '/apple', schema: schemas.appleLogin, handler: wrap(() => AuthController, 'socialAuthenticateApple') },
+        { method: 'POST', path: '/forget-password', schema: schemas.forgotPassword, handler: wrap(() => AuthController, 'forgotPassword') },
+    ]),
 
-  // Authenticated Session Management
-  ...Router.group({ prefix: '/auth', middleware: ['auth'] }, [
-    { method: 'POST', path: '/logout', handler: wrap(() => AuthController, 'logout') },
-  ]),
+    // Authenticated Session Management
+    ...Router.group({ prefix: '/auth', middleware: ['auth'] }, [
+        { method: 'POST', path: '/logout', handler: wrap(() => AuthController, 'logout') },
+        ...Router.group({ prefix: '/token' }, [
+            { method: 'GET', path: '/verify', handler: wrap(() => AuthController, 'verifyToken') },
+            { method: 'PUT', path: '/fcm', schema: schemas.fcmToken, handler: wrap(() => AuthController, 'updateFCMToken') },
+        ]),
+    ]),
 ];
 
 export default authRoutes;

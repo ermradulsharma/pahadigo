@@ -2,6 +2,7 @@ import ClosureService from '@/core/Services/Vendor/ClosureService.js';
 import BusinessService from '@/core/Services/Vendor/BusinessService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
+import { closurePayload } from '@/core/Helpers/businessHelper.js';
 
 /**
  * BusinessClosuresController (Vendor Role) - Specialized management of
@@ -13,7 +14,8 @@ class BusinessClosuresController extends Controller {
   async getClosures(req) {
     try {
       const closures = await ClosureService.getClosurePeriods(req.user.id);
-      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CLOSURE.FETCHED, closures);
+      const formatted = (closures || []).map(closurePayload).filter(Boolean);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CLOSURE.FETCHED, formatted);
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }
@@ -24,7 +26,7 @@ class BusinessClosuresController extends Controller {
     try {
       const body = req.payload;
       const result = await ClosureService.createClosurePeriod(req.user.id, body);
-      return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.CLOSURE.CREATED, result);
+      return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.CLOSURE.CREATED, closurePayload(result));
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }
@@ -35,7 +37,7 @@ class BusinessClosuresController extends Controller {
     try {
       const body = req.payload;
       const result = await ClosureService.updateClosurePeriod(req.user.id, params.id, body);
-      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CLOSURE.UPDATED, result);
+      return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.CLOSURE.UPDATED, closurePayload(result));
     } catch (error) {
       return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
     }

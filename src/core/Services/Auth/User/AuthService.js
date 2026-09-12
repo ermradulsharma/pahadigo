@@ -137,10 +137,8 @@ class AuthService {
     async _finalizeAuthResponse(user, isNewUser) {
         await this._handleDeactivation(user);
         const tokens = await BaseAuthService.generateAndSaveTokens(user, true);
-        const userFormat = userAuthResponse(user);
-        let vendorData = {};
-        if (user.role === USER_ROLES.VENDOR) vendorData = await this._getVendorStatus(user);
-        return { ...userFormat, tokens, isNewUser, ...vendorData };
+        const userFormat = await userAuthResponse(user);
+        return { ...userFormat, tokens, isNewUser };
     }
 
     async _findOrCreateSocialUser({ email, name, providerKey, providerId, authProvider, targetRole }) {
@@ -185,7 +183,7 @@ class AuthService {
         user.preferences.tempRole = user.preferences?.tempRole === USER_ROLES.VENDOR ? USER_ROLES.TRAVELLER : USER_ROLES.VENDOR;
         await user.save();
 
-        return userAuthResponse(user);
+        return await userAuthResponse(user);
     }
 
     async upgradeToVendor(userId) {
@@ -196,7 +194,7 @@ class AuthService {
         user.preferences.tempRole = USER_ROLES.VENDOR;
         await user.save();
 
-        return userAuthResponse(user);
+        return await userAuthResponse(user);
     }
 
     async downgradeToTraveller(userId) {
@@ -207,7 +205,7 @@ class AuthService {
         user.preferences.tempRole = USER_ROLES.TRAVELLER;
         await user.save();
 
-        return userAuthResponse(user);
+        return await userAuthResponse(user);
     }
 
     async _handleDeactivation(user) {

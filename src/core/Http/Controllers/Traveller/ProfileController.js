@@ -11,6 +11,7 @@ class ProfileController extends Controller {
     // GET /traveller/profile
     async getProfile(req) {
         try {
+            console.log("Profile Hit!");
             const user = await ProfileService.getProfile(req.user.id);
             if (!user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.AUTH.USER_NOT_FOUND);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, { user });

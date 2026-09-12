@@ -12,6 +12,7 @@ const envSchema = z.object({
     CLOUDINARY_URL: z.union([z.string().url("CLOUDINARY_URL is required for media processing"), z.literal('')]).optional(),
     RAZORPAY_KEY_ID: z.union([z.string().min(1, "RAZORPAY_KEY_ID is required for payments"), z.literal('')]).optional(),
     RAZORPAY_KEY_SECRET: z.union([z.string().min(1, "RAZORPAY_KEY_SECRET is required for payments"), z.literal('')]).optional(),
+    RAZORPAY_WEBHOOK_SECRET: z.union([z.string().min(1, "RAZORPAY_WEBHOOK_SECRET is required for webhooks"), z.literal('')]).optional(),
     UPSTASH_REDIS_REST_URL: z.union([z.string().url("UPSTASH_REDIS_REST_URL is required for rate-limiting and caching"), z.literal('')]).optional(),
     UPSTASH_REDIS_REST_TOKEN: z.union([z.string().min(1, "UPSTASH_REDIS_REST_TOKEN is required"), z.literal('')]).optional(),
 });
@@ -22,11 +23,8 @@ export const validateEnv = () => {
     if (!parsed.success) {
         const logger = getLogger();
         parsed.error.issues.forEach(issue => {
-            const msg = `  - ${issue.path.join('.')}: ${issue.message}`;
-            console.error(chalk.red(msg));
             logger.error({ field: issue.path.join('.'), issue: issue.message }, `[ENV VALIDATION ERROR] ${issue.path.join('.')}: ${issue.message}`);
         });
-        console.error(chalk.red.bold('\nExiting application due to critical environment failure.'));
         logger.error('[ENV VALIDATION FAILED] Exiting application due to critical environment configuration failure.');
         process.exit(1);
     }

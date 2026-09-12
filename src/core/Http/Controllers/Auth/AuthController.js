@@ -17,7 +17,6 @@ import requestContextMiddleware from '@/core/Http/Middleware/requestContext.js';
  */
 class AuthController extends Controller {
 
-    // POST /auth/otp (Send OTP for Email or Phone)
     // POST /auth/otp
     async initiateOTP(req) {
         try {
@@ -42,7 +41,6 @@ class AuthController extends Controller {
         }
     }
 
-    // POST /auth/login (Password Login for Admin/Dev)
     // POST /auth/login
     async authenticate(req) {
         try {
@@ -94,10 +92,7 @@ class AuthController extends Controller {
             const { ip, realIp, device, rawDevice, location } = requestContextMiddleware(req);
             const identifier = result.user?.email || result.user?.phone || '';
             AuthEvents.emit('auth.login_success', { user: result.user, metadata: { ip, realIp, device, rawDevice, location, identifier, authMethod: 'Google OAuth', role: result.user?.role } });
-            if (result.isNewUser && identifier) {
-                AuthEvents.emit('auth.welcome', { identifier, user: result.user });
-            }
-
+            if (result.isNewUser && identifier) AuthEvents.emit('auth.welcome', { identifier, user: result.user });
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, transformAuthResponse(result));
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
@@ -161,9 +156,7 @@ class AuthController extends Controller {
 
     async verifyToken(req) {
         try {
-            const token = req.headers.get('authorization')?.split(' ')[1];
-            if (!token) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.NO_TOKEN);
-            const result = await BaseAuthService.verifyToken(token);
+            const result = await BaseAuthService.verifyToken(req.user.id);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.TOKEN_VALID, result);
         } catch (error) {
             return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
@@ -172,53 +165,10 @@ class AuthController extends Controller {
 
     async refreshToken(req) {
         try {
-            const body = req.payload;
-            let token = body.refreshToken;
-            if (!token) token = req.headers.get('authorization')?.split(' ')[1];
+            const token = req.headers.get('authorization')?.split(' ')[1];
             if (!token) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.NO_TOKEN);
-
             const tokens = await BaseAuthService.refreshToken(token);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.TOKEN_REFRESHED, { tokens });
-        } catch (error) {
-            return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
-        }
-    }
-
-    async switchRole(req) {
-        try {
-            if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
-            const result = await UserAuthService.toggleRole(req.user.id);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.ROLE_SWITCHED, result);
-        } catch (error) {
-            return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
-        }
-    }
-
-    async upgradeToVendor(req) {
-        try {
-            if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
-            await UserAuthService.upgradeToVendor(req.user.id);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.UPGRADED);
-        } catch (error) {
-            return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
-        }
-    }
-
-    async downgradeToTraveller(req) {
-        try {
-            if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
-            await UserAuthService.downgradeToTraveller(req.user.id);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.DOWNGRADED);
-        } catch (error) {
-            return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
-        }
-    }
-
-    async getUserProfile(req) {
-        try {
-            if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
-            const userProfile = await BaseAuthService.getUserProfile(req.user.id);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.USER.FETCHED, transformAuthResponse(userProfile));
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.TOKEN_REFRESHED, tokens);
         } catch (error) {
             return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
         }
@@ -274,24 +224,6 @@ class AuthController extends Controller {
         }
     }
 
-    async updateUserProfile(req) {
-        try {
-            if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
-            let body = req.formDataBody ? parseNestedFormData(req.formDataBody) : (req.validData || req.jsonBody || await parseBody(req));
-
-            if (req.formDataBody?.get('profileImage') instanceof File) {
-                const result = await uploadToCloudinary(req.formDataBody.get('profileImage'), `profile/${req.user.id}`);
-                body.profileImage = result.url;
-            }
-
-            const { password, role, _id, ...updates } = body;
-            const updatedUser = await BaseAuthService.updateUserProfile(req.user.id, updates);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.PROFILE_UPDATED, updatedUser);
-        } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
-        }
-    }
-
     async initiateDeleteAccount(req) {
         try {
             if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
@@ -327,6 +259,17 @@ class AuthController extends Controller {
 
             await BaseAuthService.deactivateUserAccount(req.user.id, reason);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.DELETED);
+        } catch (error) {
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+        }
+    }
+
+    async updateFCMToken(req) {
+        try {
+            const { fcmToken } = req.payload;
+            if (!fcmToken) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
+            const responseData = await BaseAuthService.updateUserProfile(req.user.id, { fcmToken });
+            return this.success(HTTP_STATUS.OK, "FCM token updated successfully.", responseData);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }

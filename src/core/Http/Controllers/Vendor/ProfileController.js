@@ -3,7 +3,7 @@ import Vendor from '@/core/Models/Vendor.js';
 import { BaseAuthService } from '@/core/Services/Auth/index.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, STATUS } from '@/core/Constants/index.js';
 import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
-import { transformAuthResponse } from '@/core/Helpers/index.js';
+import { transformAuthResponse, userAuthResponse } from '@/core/Helpers/index.js';
 import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
 import Controller from '@/core/Controllers/Controller.js';
 import UserEvents from '@/core/Events/UserEvents.js';
@@ -19,7 +19,9 @@ class ProfileController extends Controller {
     // GET /vendor/me
     async getProfile(req) {
         try {
-            const result = await BaseAuthService.getUserProfile(req.user.id, true);
+            const userId = req.user.id;
+            const user = await User.findById(userId);
+            const result = await userAuthResponse(user);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);

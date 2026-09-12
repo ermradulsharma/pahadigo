@@ -23,6 +23,18 @@ class Controller {
     }
 
     /**
+     * Send a standardized paginated success response (data: array, pagination: object at root level)
+     */
+    paginatedSuccess(status, message, items = [], pagination = {}) {
+        return new Response(JSON.stringify({
+            success: true,
+            message,
+            data: items,
+            pagination
+        }), { status, headers: { 'Content-Type': 'application/json' } });
+    }
+
+    /**
      * Send a standardized error response
      */
     error(status, message, errors = null) {

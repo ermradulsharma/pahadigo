@@ -1,66 +1,35 @@
-import PackageController from '@/core/Controllers/General/PackageController.js';
-import CategoryController from '@/core/Controllers/General/CategoryController.js';
-import LocationController from '@/core/Controllers/General/LocationController.js';
-import PolicyController from '@/core/Controllers/General/PolicyController.js';
+import packageRoutes from './package.routes.js';
+import categoryRoutes from './category.routes.js';
+import countryRoutes from './country.routes.js';
+import vendorRoutes from './vendor.routes.js';
+import travellerRoutes from './traveller.routes.js';
+import policyRoutes from './policy.routes.js';
+
 import PaymentController from '@/core/Controllers/General/PaymentController.js';
 import InquiryController from '@/core/Controllers/General/InquiryController.js';
-
 import Router from '@/core/Routes/Router.js';
 import { wrap } from '@/core/Routes/helpers.js';
 
 /**
  * Public Routes - Accessible without authentication.
+ * Modularized and composed from domain-specific public route modules.
  */
 const publicRoutes = [
+    ...packageRoutes,
+    ...categoryRoutes,
+    ...countryRoutes,
+    ...vendorRoutes,
+    ...travellerRoutes,
+    ...policyRoutes,
 
-  // Browsing Packages
-  ...Router.group({ prefix: '/packages', middleware: ['optionalAuth'] }, [
-    { method: 'GET', path: '/', handler: wrap(() => PackageController, 'browsePackages') },
-    { method: 'GET', path: '/search', handler: wrap(() => PackageController, 'searchNearby') },
-    { method: 'GET', path: '/:id', handler: wrap(() => PackageController, 'getPackageDetails') },
-  ]),
+    // General Capture Hub
+    { method: 'POST', path: '/inquiries', handler: wrap(() => InquiryController, 'submitInquiry') },
+    { method: 'POST', path: '/newsletter/subscribe', handler: wrap(() => InquiryController, 'subscribeNewsletter') },
 
-  // Browsing Categories
-  ...Router.group({ prefix: '/categories' }, [
-    { method: 'GET', path: '/', handler: wrap(() => CategoryController, 'getAll') },
-    { method: 'GET', path: '/:id', handler: wrap(() => CategoryController, 'getById') },
-  ]),
-
-  // Geography Hub
-  ...Router.group({ prefix: '/' }, [
-    { method: 'GET', path: '/countries', handler: wrap(() => LocationController, 'getCountries') },
-    { method: 'GET', path: '/countries/:id', handler: wrap(() => LocationController, 'getCountryById') },
-    { method: 'GET', path: '/states', handler: wrap(() => LocationController, 'getStates') },
-    { method: 'GET', path: '/countries/:id/states', handler: wrap(() => LocationController, 'getStatesByCountry') },
-  ]),
-
-  // Role-Specific Policies
-  ...Router.group({ prefix: '/vendor' }, [
-    { method: 'GET', path: '/privacy-policy', handler: wrap(() => PolicyController, 'getPolicyByType'), params: { target: 'vendor', type: 'privacy_policy' } },
-    { method: 'GET', path: '/terms-conditions', handler: wrap(() => PolicyController, 'getPolicyByType'), params: { target: 'vendor', type: 'terms_conditions' } },
-  ]),
-
-  ...Router.group({ prefix: '/traveller' }, [
-    { method: 'GET', path: '/privacy-policy', handler: wrap(() => PolicyController, 'getPolicyByType'), params: { target: 'traveller', type: 'privacy_policy' } },
-    { method: 'GET', path: '/terms-conditions', handler: wrap(() => PolicyController, 'getPolicyByType'), params: { target: 'traveller', type: 'terms_conditions' } },
-    { method: 'GET', path: '/refund-policy', handler: wrap(() => PolicyController, 'getPolicyByType'), params: { target: 'traveller', type: 'refund_policy' } },
-    { method: 'GET', path: '/cancellation-policy', handler: wrap(() => PolicyController, 'getPolicyByType'), params: { target: 'traveller', type: 'cancellation_policy' } },
-  ]),
-
-  // Multi-Target Policies
-  ...Router.group({ prefix: '/policies' }, [
-    { method: 'GET', path: '/:target/:type', handler: wrap(() => PolicyController, 'getPolicyByType') },
-    { method: 'GET', path: '/:target', handler: wrap(() => PolicyController, 'getPoliciesByTarget') },
-  ]),
-
-  // General Capture Hub
-  { method: 'POST', path: '/inquiries', handler: wrap(() => InquiryController, 'submitInquiry') },
-  { method: 'POST', path: '/newsletter/subscribe', handler: wrap(() => InquiryController, 'subscribeNewsletter') },
-
-  // Payment Gateway Capture
-  ...Router.group({ prefix: '/payment' }, [
-    { method: 'POST', path: '/webhook', handler: wrap(() => PaymentController, 'webhook') },
-  ]),
+    // Payment Gateway Capture
+    ...Router.group({ prefix: '/payment' }, [
+        { method: 'POST', path: '/webhook', handler: wrap(() => PaymentController, 'webhook') },
+    ]),
 ];
 
 export default publicRoutes;

@@ -2,7 +2,8 @@ import PackageService from '@/core/Services/Vendor/PackageService.js';
 import { CATEGORY_MAP } from '@/core/Constants/categories.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
-import { getBusinessByUserId } from '@/core/Helpers/queryHelpers.js';
+import { getBusinessByUserId, getReviewsByItemId } from '@/core/Helpers/queryHelpers.js';
+import { vendorPackageItem } from '@/core/Helpers/package.js';
 
 /**
  * PackageController (Vendor Role) - Comprehensive management of vendor catalogs and service items.
@@ -152,7 +153,9 @@ class PackageController extends Controller {
             const item = Array.isArray(pkg[schemaKey]) ? pkg[schemaKey].find(i => i._id.toString() === itemId) : null;
             if (!item) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ITEM.NOT_FOUND);
 
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, item);
+            const reviews = await getReviewsByItemId(itemId);
+
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, vendorPackageItem(item, reviews));
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }

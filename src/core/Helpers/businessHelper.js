@@ -1,6 +1,30 @@
 import { userPayload } from './userProfileHelper.js';
 import { addressPayload, getLocationPoint } from './addressHelper.js';
 import { VENDOR_STATUS } from '@/core/Constants/index.js';
+import { dateFormat } from './dateUtils.js';
+import VendorClosure from '../Models/VendorClosure.js';
+
+/**
+ * Formats a raw VendorClosure document into standard response payload structure.
+ * @param {Object} closure - The VendorClosure object (lean or document)
+ * @returns {Object|null} Formatted closure payload object or null
+ */
+export function closurePayload(closure) {
+    if (!closure) return null;
+    if (Array.isArray(closure)) {
+        return closure.map(c => closurePayload(c)).filter(Boolean);
+    }
+    const closureId = closure._id || closure.id;
+    if (!closureId) return null;
+    return {
+        id: closureId?.toString(),
+        vendor: closure.vendor,
+        startDate: dateFormat(closure.startDate),
+        endDate: dateFormat(closure.endDate),
+        reason: closure.reason || null,
+        isActive: closure.isActive !== undefined ? Boolean(closure.isActive) : true
+    };
+}
 
 /**
  * Formats a raw vendor document into clean business details object without nested personalProfile.
@@ -23,7 +47,7 @@ export function businessDetailsFormat(vendor) {
         businessAbout: vendor.businessAbout,
         trustBadge: vendor.trustBadge,
         isOperating: vendor.isOperating,
-        closurePeriods: vendor.closurePeriods || [],
+        closurePeriods: closurePayload(vendor.closurePeriods),
         status: vendor.status,
         createdAt: vendor.createdAt
     };
@@ -42,6 +66,19 @@ export function businessPayload(vendor) {
     return { ...b, personalProfile: userPayload(u) };
 }
 
+export function itemBusinessPayload(vendor) {
+    if (!vendor) return null;
+    return {
+        id: vendor._id.toString(),
+        ownerName: vendor.ownerName,
+        businessName: vendor.businessName,
+        businessNumber: vendor.businessNumber,
+        address: addressPayload(vendor.address),
+        location: getLocationPoint(vendor.address),
+        profileImage: vendor.profileImage
+    };
+}
+
 /**
  * Formats a vendor document into authentication response payload.
  * @param {Object} vendor - The vendor object
@@ -53,7 +90,13 @@ export function businessAuthResponse(vendor) {
 
     let profileStatus = VENDOR_STATUS.UPLOAD_DOCUMENTS;
     if (vendor.documents?.aadharCard?.length > 0 && vendor.documents?.panCard?.url) profileStatus = VENDOR_STATUS.COMPLETED;
-    return { ...base, isApproved: vendor.isApproved, isOperating: vendor.isOperating, status: vendor.status, profileStatus };
+    return {
+        ...base,
+        isApproved: vendor.isApproved,
+        isOperating: vendor.isOperating,
+        status: vendor.status,
+        profileStatus
+    };
 }
 
-export default { addressPayload, getLocationPoint, businessDetailsFormat, businessPayload, businessAuthResponse };
+export default { addressPayload, getLocationPoint, closurePayload, businessDetailsFormat, businessPayload, businessAuthResponse, itemBusinessPayload };

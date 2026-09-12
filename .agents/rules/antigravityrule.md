@@ -20,6 +20,7 @@ workflow_rules:
   - "PLAN_FIRST: Analyze DB schemas, edge cases, and architectural impact before coding."
   - "STRICT_MVC: No business logic in `src/app/api/`. API routes mount `Router.group()`. Business logic MUST reside in `src/core/Http/Controllers/` & `src/core/Services/`."
   - "DRY_LOGIC: Share DB queries across roles using helpers in `src/core/Helpers/`."
+  - "CHECK_HELPERS_FIRST: BEFORE writing any custom logic, ALWAYS inspect `src/core/Helpers/` to check if a matching helper function exists. Reuse existing helpers across the complete codebase."
   - "DB_PERF: ALWAYS use `.lean()` for read queries. Use compound text indexes for search. Prevent N+1 queries via `.populate()`."
   - "SECURITY: Validate inputs with Zod schemas. Sanitize NoSQL injections (`sanitizeNoSQL()`). Enforce sliding-window rate limiting on auth. Redact PII."
   - "CLEAN_CODE: Use ESM (`.js`) and JSDoc. Reject TypeScript. Mobile frontend code MUST remain strictly outside `src/app/`."

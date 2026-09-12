@@ -9,6 +9,7 @@ import Dispute from '@/core/Models/Dispute.js';
 import VendorClosure from '@/core/Models/VendorClosure.js';
 import { STATUS } from '@/core/Constants/index.js';
 import CacheService from '@/core/Services/CacheService.js';
+import { userAuthResponse } from '@/core/Helpers/userProfileHelper';
 
 class BusinessService {
     // Constructor
@@ -65,9 +66,7 @@ class BusinessService {
             }));
             delete updateData.businessCategory;
         }
-        if (updateData.address) {
-            mapToGeoJSON(updateData.address, 'location');
-        }
+        if (updateData.address) mapToGeoJSON(updateData.address, 'location');
 
         const vendor = await Vendor.findOneAndUpdate(
             { user: userId },
@@ -79,11 +78,12 @@ class BusinessService {
             },
             { returnDocument: 'after', upsert: true, setDefaultsOnInsert: true, runValidators: true }
         );
-        await User.findByIdAndUpdate(userId, { vendorProfile: vendor._id, name: vendor.ownerName }, { returnDocument: 'after' });
+        const userUpdate = { vendorProfile: vendor._id };
+        if (vendor.ownerName) userUpdate.name = vendor.ownerName;
+        const user = await User.findByIdAndUpdate(userId, userUpdate, { returnDocument: 'after' });
 
         await this.invalidateVendorCaches(userId, vendor._id);
-
-        return await vendor.populate('user', 'email phone role');
+        return userAuthResponse(user);
     }
 
     // Fetch Business Record by User ID using queryHelpers
@@ -184,10 +184,12 @@ class BusinessService {
     async toggleOperatingStatus(userId, isOperating, businessId = null) {
         const filter = { user: userId, deletedAt: null };
         if (businessId) filter._id = businessId;
-
         const vendor = await Vendor.findOneAndUpdate(filter, { isOperating: isOperating }, { returnDocument: 'after' });
-        if (vendor) await this.invalidateVendorCaches(userId, vendor._id);
-        return vendor;
+        if (vendor) {
+            await this.invalidateVendorCaches(userId, vendor._id);
+            return await userAuthResponse(user);
+        }
+        return null;
     }
 
     async getBusinessById(id, select = '', populate = { path: 'user', select: 'email phone role' }) {

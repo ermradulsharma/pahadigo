@@ -24,13 +24,32 @@ class OTPService {
     }
 
     /**
-     * Verify an OTP against the stored value for a user identifier
+     * Verify an OTP against the stored value for a user identifier.
+     * Master OTP is restricted strictly to designated reviewer/test accounts.
      */
     async verifyOTP(identifier, otp, role) {
         const config = await getAppConfig();
         const masterOTP = config.secrets?.master_otp;
+        const testIdentifiersConfig = config.secrets?.test_identifiers;
+
+        // Designated reviewer & automated test accounts permitted to use Master OTP
+        const allowedTestAccounts = new Set([
+            'reviewer@pahadigo.co.in',
+            'apple@pahadigo.co.in',
+            'google@pahadigo.co.in',
+            'test@pahadigo.co.in',
+            '+919999999999',
+            '+918888888888',
+            '9999999999',
+            '8888888888',
+            ...(testIdentifiersConfig ? testIdentifiersConfig.split(',').map(s => s.trim().toLowerCase()).filter(Boolean) : [])
+        ]);
+
+        const normalizedIdentifier = identifier.toLowerCase().trim();
+        const isAllowedTestAccount = allowedTestAccounts.has(normalizedIdentifier) || normalizedIdentifier.endsWith('@pahadigo.test');
+
         const query = { $or: [{ email: identifier }, { phone: identifier }], role: role };
-        if (masterOTP && otp === masterOTP) {
+        if (masterOTP && otp === masterOTP && isAllowedTestAccount) {
             let user = await User.findOne(query);
             if (user) return user;
         }

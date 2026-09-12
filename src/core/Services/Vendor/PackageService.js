@@ -4,25 +4,36 @@ import { CATEGORY_MAP, SCHEMA_KEYS } from '@/core/Constants/categories.js';
 import InventoryService from '@/core/Services/Vendor/InventoryService.js';
 import { formatInventoryItem } from '@/core/Helpers/InventoryHelper.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
-import { item } from '@/core/Helpers/package.js';
+import { item, vendorPackagePayload, findOrCreateCatalog } from '@/core/Helpers/package.js';
 import { getPackageItemById } from '@/core/Helpers/queryHelpers.js';
+import CacheService from '@/core/Services/CacheService.js';
 
 /**
  * PackageService (Vendor Role) - Comprehensive management of vendor catalogs and service items.
  */
 class PackageService {
 
+    // Helper: Invalidate caches across vendor & admin domains
+    async _invalidateCaches(vendorId, itemId = null) {
+        try {
+            await CacheService.del('admin:packages:all');
+            await CacheService.deletePattern('admin:packages:*');
+            await CacheService.deletePattern('packages:*');
+            if (vendorId) {
+                await CacheService.del(`admin:packages:vendor:${vendorId}`);
+                await CacheService.del(`vendor:packages:${vendorId}`);
+            }
+            if (itemId) {
+                await CacheService.del(`admin:packages:item:${itemId}`);
+            }
+        } catch (e) {
+            // Non-blocking cache flush error fallback
+        }
+    }
+
     // Helper: Find or Create Catalog for Vendor (Composite lookup)
     async ensureCatalog(userId, vendorId) {
-        if (!userId || !vendorId) throw new Error(RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
-        let pkg = await Package.findOne({ user: userId, vendor: vendorId }).lean();
-        if (!pkg) {
-            const initialData = { user: userId, vendor: vendorId };
-            Object.values(SCHEMA_KEYS).forEach(key => { initialData[key] = []; });
-            const createdPkg = await Package.create(initialData);
-            pkg = createdPkg.toObject ? createdPkg.toObject() : createdPkg;
-        }
-        return pkg;
+        return await findOrCreateCatalog(userId, vendorId, true);
     }
 
     // Helper: Internal catalog ownership verifier
@@ -44,15 +55,31 @@ class PackageService {
         const allItems = [];
         const itemsByCategory = {};
 
+        const categorySlugs = new Set();
         vendorCategories.forEach(c => {
-            const slug = (c.slug || '').trim().toLowerCase();
+            if (c.slug) categorySlugs.add(c.slug.trim().toLowerCase());
+        });
+
+        Object.entries(CATEGORY_MAP).forEach(([slug, schemaKey]) => {
+            if (Array.isArray(catalog[schemaKey]) && catalog[schemaKey].length > 0) {
+                categorySlugs.add(slug);
+            }
+        });
+
+        if (categorySlugs.size === 0) {
+            Object.keys(CATEGORY_MAP).forEach(slug => categorySlugs.add(slug));
+        }
+
+        categorySlugs.forEach(slug => {
             const schemaKey = CATEGORY_MAP[slug] || slug;
             const categoryItems = catalog[schemaKey] || [];
-            const formatted = categoryItems.map(item => this._formatItem(item, slug, vendorCategories));
-            const inventoryFormatted = categoryItems.map(item => formatInventoryItem(item, slug, vendorCategories));
+            if (categoryItems.length > 0 || vendorCategories.some(c => (c.slug || '').trim().toLowerCase() === slug)) {
+                const formatted = categoryItems.map(item => this._formatItem(item, slug, vendorCategories));
+                const inventoryFormatted = categoryItems.map(item => formatInventoryItem(item, slug, vendorCategories));
 
-            itemsByCategory[slug] = inventoryFormatted;
-            allItems.push(...formatted);
+                itemsByCategory[slug] = inventoryFormatted;
+                allItems.push(...formatted);
+            }
         });
 
         return { catalog, vendorCategories, itemsByCategory, allItems };
@@ -128,21 +155,7 @@ class PackageService {
 
     // Helper to format a single catalog item
     _formatItem(item, categorySlug, vendorCategories = []) {
-        const itemObj = item.toObject ? item.toObject() : item;
-        const category = vendorCategories.find(c => c.slug === categorySlug) || { name: categorySlug, _id: "" };
-        return {
-            id: itemObj._id,
-            title: itemObj.title,
-            slug: itemObj.slug,
-            isActive: itemObj.isActive,
-            availability: itemObj.availability || {},
-            pricing: itemObj.pricing || {},
-            location: itemObj.location || {},
-            photos: itemObj.photos?.[0] || "",
-            category_name: category.name || "",
-            category_slug: categorySlug,
-            category_id: category._id || ""
-        };
+        return vendorPackagePayload(item, categorySlug, vendorCategories);
     }
 
     // Add Item

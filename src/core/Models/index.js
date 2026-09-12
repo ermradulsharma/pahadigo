@@ -19,5 +19,6 @@ export { default as State } from './State.js';
 export { default as User } from './User.js';
 export { default as Vendor } from './Vendor.js';
 export { default as VendorDocument } from './VendorDocument.js';
+export { default as VendorClosure } from './VendorClosure.js';
 export { default as VerifiedIdentity } from './VerifiedIdentity.js';
 export { default as Wishlist } from './Wishlist.js';

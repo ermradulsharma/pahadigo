@@ -1,9 +1,8 @@
 import User from '@/core/Models/User.js';
-import Vendor from '@/core/Models/Vendor.js';
-import VendorClosure from '@/core/Models/VendorClosure.js';
-import { USER_ROLES } from '@/core/Constants/index.js';
+import { USER_ROLES, VENDOR_STATUS } from '@/core/Constants/index.js';
 import { addressPayload, getLocationPoint } from './addressHelper.js';
-import { businessDetailsFormat } from './businessHelper.js';
+import { businessDetailsFormat, businessAuthResponse, closurePayload } from './businessHelper.js';
+import { getBusinessBy } from './queryHelpers.js';
 
 /**
  * Formats a User model instance into a standard user profile payload structure.
@@ -11,9 +10,11 @@ import { businessDetailsFormat } from './businessHelper.js';
  * @returns {Object|null} Formatted user profile object or null
  */
 export function userPayload(u) {
-    if (!u || !u._id) return null;
+    if (!u) return null;
+    const userId = u._id ? u._id.toString() : (u.id ? String(u.id) : null);
+    if (!userId) return null;
     return {
-        id: u._id.toString(),
+        id: userId,
         name: u.name,
         email: u.email,
         phone: u.phone,
@@ -25,15 +26,9 @@ export function userPayload(u) {
         rating: u.rating,
         status: u.status,
         isVerified: u.isVerified,
-        ...(u.role === USER_ROLES.VENDOR ? {
-            experience: u.experience,
-            designation: u.designation,
-            bio: u.bio
-        } : {
-            emergencyContacts: u.emergencyContacts,
-            medicalConditions: u.medicalConditions,
-            bloodGroup: u.bloodGroup
-        })
+        experience: u.experience,
+        designation: u.designation,
+        bio: u.bio
     };
 }
 
@@ -43,9 +38,11 @@ export function userPayload(u) {
  * @returns {Object|null} Formatted user details object or null
  */
 export function userDetailsPayload(u) {
-    if (!u || !u._id) return null;
+    if (!u) return null;
+    const userId = u._id ? u._id.toString() : (u.id ? String(u.id) : null);
+    if (!userId) return null;
     return {
-        id: u._id.toString(),
+        id: userId,
         name: u.name,
         email: u.email,
         phone: u.phone,
@@ -84,13 +81,7 @@ export async function userBusinessProfileById(id) {
 
     let vendor = null;
     if (u.role === USER_ROLES.VENDOR) {
-        vendor = await Vendor.findOne({ user: u._id }).lean();
-        if (vendor) {
-            vendor.closurePeriods = await VendorClosure.find({
-                $or: [{ vendor: vendor._id }, { user: u._id }],
-                isActive: true
-            }).sort({ startDate: 1 }).lean();
-        }
+        vendor = await getBusinessBy({ user: u._id });
     }
     return userBusinessPayload(u, vendor);
 }
@@ -107,19 +98,22 @@ export function userBusinessPayload(u, vendor = null) {
     const businessDetails = businessDetailsFormat(vendor);
     return {
         ...baseUser,
-        businessDetails,
-        ...(vendor?.closurePeriods ? { closurePeriods: vendor.closurePeriods } : {})
+        businessDetails
     };
 }
 
 /**
  * Formats a User model or Auth result object into a standardized authentication response structure.
  * @param {Object} user - The User object
- * @returns {Object|null} Standardized user auth response object or null
+ * @returns {Promise<Object|null>} Standardized user auth response object or null
  */
-export function userAuthResponse(user) {
+export async function userAuthResponse(user) {
     const baseUser = userPayload(user);
     if (!baseUser) return null;
+
+    const business = await getBusinessBy({ user: baseUser.id });
+    const businessData = businessAuthResponse(business);
+    const businessProfileStatus = businessData ? businessData.profileStatus : (baseUser.role === USER_ROLES.TRAVELER ? null : VENDOR_STATUS.SET_PROFILE);
 
     return {
         ...baseUser,
@@ -129,8 +123,9 @@ export function userAuthResponse(user) {
         role: user.role,
         tempRole: user.preferences?.tempRole,
         tempExtraData: user.preferences?.tempExtraData,
-        bio: user.bio ?? baseUser.bio,
-        fcmToken: user.fcmToken
+        fcmToken: user.fcmToken,
+        businessProfileStatus,
+        businessProfile: businessData,
     };
 }
 

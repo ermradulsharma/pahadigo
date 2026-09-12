@@ -5,6 +5,7 @@ import PackageService from '@/core/Services/Traveller/PackageService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { paginateArray } from '@/core/Helpers/queryUtils.js';
 import Controller from '@/core/Controllers/Controller.js';
+import { getLocationPoint } from '@/core/Helpers/addressHelper';
 
 /**
  * TravellerController (Traveller Role) - Handles Wishlist, Search History, and preferences.
@@ -43,7 +44,10 @@ class TravellerController extends Controller {
             const limit = parseInt(url.searchParams.get('limit')) || 5;
 
             const wishlistEntries = await Wishlist.find({ user: req.user.id }).sort({ _id: -1 }).lean();
-            if (!wishlistEntries.length) return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.WISHLIST.EMPTY, paginateArray([], page, limit));
+            if (!wishlistEntries.length) {
+                const { items: emptyItems, pagination: emptyPagination } = paginateArray([], page, limit);
+                return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.WISHLIST.EMPTY, emptyItems, emptyPagination);
+            }
 
             const itemIds = wishlistEntries.map(e => e.itemId.toString());
             const packageItems = await PackageService.getMultiplePackageItems(itemIds);
@@ -61,15 +65,21 @@ class TravellerController extends Controller {
                     id: item.id,
                     title: item.title,
                     isActive: item.isActive,
-                    pricing: item.pricing || {},
-                    location: item.location || {},
-                    photos: item.photos?.[0] || "",
+                    pricing: {
+                        basePrice: item.pricing?.basePrice || 0,
+                        sellingPrice: item.pricing?.sellingPrice || 0,
+                        gst: item.pricing?.gst || 0
+                    },
+                    address: item.location?.address || '',
+                    location: getLocationPoint(item.location?.coordinates),
+                    image: item.photos?.[0].url || "",
                     category_name: category?.name || item.category_slug,
                     category_slug: item.category_slug
                 };
             }).filter(Boolean);
 
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.WISHLIST.FETCHED, paginateArray(items, page, limit));
+            const { items: paginatedItems, pagination } = paginateArray(items, page, limit);
+            return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.WISHLIST.FETCHED, paginatedItems, pagination);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
         }

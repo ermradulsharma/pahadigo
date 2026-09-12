@@ -1,10 +1,10 @@
 import { NextResponse } from 'next/server';
 
 /**
- * Next.js Edge Middleware
- * Intercepts EVERY single HTTP request (Pages & API endpoints) at the edge.
+ * Next.js Edge Proxy
+ * Intercepts HTTP requests (Pages & API endpoints) at the edge.
  */
-export function middleware(request) {
+export function proxy(request) {
     const response = NextResponse.next();
 
     // 1. Request ID Tracing (x-request-id)

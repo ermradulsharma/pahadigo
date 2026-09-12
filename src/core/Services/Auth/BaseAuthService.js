@@ -4,7 +4,7 @@ import Vendor from '@/core/Models/Vendor.js';
 import { verifyToken, generateToken, generateAuthTokens, decodeToken } from '@/core/Helpers/jwt.js';
 import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
 import CacheService from '@/core/Services/CacheService.js';
-import { userBusinessProfileById, userProfileById } from '@/core/Helpers/userProfileHelper.js';
+import { userAuthResponse, userBusinessProfileById, userProfileById } from '@/core/Helpers/userProfileHelper.js';
 
 class BaseAuthService {
     async generateAndSaveTokens(user, rememberMe = false) {
@@ -17,34 +17,26 @@ class BaseAuthService {
         return tokens;
     }
 
-    async verifyToken(token) {
-        const decoded = await verifyToken(token);
-        const user = await User.findById(decoded.id).select('-password').lean();
+    async verifyToken(userId) {
+        const user = await User.findById(userId).select('-password').lean();
         if (!user) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
-        let vendorData = {};
-        if (user.role === USER_ROLES.VENDOR) {
-            const businessProfile = await Vendor.findOne({ user: user._id }).lean();
-            vendorData = { businessProfile };
-        }
-        return { user, ...vendorData };
+        const result = await userAuthResponse(user);
+        return result;
     }
 
     async refreshToken(token) {
         const decoded = await verifyToken(token);
-        if (!decoded || decoded.type !== 'refresh' || !decoded.jti) {
-            throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
+        if (!decoded || decoded.type !== 'refresh' || !decoded.jti) throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
+        const cacheKey = `auth:refresh:${decoded.id}:${decoded.jti}`;
+        const isRedisAvailable = await CacheService.isAvailable();
+        if (isRedisAvailable) {
+            const isValid = await CacheService.get(cacheKey);
+            if (!isValid) throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
         }
 
-        const cacheKey = `auth:refresh:${decoded.id}:${decoded.jti}`;
-        const isValid = await CacheService.get(cacheKey);
-        if (!isValid) throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
-
         const user = { _id: decoded.id, role: decoded.role, email: decoded.email, phone: decoded.identifier };
-        const newTokens = await this.generateAndSaveTokens(user, true); // preserve long expiry on refresh
-
-        // Invalidate old refresh token (Token Rotation)
-        await CacheService.delete(cacheKey);
-
+        const newTokens = await this.generateAndSaveTokens(user, true);
+        if (isRedisAvailable) await CacheService.delete(cacheKey);
         return newTokens;
     }
 
@@ -113,7 +105,7 @@ class BaseAuthService {
         } catch (cacheError) {
             // Non-blocking cache flush error fallback
         }
-        return await userProfileById(userId);
+        return await userAuthResponse(user);
     }
 
     async deactivateUserAccount(userId, reason = DEFAULTS.NULL) {

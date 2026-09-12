@@ -1,3 +1,4 @@
+import mongoose from 'mongoose';
 import Booking from '@/core/Models/Booking.js';
 import NotificationService from '@/core/Services/General/NotificationService.js';
 import { BOOKING_STATUS, PAYMENT_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
@@ -14,39 +15,54 @@ class BookingService {
   async updatePaymentStatus(orderId, paymentId, signatureOrStatus) {
     if (!orderId || !paymentId) throw new Error('Order id and payment id are required.');
 
-    const booking = await Booking.findOne({ 'payment.orderId': orderId });
-    if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
+    const session = await mongoose.startSession();
+    let updatedBooking;
 
-    if (!booking.payment) booking.payment = {};
+    try {
+      await session.withTransaction(async () => {
+        const booking = await Booking.findOne({ 'payment.orderId': orderId }).session(session);
+        if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
 
-    const alreadyPaid = booking.paymentStatus === PAYMENT_STATUS.PAID || booking.paymentStatus === 'paid';
-    if (alreadyPaid) {
-      if (booking.payment.paymentId && booking.payment.paymentId !== paymentId) {
-        throw new Error('Payment order is already linked to a different payment.');
+        if (!booking.payment) booking.payment = {};
+
+        const alreadyPaid = booking.paymentStatus === PAYMENT_STATUS.PAID || booking.paymentStatus === 'paid';
+        if (alreadyPaid) {
+          if (booking.payment.paymentId && booking.payment.paymentId !== paymentId) {
+            throw new Error('Payment order is already linked to a different payment.');
+          }
+          updatedBooking = booking;
+          return;
+        }
+
+        booking.paymentStatus = PAYMENT_STATUS.PAID;
+        booking.status = BOOKING_STATUS.CONFIRMED;
+        booking.payment.paymentId = paymentId;
+        booking.payment.paidAt = new Date();
+
+        if (signatureOrStatus !== 'WEBHOOK_VERIFIED') {
+          booking.payment.signature = signatureOrStatus;
+        }
+
+        booking.timeline.push({
+          status: 'Payment Verified',
+          remarks: `Payment ID: ${paymentId}. Status updated to confirmed.`,
+          actor: 'SYSTEM'
+        });
+
+        await booking.save({ session });
+        updatedBooking = booking;
+      });
+
+      if (updatedBooking) {
+        NotificationService.notifyBookingStatus(updatedBooking._id, BOOKING_STATUS.CONFIRMED);
       }
-      return booking;
+
+      return updatedBooking;
+    } catch (error) {
+      throw error;
+    } finally {
+      session.endSession();
     }
-
-    booking.paymentStatus = PAYMENT_STATUS.PAID;
-    booking.status = BOOKING_STATUS.CONFIRMED;
-    booking.payment.paymentId = paymentId;
-    booking.payment.paidAt = new Date();
-
-    if (signatureOrStatus !== 'WEBHOOK_VERIFIED') {
-      booking.payment.signature = signatureOrStatus;
-    }
-
-    booking.timeline.push({
-      status: 'Payment Verified',
-      remarks: `Payment ID: ${paymentId}. Status updated to confirmed.`,
-      actor: 'SYSTEM'
-    });
-
-    await booking.save();
-
-    NotificationService.notifyBookingStatus(booking._id, BOOKING_STATUS.CONFIRMED);
-
-    return booking;
   }
 }
 

@@ -33,12 +33,17 @@ const VendorPackageSchema = new mongoose.Schema({
 // [PERFORMANCE] Compound Text Index for global search
 VendorPackageSchema.index({
     'homestay.title': 'text',
+    'homestay.location.city': 'text',
     'hotel.title': 'text',
+    'hotel.location.city': 'text',
     'camping.title': 'text',
+    'camping.location.city': 'text',
     'trekking.title': 'text',
+    'trekking.location.city': 'text',
     'rafting.title': 'text',
     'bungeeJumping.title': 'text',
     'vehicleRental.name': 'text',
+    'vehicleRental.location.city': 'text',
     'chardhamTour.title': 'text',
     'customTrip.title': 'text'
 }, {
@@ -46,7 +51,9 @@ VendorPackageSchema.index({
     weights: {
         'trekking.title': 10,
         'homestay.title': 5,
-        'hotel.title': 5
+        'hotel.title': 5,
+        'trekking.location.city': 8,
+        'homestay.location.city': 5
     }
 });
 

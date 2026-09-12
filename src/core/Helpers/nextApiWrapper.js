@@ -18,6 +18,7 @@ const REQUEST_ID_HEADER = 'x-request-id';
 
 const withRequestId = (response, requestId) => {
     response.headers.set(REQUEST_ID_HEADER, requestId);
+    response.headers.set('Cache-Control', 'no-store, no-cache, must-revalidate, proxy-revalidate');
     return response;
 };
 
@@ -41,9 +42,13 @@ export function createNextRouter(routes) {
     (Array.isArray(routes) ? routes : []).forEach(route => {
         const method = Array.isArray(route.method) ? route.method.map(m => m.toUpperCase()) : route.method.toUpperCase();
         let path = route.path.replace(/\/$/, '') || '/';
-        router.on(method, path, (req, res, params, store) => {
-            return { routeDef: route, params };
-        });
+        try {
+            router.on(method, path, (req, res, params, store) => {
+                return { routeDef: route, params };
+            });
+        } catch (err) {
+            logError(`Route registration skipped for ${method} ${path}`, err);
+        }
     });
 
     return async function handler(req, { params }) {

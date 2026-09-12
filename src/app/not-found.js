@@ -12,12 +12,7 @@ export default function NotFound() {
                 <div className="flex flex-col-reverse lg:flex-row items-center justify-between gap-12 lg:gap-8 py-16 lg:py-24">
 
                     {/* Text Content */}
-                    <motion.div
-                        initial={{ opacity: 0, x: -30 }}
-                        animate={{ opacity: 1, x: 0 }}
-                        transition={{ duration: 0.6 }}
-                        className="w-full lg:w-1/2 space-y-8 text-center lg:text-left"
-                    >
+                    <motion.div initial={{ opacity: 0, x: -30 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.6 }} className="w-full lg:w-1/2 space-y-8 text-center lg:text-left">
                         <div className="inline-flex items-center space-x-2 bg-primary-50 text-primary-600 px-4 py-2 rounded-full font-medium text-sm">
                             <Compass className="w-4 h-4" />
                             <span>Error 404</span>

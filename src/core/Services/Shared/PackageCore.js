@@ -4,7 +4,7 @@ import { CATEGORY_MAP } from '@/core/Constants/categories.js';
 import MasterService from '@/core/Services/MasterService.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { getPackageItemById } from '@/core/Helpers/queryHelpers.js';
-import { businessPayload } from '@/core/Helpers/index.js';
+import { businessPayload, itemBusinessPayload, vendorPackageItem } from '@/core/Helpers/index.js';
 
 /**
  * Shared core logic to retrieve an available package item with populated business & compliance checks.
@@ -31,11 +31,11 @@ export async function getItemDetailsPayload(itemId, masterService = MasterServic
     if (item.pricing) item.pricing.serviceTax = config.tax?.service_tax || 0;
 
     if (pkg.vendor) {
-        const businessObj = businessPayload(pkg.vendor);
+        const businessObj = itemBusinessPayload(pkg.vendor);
         item.business = businessObj;
     }
 
-    return item;
+    return vendorPackageItem(item);
 }
 
 export default {

@@ -56,12 +56,34 @@ class NotificationService {
     }
 
     /**
-     * Send SMS via MSG91/Twilio (Placeholder logic)
+     * Send SMS via MSG91 REST API with graceful fallback to logger
      */
     async sendSMS(phone, message) {
         try {
-            // Implement SMS Gateway logic here (e.g., MSG91, Twilio)
-            getLogger().info({ phone }, `[SMS SENT]: ${message}`);
+            const config = await getAppConfig();
+            const authKey = config?.secrets?.msg91_auth_key || process.env.MSG91_AUTH_KEY;
+            const templateId = config?.secrets?.msg91_template_id || process.env.MSG91_TEMPLATE_ID;
+
+            if (authKey && phone) {
+                const formattedPhone = phone.replace(/^\+/, '');
+                const response = await fetch('https://control.msg91.com/api/v5/flow/', {
+                    method: 'POST',
+                    headers: {
+                        'authkey': authKey,
+                        'content-type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        template_id: templateId || 'default',
+                        short_url: '0',
+                        recipients: [{ mobiles: formattedPhone, message }]
+                    })
+                });
+                const data = await response.json();
+                getLogger().info({ phone, status: response.status, data }, `[MSG91 SMS SENT]: ${message}`);
+                return response.ok;
+            }
+
+            getLogger().info({ phone }, `[SMS MOCK SENT]: ${message}`);
             return true;
         } catch (error) {
             getLogger().error({ err: error, phone }, "[NotificationService] sendSMS Error");
@@ -348,6 +370,24 @@ class NotificationService {
 
     async notifyDocumentVerification(vendorId, field, isVerified) {
         return true;
+    }
+
+    /**
+     * Send emergency SOS alerts to all registered emergency contacts via SMS & Push
+     */
+    async notifyEmergency(user, alert) {
+        try {
+            if (!user) return false;
+            const userName = user.name || user.email || 'A user';
+            const locationStr = alert?.location?.address ? alert.location.address : (alert?.location?.latitude && alert?.location?.longitude ? `Lat: ${alert.location.latitude}, Long: ${alert.location.longitude}` : 'Unknown Location');
+            const message = `EMERGENCY ALERT! ${userName} has triggered an SOS alert on PahadiGo. Location: ${locationStr}. Please check on them immediately.`;
+            const contacts = Array.isArray(user.emergencyContacts) ? user.emergencyContacts : [];
+            for (const contact of contacts) if (contact?.phone) await this.sendSMS(contact.phone, message);
+            if (user.fcmToken) await enqueuePushNotification(user.fcmToken, { title: 'SOS Emergency Alert Triggered', body: `Your SOS alert was broadcasted to your emergency contacts.` }, { alertId: String(alert._id || alert.id), type: 'sos_alert' });
+            return true;
+        } catch (error) {
+            return false;
+        }
     }
 
     async sendInvoice(email, bookingId, role = 'traveller') {

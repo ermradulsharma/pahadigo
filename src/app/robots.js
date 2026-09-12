@@ -10,8 +10,8 @@ export default function robots() {
             },
             {
                 userAgent: 'GPTBot',
-                allow: ['/', '/packages', '/destinations', '/faq', '/blog', '/llms.txt', '/llms-full.txt'],
-                disallow: ['/admin/', '/api/'],
+                allow: ['/', '/packages', '/destinations', '/faq', '/blog', '/llms.txt', '/llms-full.txt', '/api/v1/raw-markdown'],
+                disallow: ['/admin/'],
             },
             {
                 userAgent: 'ChatGPT-User',

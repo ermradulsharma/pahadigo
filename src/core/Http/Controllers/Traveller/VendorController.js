@@ -24,22 +24,7 @@ class VendorController extends Controller {
         }
     }
 
-    // GET /traveller/profile/vendor/:businessId
-    async getBusinessProfile(req, { params }) {
-        try {
-            const business = await getBusinessById(params.businessId, '', { path: 'user' });
-            if (!business) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-            const packages = await getPackageBy({ vendor: params.businessId }) || {};
-            const items = itemsFormate(packages);
-            const responseData = {
-                ...businessPayload(business),
-                items
-            };
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, responseData);
-        } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
-        }
-    }
+
 
 }
 

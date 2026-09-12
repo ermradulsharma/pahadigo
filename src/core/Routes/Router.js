@@ -15,34 +15,19 @@ class Router {
     static group(options, children) {
         const { prefix = '', middleware = [], roles = [] } = options;
         let childRoutes = typeof children === 'function' ? children() : children;
-
-        // Ensure childRoutes is an array
-        if (!Array.isArray(childRoutes)) {
-            childRoutes = [childRoutes];
-        }
-
+        if (!Array.isArray(childRoutes)) childRoutes = [childRoutes];
         return childRoutes.map(route => {
-            // Handle nested groups (which are already arrays)
-            if (Array.isArray(route)) {
-                return Router.group(options, route);
-            }
-
+            if (Array.isArray(route)) return Router.group(options, route);
             const newPath = (prefix + (route.path || '')).replace(/\/+/g, '/') || '/';
             const newMiddleware = [...middleware, ...(route.middleware || [])];
             const newRoles = [...roles, ...(route.roles || [])];
-
             const finalRoute = {
                 ...route,
                 path: newPath,
                 middleware: newMiddleware.length > 0 ? [...new Set(newMiddleware)] : undefined,
                 roles: newRoles.length > 0 ? [...new Set(newRoles)] : undefined
             };
-
-            // Handle multiple methods (match/any pattern expansion)
-            if (Array.isArray(finalRoute.method)) {
-                return finalRoute.method.map(m => ({ ...finalRoute, method: m }));
-            }
-
+            if (Array.isArray(finalRoute.method)) return finalRoute.method.map(m => ({ ...finalRoute, method: m }));
             return finalRoute;
         }).flat(Infinity);
     }

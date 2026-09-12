@@ -1,4 +1,4 @@
-import Category from '@/core/Models/Category.js';
+import { getCategoriesBy, getCategoryById } from '@/core/Helpers/queryHelpers.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 
 /**
@@ -7,19 +7,15 @@ import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
  */
 class CategoryService {
 
-  async getAllCategories() {
-    return await Category.find({ isActive: true }).sort({ id: 1 }).lean();
-  }
+    async getAllCategories() {
+        return await getCategoriesBy({ isActive: true }, '', null, { sequence: 1 });
+    }
 
-  async getCategoryById(id) {
-    const category = await Category.findById(id).lean();
-    if (!category) throw new Error(RESPONSE_MESSAGES.CATEGORY.NOT_FOUND);
-    return category;
-  }
-
-  async getCategoryBySlug(slug) {
-    return await Category.findOne({ slug: slug.toLowerCase() }).lean();
-  }
+    async getCategoryById(id) {
+        const category = await getCategoryById(id);
+        if (!category) throw new Error(RESPONSE_MESSAGES.CATEGORY.NOT_FOUND);
+        return category;
+    }
 }
 
 export default new CategoryService();

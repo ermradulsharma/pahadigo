@@ -2,10 +2,10 @@ import PackageService from '@/core/Services/General/PackageService.js';
 import SearchLog from '@/core/Models/SearchLog.js';
 import Category from '@/core/Models/Category.js';
 import Wishlist from '@/core/Models/Wishlist.js';
-import Review from '@/core/Models/Review.js';
 import { CATEGORY_MAP } from '@/core/Constants/categories.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { paginateArray } from '@/core/Helpers/queryUtils.js';
+import { getReviewsByItemId } from '@/core/Helpers/queryHelpers.js';
 import Controller from '@/core/Controllers/Controller.js';
 import { formatPackageItem } from '@/core/Helpers/package.js';
 
@@ -14,16 +14,23 @@ import { formatPackageItem } from '@/core/Helpers/package.js';
  */
 class PackageController extends Controller {
 
+    // Helper: Parse pagination & common URL params (DRY)
+    _parsePagination(urlStr) {
+        const url = new URL(urlStr);
+        const page = parseInt(url.searchParams.get('page')) || 1;
+        const limit = url.searchParams.get('limit') === 'all' ? 0 : parseInt(url.searchParams.get('limit')) || 10;
+        return { url, page, limit };
+    }
+
     // GET /packages (Public)
     async browsePackages(req) {
         try {
-            const url = new URL(req.url);
+            console.log('xxxxxxxxxxxxxxxxxxxxxx')
+            const { url, page, limit } = this._parsePagination(req.url);
             const query = url.searchParams.get('q') || '';
             const minPrice = parseInt(url.searchParams.get('minPrice')) || 0;
             const maxPrice = url.searchParams.has('maxPrice') ? parseInt(url.searchParams.get('maxPrice')) : null;
             const sort = url.searchParams.get('sort') || '';
-            const page = parseInt(url.searchParams.get('page')) || 1;
-            const limit = url.searchParams.get('limit') === 'all' ? 0 : parseInt(url.searchParams.get('limit')) || 10;
             const isFlat = url.searchParams.get('format') === 'flat';
 
             const packages = await PackageService.getAvailablePackagesByCategory(query, minPrice, maxPrice, sort);
@@ -32,19 +39,13 @@ class PackageController extends Controller {
             let totalCount = 0;
 
             if (isFlat) {
-                let allItems = [];
-                for (const items of Object.values(packages)) {
-                    if (Array.isArray(items)) {
-                        allItems = allItems.concat(items);
-                    }
-                }
+                const allItems = Object.values(packages).filter(Array.isArray).flat();
                 this._sortItems(allItems, sort);
                 totalCount = allItems.length;
                 const formattedItems = allItems.map(item => formatPackageItem(item, wishlistMap));
 
                 if (query) await this._logSearch(query, req.user, totalCount);
-                const paginatedData = paginateArray(formattedItems, page, limit);
-                return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, paginatedData);
+                return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, paginateArray(formattedItems, page, limit));
             }
 
             const categoryData = {};
@@ -78,27 +79,10 @@ class PackageController extends Controller {
                     wishlistId = wishlisted._id.toString();
                 }
             }
-
-            const reviews = await Review.find({ package: item.catalogId, isVisible: true })
-                .populate({ path: 'booking', match: { 'item.itemId': params.id } })
-                .populate('user', 'name profileImage')
-                .lean();
-
-            const itemReviews = reviews.filter(r => r.booking != null)
-                .map(r => ({
-                    id: r._id,
-                    rating: r.rating,
-                    comment: r.comment,
-                    reply: r.reply,
-                    createdAt: r.createdAt,
-                    user: r.user ? { name: r.user.name, avatar: r.user.profileImage } : null
-                }));
-
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, {
                 ...item,
                 wishlist: isWishlisted,
-                wishlistId,
-                reviews: itemReviews
+                wishlistId
             });
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
@@ -107,10 +91,8 @@ class PackageController extends Controller {
 
     async searchNearby(req) {
         try {
-            const url = new URL(req.url);
+            const { url, page, limit } = this._parsePagination(req.url);
             const { lat, lng, category, radius } = Object.fromEntries(url.searchParams.entries());
-            const page = parseInt(url.searchParams.get('page')) || 1;
-            const limit = url.searchParams.get('limit') === 'all' ? 0 : parseInt(url.searchParams.get('limit')) || 10;
 
             const rawResults = await PackageService.searchPackages(lat, lng, category, radius || 50);
             const wishlistMap = await this._getWishlistMap(req.user?.id);

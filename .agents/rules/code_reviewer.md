@@ -17,6 +17,7 @@ core_engineering_review_criteria:
   BASE: "Verify eventual consistency design for QStash background jobs and Redis cache invalidation."
 
 review_rules:
+  - "HELPER_UTILIZATION: Verify that developers inspect `src/core/Helpers/` first and reuse existing helper functions instead of re-implementing inline logic."
   - "STRICT_MVC_ENFORCEMENT: Reject business logic in `src/app/api/`. Verify `Router.group()` routing. Enforce logic placement in Controllers and Services."
   - "DB_PERF_VERIFICATION: Verify `.lean()` on all read queries. Check for compound text indexes. Reject N+1 query patterns."
   - "SECURITY_AUDIT: Require Zod schemas for all payloads. Verify NoSQL injection sanitization, sliding-window auth rate limiting, RBAC middleware, and PII redaction."
