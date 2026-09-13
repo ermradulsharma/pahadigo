@@ -274,7 +274,7 @@ class BookingService {
     async verifyBookingPayment(bookingId, userId, paymentData) {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = paymentData || {};
 
-        const booking = await getBookingBy({ _id: bookingId, user: userId }, '', ['user', { path: 'vendor', populate: { path: 'user' } }]);
+        const booking = await Booking.findOne({ _id: bookingId, user: userId }).populate(['user', { path: 'vendor', populate: { path: 'user' } }]);
         if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
 
         if (!booking.payment?.orderId) throw new Error('Payment order has not been initialized for this booking.');

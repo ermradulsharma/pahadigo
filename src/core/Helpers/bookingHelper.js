@@ -1,4 +1,4 @@
-import { businessPayload, userPayload } from './index.js';
+import { businessPayload, getBusinessDetailsForBooking, userPayload } from './index.js';
 
 /**
  * Booking Payload Formatting Helpers
@@ -32,7 +32,7 @@ export const bookingPayload = (b, options = {}) => {
     }
 
     if (includeBusiness && b.vendor) {
-        res.business = typeof b.vendor === 'object' && b.vendor !== null ? businessPayload(b.vendor) : b.vendor;
+        res.business = typeof b.vendor === 'object' && b.vendor !== null ? getBusinessDetailsForBooking(b.vendor) : b.vendor;
     }
 
     if (b.payment?.orderId || b.payment?.paymentId) {

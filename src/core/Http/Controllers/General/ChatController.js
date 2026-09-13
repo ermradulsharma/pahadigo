@@ -1,6 +1,7 @@
 import Conversation from '@/core/Models/Conversation.js';
 import ChatMessage from '@/core/Models/ChatMessage.js';
 import Booking from '@/core/Models/Booking.js';
+import Vendor from '@/core/Models/Vendor.js';
 import { successResponse, errorResponse } from '@/core/Helpers/response.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { EventEmitter } from 'events';
@@ -20,10 +21,29 @@ const activeSSEUsers = new Set();
 const formatConversation = (conv) => {
     if (!conv) return null;
     const c = typeof conv.toObject === 'function' ? conv.toObject() : { ...conv };
-    if (c.traveller && typeof c.traveller === 'object') c.traveller = userPayload(c.traveller);
-    if (c.vendor && typeof c.vendor === 'object') c.vendor = userPayload(c.vendor);
-    if (c.admin && typeof c.admin === 'object') c.admin = userPayload(c.admin);
-    return c;
+
+    const traveller = {
+        id: c.traveller._id,
+        name: c.traveller.name,
+        profileImage: c.traveller.profileImage
+    }
+    const vendor = {
+        id: c.vendor._id,
+        name: c.vendor.name,
+        profileImage: c.vendor.profileImage
+    };
+
+    return {
+        id: c.id,
+        bookingId: c.bookingId._id,
+        bookingCode: c.bookingId.bookingCode,
+        type: c.type,
+        traveller,
+        vendor,
+        lastMessage: c.lastMessage,
+        lastMessageAt: c.lastMessageAt,
+        unreadCount: c.unreadCount
+    };
 };
 
 class ChatController {
@@ -157,7 +177,7 @@ class ChatController {
             const formattedConversation = formatConversation(conversation);
 
             return successResponse(HTTP_STATUS.OK, 'Messages fetched successfully.', {
-                conversation: formattedConversation,
+                ...formattedConversation,
                 messages: formattedMessages
             });
         } catch (error) {

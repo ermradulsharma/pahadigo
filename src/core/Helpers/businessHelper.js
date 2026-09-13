@@ -75,6 +75,8 @@ export function itemBusinessPayload(vendor) {
         businessNumber: vendor.businessNumber,
         address: addressPayload(vendor.address),
         location: getLocationPoint(vendor.address),
+        trustBadge: vendor.trustBadge,
+        isOperating: vendor.isOperating,
         profileImage: vendor.profileImage
     };
 }
@@ -96,6 +98,21 @@ export function businessAuthResponse(vendor) {
         isOperating: vendor.isOperating,
         status: vendor.status,
         profileStatus
+    };
+}
+
+export function getBusinessDetailsForBooking(vendor) {
+    if (!vendor) return null;
+    return {
+        id: vendor._id.toString(),
+        ownerName: vendor.ownerName,
+        businessName: vendor.businessName,
+        businessNumber: vendor.businessNumber,
+        address: addressPayload(vendor.address),
+        location: getLocationPoint(vendor.address),
+        profileImage: vendor.profileImage,
+        trustBadge: vendor.trustBadge,
+        isOperating: vendor.isOperating,
     };
 }
 

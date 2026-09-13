@@ -267,3 +267,141 @@
             "totalPages": 1
         }
     }
+
+# Endpoint: /traveller/booking/6a877498815144980a7cb320
+```
+{
+    "success": true,
+    "message": "Booking details retrieved.",
+    "data": {
+        "bookingId": "6a877498815144980a7cb320",
+        "bookingCode": "PH-20260820-D433B6A5",
+        "status": "completed",
+        "paymentStatus": "paid",
+        "item": {
+            "itemId": "6a6aea00db29c8df826558f4",
+            "itemType": "hotel",
+            "title": "Paradise viasta",
+            "url": "https://res.cloudinary.com/duau4vns4/image/upload/v1785391614/pahadigo/packages/6a6659ba633d69ead79fc72a/hotel/qv9inn1hapfdph5ngqnv.webp"
+        },
+
+        "startDate": "2026-09-01T00:00:00.000Z",
+        "endDate": "2026-09-02T00:00:00.000Z",
+
+        "occupancy": {
+            "adults": 4,
+            "children": 4,
+            "includeMe": true,
+            "units": 2,
+            "guestDetails": [
+                {
+                    "name": "Maikel jack",
+                    "phone": "7017523896"
+                }
+            ]
+        },
+
+        "pricing": {
+            "basePrice": 2500,
+            "subTotal": 5000,
+            "serviceFee": 531,
+            "discount": 500,
+            "coupon": null,
+            "couponAmount": 0,
+            "taxRate": 18,
+            "tax": 810,
+            "total": 5841,
+            "currency": "INR"
+        },
+
+        "business": {
+            "id": "6a6659ba633d69ead79fc72a",
+            "ownerName": "Gaurav",
+            "businessName": "PahadiGo Travel",
+            "businessNumber": "9536489063",
+            "trustBadge": "verified",
+            "isOperating": true,
+            "status": "active",
+            "address": "4F4F+9R5, dogi, Uttarakhand",
+            "location": {
+                "address": "4F4F+9R5, dogi, Uttarakhand",
+                "latitude": "30.1054778",
+                "longitude": "78.4748076"
+            },
+            "profileImage": "https://res.cloudinary.com/duau4vns4/image/upload/v1785092537/pahadigo/vendor_profiles/6a66589e633d69ead79fc728/suhnmbnjmr4hrvitt0iu.webp"
+        },
+
+        "verification": {
+            "startOTP": "660274",
+            "isStartVerified": false,
+            "endOTP": "501051",
+            "isEndVerified": false
+        }
+    }
+}
+```
+
+# Endpoint: /traveller/booking 
+```
+{
+    "success": true,
+    "message": "Historical reservation records retrieved.",
+    "data": [
+        {
+            "bookingId": "6a877498815144980a7cb320",
+            "bookingCode": "PH-20260820-D433B6A5",
+            "status": "completed",
+            "paymentStatus": "paid",
+            "item": {
+                "itemId": "6a6aea00db29c8df826558f4",
+                "itemType": "hotel",
+                "title": "Paradise viasta",
+                "image": "https://res.cloudinary.com/duau4vns4/image/upload/v1785391614/pahadigo/packages/6a6659ba633d69ead79fc72a/hotel/qv9inn1hapfdph5ngqnv.webp"
+            },
+            "startDate": "2026-09-01T00:00:00.000Z",
+            "endDate": "2026-09-02T00:00:00.000Z",
+            "occupancy": {
+                "adults": 4,
+                "children": 4,
+                "units": 2
+            },
+            "pricing": {
+                "basePrice": 2500,
+                "subTotal": 5000,
+                "discount": 500,
+                "tax": 810,
+                "total": 5841,
+                "currency": "INR"
+            }
+        }
+    ]
+}
+```
+# Endpoint: /traveller/chat/conversations
+```
+{
+    "success": true,
+    "message": "Conversations fetched successfully.",
+    "data": [
+        {
+            "id": "",
+            "bookingId": "",
+            "bookingCode": "",
+            "type": "",
+            "traveller": {
+                "id": "",
+                "name": "",
+                "profileImage": ""
+            },
+            "vendor": {
+                "id": "",
+                "name": "",
+                "profileImage": ""
+            },
+            "lastMessage": "",
+            "lastMessageAt": "",
+            "unreadCount": 0
+        }
+    ]
+}
+```

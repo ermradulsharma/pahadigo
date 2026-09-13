@@ -4,9 +4,6 @@ import Router from '@/core/Routes/Router.js';
 import { wrap } from '@/core/Routes/helpers.js';
 
 export default [
-    // Emergency SOS Trigger
-    { method: 'POST', path: '/sos', handler: wrap(() => SOSController, 'triggerSOS') },
-
     // Chat / Conversations Hub
     ...Router.group({ prefix: '/chat' }, [
         { method: 'GET', path: '/stream', handler: wrap(() => ChatController, 'getStream') },
