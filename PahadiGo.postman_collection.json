@@ -17832,8 +17832,8 @@
                       "script": {
                         "exec": [
                           "const responseData = pm.response.json();\r",
-                          "if (responseData && responseData.success && responseData.data && responseData.data.id) {\r",
-                          "    const bookingId = responseData.data.id;\r",
+                          "if (responseData && responseData.success && responseData.data && responseData.data.bookingId) {\r",
+                          "    const bookingId = responseData.data.bookingId;\r",
                           "    const bookingCode = responseData.data.bookingCode;\r",
                           "    pm.collectionVariables.set(\"booking_id\", bookingId);\r",
                           "    if (bookingCode) {\r",

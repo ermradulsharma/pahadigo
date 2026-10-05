@@ -252,16 +252,16 @@ export function formatPackageItem(item, wishlistMap = new Map(), reviews = []) {
     const { itemObj, id, title, pricing, address, location, image, rating, reviews: reviewList } = base;
     const isWishlisted = id ? wishlistMap.has(id) : false;
     const categoryId = (itemObj.categoryId || itemObj.category_id || itemObj.catalogId)?.toString() || '';
-
+    console.log(itemObj)
     return {
         id,
         title,
-        categoryName: itemObj.categoryName || itemObj.category || '',
+        categoryName: itemObj.categoryName || itemObj.category || itemObj.category_name || '',
         categoryId,
         pricing,
         address,
         location,
-        image,
+        image: itemObj.photos?.url || '',
         rating,
         reviews: reviewList,
         wishlist: isWishlisted

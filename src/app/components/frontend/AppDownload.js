@@ -94,7 +94,7 @@ export default function AppDownload() {
                                     {/* Card 1 */}
                                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group">
                                         <div className="h-32 relative">
-                                            <Image src="/img/category/trekking.png" fill sizes="250px" className="object-cover" alt="Trekking" />
+                                            <Image src="/img/category/trekking.png" fill sizes="250px" className="object-cover" alt="Trekking" loading="eager" />
                                             <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold text-gray-900 flex items-center shadow-sm">
                                                 <Star className="w-3 h-3 mr-1 text-yellow-500 fill-yellow-500" /> 4.9
                                             </div>
@@ -115,7 +115,7 @@ export default function AppDownload() {
                                     {/* Card 2 */}
                                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group">
                                         <div className="h-32 relative">
-                                            <Image src="/img/category/camping.png" fill sizes="250px" className="object-cover" alt="Camping" />
+                                            <Image src="/img/category/camping.png" fill sizes="250px" className="object-cover" alt="Camping" loading="eager" />
                                             <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold text-gray-900 flex items-center shadow-sm">
                                                 <Star className="w-3 h-3 mr-1 text-yellow-500 fill-yellow-500" /> 4.8
                                             </div>
@@ -133,7 +133,7 @@ export default function AppDownload() {
                                     {/* Card 3 */}
                                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group">
                                         <div className="h-32 relative">
-                                            <Image src="/img/category/rafting.png" fill sizes="250px" className="object-cover" alt="Rafting" />
+                                            <Image src="/img/category/rafting.png" fill sizes="250px" className="object-cover" alt="Rafting" loading="eager" />
                                             <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold text-gray-900 flex items-center shadow-sm">
                                                 <Star className="w-3 h-3 mr-1 text-yellow-500 fill-yellow-500" /> 4.7
                                             </div>
@@ -151,7 +151,7 @@ export default function AppDownload() {
                                     {/* Card 4 */}
                                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group">
                                         <div className="h-32 relative">
-                                            <Image src="/img/category/homestay.png" fill sizes="250px" className="object-cover" alt="Homestay" />
+                                            <Image src="/img/category/homestay.png" fill sizes="250px" className="object-cover" alt="Homestay" loading="eager" />
                                             <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold text-gray-900 flex items-center shadow-sm">
                                                 <Star className="w-3 h-3 mr-1 text-yellow-500 fill-yellow-500" /> 4.9
                                             </div>
@@ -169,7 +169,7 @@ export default function AppDownload() {
                                     {/* Card 5 */}
                                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group">
                                         <div className="h-32 relative">
-                                            <Image src="/img/category/paragliding.png" fill sizes="250px" className="object-cover" alt="Paragliding" />
+                                            <Image src="/img/category/paragliding.png" fill sizes="250px" className="object-cover" alt="Paragliding" loading="eager" />
                                             <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold text-gray-900 flex items-center shadow-sm">
                                                 <Star className="w-3 h-3 mr-1 text-yellow-500 fill-yellow-500" /> 4.9
                                             </div>
@@ -187,7 +187,7 @@ export default function AppDownload() {
                                     {/* Card 6 */}
                                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group">
                                         <div className="h-32 relative">
-                                            <Image src="/img/category/hotel.png" fill sizes="250px" className="object-cover" alt="Hotel" />
+                                            <Image src="/img/category/hotel.png" fill sizes="250px" className="object-cover" alt="Hotel" loading="eager" />
                                             <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold text-gray-900 flex items-center shadow-sm">
                                                 <Star className="w-3 h-3 mr-1 text-yellow-500 fill-yellow-500" /> 4.8
                                             </div>
@@ -205,7 +205,7 @@ export default function AppDownload() {
                                     {/* Card 7 */}
                                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group">
                                         <div className="h-32 relative">
-                                            <Image src="/img/category/bungee-jumping.png" fill sizes="250px" className="object-cover" alt="Bungee Jumping" />
+                                            <Image src="/img/category/bungee-jumping.png" fill sizes="250px" className="object-cover" alt="Bungee Jumping" loading="eager" />
                                             <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold text-gray-900 flex items-center shadow-sm">
                                                 <Star className="w-3 h-3 mr-1 text-yellow-500 fill-yellow-500" /> 4.9
                                             </div>
@@ -223,7 +223,7 @@ export default function AppDownload() {
                                     {/* Card 8 */}
                                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group">
                                         <div className="h-32 relative">
-                                            <Image src="/img/category/vehicle-rental.png" fill sizes="250px" className="object-cover" alt="Vehicle Rental" />
+                                            <Image src="/img/category/vehicle-rental.png" fill sizes="250px" className="object-cover" alt="Vehicle Rental" loading="eager" />
                                             <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold text-gray-900 flex items-center shadow-sm">
                                                 <Star className="w-3 h-3 mr-1 text-yellow-500 fill-yellow-500" /> 4.7
                                             </div>
@@ -241,7 +241,7 @@ export default function AppDownload() {
                                     {/* Card 9 */}
                                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group">
                                         <div className="h-32 relative">
-                                            <Image src="/img/category/chardham-yatra.png" fill sizes="250px" className="object-cover" alt="Char Dham Yatra" />
+                                            <Image src="/img/category/chardham-yatra.png" fill sizes="250px" className="object-cover" alt="Char Dham Yatra" loading="eager" />
                                             <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold text-gray-900 flex items-center shadow-sm">
                                                 <Star className="w-3 h-3 mr-1 text-yellow-500 fill-yellow-500" /> 5.0
                                             </div>
@@ -259,7 +259,7 @@ export default function AppDownload() {
                                     {/* Card 10 */}
                                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group">
                                         <div className="h-32 relative">
-                                            <Image src="/img/category/skiing.png" fill sizes="250px" className="object-cover" alt="Skiing" />
+                                            <Image src="/img/category/skiing.png" fill sizes="250px" className="object-cover" alt="Skiing" loading="eager" />
                                             <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold text-gray-900 flex items-center shadow-sm">
                                                 <Star className="w-3 h-3 mr-1 text-yellow-500 fill-yellow-500" /> 4.8
                                             </div>
@@ -277,7 +277,7 @@ export default function AppDownload() {
                                     {/* Card 11 */}
                                     <div className="bg-white rounded-2xl shadow-sm border border-gray-100 overflow-hidden relative group">
                                         <div className="h-32 relative">
-                                            <Image src="/img/category/custom-trip.png" fill sizes="250px" className="object-cover" alt="Custom Trip" />
+                                            <Image src="/img/category/custom-trip.png" fill sizes="250px" className="object-cover" alt="Custom Trip" loading="eager" />
                                             <div className="absolute top-2 left-2 bg-white/90 backdrop-blur-sm px-2 py-1 rounded-lg text-[10px] font-bold text-gray-900 flex items-center shadow-sm">
                                                 <Star className="w-3 h-3 mr-1 text-yellow-500 fill-yellow-500" /> 5.0
                                             </div>

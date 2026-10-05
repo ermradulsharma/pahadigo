@@ -1,5 +1,4 @@
 import { v2 as cloudinary } from 'cloudinary';
-import sharp from 'sharp';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { withRetry } from '@/core/Helpers/resilience.js';
@@ -21,8 +20,15 @@ export const uploadToCloudinary = async (file, folder = 'general') => {
         let mimeType = file.type;
 
         if (mimeType.startsWith('image/')) {
-            buffer = await sharp(buffer).resize({ width: 1920, height: 1920, fit: 'inside', withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
-            mimeType = 'image/webp';
+            try {
+                const sharpModule = await import('sharp');
+                const sharp = sharpModule.default || sharpModule;
+                buffer = await sharp(buffer).resize({ width: 1920, height: 1920, fit: 'inside', withoutEnlargement: true }).webp({ quality: 80 }).toBuffer();
+                mimeType = 'image/webp';
+            } catch (sharpError) {
+                // If sharp binary is blocked by Windows AppLocker/Security, fallback gracefully to uploading original buffer
+                console.warn('[Cloudinary Helper] Sharp module unavailable, skipping pre-compression:', sharpError.message);
+            }
         }
 
         const base64Image = `data:${mimeType};base64,${buffer.toString('base64')}`;
