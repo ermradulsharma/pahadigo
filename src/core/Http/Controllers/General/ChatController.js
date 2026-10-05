@@ -5,7 +5,7 @@ import Vendor from '@/core/Models/Vendor.js';
 import { successResponse, errorResponse } from '@/core/Helpers/response.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { EventEmitter } from 'events';
-import { getBookingById, getUserById } from '@/core/Helpers/queryHelpers.js';
+import { getBookingById, getBusinessById, getUserById } from '@/core/Helpers/queryHelpers.js';
 import { userPayload } from '@/core/Helpers/userProfileHelper.js';
 import User from '@/core/Models/User.js';
 import { PushNotificationService } from '@/core/Services/PushNotificationService.js';
@@ -18,10 +18,10 @@ chatEmitter.setMaxListeners(0);
 // Track active users listening to the chat SSE stream
 const activeSSEUsers = new Set();
 
-const formatConversation = (conv) => {
+const formatConversation = async (conv) => {
     if (!conv) return null;
     const c = typeof conv.toObject === 'function' ? conv.toObject() : { ...conv };
-
+    const vendorObj = await getBusinessById(c.vendor.vendorProfile)
     const traveller = {
         id: c.traveller._id,
         name: c.traveller.name,
@@ -30,7 +30,7 @@ const formatConversation = (conv) => {
     const vendor = {
         id: c.vendor._id,
         name: c.vendor.name,
-        profileImage: c.vendor.profileImage
+        profileImage: c.vendor.profileImage ? c.vendor.profileImage : vendorObj?.profileImage,
     };
 
     return {
