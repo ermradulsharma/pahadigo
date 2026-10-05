@@ -372,7 +372,7 @@ class BookingService {
                 if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
 
                 booking.status = BOOKING_STATUS.CANCELLED;
-                booking.paymentStatus = PAYMENT_STATUS.REFUND_PENDING;
+                booking.paymentStatus = booking.paymentStatus === PAYMENT_STATUS.UNPAID ? PAYMENT_STATUS.CANCELLED : PAYMENT_STATUS.REFUND_PENDING;
 
                 booking.cancellation = {
                     reason: req?.body?.reason || 'Cancelled by User',
