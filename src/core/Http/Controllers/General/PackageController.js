@@ -25,7 +25,6 @@ class PackageController extends Controller {
     // GET /packages (Public)
     async browsePackages(req) {
         try {
-            console.log('xxxxxxxxxxxxxxxxxxxxxx')
             const { url, page, limit } = this._parsePagination(req.url);
             const query = url.searchParams.get('q') || '';
             const minPrice = parseInt(url.searchParams.get('minPrice')) || 0;

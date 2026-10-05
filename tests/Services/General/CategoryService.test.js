@@ -34,14 +34,14 @@ describe('General CategoryService', () => {
         await expect(CategoryService.getCategoryById('c1')).rejects.toThrow();
     });
 
-    test('getCategoryBySlug should return category', async () => {
-        const mockCategory = { slug: 'trekking' };
-        Category.findOne.mockReturnValue({
+    test('getCategoryById should return category when found', async () => {
+        const mockCategory = { _id: 'c1', slug: 'trekking' };
+        Category.findById.mockReturnValue({
             lean: jest.fn().mockResolvedValue(mockCategory)
         });
 
-        const result = await CategoryService.getCategoryBySlug('TREKKING');
+        const result = await CategoryService.getCategoryById('c1');
         expect(result.slug).toBe('trekking');
-        expect(Category.findOne).toHaveBeenCalledWith({ slug: 'trekking' });
+        expect(Category.findById).toHaveBeenCalledWith('c1');
     });
 });

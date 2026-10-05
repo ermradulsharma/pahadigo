@@ -142,7 +142,9 @@ jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => ({
     getPackageItemById: jest.fn(),
     getUserById: jest.fn(),
     getBusinessById: jest.fn(),
-    getBookingBy: jest.fn()
+    getBookingBy: jest.fn(),
+    getBusinessBy: jest.fn(),
+    getPackageBy: jest.fn()
 }));
 
 const { default: BookingService } = await import('@/core/Services/Traveller/BookingService.js');

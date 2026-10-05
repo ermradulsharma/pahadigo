@@ -175,8 +175,11 @@ class CacheService {
         if (this.upstashClient) {
             try {
                 const keys = await this.upstashClient.keys(pattern);
-                if (keys.length > 0) {
-                    await this.upstashClient.del(...keys);
+                if (keys && keys.length > 0) {
+                    for (let i = 0; i < keys.length; i += 100) {
+                        const batch = keys.slice(i, i + 100);
+                        await this.upstashClient.del(...batch);
+                    }
                 }
                 success = true;
             } catch (err) {
@@ -187,8 +190,11 @@ class CacheService {
         if (this.isStandardConnected) {
             try {
                 const keys = await this.standardClient.keys(pattern);
-                if (keys.length > 0) {
-                    await this.standardClient.del(...keys);
+                if (keys && keys.length > 0) {
+                    for (let i = 0; i < keys.length; i += 100) {
+                        const batch = keys.slice(i, i + 100);
+                        await this.standardClient.del(...batch);
+                    }
                 }
                 success = true;
             } catch (err) {

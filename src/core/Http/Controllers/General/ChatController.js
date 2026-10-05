@@ -21,28 +21,31 @@ const activeSSEUsers = new Set();
 const formatConversation = async (conv) => {
     if (!conv) return null;
     const c = typeof conv.toObject === 'function' ? conv.toObject() : { ...conv };
-    const vendorObj = await getBusinessById(c.vendor.vendorProfile)
-    const traveller = {
-        id: c.traveller._id,
-        name: c.traveller.name,
-        profileImage: c.traveller.profileImage
-    }
-    const vendor = {
-        id: c.vendor._id,
-        name: c.vendor.name,
-        profileImage: c.vendor.profileImage ? c.vendor.profileImage : vendorObj?.profileImage,
-    };
+    const vendorObj = c.vendor?.vendorProfile ? await getBusinessById(c.vendor.vendorProfile) : null;
+    const traveller = c.traveller ? {
+        id: c.traveller._id ? c.traveller._id.toString() : (c.traveller.id || String(c.traveller)),
+        name: c.traveller.name || '',
+        profileImage: c.traveller.profileImage || null
+    } : null;
+    const vendor = c.vendor ? {
+        id: c.vendor._id ? c.vendor._id.toString() : (c.vendor.id || String(c.vendor)),
+        name: c.vendor.name || '',
+        profileImage: c.vendor.profileImage ? c.vendor.profileImage : vendorObj?.profileImage || null,
+    } : null;
+
+    const bookingId = c.bookingId?._id ? c.bookingId._id.toString() : (c.bookingId?.id || (typeof c.bookingId === 'string' ? c.bookingId : ''));
+    const bookingCode = c.bookingId?.bookingCode || '';
 
     return {
-        id: c.id,
-        bookingId: c.bookingId._id,
-        bookingCode: c.bookingId.bookingCode,
-        type: c.type,
+        id: (c.id || c._id)?.toString() || '',
+        bookingId,
+        bookingCode,
+        type: c.type || '',
         traveller,
         vendor,
-        lastMessage: c.lastMessage,
-        lastMessageAt: c.lastMessageAt,
-        unreadCount: c.unreadCount
+        lastMessage: c.lastMessage || '',
+        lastMessageAt: c.lastMessageAt || null,
+        unreadCount: c.unreadCount || 0
     };
 };
 
@@ -84,7 +87,7 @@ class ChatController {
                 });
                 conversation = await Conversation.findById(created._id).populate('traveller').populate('vendor').populate('admin');
             }
-            const responseData = formatConversation(conversation);
+            const responseData = await formatConversation(conversation);
             return successResponse(HTTP_STATUS.OK, 'Conversation retrieved successfully.', responseData);
         } catch (error) {
             getLogger(req?.requestId).error({ err: error }, '[ChatController] createConversation error');
@@ -105,7 +108,7 @@ class ChatController {
             const conversationsWithUnread = await Promise.all(
                 conversations.map(async (conv) => {
                     const unreadCount = await ChatMessage.countDocuments({ conversation: conv._id, sender: { $ne: req.user.id }, isRead: false });
-                    const convObj = formatConversation(conv);
+                    const convObj = await formatConversation(conv);
                     convObj.unreadCount = unreadCount;
                     return convObj;
                 })
@@ -174,7 +177,7 @@ class ChatController {
                 sender: typeof m.sender === 'object' && m.sender !== null ? userPayload(m.sender) : m.sender
             }));
 
-            const formattedConversation = formatConversation(conversation);
+            const formattedConversation = await formatConversation(conversation);
 
             return successResponse(HTTP_STATUS.OK, 'Messages fetched successfully.', {
                 ...formattedConversation,

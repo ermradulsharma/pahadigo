@@ -7,7 +7,8 @@ jest.unstable_mockModule('@/core/Services/PushNotificationService.js', () => ({
 jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => ({
     getBookingById: jest.fn(),
     getUserById: jest.fn(),
-    getBusinessById: jest.fn()
+    getBusinessById: jest.fn(),
+    getBusinessBy: jest.fn()
 }));
 
 const createPopulateMock = (val) => {

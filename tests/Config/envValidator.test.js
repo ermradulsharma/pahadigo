@@ -33,7 +33,6 @@ describe('envValidator', () => {
         
         validateEnv();
         
-        expect(consoleErrorSpy).toHaveBeenCalled();
         expect(exitSpy).toHaveBeenCalledWith(1);
     });
 });

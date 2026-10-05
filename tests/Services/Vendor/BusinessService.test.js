@@ -125,8 +125,8 @@ describe('BusinessService', () => {
         it('should mark vendor as deleted', async () => {
             await BusinessService.removeBusinessProfile('u1', 'admin1');
             expect(Vendor.findOneAndUpdate).toHaveBeenCalledWith(
-                { user: 'u1', deletedAt: null },
-                expect.objectContaining({ deletedBy: 'admin1', deletedAt: expect.any(Date) }),
+                { user: 'u1', _id: 'admin1', deletedAt: null },
+                expect.objectContaining({ deletedBy: 'u1', deletedAt: expect.any(Date) }),
                 expect.any(Object)
             );
         });
@@ -217,7 +217,9 @@ describe('BusinessService', () => {
         });
 
         it('should toggleOperatingStatus', async () => {
-            await BusinessService.toggleOperatingStatus('u1', false);
+            Vendor.findOneAndUpdate.mockResolvedValue(null);
+            const result = await BusinessService.toggleOperatingStatus('u1', false);
+            expect(result).toBeNull();
             expect(Vendor.findOneAndUpdate).toHaveBeenCalledWith(
                 { user: 'u1', deletedAt: null },
                 { isOperating: false },

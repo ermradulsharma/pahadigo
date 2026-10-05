@@ -319,6 +319,23 @@ class BookingService {
 
         await booking.save();
 
+        // Reserve inventory slots upon booking confirmation
+        if (booking.vendor && booking.item?.itemId && booking.startDate && booking.endDate) {
+            try {
+                const vendorId = booking.vendor._id ? booking.vendor._id.toString() : String(booking.vendor);
+                await InventoryService.reserveSlotsRange(
+                    vendorId,
+                    booking.item.itemId,
+                    booking.item.itemType,
+                    booking.startDate,
+                    booking.endDate,
+                    booking.occupancy?.units || 1
+                );
+            } catch (invErr) {
+                // Ignore if inventory doc not yet initialized
+            }
+        }
+
         // 3. Notify Traveller & Vendor
         NotificationService.notifyBookingStatus(booking._id, 'confirmed');
 

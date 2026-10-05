@@ -9,6 +9,8 @@ const customJestConfig = {
         '\\.jsx$': '<rootDir>/tests/__mocks__/jsxMock.js',
         '^@/models$': '<rootDir>/src/core/Models/index.js',
         '^@/models/(.*)$': '<rootDir>/src/core/Models/$1',
+        '^@/core/Services/Traveller/ProfileService\\.js$': '<rootDir>/tests/__mocks__/ProfileService.js',
+        '^@/services/Traveller/ProfileService\\.js$': '<rootDir>/tests/__mocks__/ProfileService.js',
         '^@/services$': '<rootDir>/src/core/Services/index.js',
         '^@/services/(.*)$': '<rootDir>/src/core/Services/$1',
         '^@/constants$': '<rootDir>/src/core/Constants/index.js',

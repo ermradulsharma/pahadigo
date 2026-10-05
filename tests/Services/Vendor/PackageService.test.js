@@ -48,6 +48,13 @@ const mockVendorFindById = (data) => {
     });
 };
 
+const createQueryMock = (val) => ({
+    select: jest.fn().mockReturnThis(),
+    populate: jest.fn().mockReturnThis(),
+    lean: jest.fn().mockResolvedValue(val),
+    then: (resolve) => Promise.resolve(val).then(resolve)
+});
+
 describe('Industry Standard: Vendor PackageService Logic', () => {
     beforeEach(() => {
         jest.clearAllMocks();
@@ -62,13 +69,13 @@ describe('Industry Standard: Vendor PackageService Logic', () => {
 
     describe('[ensureCatalog]', () => {
         it('[Success] should return existing catalog', async () => {
-            Package.findOne.mockResolvedValue(mockPkg);
+            Package.findOne.mockReturnValue(createQueryMock(mockPkg));
             const result = await PackageService.ensureCatalog('u1', 'v1');
             expect(result).toEqual(mockPkg);
         });
 
         it('[Success] should create new catalog if none exists', async () => {
-            Package.findOne.mockResolvedValue(null);
+            Package.findOne.mockReturnValue(createQueryMock(null));
             Package.create.mockResolvedValue(mockPkg);
             const result = await PackageService.ensureCatalog('u1', 'v1');
             expect(Package.create).toHaveBeenCalled();

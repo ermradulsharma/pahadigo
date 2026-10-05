@@ -18,4 +18,6 @@ const DisputeSchema = new mongoose.Schema({
   toObject: { virtuals: DEFAULTS.TRUE, getters: DEFAULTS.TRUE, minimize: DEFAULTS.FALSE }
 });
 
+DisputeSchema.index({ status: 1, updatedAt: 1 });
+
 export default mongoose.models.Dispute || mongoose.model('Dispute', DisputeSchema);

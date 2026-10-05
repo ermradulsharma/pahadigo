@@ -5,6 +5,12 @@ import Vendor from '@/core/Models/Vendor.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { createMockReq } from '../../../Helpers/testUtils.js';
 
+const createQueryMock = (val) => ({
+    select: jest.fn().mockReturnThis(),
+    populate: jest.fn().mockReturnThis(),
+    lean: jest.fn().mockResolvedValue(val)
+});
+
 describe('Vendor PackageController', () => {
     let mockReq;
 
@@ -19,16 +25,13 @@ describe('Vendor PackageController', () => {
 
     describe('getPackages', () => {
         test('should return packages for authenticated vendor', async () => {
-            const mockVendor = { _id: 'vendor123' };
             const mockPackages = { docs: [], total: 0 };
             mockReq = createMockReq({ 
                 user: { id: 'user123', role: 'vendor' },
                 url: 'http://localhost/vendor/packages?page=1&limit=5'
             });
 
-            jest.spyOn(Vendor, 'findOne').mockReturnValue({
-                select: jest.fn().mockResolvedValue(mockVendor)
-            });
+            jest.spyOn(PackageController, '_getVendorId').mockResolvedValue('vendor123');
             jest.spyOn(PackageService, 'getPackages').mockResolvedValue(mockPackages);
 
             const response = await PackageController.getPackages(mockReq);
@@ -40,9 +43,7 @@ describe('Vendor PackageController', () => {
 
         test('should return 404 if vendor not found', async () => {
             mockReq = createMockReq({ user: { id: 'user123', role: 'vendor' } });
-            jest.spyOn(Vendor, 'findOne').mockReturnValue({
-                select: jest.fn().mockResolvedValue(null)
-            });
+            jest.spyOn(PackageController, '_getVendorId').mockResolvedValue(null);
 
             const response = await PackageController.getPackages(mockReq);
             expect(response.status).toBe(HTTP_STATUS.NOT_FOUND);
@@ -51,7 +52,6 @@ describe('Vendor PackageController', () => {
 
     describe('createPackage', () => {
         test('should create package successfully', async () => {
-            const mockVendor = { _id: 'vendor123' };
             const mockPkg = { _id: 'pkg123', name: 'Test Pkg' };
             mockReq = createMockReq({ 
                 user: { id: 'user123', role: 'vendor' },
@@ -59,9 +59,7 @@ describe('Vendor PackageController', () => {
             });
             mockReq.payload = { name: 'Test Pkg' };
 
-            jest.spyOn(Vendor, 'findOne').mockReturnValue({
-                select: jest.fn().mockResolvedValue(mockVendor)
-            });
+            jest.spyOn(PackageController, '_getVendorId').mockResolvedValue('vendor123');
             jest.spyOn(PackageService, 'initializeVendorPackage').mockResolvedValue(mockPkg);
 
             const response = await PackageController.createPackage(mockReq);
@@ -74,7 +72,6 @@ describe('Vendor PackageController', () => {
 
     describe('togglePackageStatus', () => {
         test('should toggle package status', async () => {
-            const mockVendor = { _id: 'vendor123' };
             mockReq = createMockReq({ 
                 user: { id: 'user123', role: 'vendor' },
                 jsonBody: { isActive: true },
@@ -82,9 +79,7 @@ describe('Vendor PackageController', () => {
             });
             mockReq.payload = { isActive: true };
 
-            jest.spyOn(Vendor, 'findOne').mockReturnValue({
-                select: jest.fn().mockResolvedValue(mockVendor)
-            });
+            jest.spyOn(PackageController, '_getVendorId').mockResolvedValue('vendor123');
             const spy = jest.spyOn(PackageService, 'updatePackageStatus').mockResolvedValue({ _id: 'pkg123', isActive: true });
 
             const response = await PackageController.togglePackageStatus(mockReq, { params: { id: 'pkg123' } });

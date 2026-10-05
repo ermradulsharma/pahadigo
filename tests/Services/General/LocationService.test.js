@@ -4,6 +4,7 @@ const createMockQuery = (val) => ({
     sort: jest.fn().mockReturnThis(),
     skip: jest.fn().mockReturnThis(),
     limit: jest.fn().mockReturnThis(),
+    lean: jest.fn().mockResolvedValue(val),
     _resolvedValue: val,
     then: jest.fn(function(resolve) { resolve(this._resolvedValue); })
 });

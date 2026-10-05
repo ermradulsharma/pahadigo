@@ -19,16 +19,22 @@ describe('Vendor ProfileController', () => {
 
     describe('getProfile', () => {
         test('should return profile for authenticated vendor', async () => {
-            const mockUser = { id: 'vendor123', firstName: 'Vendor' };
-            mockReq = createMockReq({ user: { id: 'vendor123', role: 'vendor' } });
+            const mockUser = {
+                _id: '507f1f77bcf86cd799439011',
+                id: '507f1f77bcf86cd799439011',
+                name: 'Vendor',
+                role: 'vendor',
+                toObject: function() { return this; }
+            };
+            mockReq = createMockReq({ user: { id: '507f1f77bcf86cd799439011', role: 'vendor' } });
             
-            jest.spyOn(BaseAuthService, 'getUserProfile').mockResolvedValue(mockUser);
+            jest.spyOn(User, 'findById').mockResolvedValue(mockUser);
 
             const response = await ProfileController.getProfile(mockReq);
             const body = await response.json();
 
             expect(response.status).toBe(HTTP_STATUS.OK);
-            expect(body.data.firstName).toBe('Vendor');
+            expect(body.data.name).toBe('Vendor');
         });
     });
 
@@ -77,9 +83,7 @@ describe('Vendor ProfileController', () => {
             });
             mockReq.payload = { bio: 'Updated bio', isAdmin: true };
 
-            const findAndUpdateSpy = jest.spyOn(User, 'findByIdAndUpdate').mockReturnValue({
-                select: jest.fn().mockResolvedValue(mockUser)
-            });
+            const findAndUpdateSpy = jest.spyOn(BaseAuthService, 'updateUserProfile').mockResolvedValue(mockUser);
 
             const response = await ProfileController.updateProfile(mockReq);
             const body = await response.json();
@@ -87,8 +91,7 @@ describe('Vendor ProfileController', () => {
             expect(response.status).toBe(HTTP_STATUS.OK);
             expect(findAndUpdateSpy).toHaveBeenCalledWith(
                 'vendor123',
-                expect.objectContaining({ $set: { bio: 'Updated bio' } }),
-                expect.anything()
+                expect.objectContaining({ bio: 'Updated bio' })
             );
         });
     });

@@ -1,15 +1,17 @@
 import { jest } from '@jest/globals';
 
-jest.unstable_mockModule('@/core/Constants/index.js', () => ({
-    RESPONSE_MESSAGES: {
-        USER: { NOT_FOUND: 'User not found' },
-        AUTH: { TOKEN_INVALID: 'Token invalid' },
-        ERROR: { NOT_FOUND: 'Error not found' }
-    },
-    USER_ROLES: { VENDOR: 'vendor', TRAVELLER: 'traveller' },
-    STATUS: { DELETED: 'deleted' },
-    DEFAULTS: { NULL: null, TRUE: true }
-}));
+jest.unstable_mockModule('@/core/Constants/index.js', async () => {
+    const actual = await import('@/core/Constants/index.js');
+    return {
+        ...actual,
+        RESPONSE_MESSAGES: {
+            ...actual.RESPONSE_MESSAGES,
+            USER: { NOT_FOUND: 'User not found', ...actual.RESPONSE_MESSAGES?.USER },
+            AUTH: { TOKEN_INVALID: 'Token invalid', ...actual.RESPONSE_MESSAGES?.AUTH },
+            ERROR: { NOT_FOUND: 'Error not found', ...actual.RESPONSE_MESSAGES?.ERROR }
+        }
+    };
+});
 
 jest.unstable_mockModule('@/core/Models/User.js', () => ({
     default: {

@@ -54,9 +54,18 @@ const { default: OTPService } = await import('@/core/Services/Auth/User/OTPServi
 const { default: User } = await import('@/core/Models/User.js');
 const { default: Vendor } = await import('@/core/Models/Vendor.js');
 
+const createQueryMock = (val) => ({
+    select: jest.fn().mockReturnThis(),
+    populate: jest.fn().mockReturnThis(),
+    lean: jest.fn().mockResolvedValue(val),
+    then: (resolve) => Promise.resolve(val).then(resolve)
+});
+
 describe('Industry Standard: User AuthService Logic', () => {
     beforeEach(() => {
         jest.clearAllMocks();
+        Vendor.findOne.mockReturnValue(createQueryMock(null));
+        User.findOne.mockReturnValue(createQueryMock(null));
     });
 
     describe('[authenticateWithOTP]', () => {
@@ -71,7 +80,7 @@ describe('Industry Standard: User AuthService Logic', () => {
             };
 
             OTPService.verifyOTP.mockResolvedValue(mockUser);
-            User.findOne.mockResolvedValue(mockUser);
+            User.findOne.mockReturnValue(createQueryMock(mockUser));
 
             const result = await AuthService.authenticateWithOTP({ identifier: 'test@test.com', otp: '123456', role: 'traveller' });
 

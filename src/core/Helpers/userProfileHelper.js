@@ -113,7 +113,7 @@ export async function userAuthResponse(user) {
 
     const business = await getBusinessBy({ user: baseUser.id });
     const businessData = businessAuthResponse(business);
-    const businessProfileStatus = businessData ? businessData.profileStatus : (baseUser.role === USER_ROLES.TRAVELER ? null : VENDOR_STATUS.SET_PROFILE);
+    const businessProfileStatus = businessData ? businessData.profileStatus : (baseUser.role === USER_ROLES.TRAVELLER ? null : VENDOR_STATUS.SET_PROFILE);
 
     return {
         ...baseUser,

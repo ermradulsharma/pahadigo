@@ -49,26 +49,28 @@ describe('Vendor CategoryService', () => {
 
     describe('getAssignedCategories', () => {
         it('should return assigned categories', async () => {
-            Vendor.findOne.mockImplementation(() => createQueryMock({ _id: 'v1', category: [{ slug: 'hotel', name: 'Hotel' }] }));
+            const mockVendorId = '507f1f77bcf86cd799439011';
+            Vendor.findOne.mockImplementation(() => createQueryMock({ _id: mockVendorId, category: [{ slug: 'hotel', name: 'Hotel' }] }));
             Category.find.mockImplementation(() => createQueryMock([{ slug: 'hotel', name: 'Hotel' }]));
-            const result = await CategoryService.getAssignedCategories('u1');
+            const result = await CategoryService.getAssignedCategories('507f1f77bcf86cd799439012');
             expect(result).toBeDefined();
         });
 
         it('should return empty array if vendor has no categories', async () => {
             Vendor.findOne.mockImplementation(() => createQueryMock(null));
-            const result = await CategoryService.getAssignedCategories('u1');
+            const result = await CategoryService.getAssignedCategories('507f1f77bcf86cd799439012');
             expect(result).toEqual([]);
         });
     });
 
     describe('assignCategoryToVendor', () => {
         it('should successfully assign a category', async () => {
-            Category.findOne.mockImplementation(() => createQueryMock({ _id: 'c1', slug: 'hotel', name: 'Hotel' }));
-            const mockVendor = { _id: 'v1', category: [], save: jest.fn().mockResolvedValue({ _id: 'v1' }) };
+            const mockVendorId = '507f1f77bcf86cd799439011';
+            Category.findOne.mockImplementation(() => createQueryMock({ _id: '507f1f77bcf86cd799439013', slug: 'hotel', name: 'Hotel' }));
+            const mockVendor = { _id: mockVendorId, category: [], save: jest.fn().mockResolvedValue({ _id: mockVendorId }) };
             Vendor.findOne.mockImplementation(() => createQueryMock(mockVendor));
 
-            const result = await CategoryService.assignCategoryToVendor('u1', { slug: 'hotel' });
+            const result = await CategoryService.assignCategoryToVendor('507f1f77bcf86cd799439012', { slug: 'hotel' });
             expect(result).toBeDefined();
         });
     });

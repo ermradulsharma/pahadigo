@@ -27,7 +27,9 @@ describe('Vendor BankService', () => {
             const mockVendor = { _id: 'v1', bankDetails: {} };
             
             Vendor.findOne.mockReturnValue({
-                populate: jest.fn().mockResolvedValue(mockVendor)
+                populate: jest.fn().mockReturnValue({
+                    lean: jest.fn().mockResolvedValue(mockVendor)
+                })
             });
             Vendor.findOneAndUpdate.mockResolvedValue({ bankDetails: bankData });
 
@@ -42,7 +44,9 @@ describe('Vendor BankService', () => {
             const mockVendor = { _id: 'v1', bankDetails: {} };
             
             Vendor.findOne.mockReturnValue({
-                populate: jest.fn().mockResolvedValue(mockVendor)
+                populate: jest.fn().mockReturnValue({
+                    lean: jest.fn().mockResolvedValue(mockVendor)
+                })
             });
             uploadToCloudinary.mockResolvedValue({ url: 'http://cloud.com/img', publicId: 'p1' });
             Vendor.findOneAndUpdate.mockResolvedValue({ 

@@ -45,7 +45,7 @@ describe('PaymentController (General/Public Role)', () => {
         jest.clearAllMocks();
         mockVerifyWebhookSignature.mockResolvedValue(true);
         mockUpdatePaymentStatus.mockResolvedValue({ _id: 'booking_123' });
-        WebhookEvent.findOne.mockResolvedValue(null);
+        WebhookEvent.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
         WebhookEvent.create.mockResolvedValue({});
     });
 
@@ -66,7 +66,7 @@ describe('PaymentController (General/Public Role)', () => {
     });
 
     it('returns early if webhook event was already processed (Replay Protection)', async () => {
-        WebhookEvent.findOne.mockResolvedValue({ eventId: 'evt_123' });
+        WebhookEvent.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue({ eventId: 'evt_123' }) });
 
         const response = await PaymentController.webhook(buildWebhookRequest(
             { event: 'order.paid', payload: {} },
