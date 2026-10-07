@@ -18,11 +18,22 @@ class NotificationService {
      */
     async _getTransporter() {
         const config = await getAppConfig();
+        const port = Number(config.smtp.port) || 587;
+        const isSecure = port === 465;
+
         return nodemailer.createTransport({
             host: config.smtp.host,
-            port: config.smtp.port,
-            secure: config.smtp.port === 465,
-            auth: { user: config.smtp.user, pass: config.smtp.pass, },
+            port: port,
+            secure: isSecure,
+            auth: {
+                user: config.smtp.user,
+                pass: config.smtp.pass,
+            },
+            ...(port === 587 && {
+                tls: {
+                    rejectUnauthorized: false
+                }
+            })
         });
     }
 
@@ -33,8 +44,10 @@ class NotificationService {
         const config = await getAppConfig();
         const transporter = await this._getTransporter();
         const toAddress = toName ? `"${toName}" <${to}>` : to;
+        const fromName = config.smtp.from_name || 'PahadiGo';
+        const fromAddress = config.smtp.from_address || config.smtp.user;
         return await transporter.sendMail({
-            from: `"${config.smtp.from_name}" <${config.smtp.from_address}>`,
+            from: `"${fromName}" <${fromAddress}>`,
             to: toAddress,
             subject,
             html,
@@ -48,9 +61,11 @@ class NotificationService {
     async sendOTPEmail(email, otp) {
         try {
             const html = await renderTemplate('Emails/otp.html', { OTP: otp });
-            await this._sendEmailHelper({ to: email, subject: `PahadiGo OTP Verification`, html: html });
+            const info = await this._sendEmailHelper({ to: email, subject: `PahadiGo OTP Verification`, html: html });
+            getLogger().info({ email, messageId: info?.messageId }, "[NotificationService] OTP Verification email sent successfully");
             return true;
         } catch (error) {
+            getLogger().error({ err: error, email }, "[NotificationService] sendOTPEmail Error");
             return false;
         }
     }
@@ -257,9 +272,6 @@ class NotificationService {
         }
     }
 
-    async sendLoginAlertSMS(phone, details) {
-        return true;
-    }
 
     async notifyBookingStatus(bookingId, status) {
         try {
@@ -429,7 +441,7 @@ class NotificationService {
 
             await this._sendEmailHelper({
                 to: email,
-                subject: subject,
+                subject: `Invoice for Booking ${booking.bookingCode}`,
                 html: `<p>Dear user,</p><p>Please find attached the invoice for your booking <strong>${booking.bookingCode}</strong>.</p><p>Thank you,<br/>PahadiGo Team</p>`,
                 attachments: [
                     {

@@ -261,7 +261,7 @@ export function formatPackageItem(item, wishlistMap = new Map(), reviews = []) {
         pricing,
         address,
         location,
-        image: itemObj.photos[0]?.url || '',
+        image: itemObj.photos?.[0]?.url || image || '',
         rating,
         reviews: reviewList,
         wishlist: isWishlisted

@@ -12,7 +12,10 @@ AuthEvents.on('otp.requested', async ({ identifier, otp }) => {
     try {
         const isEmail = identifier.includes('@');
         if (isEmail) {
-            await NotificationService.sendOTPEmail(identifier, otp);
+            const success = await NotificationService.sendOTPEmail(identifier, otp);
+            if (!success) {
+                getLogger().warn({ identifier }, "[AuthEvents] OTP email sending failed");
+            }
         } else {
             await NotificationService.sendSMS(identifier, `Your PahadiGo verification code is: ${otp}. Valid for 5 minutes.`);
         }

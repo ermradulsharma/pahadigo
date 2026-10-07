@@ -187,7 +187,7 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
             smtp: {
                 host: APP_DETAILS.SMTP_HOST,
                 port: APP_DETAILS.SMTP_PORT,
-                user: APP_DETAILS.MAIL_FROM_EMAIL,
+                user: APP_DETAILS.SMTP_USER,
                 pass: APP_SECRETS.SMTP_ACCOUNT_PASS,
                 from_address: APP_DETAILS.MAIL_FROM_EMAIL,
                 from_name: APP_DETAILS.APP_NAME,
