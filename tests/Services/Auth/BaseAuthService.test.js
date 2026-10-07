@@ -1,17 +1,5 @@
 import { jest } from '@jest/globals';
-
-jest.unstable_mockModule('@/core/Constants/index.js', async () => {
-    const actual = await import('@/core/Constants/index.js');
-    return {
-        ...actual,
-        RESPONSE_MESSAGES: {
-            ...actual.RESPONSE_MESSAGES,
-            USER: { NOT_FOUND: 'User not found', ...actual.RESPONSE_MESSAGES?.USER },
-            AUTH: { TOKEN_INVALID: 'Token invalid', ...actual.RESPONSE_MESSAGES?.AUTH },
-            ERROR: { NOT_FOUND: 'Error not found', ...actual.RESPONSE_MESSAGES?.ERROR }
-        }
-    };
-});
+import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 
 jest.unstable_mockModule('@/core/Models/User.js', () => ({
     default: {
@@ -23,6 +11,17 @@ jest.unstable_mockModule('@/core/Models/User.js', () => ({
 jest.unstable_mockModule('@/core/Models/Vendor.js', () => ({
     default: {
         findOne: jest.fn()
+    }
+}));
+
+jest.unstable_mockModule('@/core/Models/VendorClosure.js', () => ({
+    default: {
+        find: jest.fn().mockReturnValue({
+            select: jest.fn().mockReturnThis(),
+            populate: jest.fn().mockReturnThis(),
+            sort: jest.fn().mockReturnThis(),
+            lean: jest.fn().mockResolvedValue([])
+        })
     }
 }));
 
@@ -96,20 +95,20 @@ describe('BaseAuthService', () => {
         it('should throw if user not found', async () => {
             verifyToken.mockResolvedValue({ id: 'u1' });
             User.findById.mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) });
-            await expect(BaseAuthService.verifyToken('u1')).rejects.toThrow('User not found');
+            await expect(BaseAuthService.verifyToken('u1')).rejects.toThrow(RESPONSE_MESSAGES.USER.NOT_FOUND);
         });
     });
 
     describe('refreshToken', () => {
         it('should throw if token invalid type or no jti', async () => {
             verifyToken.mockResolvedValue({ type: 'access' });
-            await expect(BaseAuthService.refreshToken('token')).rejects.toThrow('Token invalid');
+            await expect(BaseAuthService.refreshToken('token')).rejects.toThrow(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
         });
 
         it('should throw if jti not in cache', async () => {
             verifyToken.mockResolvedValue({ id: 'u1', type: 'refresh', jti: 'jti123' });
             CacheService.get.mockResolvedValue(null);
-            await expect(BaseAuthService.refreshToken('token')).rejects.toThrow('Token invalid');
+            await expect(BaseAuthService.refreshToken('token')).rejects.toThrow(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
         });
 
         it('should generate new tokens and delete old refresh token', async () => {
@@ -151,7 +150,7 @@ describe('BaseAuthService', () => {
     describe('updateUserProfile', () => {
         it('should throw if user not found', async () => {
             User.findById.mockResolvedValue(null);
-            await expect(BaseAuthService.updateUserProfile('u1', {})).rejects.toThrow('Error not found');
+            await expect(BaseAuthService.updateUserProfile('u1', {})).rejects.toThrow(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         });
 
         it('should strip forbidden fields', async () => {
@@ -181,7 +180,7 @@ describe('BaseAuthService', () => {
 
         it('should throw if user not found', async () => {
             User.findByIdAndUpdate.mockResolvedValue(null);
-            await expect(BaseAuthService.deactivateUserAccount('u1')).rejects.toThrow('Error not found');
+            await expect(BaseAuthService.deactivateUserAccount('u1')).rejects.toThrow(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         });
     });
 });
