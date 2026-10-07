@@ -42,7 +42,9 @@ jest.unstable_mockModule('@/core/Services/CacheService.js', () => ({
         set: jest.fn(),
         get: jest.fn(),
         delete: jest.fn(),
-        deletePattern: jest.fn()
+        del: jest.fn(),
+        deletePattern: jest.fn(),
+        isAvailable: jest.fn().mockResolvedValue(true)
     }
 }));
 
@@ -76,24 +78,25 @@ describe('BaseAuthService', () => {
         it('should verify token and return user', async () => {
             verifyToken.mockResolvedValue({ id: 'u1' });
             User.findById.mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue({ _id: 'u1', role: 'traveller' }) }) });
+            Vendor.findOne.mockReturnValue({ select: jest.fn().mockReturnThis(), populate: jest.fn().mockReturnThis(), lean: jest.fn().mockResolvedValue(null) });
             
-            const result = await BaseAuthService.verifyToken('token');
-            expect(result.user._id).toBe('u1');
+            const result = await BaseAuthService.verifyToken('u1');
+            expect(result.id).toBe('u1');
         });
 
         it('should return vendor data if user is vendor', async () => {
             verifyToken.mockResolvedValue({ id: 'u1' });
             User.findById.mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue({ _id: 'u1', role: 'vendor' }) }) });
-            Vendor.findOne.mockReturnValue({ lean: jest.fn().mockResolvedValue({ businessName: 'Biz' }) });
+            Vendor.findOne.mockReturnValue({ select: jest.fn().mockReturnThis(), populate: jest.fn().mockReturnThis(), lean: jest.fn().mockResolvedValue({ _id: 'v1', businessName: 'Biz' }) });
             
-            const result = await BaseAuthService.verifyToken('token');
+            const result = await BaseAuthService.verifyToken('u1');
             expect(result.businessProfile.businessName).toBe('Biz');
         });
 
         it('should throw if user not found', async () => {
             verifyToken.mockResolvedValue({ id: 'u1' });
             User.findById.mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) });
-            await expect(BaseAuthService.verifyToken('token')).rejects.toThrow('User not found');
+            await expect(BaseAuthService.verifyToken('u1')).rejects.toThrow('User not found');
         });
     });
 
