@@ -33,6 +33,7 @@ review_rules:
   - "MEDIA_HANDLING: Reject Base64 uploads. Require `multipart/form-data`, Sharp compression, and Cloudinary storage."
   - "WEBHOOK_IDEMPOTENCY: Verify Razorpay HMAC signature verification and `event_id` DB idempotency checks."
   - "TEST_COVERAGE: Ensure Jest tests use `jest.unstable_mockModule` for ESM and `chainableMock` for Mongoose."
+  - "ZERO_DUMMY_CODE_AUDIT: Reject any PR containing dummy key fallbacks, mock returns in production services, commented dead code, or stub endpoints."
 
 output_format:
   - "Provide a fair architectural overview of the code under review."

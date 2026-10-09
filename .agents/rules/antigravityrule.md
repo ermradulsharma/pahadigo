@@ -30,6 +30,7 @@ workflow_rules:
   - "TRANSACTIONS: Use Mongoose `session.withTransaction()` for multi-document writes (Bookings, Payments, Payouts)."
   - "WEBHOOKS: Razorpay webhooks MUST verify HMAC SHA256 signatures AND guarantee idempotency by logging `event_id` in database."
   - "CACHING: Use Cache-Aside pattern with Redis. Invalidate relevant Redis cache keys in mutation services."
+  - "ZERO_DUMMY_CODE: Eradicate all dummy strings, fake credential fallbacks, mock object returns in services, commented dead code, and stub endpoints. Missing keys must throw AppError or trigger boot validation."
 
 output_format:
   - "Provide brief architectural WHY before coding."
