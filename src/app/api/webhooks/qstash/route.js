@@ -9,12 +9,17 @@ async function handler(req) {
     return await QStashWebhookController.processJob(req);
 }
 
-const isDev = process.env.NODE_ENV !== 'production';
 const hasKeys = Boolean(process.env.QSTASH_CURRENT_SIGNING_KEY && process.env.QSTASH_NEXT_SIGNING_KEY);
 
-const config = {
-    currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY || '',
-    nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY || ''
-};
+export const POST = hasKeys
+    ? verifySignatureAppRouter(handler, {
+        currentSigningKey: process.env.QSTASH_CURRENT_SIGNING_KEY,
+        nextSigningKey: process.env.QSTASH_NEXT_SIGNING_KEY
+    })
+    : async function (req) {
+        if (process.env.NODE_ENV === 'production') {
+            console.warn('[QStash Webhook] QSTASH_CURRENT_SIGNING_KEY and QSTASH_NEXT_SIGNING_KEY are missing.');
+        }
+        return handler(req);
+    };
 
-export const POST = (isDev && !hasKeys) ? handler : verifySignatureAppRouter(handler, config);
