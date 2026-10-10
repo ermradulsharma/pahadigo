@@ -76,7 +76,6 @@ export async function generateMetadata({ params }) {
 export default async function ServiceDetailPage({ params }) {
     const { id } = await params; // Next.js 15+ needs await on params
     const service = await getServiceDetails(id);
-
     if (!service) {
         return (
             <div className="min-h-screen bg-gray-50 flex flex-col">
@@ -192,10 +191,7 @@ export default async function ServiceDetailPage({ params }) {
 
     return (
         <div className="bg-gray-50 min-h-screen pb-25 font-sans">
-            <script
-                type="application/ld+json"
-                dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }}
-            />
+            <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: JSON.stringify(jsonLd) }} />
             <Navbar />
 
             {/* Hero Section */}

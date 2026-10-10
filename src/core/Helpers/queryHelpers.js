@@ -224,7 +224,20 @@ export const getReviewsBy = async (conditions = {}, select = '', populate = null
  */
 export const getReviewsByItemId = async (itemId, populate = [{ path: 'user', select: 'name profileImage' }, { path: 'vendor', select: 'ownerName businessName profileImage' }]) => {
     if (!itemId) return [];
-    return await getReviewsBy({ 'item.itemId': itemId, isVisible: true }, '', populate);
+    let queryId = itemId;
+    try {
+        if (typeof itemId === 'string' && itemId.length === 24) {
+            queryId = new mongoose.Types.ObjectId(itemId);
+        }
+    } catch (e) { }
+
+    return await getReviewsBy({
+        $or: [
+            { 'item.itemId': queryId },
+            { 'item.itemId': itemId.toString() }
+        ],
+        isVisible: true
+    }, '', populate);
 };
 
 export default {

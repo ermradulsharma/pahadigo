@@ -62,7 +62,12 @@ class PackageService {
                             $match: {
                                 $expr: {
                                     $and: [
-                                        { $eq: [{ $toString: "$item.itemId" }, { $toString: "$$itemId" }] },
+                                        {
+                                            $or: [
+                                                { $eq: ["$item.itemId", "$$itemId"] },
+                                                { $eq: [{ $toString: "$item.itemId" }, { $toString: "$$itemId" }] }
+                                            ]
+                                        },
                                         { $eq: ["$isVisible", true] }
                                     ]
                                 }
@@ -236,7 +241,12 @@ class PackageService {
                             $match: {
                                 $expr: {
                                     $and: [
-                                        { $eq: [{ $toString: "$item.itemId" }, { $toString: "$$itemId" }] },
+                                        {
+                                            $or: [
+                                                { $eq: ["$item.itemId", "$$itemId"] },
+                                                { $eq: [{ $toString: "$item.itemId" }, { $toString: "$$itemId" }] }
+                                            ]
+                                        },
                                         { $eq: ["$isVisible", true] }
                                     ]
                                 }
@@ -462,7 +472,12 @@ class PackageService {
                             $match: {
                                 $expr: {
                                     $and: [
-                                        { $eq: [{ $toString: "$item.itemId" }, { $toString: "$$itemId" }] },
+                                        {
+                                            $or: [
+                                                { $eq: ["$item.itemId", "$$itemId"] },
+                                                { $eq: [{ $toString: "$item.itemId" }, { $toString: "$$itemId" }] }
+                                            ]
+                                        },
                                         { $eq: ["$isVisible", true] }
                                     ]
                                 }
