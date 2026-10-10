@@ -112,27 +112,27 @@ class NotificationService {
     async sendLoginAlertEmail(email, details) {
         try {
             const config = await getAppConfig();
-            const baseUrl = config?.app?.url || 'https://pahadigo.com';
+            const baseUrl = config?.app?.url || 'https://pahadigo.co.in';
             const securityUrl = `${baseUrl}/security`;
             const revokeUrl = details.sessionId ? `${baseUrl}/auth/revoke-session?id=${details.sessionId}` : `${baseUrl}/security`;
 
             const html = await renderTemplate('Emails/alert.html', {
-                NAME: details.name,
+                NAME: details.name || 'Valued User',
                 ACCOUNT_IDENTIFIER: details.accountIdentifier,
-                AUTH_METHOD: details.authMethod,
-                ROLE: details.role,
-                DEVICE: details.summary,
-                DEVICE_NAME: details.device,
-                DEVICE_TYPE: details.deviceType,
-                BROWSER: details.browser,
-                OS: details.os,
-                CARRIER: details.carrier,
-                APP_VERSION: details.appVersion,
-                IP: details.ip,
-                LOCATION: details.location,
-                DATACENTER: details.datacenter,
-                TIME: details.loginTime,
+                AUTH_METHOD: details.authMethod || 'OTP Verification',
+                ROLE: details.role || 'traveller',
+                DEVICE: details.device || details.summary,
+                DEVICE_NAME: details.deviceName || 'Desktop PC',
+                DEVICE_TYPE: details.deviceType || 'Desktop',
+                BROWSER: details.browser || 'Web Browser / API Client',
+                OS: details.os || 'Desktop OS',
+                CARRIER: details.carrier || 'Wi-Fi / Broadband Network',
+                IP: details.ip || '127.0.0.1',
+                LOCATION: details.location || 'Local Dev Network (127.0.0.1)',
+                DATACENTER: details.datacenter || 'Direct Origin Node (Primary)',
+                TIME: details.loginTime || new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
                 NEW_DEVICE_BADGE: Boolean(details.isNewDevice),
+                APP_VERSION: details.appVersion || null,
                 SECURITY_URL: securityUrl,
                 REVOKE_URL: revokeUrl
             });

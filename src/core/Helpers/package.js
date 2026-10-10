@@ -252,7 +252,7 @@ export function formatPackageItem(item, wishlistMap = new Map(), reviews = []) {
     const { itemObj, id, title, pricing, address, location, image, rating, reviews: reviewList } = base;
     const isWishlisted = id ? wishlistMap.has(id) : false;
     const categoryId = (itemObj.categoryId || itemObj.category_id || itemObj.catalogId)?.toString() || '';
-    // console.log('itemObj', itemObj);
+    console.log('itemObj', reviewList);
     return {
         id,
         title,
@@ -261,7 +261,7 @@ export function formatPackageItem(item, wishlistMap = new Map(), reviews = []) {
         pricing,
         address,
         location,
-        image: itemObj.photos?.[0]?.url || image || '',
+        image: itemObj.photos?.[0]?.url || itemObj.photos?.url || '',
         rating,
         reviews: reviewList,
         wishlist: isWishlisted

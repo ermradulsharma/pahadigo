@@ -36,4 +36,22 @@ describe('TemplateHelper', () => {
         const result = await renderTemplate('test.html', { VAL: 'foo' });
         expect(result).toBe('foo and foo');
     });
+
+    test('should handle section blocks {{#KEY}}...{{/KEY}} correctly', async () => {
+        const templateContent = '{{#BADGE}}New Device!{{/BADGE}}{{#CARRIER}}Carrier: {{CARRIER}}{{/CARRIER}}';
+        fs.readFile.mockResolvedValue(templateContent);
+
+        const result = await renderTemplate('test.html', { BADGE: true, CARRIER: undefined });
+        expect(result).toContain('New Device!');
+        expect(result).not.toContain('Carrier:');
+        expect(result).not.toContain('undefined');
+    });
+
+    test('should clean up undefined/null placeholders', async () => {
+        const templateContent = 'User: {{NAME}}, Carrier: {{CARRIER}}';
+        fs.readFile.mockResolvedValue(templateContent);
+
+        const result = await renderTemplate('test.html', { NAME: 'Maikel', CARRIER: undefined });
+        expect(result).toBe('User: Maikel, Carrier: ');
+    });
 });

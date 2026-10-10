@@ -222,7 +222,7 @@ export const getReviewsBy = async (conditions = {}, select = '', populate = null
 /**
  * Fetch visible Review records for a specific package item ID.
  */
-export const getReviewsByItemId = async (itemId, populate = { path: 'user', select: 'name profileImage' }) => {
+export const getReviewsByItemId = async (itemId, populate = [{ path: 'user', select: 'name profileImage' }, { path: 'vendor', select: 'ownerName businessName profileImage' }]) => {
     if (!itemId) return [];
     return await getReviewsBy({ 'item.itemId': itemId, isVisible: true }, '', populate);
 };

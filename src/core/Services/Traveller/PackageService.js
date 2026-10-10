@@ -54,6 +54,83 @@ class PackageService {
             { $unwind: "$items" },
             { $match: { "items._id": { $in: objectIds.map(id => new mongoose.Types.ObjectId(id)) } } },
             {
+                $lookup: {
+                    from: 'reviews',
+                    let: { itemId: "$items._id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: [{ $toString: "$item.itemId" }, { $toString: "$$itemId" }] },
+                                        { $eq: ["$isVisible", true] }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $lookup: {
+                                from: 'users',
+                                let: { userId: "$user" },
+                                pipeline: [
+                                    {
+                                        $match: {
+                                            $expr: {
+                                                $eq: [
+                                                    { $toString: "$_id" },
+                                                    { $toString: "$$userId" }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        $project: {
+                                            _id: 0,
+                                            id: { $toString: "$_id" },
+                                            name: 1,
+                                            profileImage: 1
+                                        }
+                                    }
+                                ],
+                                as: 'user'
+                            }
+                        },
+                        { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+                        {
+                            $lookup: {
+                                from: 'vendors',
+                                let: { vendorId: "$vendor" },
+                                pipeline: [
+                                    {
+                                        $match: {
+                                            $expr: {
+                                                $eq: [
+                                                    { $toString: "$_id" },
+                                                    { $toString: "$$vendorId" }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        $project: {
+                                            _id: 0,
+                                            id: { $toString: "$_id" },
+                                            ownerName: 1,
+                                            businessName: 1,
+                                            profileImage: 1
+                                        }
+                                    }
+                                ],
+                                as: 'vendor'
+                            }
+                        },
+                        { $unwind: { path: "$vendor", preserveNullAndEmptyArrays: true } },
+                        { $addFields: { id: { $toString: "$_id" } } }
+                    ],
+                    as: 'reviews'
+                }
+            },
+            {
                 $project: {
                     id: "$items._id",
                     title: "$items.title",
@@ -71,7 +148,8 @@ class PackageService {
                             default: "$items.category"
                         }
                     },
-                    catalogId: "$items.catalogId"
+                    catalogId: "$items.catalogId",
+                    reviews: "$reviews"
                 }
             }
         ]);
@@ -150,6 +228,83 @@ class PackageService {
             ...this.masterService.getCategoryVerificationStages('items', 'vendorProfile._id'),
             { $match: { "items.isActive": true } },
             {
+                $lookup: {
+                    from: 'reviews',
+                    let: { itemId: "$items._id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: [{ $toString: "$item.itemId" }, { $toString: "$$itemId" }] },
+                                        { $eq: ["$isVisible", true] }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $lookup: {
+                                from: 'users',
+                                let: { userId: "$user" },
+                                pipeline: [
+                                    {
+                                        $match: {
+                                            $expr: {
+                                                $eq: [
+                                                    { $toString: "$_id" },
+                                                    { $toString: "$$userId" }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        $project: {
+                                            _id: 0,
+                                            id: { $toString: "$_id" },
+                                            name: 1,
+                                            profileImage: 1
+                                        }
+                                    }
+                                ],
+                                as: 'user'
+                            }
+                        },
+                        { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+                        {
+                            $lookup: {
+                                from: 'vendors',
+                                let: { vendorId: "$vendor" },
+                                pipeline: [
+                                    {
+                                        $match: {
+                                            $expr: {
+                                                $eq: [
+                                                    { $toString: "$_id" },
+                                                    { $toString: "$$vendorId" }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        $project: {
+                                            _id: 0,
+                                            id: { $toString: "$_id" },
+                                            ownerName: 1,
+                                            businessName: 1,
+                                            profileImage: 1
+                                        }
+                                    }
+                                ],
+                                as: 'vendor'
+                            }
+                        },
+                        { $unwind: { path: "$vendor", preserveNullAndEmptyArrays: true } },
+                        { $addFields: { id: { $toString: "$_id" } } }
+                    ],
+                    as: 'reviews'
+                }
+            },
+            {
                 $project: {
                     _id: "$items._id",
                     title: "$items.title",
@@ -158,7 +313,8 @@ class PackageService {
                     location: "$items.location",
                     photos: "$items.photos",
                     category: "$items.category",
-                    catalogId: "$items.catalogId"
+                    catalogId: "$items.catalogId",
+                    reviews: "$reviews"
                 }
             }
         ]);
@@ -196,7 +352,8 @@ class PackageService {
                     photos: item.photos?.[0] || "",
                     category_name: cat.name || "",
                     category_slug: slug,
-                    category_id: cat._id || ""
+                    category_id: cat._id || "",
+                    reviews: item.reviews || []
                 };
             })
         });
@@ -295,6 +452,85 @@ class PackageService {
             }
             pipeline.push({ $match: finalMatch });
 
+            // 4.5. Lookup Reviews
+            pipeline.push({
+                $lookup: {
+                    from: 'reviews',
+                    let: { itemId: "$items._id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: [{ $toString: "$item.itemId" }, { $toString: "$$itemId" }] },
+                                        { $eq: ["$isVisible", true] }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $lookup: {
+                                from: 'users',
+                                let: { userId: "$user" },
+                                pipeline: [
+                                    {
+                                        $match: {
+                                            $expr: {
+                                                $eq: [
+                                                    { $toString: "$_id" },
+                                                    { $toString: "$$userId" }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        $project: {
+                                            _id: 0,
+                                            id: { $toString: "$_id" },
+                                            name: 1,
+                                            profileImage: 1
+                                        }
+                                    }
+                                ],
+                                as: 'user'
+                            }
+                        },
+                        { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
+                        {
+                            $lookup: {
+                                from: 'vendors',
+                                let: { vendorId: "$vendor" },
+                                pipeline: [
+                                    {
+                                        $match: {
+                                            $expr: {
+                                                $eq: [
+                                                    { $toString: "$_id" },
+                                                    { $toString: "$$vendorId" }
+                                                ]
+                                            }
+                                        }
+                                    },
+                                    {
+                                        $project: {
+                                            _id: 0,
+                                            id: { $toString: "$_id" },
+                                            ownerName: 1,
+                                            businessName: 1,
+                                            profileImage: 1
+                                        }
+                                    }
+                                ],
+                                as: 'vendor'
+                            }
+                        },
+                        { $unwind: { path: "$vendor", preserveNullAndEmptyArrays: true } },
+                        { $addFields: { id: { $toString: "$_id" } } }
+                    ],
+                    as: 'reviews'
+                }
+            });
+
             // 5. Final Projection
             pipeline.push({
                 $project: {
@@ -309,7 +545,8 @@ class PackageService {
                     photos: "$items.photos",
                     category: "$items.category",
                     catalogId: "$items.catalogId",
-                    distance: "$vendorProfile.distance"
+                    distance: "$vendorProfile.distance",
+                    reviews: "$reviews"
                 }
             });
 

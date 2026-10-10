@@ -3,6 +3,7 @@ import { addressPayload, getLocationPoint } from './addressHelper.js';
 import { VENDOR_STATUS } from '@/core/Constants/index.js';
 import { dateFormat } from './dateUtils.js';
 import VendorClosure from '../Models/VendorClosure.js';
+import { getBusinessById } from './queryHelpers.js';
 
 /**
  * Formats a raw VendorClosure document into standard response payload structure.
@@ -116,4 +117,16 @@ export function getBusinessDetailsForBooking(vendor) {
     };
 }
 
-export default { addressPayload, getLocationPoint, closurePayload, businessDetailsFormat, businessPayload, businessAuthResponse, itemBusinessPayload };
+export async function businessPayloadMini(businessId) {
+    if (!businessId) return null;
+    const b = await getBusinessById(businessId);
+    if (!b) return null;
+    return {
+        id: b._id.toString(),
+        ownerName: b.ownerName,
+        businessName: b.businessName,
+        profileImage: b.profileImage
+    };
+}
+
+export default { addressPayload, getLocationPoint, closurePayload, businessDetailsFormat, businessPayload, businessAuthResponse, itemBusinessPayload, businessPayloadMini };

@@ -3,8 +3,8 @@ import VendorDocument from '@/core/Models/VendorDocument.js';
 import { CATEGORY_MAP } from '@/core/Constants/categories.js';
 import MasterService from '@/core/Services/MasterService.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
-import { getPackageItemById } from '@/core/Helpers/queryHelpers.js';
-import { businessPayload, itemBusinessPayload, vendorPackageItem } from '@/core/Helpers/index.js';
+import { getPackageItemById, getReviewsByItemId } from '@/core/Helpers/queryHelpers.js';
+import { businessPayload, itemBusinessPayload, vendorPackageItem, userPayloadMini, businessPayloadMini } from '@/core/Helpers/index.js';
 
 /**
  * Shared core logic to retrieve an available package item with populated business & compliance checks.
@@ -35,7 +35,21 @@ export async function getItemDetailsPayload(itemId, masterService = MasterServic
         item.business = businessObj;
     }
 
-    return vendorPackageItem(item);
+    const rawReviews = await getReviewsByItemId(item._id);
+    const reviews = await Promise.all(
+        rawReviews.map(async (r) => {
+            const u = await userPayloadMini(r.user?._id || r.user);
+            const v = await businessPayloadMini(r.vendor?._id || r.vendor);
+            return {
+                ...r,
+                id: (r.id || r._id)?.toString() || '',
+                user: u ? { ...u, avatar: u.avatar || u.profileImage } : null,
+                vendor: v
+            };
+        })
+    );
+
+    return vendorPackageItem(item, reviews);
 }
 
 export default {

@@ -395,12 +395,12 @@ export default async function ServiceDetailPage({ params }) {
                                 </h3>
 
                                 <div className="space-y-6">
-                                    {service.reviews.map((review) => (
-                                        <div key={review.id} className="pb-6 border-b border-gray-100 last:border-0 last:pb-0">
+                                    {service.reviews.map((review, idx) => (
+                                        <div key={review.id || review._id || idx} className="pb-6 border-b border-gray-100 last:border-0 last:pb-0">
                                             <div className="flex items-center mb-3">
                                                 <div className="w-10 h-10 rounded-full bg-primary-100 text-primary-700 font-bold flex items-center justify-center overflow-hidden mr-3">
-                                                    {review.user?.avatar ? (
-                                                        <img src={review.user.avatar} alt={review.user.name} className="w-full h-full object-cover" />
+                                                    {review.user?.avatar || review.user?.profileImage ? (
+                                                        <img src={review.user.avatar || review.user.profileImage} alt={review.user.name} className="w-full h-full object-cover" />
                                                     ) : (
                                                         review.user?.name?.[0]?.toUpperCase() || 'G'
                                                     )}

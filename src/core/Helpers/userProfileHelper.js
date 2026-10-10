@@ -2,7 +2,7 @@ import User from '@/core/Models/User.js';
 import { USER_ROLES, VENDOR_STATUS } from '@/core/Constants/index.js';
 import { addressPayload, getLocationPoint } from './addressHelper.js';
 import { businessDetailsFormat, businessAuthResponse, closurePayload } from './businessHelper.js';
-import { getBusinessBy } from './queryHelpers.js';
+import { getBusinessBy, getUserById } from './queryHelpers.js';
 
 /**
  * Formats a User model instance into a standard user profile payload structure.
@@ -29,6 +29,22 @@ export function userPayload(u) {
         experience: u.experience,
         designation: u.designation,
         bio: u.bio
+    };
+}
+
+/**
+ * Formats a User model instance into a lightweight user details structure.
+ * @param {String} userId - The User ID
+ * @returns {Object|null} Formatted user details object or null
+ */
+export async function userPayloadMini(userId) {
+    if (!userId) return null;
+    const u = await getUserById(userId, 'name profileImage');
+    if (!u) return null;
+    return {
+        id: u._id.toString(),
+        name: u.name,
+        profileImage: u.profileImage
     };
 }
 
@@ -131,6 +147,7 @@ export async function userAuthResponse(user) {
 
 export default {
     userPayload,
+    userPayloadMini,
     userDetailsPayload,
     userProfileById,
     userBusinessProfileById,
