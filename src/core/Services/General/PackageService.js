@@ -2,12 +2,21 @@ import mongoose from 'mongoose';
 import Package from '@/core/Models/Package.js';
 import Vendor from '@/core/Models/Vendor.js';
 import Category from '@/core/Models/Category.js';
-import VendorDocument from '@/core/Models/VendorDocument.js';
-import { CATEGORY_MAP, SCHEMA_KEYS } from '@/core/Constants/categories.js';
+import { CATEGORY_MAP } from '@/core/Constants/categories.js';
 import { STATUS } from '@/core/Constants/index.js';
 import MasterService from '@/core/Services/MasterService.js';
-import { getAppConfig } from '@/core/Lib/appConfig.js';
-import { getItemDetailsPayload } from '@/core/Services/Shared/PackageCore.js';
+import { getPackageItemById } from '@/core/Helpers/queryHelpers.js';
+import {
+    getItemDetailsPayload,
+    getFlattenPackageItemsStages,
+    getReviewsLookupStage,
+    getVendorProfileLookupStages,
+    getPackageItemProjectionStage,
+    normalizeCoordinates,
+    getTaxConfig,
+    applyTaxesToPricing,
+    enrichItemsWithTaxes
+} from '@/core/Services/Shared/PackageCore.js';
 
 /**
  * PackageService (General Role)
@@ -27,28 +36,7 @@ class PackageService {
     }
 
     async getPackageItem(itemId) {
-        if (!itemId) return null;
-        let queryId = itemId;
-        if (typeof itemId === 'string' && itemId.length === 24) {
-            try { queryId = new mongoose.Types.ObjectId(itemId); } catch (e) { }
-        }
-
-        const pkg = await Package.findOne({ $or: Object.values(SCHEMA_KEYS).map(key => ({ [`${key}._id`]: queryId })) }).lean();
-        if (!pkg) return null;
-
-        for (const key of Object.values(SCHEMA_KEYS)) {
-            if (Array.isArray(pkg[key])) {
-                const item = pkg[key].find(i => i._id.toString() === itemId);
-                if (item) {
-                    return {
-                        ...item,
-                        category: key,
-                        catalogId: pkg._id.toString()
-                    };
-                }
-            }
-        }
-        return null;
+        return await getPackageItemById(itemId);
     }
 
     async getMultiplePackageItems(itemIds) {
@@ -56,162 +44,21 @@ class PackageService {
         const objectIds = itemIds.map(id => (typeof id === 'string' ? id : id.toString()));
 
         const items = await Package.aggregate([
-            {
-                $project: {
-                    items: {
-                        $concatArrays: Object.values(SCHEMA_KEYS).map(key => {
-                            return {
-                                $map: {
-                                    input: { $ifNull: [`$${key}`, []] },
-                                    as: "item",
-                                    in: { $mergeObjects: ["$$item", { category: key, catalogId: "$_id" }] }
-                                }
-                            };
-                        })
-                    }
-                }
-            },
-            { $unwind: "$items" },
+            ...getFlattenPackageItemsStages(),
             { $match: { "items._id": { $in: objectIds.map(id => new mongoose.Types.ObjectId(id)) } } },
-            {
-                $lookup: {
-                    from: 'reviews',
-                    let: { itemId: "$items._id" },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $and: [
-                                        {
-                                            $or: [
-                                                { $eq: ["$item.itemId", "$$itemId"] },
-                                                { $eq: [{ $toString: "$item.itemId" }, { $toString: "$$itemId" }] }
-                                            ]
-                                        },
-                                        { $eq: ["$isVisible", true] }
-                                    ]
-                                }
-                            }
-                        },
-                        {
-                            $lookup: {
-                                from: 'users',
-                                let: { userId: "$user" },
-                                pipeline: [
-                                    {
-                                        $match: {
-                                            $expr: {
-                                                $eq: [
-                                                    { $toString: "$_id" },
-                                                    { $toString: "$$userId" }
-                                                ]
-                                            }
-                                        }
-                                    },
-                                    {
-                                        $project: {
-                                            _id: 0,
-                                            id: { $toString: "$_id" },
-                                            name: 1,
-                                            profileImage: 1
-                                        }
-                                    }
-                                ],
-                                as: 'user'
-                            }
-                        },
-                        { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
-                        {
-                            $lookup: {
-                                from: 'vendors',
-                                let: { vendorId: "$vendor" },
-                                pipeline: [
-                                    {
-                                        $match: {
-                                            $expr: {
-                                                $eq: [
-                                                    { $toString: "$_id" },
-                                                    { $toString: "$$vendorId" }
-                                                ]
-                                            }
-                                        }
-                                    },
-                                    {
-                                        $project: {
-                                            _id: 0,
-                                            id: { $toString: "$_id" },
-                                            ownerName: 1,
-                                            businessName: 1,
-                                            profileImage: 1
-                                        }
-                                    }
-                                ],
-                                as: 'vendor'
-                            }
-                        },
-                        { $unwind: { path: "$vendor", preserveNullAndEmptyArrays: true } },
-                        { $addFields: { id: { $toString: "$_id" } } }
-                    ],
-                    as: 'reviews'
-                }
-            },
-            {
-                $project: {
-                    id: "$items._id",
-                    title: "$items.title",
-                    isActive: "$items.isActive",
-                    pricing: "$items.pricing",
-                    pricePerNight: "$items.pricePerNight",
-                    pricePerPerson: "$items.pricePerPerson",
-                    pricePerDay: "$items.pricePerDay",
-                    location: "$items.location",
-                    photos: "$items.photos",
-                    category_slug: "$items.category",
-                    catalogId: "$items.catalogId",
-                    reviews: "$reviews"
-                }
-            }
+            getReviewsLookupStage("$items._id"),
+            getPackageItemProjectionStage({ category_slug: "$items.category" }, 'id')
         ]);
 
-        const config = await getAppConfig();
-        const gst = config.tax?.gst || 0;
-        const serviceTax = config.tax?.service_tax || 0;
-
-        return items.map(item => ({
-            ...item,
-            pricing: {
-                ...(item.pricing || {}),
-                gst: gst,
-                serviceTax: serviceTax
-            }
-        }));
+        return await enrichItemsWithTaxes(items);
     }
 
     async getAvailablePackages(query = '', minPrice = 0, maxPrice = null, sort = '') {
         const pipeline = [];
         if (query) pipeline.push({ $match: { $text: { $search: query } } });
-        pipeline.push({
-            $project: {
-                vendor: 1,
-                items: {
-                    $concatArrays: Object.values(SCHEMA_KEYS).map(key => ({
-                        $map: {
-                            input: { $ifNull: [`$${key}`, []] },
-                            as: "item",
-                            in: {
-                                $mergeObjects: [
-                                    "$$item",
-                                    { category: key, catalogId: "$_id" }
-                                ]
-                            }
-                        }
-                    }))
-                }
-            }
-        });
-        pipeline.push({ $unwind: "$items" });
+        pipeline.push(...getFlattenPackageItemsStages({ extraProjectFields: { vendor: 1 } }));
 
-        // 3. Post-unwind filtering (if text search was too broad or needs regex refinement)
+        // Post-unwind filtering (if text search was too broad or needs regex refinement)
         const postUnwindFilters = [];
         if (query) {
             const regex = new RegExp(query, 'i');
@@ -261,128 +108,14 @@ class PackageService {
 
         const results = await Package.aggregate([
             ...pipeline,
-            {
-                $lookup: {
-                    from: 'vendors',
-                    let: { packageVendor: "$vendor" },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $eq: [
-                                        "$_id",
-                                        "$$packageVendor"
-                                    ]
-                                }
-                            }
-                        }
-                    ],
-                    as: 'vendorProfile'
-                }
-            },
-            { $unwind: { path: '$vendorProfile', preserveNullAndEmptyArrays: true } },
+            ...getVendorProfileLookupStages('$vendor'),
             ...this.masterService.getVendorActiveAggregationStages('vendorProfile'),
             ...this.masterService.getCategoryVerificationStages('items', 'vendorProfile._id'),
             { $match: { "items.isActive": true } },
-            {
-                $lookup: {
-                    from: 'reviews',
-                    let: { itemId: "$items._id" },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $and: [
-                                        {
-                                            $or: [
-                                                { $eq: ["$item.itemId", "$$itemId"] },
-                                                { $eq: [{ $toString: "$item.itemId" }, { $toString: "$$itemId" }] }
-                                            ]
-                                        },
-                                        { $eq: ["$isVisible", true] }
-                                    ]
-                                }
-                            }
-                        },
-                        {
-                            $lookup: {
-                                from: 'users',
-                                let: { userId: "$user" },
-                                pipeline: [
-                                    {
-                                        $match: {
-                                            $expr: {
-                                                $eq: [
-                                                    { $toString: "$_id" },
-                                                    { $toString: "$$userId" }
-                                                ]
-                                            }
-                                        }
-                                    },
-                                    {
-                                        $project: {
-                                            _id: 0,
-                                            id: { $toString: "$_id" },
-                                            name: 1,
-                                            profileImage: 1
-                                        }
-                                    }
-                                ],
-                                as: 'user'
-                            }
-                        },
-                        { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
-                        {
-                            $lookup: {
-                                from: 'vendors',
-                                let: { vendorId: "$vendor" },
-                                pipeline: [
-                                    {
-                                        $match: {
-                                            $expr: {
-                                                $eq: [
-                                                    { $toString: "$_id" },
-                                                    { $toString: "$$vendorId" }
-                                                ]
-                                            }
-                                        }
-                                    },
-                                    {
-                                        $project: {
-                                            _id: 0,
-                                            id: { $toString: "$_id" },
-                                            ownerName: 1,
-                                            businessName: 1,
-                                            profileImage: 1
-                                        }
-                                    }
-                                ],
-                                as: 'vendor'
-                            }
-                        },
-                        { $unwind: { path: "$vendor", preserveNullAndEmptyArrays: true } },
-                        { $addFields: { id: { $toString: "$_id" } } }
-                    ],
-                    as: 'reviews'
-                }
-            },
-            {
-                $project: {
-                    _id: "$items._id",
-                    title: "$items.title",
-                    isActive: "$items.isActive",
-                    pricing: "$items.pricing",
-                    pricePerNight: "$items.pricePerNight",
-                    pricePerPerson: "$items.pricePerPerson",
-                    pricePerDay: "$items.pricePerDay",
-                    location: "$items.location",
-                    photos: "$items.photos",
-                    category: "$items.category",
-                    catalogId: "$items.catalogId",
-                    vendorAddressLocation: "$vendorProfile.address.location",
-                    reviews: "$reviews"
-                }
-            }
+            getReviewsLookupStage("$items._id"),
+            getPackageItemProjectionStage({
+                vendorAddressLocation: "$vendorProfile.address.location"
+            })
         ]);
 
         return results;
@@ -393,9 +126,7 @@ class PackageService {
         const categories = await Category.find({}).lean();
         const result = {};
 
-        const config = await getAppConfig();
-        const gst = config.tax?.gst || 0;
-        const serviceTax = config.tax?.service_tax || 0;
+        const taxes = await getTaxConfig();
 
         categories.forEach(cat => {
             const slug = (cat.slug || '').toLowerCase();
@@ -403,44 +134,27 @@ class PackageService {
             result[slug] = flattened.filter(item => {
                 const itemCat = (item.category || '').toLowerCase();
                 return itemCat === schemaKey || itemCat === slug;
-            }).map(item => {
-                const pricing = item.pricing || {};
-                return {
-                    id: item._id,
-                    title: item.title,
-                    isActive: item.isActive,
-                    pricing: {
-                        ...pricing,
-                        gst: gst,
-                        serviceTax: serviceTax
-                    },
-                    pricePerNight: item.pricePerNight,
-                    pricePerPerson: item.pricePerPerson,
-                    pricePerDay: item.pricePerDay,
-                    location: item.location || {},
-                    photos: item.photos?.[0] || "",
-                    category_name: cat.name || "",
-                    category_slug: slug,
-                    category_id: cat._id || "",
-                    reviews: item.reviews || []
-                };
-            });
+            }).map(item => ({
+                id: item._id,
+                title: item.title,
+                isActive: item.isActive,
+                pricing: applyTaxesToPricing(item.pricing, taxes),
+                pricePerNight: item.pricePerNight,
+                pricePerPerson: item.pricePerPerson,
+                pricePerDay: item.pricePerDay,
+                location: item.location || {},
+                photos: item.photos?.[0] || "",
+                category_name: cat.name || "",
+                category_slug: slug,
+                category_id: cat._id || "",
+                reviews: item.reviews || []
+            }));
         });
         return result;
     }
 
     async searchPackages(lat, lng, categorySlug = '', radiusKm = 50) {
-        let longitude = parseFloat(lng);
-        let latitude = parseFloat(lat);
-
-        // Auto-correct swapped lat/lng for India coordinates (Lat: 8-37°N, Lng: 68-97°E)
-        if (!isNaN(latitude) && !isNaN(longitude) && latitude > 45 && longitude < 45) {
-            const temp = latitude;
-            latitude = longitude;
-            longitude = temp;
-        }
-
-        const hasCoords = !isNaN(longitude) && !isNaN(latitude);
+        const { latitude, longitude, hasCoords } = normalizeCoordinates(lat, lng);
         const targetSchemaKey = categorySlug ? (CATEGORY_MAP[categorySlug] || categorySlug).toLowerCase() : null;
 
         const buildPipeline = (useGeoNear = true) => {
@@ -497,22 +211,11 @@ class PackageService {
             });
             pipeline.push({ $unwind: "$catalog" });
 
-            // 4. Flatten Packages (Add Reviews)
-            pipeline.push({
-                $project: {
-                    vendorProfile: 1,
-                    items: {
-                        $concatArrays: Object.values(SCHEMA_KEYS).map(key => ({
-                            $map: {
-                                input: { $ifNull: [`$catalog.${key}`, []] },
-                                as: "item",
-                                in: { $mergeObjects: ["$$item", { category: key, catalogId: "$catalog._id" }] }
-                            }
-                        }))
-                    }
-                }
-            });
-            pipeline.push({ $unwind: "$items" });
+            // 4. Flatten Packages
+            pipeline.push(...getFlattenPackageItemsStages({
+                catalogPrefix: 'catalog',
+                extraProjectFields: { vendorProfile: 1 }
+            }));
 
             // 5. Verification & Filtering
             pipeline.push(...this.masterService.getCategoryVerificationStages('items', 'vendorProfile._id'));
@@ -523,108 +226,13 @@ class PackageService {
             }
             pipeline.push({ $match: finalMatch });
 
-            // 4.5. Lookup Reviews
-            pipeline.push({
-                $lookup: {
-                    from: 'reviews',
-                    let: { itemId: "$items._id" },
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $and: [
-                                        {
-                                            $or: [
-                                                { $eq: ["$item.itemId", "$$itemId"] },
-                                                { $eq: [{ $toString: "$item.itemId" }, { $toString: "$$itemId" }] }
-                                            ]
-                                        },
-                                        { $eq: ["$isVisible", true] }
-                                    ]
-                                }
-                            }
-                        },
-                        {
-                            $lookup: {
-                                from: 'users',
-                                let: { userId: "$user" },
-                                pipeline: [
-                                    {
-                                        $match: {
-                                            $expr: {
-                                                $eq: [
-                                                    { $toString: "$_id" },
-                                                    { $toString: "$$userId" }
-                                                ]
-                                            }
-                                        }
-                                    },
-                                    {
-                                        $project: {
-                                            _id: 0,
-                                            id: { $toString: "$_id" },
-                                            name: 1,
-                                            profileImage: 1
-                                        }
-                                    }
-                                ],
-                                as: 'user'
-                            }
-                        },
-                        { $unwind: { path: "$user", preserveNullAndEmptyArrays: true } },
-                        {
-                            $lookup: {
-                                from: 'vendors',
-                                let: { vendorId: "$vendor" },
-                                pipeline: [
-                                    {
-                                        $match: {
-                                            $expr: {
-                                                $eq: [
-                                                    { $toString: "$_id" },
-                                                    { $toString: "$$vendorId" }
-                                                ]
-                                            }
-                                        }
-                                    },
-                                    {
-                                        $project: {
-                                            _id: 0,
-                                            id: { $toString: "$_id" },
-                                            ownerName: 1,
-                                            businessName: 1,
-                                            profileImage: 1
-                                        }
-                                    }
-                                ],
-                                as: 'vendor'
-                            }
-                        },
-                        { $unwind: { path: "$vendor", preserveNullAndEmptyArrays: true } },
-                        { $addFields: { id: { $toString: "$_id" } } }
-                    ],
-                    as: 'reviews'
-                }
-            });
+            // 6. Lookup Reviews
+            pipeline.push(getReviewsLookupStage("$items._id"));
 
-            // 6. Final Projection
-            pipeline.push({
-                $project: {
-                    _id: "$items._id",
-                    title: "$items.title",
-                    isActive: "$items.isActive",
-                    pricing: "$items.pricing",
-                    pricePerNight: "$items.pricePerNight",
-                    pricePerPerson: "$items.pricePerPerson",
-                    pricePerDay: "$items.pricePerDay",
-                    location: "$items.location",
-                    photos: "$items.photos",
-                    category: "$items.category",
-                    catalogId: "$items.catalogId",
-                    distance: "$vendorProfile.distance",
-                    reviews: "$reviews"
-                }
-            });
+            // 7. Final Projection
+            pipeline.push(getPackageItemProjectionStage({
+                distance: "$vendorProfile.distance"
+            }));
 
             return pipeline;
         };

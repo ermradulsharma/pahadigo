@@ -263,7 +263,7 @@ export function formatPackageItem(item, wishlistMap = new Map(), reviews = []) {
         location,
         image: itemObj.photos?.[0]?.url || itemObj.photos?.url || '',
         rating,
-        reviews: reviewList,
+        // reviews: reviewList,
         wishlist: isWishlisted
     };
 }
