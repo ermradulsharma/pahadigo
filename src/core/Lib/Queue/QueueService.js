@@ -10,10 +10,10 @@ export const getQStashClient = async () => {
     const token = config.qstash?.token || process.env.QSTASH_TOKEN;
 
     if (!token) {
-        console.warn('[QueueService] QSTASH_TOKEN is missing. Background jobs will not be processed securely.');
+        return null;
     }
 
-    qstashClient = new Client({ token: token || '' });
+    qstashClient = new Client({ token });
     return qstashClient;
 };
 
@@ -28,6 +28,19 @@ const getWebhookUrl = async () => {
 export const enqueueInvoice = async (email, bookingId, role) => {
     try {
         const client = await getQStashClient();
+        if (!client) {
+            // Local fallback when QStash token is not configured (e.g. local development)
+            const { default: NotificationService } = await import('@/core/Services/General/NotificationService.js');
+            setImmediate(async () => {
+                try {
+                    await NotificationService._processInvoiceDelivery(email, bookingId, role);
+                } catch (err) {
+                    console.error('[QueueService] Direct invoice delivery error:', err);
+                }
+            });
+            return true;
+        }
+
         const url = await getWebhookUrl();
         await client.publishJSON({
             url,
@@ -45,6 +58,19 @@ export const enqueueInvoice = async (email, bookingId, role) => {
 export const enqueuePushNotification = async (token, notification, data = {}) => {
     try {
         const client = await getQStashClient();
+        if (!client) {
+            // Local fallback when QStash token is not configured (e.g. local development)
+            const { PushNotificationService } = await import('@/core/Services/PushNotificationService.js');
+            setImmediate(async () => {
+                try {
+                    await PushNotificationService.sendToDevice(token, notification, data);
+                } catch (err) {
+                    console.error('[QueueService] Direct push notification error:', err);
+                }
+            });
+            return true;
+        }
+
         const url = await getWebhookUrl();
         await client.publishJSON({
             url,
@@ -62,6 +88,10 @@ export const enqueuePushNotification = async (token, notification, data = {}) =>
 export const enqueueImageProcessing = async (imageUrl, folder, metadata = {}) => {
     try {
         const client = await getQStashClient();
+        if (!client) {
+            return true;
+        }
+
         const url = await getWebhookUrl();
         await client.publishJSON({
             url,
