@@ -13,21 +13,43 @@ import { getLogger } from '@/core/Lib/logger.js';
  * via Email (SMTP) and SMS (MSG91/Twilio).
  */
 class NotificationService {
+    constructor() {
+        this._cachedTransporter = null;
+        this._lastSmtpKey = null;
+    }
+
     /**
-     * Internal helper to create a nodemailer transporter instance
+     * Internal helper to create a pooled nodemailer transporter instance
      */
     async _getTransporter() {
         const config = await getAppConfig();
-        const port = Number(config.smtp.port) || 587;
+        const host = config.smtp?.host;
+        const port = Number(config.smtp?.port) || 587;
+        const user = config.smtp?.user;
+        const pass = config.smtp?.pass;
+        const smtpKey = `${host}:${port}:${user}:${pass}`;
+
+        if (this._cachedTransporter && this._lastSmtpKey === smtpKey) {
+            return this._cachedTransporter;
+        }
+
         const isSecure = port === 465;
 
-        return nodemailer.createTransport({
-            host: config.smtp.host,
-            port: port,
+        this._cachedTransporter = nodemailer.createTransport({
+            pool: true,
+            maxConnections: 5,
+            maxMessages: 100,
+            rateDelta: 1000,
+            rateLimit: 10,
+            connectionTimeout: 5000, // 5s connection timeout
+            greetingTimeout: 5000,   // 5s greeting timeout
+            socketTimeout: 10000,    // 10s socket timeout
+            host,
+            port,
             secure: isSecure,
             auth: {
-                user: config.smtp.user,
-                pass: config.smtp.pass,
+                user,
+                pass,
             },
             ...(port === 587 && {
                 tls: {
@@ -35,6 +57,9 @@ class NotificationService {
                 }
             })
         });
+
+        this._lastSmtpKey = smtpKey;
+        return this._cachedTransporter;
     }
 
     /**
@@ -44,8 +69,8 @@ class NotificationService {
         const config = await getAppConfig();
         const transporter = await this._getTransporter();
         const toAddress = toName ? `"${toName}" <${to}>` : to;
-        const fromName = config.smtp.from_name || 'PahadiGo';
-        const fromAddress = config.smtp.from_address || config.smtp.user;
+        const fromName = config.smtp?.from_name || 'PahadiGo';
+        const fromAddress = config.smtp?.from_address || config.smtp?.user;
         return await transporter.sendMail({
             from: `"${fromName}" <${fromAddress}>`,
             to: toAddress,
@@ -76,10 +101,12 @@ class NotificationService {
     async sendSMS(phone, message) {
         try {
             const config = await getAppConfig();
-            const authKey = config?.secrets?.msg91_auth_key || process.env.MSG91_AUTH_KEY;
-            const templateId = config?.secrets?.msg91_template_id || process.env.MSG91_TEMPLATE_ID;
+            const authKey = config?.msg91?.auth_key || config?.secrets?.msg91_auth_key || process.env.MSG91_AUTH_KEY;
+            const templateId = config?.msg91?.template_id || config?.secrets?.msg91_template_id || process.env.MSG91_TEMPLATE_ID;
 
-            if (authKey && phone) {
+            const isRealKey = Boolean(authKey && !authKey.startsWith('your_') && authKey !== 'default' && authKey.length >= 10);
+
+            if (isRealKey && phone) {
                 const formattedPhone = phone.replace(/^\+/, '');
                 const response = await fetch('https://control.msg91.com/api/v5/flow/', {
                     method: 'POST',
@@ -87,6 +114,7 @@ class NotificationService {
                         'authkey': authKey,
                         'content-type': 'application/json'
                     },
+                    signal: AbortSignal.timeout(5000), // 5s timeout to prevent hanging
                     body: JSON.stringify({
                         template_id: templateId || 'default',
                         short_url: '0',
@@ -286,8 +314,17 @@ class NotificationService {
             if (!booking) return false;
 
             const travellerId = booking.user;
-            const vendorDoc = await Vendor.findById(booking.vendor).select('user').lean();
+
+            // Parallel lookup of traveller User and vendor doc
+            const [travellerUser, vendorDoc] = await Promise.all([
+                travellerId ? User.findById(travellerId).select('fcmToken').lean() : Promise.resolve(null),
+                booking.vendor ? Vendor.findById(booking.vendor).select('user').lean() : Promise.resolve(null)
+            ]);
+
             const vendorUserId = vendorDoc ? vendorDoc.user : null;
+            const vendorUser = vendorUserId
+                ? await User.findById(vendorUserId).select('fcmToken').lean()
+                : null;
 
             const startDateStr = booking.startDate ? new Date(booking.startDate).toLocaleDateString() : '';
 
@@ -305,68 +342,75 @@ class NotificationService {
             switch (status) {
                 case 'created':
                     travellerTitle = 'Booking Initiated';
-                    travellerBody = `Your booking for ${booking.item.title} has been initiated. Please complete the payment.`;
+                    travellerBody = `Your booking for ${booking.item?.title || 'your trip'} has been initiated. Please complete the payment.`;
                     break;
                 case 'confirmed':
                     travellerTitle = 'Booking Confirmed!';
-                    travellerBody = `Your booking for ${booking.item.title} has been confirmed for ${startDateStr}.`;
+                    travellerBody = `Your booking for ${booking.item?.title || 'your trip'} has been confirmed for ${startDateStr}.`;
                     vendorTitle = 'New Booking Confirmed!';
-                    vendorBody = `You have a new booking for ${booking.item.title} starting on ${startDateStr}.`;
+                    vendorBody = `You have a new booking for ${booking.item?.title || 'your trip'} starting on ${startDateStr}.`;
                     break;
                 case 'ongoing':
                     travellerTitle = 'Trip Started!';
-                    travellerBody = `Your trip for ${booking.item.title} has officially started. Enjoy your adventure!`;
+                    travellerBody = `Your trip for ${booking.item?.title || 'your trip'} has officially started. Enjoy your adventure!`;
                     vendorTitle = 'Trip Started';
-                    vendorBody = `Booking ${booking.bookingCode} for ${booking.item.title} has started.`;
+                    vendorBody = `Booking ${booking.bookingCode} for ${booking.item?.title || 'your trip'} has started.`;
                     break;
                 case 'completed':
                     travellerTitle = 'Trip Completed!';
-                    travellerBody = `We hope you enjoyed ${booking.item.title}! Please share your feedback and rate your experience.`;
+                    travellerBody = `We hope you enjoyed ${booking.item?.title || 'your trip'}! Please share your feedback and rate your experience.`;
                     vendorTitle = 'Trip Completed';
-                    vendorBody = `Booking ${booking.bookingCode} for ${booking.item.title} has been completed.`;
+                    vendorBody = `Booking ${booking.bookingCode} for ${booking.item?.title || 'your trip'} has been completed.`;
                     break;
                 case 'cancelled':
                     travellerTitle = 'Booking Cancelled';
-                    travellerBody = `Your booking for ${booking.item.title} has been cancelled successfully.`;
+                    travellerBody = `Your booking for ${booking.item?.title || 'your trip'} has been cancelled successfully.`;
                     vendorTitle = 'Booking Cancelled';
-                    vendorBody = `Booking ${booking.bookingCode} for ${booking.item.title} has been cancelled.`;
+                    vendorBody = `Booking ${booking.bookingCode} for ${booking.item?.title || 'your trip'} has been cancelled.`;
                     break;
                 case 'otp_sent':
                     travellerTitle = 'Trip Verification OTP';
-                    travellerBody = `Your OTP for checking into ${booking.item.title} is ready.`;
+                    travellerBody = `Your OTP for checking into ${booking.item?.title || 'your trip'} is ready.`;
                     break;
             }
 
-            // Dispatch to Traveler
+            // Dispatch push notifications to Traveller and Vendor in parallel
+            const pushDispatches = [];
+
             if (travellerTitle && travellerBody) {
                 getLogger().info({ travellerId, title: travellerTitle }, '[Push Notification INTENDED for Traveller]');
-                const travellerUser = await User.findById(travellerId).select('fcmToken').lean();
                 if (travellerUser && travellerUser.fcmToken) {
                     getLogger().info({ fcmToken: travellerUser.fcmToken.substring(0, 15) }, '=> Enqueueing Push Notification to Traveller');
-                    await enqueuePushNotification(
-                        travellerUser.fcmToken,
-                        { title: travellerTitle, body: travellerBody },
-                        dataPayload
+                    pushDispatches.push(
+                        enqueuePushNotification(
+                            travellerUser.fcmToken,
+                            { title: travellerTitle, body: travellerBody },
+                            dataPayload
+                        )
                     );
                 } else {
                     getLogger().warn('=> Skipped sending Push Notification to Traveller: FCM Token not found in user profile');
                 }
             }
 
-            // Dispatch to Vendor
             if (vendorUserId && vendorTitle && vendorBody) {
                 getLogger().info({ vendorUserId, title: vendorTitle }, '[Push Notification INTENDED for Vendor]');
-                const vendorUser = await User.findById(vendorUserId).select('fcmToken').lean();
                 if (vendorUser && vendorUser.fcmToken) {
                     getLogger().info({ fcmToken: vendorUser.fcmToken.substring(0, 15) }, '=> Enqueueing Push Notification to Vendor');
-                    await enqueuePushNotification(
-                        vendorUser.fcmToken,
-                        { title: vendorTitle, body: vendorBody },
-                        dataPayload
+                    pushDispatches.push(
+                        enqueuePushNotification(
+                            vendorUser.fcmToken,
+                            { title: vendorTitle, body: vendorBody },
+                            dataPayload
+                        )
                     );
                 } else {
                     getLogger().warn('=> Skipped sending Push Notification to Vendor: FCM Token not found in vendor profile');
                 }
+            }
+
+            if (pushDispatches.length > 0) {
+                await Promise.allSettled(pushDispatches);
             }
 
             return true;
@@ -385,7 +429,7 @@ class NotificationService {
     }
 
     /**
-     * Send emergency SOS alerts to all registered emergency contacts via SMS & Push
+     * Send emergency SOS alerts to all registered emergency contacts via SMS & Push (Parallelized)
      */
     async notifyEmergency(user, alert) {
         try {
@@ -394,8 +438,18 @@ class NotificationService {
             const locationStr = alert?.location?.address ? alert.location.address : (alert?.location?.latitude && alert?.location?.longitude ? `Lat: ${alert.location.latitude}, Long: ${alert.location.longitude}` : 'Unknown Location');
             const message = `EMERGENCY ALERT! ${userName} has triggered an SOS alert on PahadiGo. Location: ${locationStr}. Please check on them immediately.`;
             const contacts = Array.isArray(user.emergencyContacts) ? user.emergencyContacts : [];
-            for (const contact of contacts) if (contact?.phone) await this.sendSMS(contact.phone, message);
-            if (user.fcmToken) await enqueuePushNotification(user.fcmToken, { title: 'SOS Emergency Alert Triggered', body: `Your SOS alert was broadcasted to your emergency contacts.` }, { alertId: String(alert._id || alert.id), type: 'sos_alert' });
+
+            // Dispatch all SMS and push notifications concurrently
+            const validContacts = contacts.filter(contact => Boolean(contact?.phone));
+            const emergencyDispatches = [
+                ...validContacts.map(contact => this.sendSMS(contact.phone, message)),
+                ...(user.fcmToken ? [enqueuePushNotification(user.fcmToken, { title: 'SOS Emergency Alert Triggered', body: `Your SOS alert was broadcasted to your emergency contacts.` }, { alertId: String(alert._id || alert.id), type: 'sos_alert' })] : [])
+            ];
+
+            if (emergencyDispatches.length > 0) {
+                await Promise.allSettled(emergencyDispatches);
+            }
+
             return true;
         } catch (error) {
             return false;

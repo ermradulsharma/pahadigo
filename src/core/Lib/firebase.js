@@ -3,21 +3,36 @@ import { getMessaging as getFcmMessaging } from 'firebase-admin/messaging';
 import Setting from '@/core/Models/Setting.js';
 
 let isInitialized = false;
+let initFailed = false;
+let lastFailureTime = 0;
+const RETRY_INTERVAL_MS = 60000; // Retry checking settings every 60s if previously missing
 
 export const initFirebaseAdmin = async () => {
     const apps = getApps();
     if (apps.length) {
         isInitialized = true;
+        initFailed = false;
         return getFcmMessaging(apps[0]);
     }
 
+    // If previously failed within the last 60 seconds, skip hitting DB repeatedly
+    if (initFailed && (Date.now() - lastFailureTime < RETRY_INTERVAL_MS)) {
+        return null;
+    }
+
     try {
-        // Fallback to ENV if DB fails or settings are empty
-        const settings = await Setting.findOne() || {};
-        
-        const projectId = settings.firebase_project_id || process.env.FIREBASE_PROJECT_ID;
-        const clientEmail = settings.firebase_client_email || process.env.FIREBASE_CLIENT_EMAIL;
-        let privateKey = settings.firebase_private_key || process.env.FIREBASE_PRIVATE_KEY;
+        // Check ENV first (0ms latency)
+        let projectId = process.env.FIREBASE_PROJECT_ID;
+        let clientEmail = process.env.FIREBASE_CLIENT_EMAIL;
+        let privateKey = process.env.FIREBASE_PRIVATE_KEY;
+
+        // Fallback to DB settings if ENV is incomplete
+        if (!projectId || !clientEmail || !privateKey) {
+            const settings = await Setting.findOne().lean() || {};
+            projectId = projectId || settings.firebase_project_id;
+            clientEmail = clientEmail || settings.firebase_client_email;
+            privateKey = privateKey || settings.firebase_private_key;
+        }
 
         if (projectId && clientEmail && privateKey) {
             privateKey = privateKey.replace(/\\n/g, '\n');
@@ -30,12 +45,17 @@ export const initFirebaseAdmin = async () => {
                 })
             });
             isInitialized = true;
+            initFailed = false;
             return getFcmMessaging(app);
         } else {
-            throw new Error('FIREBASE settings are missing in Database/ENV. Push notifications will not work.');
+            initFailed = true;
+            lastFailureTime = Date.now();
+            return null;
         }
     } catch (error) {
-        throw new Error(`Firebase Admin Initialization Error: ${error.message}`);
+        initFailed = true;
+        lastFailureTime = Date.now();
+        return null;
     }
 };
 
@@ -48,3 +68,4 @@ export const getMessaging = async () => {
 };
 
 export const firebaseAdmin = { initializeApp, cert, getApps, getMessaging: getFcmMessaging };
+
