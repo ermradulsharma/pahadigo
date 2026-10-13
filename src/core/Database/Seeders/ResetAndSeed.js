@@ -6,6 +6,10 @@ import connectDB from '../../Config/db.js';
 const resetAndSeed = async () => {
     try {
         loadEnv();
+        if (process.env.NODE_ENV === 'production' || process.env.APP_ENV === 'production') {
+            console.error('[FATAL] Cannot execute database reset and seeder in production environment.');
+            process.exit(1);
+        }
         await connectDB();
         if (mongoose.connection.db) {
             const collections = await mongoose.connection.db.collections();

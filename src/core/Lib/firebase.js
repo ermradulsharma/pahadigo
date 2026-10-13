@@ -3,21 +3,12 @@ import { getMessaging as getFcmMessaging } from 'firebase-admin/messaging';
 import Setting from '@/core/Models/Setting.js';
 
 let isInitialized = false;
-let initFailed = false;
-let lastFailureTime = 0;
-const RETRY_INTERVAL_MS = 60000; // Retry checking settings every 60s if previously missing
 
 export const initFirebaseAdmin = async () => {
     const apps = getApps();
     if (apps.length) {
         isInitialized = true;
-        initFailed = false;
         return getFcmMessaging(apps[0]);
-    }
-
-    // If previously failed within the last 60 seconds, skip hitting DB repeatedly
-    if (initFailed && (Date.now() - lastFailureTime < RETRY_INTERVAL_MS)) {
-        return null;
     }
 
     try {
@@ -28,10 +19,13 @@ export const initFirebaseAdmin = async () => {
 
         // Fallback to DB settings if ENV is incomplete
         if (!projectId || !clientEmail || !privateKey) {
-            const settings = await Setting.findOne().lean() || {};
-            projectId = projectId || settings.firebase_project_id;
-            clientEmail = clientEmail || settings.firebase_client_email;
-            privateKey = privateKey || settings.firebase_private_key;
+            const settings = await Setting.findOne();
+            if (settings) {
+                const sObj = settings.toObject ? settings.toObject() : settings;
+                projectId = projectId || sObj.firebase_project_id;
+                clientEmail = clientEmail || sObj.firebase_client_email;
+                privateKey = privateKey || sObj.firebase_private_key;
+            }
         }
 
         if (projectId && clientEmail && privateKey) {
@@ -45,17 +39,12 @@ export const initFirebaseAdmin = async () => {
                 })
             });
             isInitialized = true;
-            initFailed = false;
             return getFcmMessaging(app);
         } else {
-            initFailed = true;
-            lastFailureTime = Date.now();
-            return null;
+            throw new Error('FIREBASE settings are missing in Database/ENV. Push notifications will not work.');
         }
     } catch (error) {
-        initFailed = true;
-        lastFailureTime = Date.now();
-        return null;
+        throw new Error(`Firebase Admin Initialization Error: ${error.message}`);
     }
 };
 

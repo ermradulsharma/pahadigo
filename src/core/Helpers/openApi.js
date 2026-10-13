@@ -1,5 +1,3 @@
-import routes from '@/core/Routes/api.js';
-
 const OPENAPI_VERSION = '3.0.3';
 const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 
@@ -95,7 +93,7 @@ const buildResponses = () => ({
     }
 });
 
-export const generateOpenApiSpec = (routeDefinitions = routes) => {
+export const generateOpenApiSpec = (routeDefinitions = []) => {
     const paths = {};
     const tags = new Set();
 

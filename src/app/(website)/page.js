@@ -157,14 +157,12 @@ const jsonLdData = {
     ]
 };
 
+import CategoryService from '@/core/Services/General/CategoryService.js';
+
 async function getCategories() {
     try {
-        const apiUrl = process.env.NEXT_PUBLIC_API_URL;
-        if (!apiUrl) return [];
-        const res = await fetch(`${apiUrl}/categories`, { cache: 'no-store' });
-        if (!res.ok) return [];
-        const result = await res.json();
-        return result.data || [];
+        const categories = await CategoryService.getAllCategories();
+        return JSON.parse(JSON.stringify(categories || []));
     } catch (error) {
         return [];
     }

@@ -135,13 +135,15 @@ jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
     getAppConfig: jest.fn(() => Promise.resolve({
         razorpay: { key_id: 'test_key', key_secret: 'test_secret' },
         tax: { gst: 5, service_tax: 0 }
-    }))
+    })),
+    clearAppConfigCache: jest.fn()
 }));
 
 jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => ({
     getPackageItemById: jest.fn(),
     getUserById: jest.fn(),
     getBusinessById: jest.fn(),
+    getBusinessByIdAndUserId: jest.fn(),
     getBookingBy: jest.fn(),
     getBusinessBy: jest.fn(),
     getPackageBy: jest.fn()

@@ -181,7 +181,11 @@ export function createNextRouter(routes) {
 
             return withRequestId(finalResponse, requestId);
         } catch (error) {
-            return withRequestId(errorResponse(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR, {}), requestId);
+            const statusCode = error?.statusCode || (error?.name === 'AppError' ? error?.statusCode : null) || HTTP_STATUS.INTERNAL_SERVER_ERROR;
+            const message = error?.isOperational ? error.message : (statusCode < 500 ? (error?.message || RESPONSE_MESSAGES.ERROR.BAD_REQUEST) : RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            const errDetails = error?.errors || (process.env.NODE_ENV === 'development' ? { stack: error?.stack } : null);
+            logError('API handler operational/internal exception', error, { requestId, statusCode });
+            return withRequestId(errorResponse(statusCode, message, errDetails), requestId);
         }
     };
 }

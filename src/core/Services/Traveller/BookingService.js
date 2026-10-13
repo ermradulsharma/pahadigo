@@ -378,9 +378,44 @@ class BookingService {
     }
 
     /**
-     * Process refund and cancel booking
+     * Process cancellation with tiered refund policy (100% > 7d, 50% 3-7d, 0% < 48h) and cancel booking
      */
     async refundBooking(bookingId, req = null) {
+        const bookingToCancel = await Booking.findById(bookingId).lean();
+        if (!bookingToCancel) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
+
+        if (bookingToCancel.status === BOOKING_STATUS.CANCELLED) {
+            throw new Error("This booking is already cancelled.");
+        }
+
+        // Tiered cancellation policy (100% > 7 days, 50% 3-7 days, 0% < 48 hours)
+        let refundPercentage = 0;
+        if (bookingToCancel.startDate) {
+            const msUntilTrip = new Date(bookingToCancel.startDate).getTime() - Date.now();
+            const hoursUntilTrip = msUntilTrip / (1000 * 60 * 60);
+            if (hoursUntilTrip > 7 * 24) {
+                refundPercentage = 1.0;
+            } else if (hoursUntilTrip >= 48) {
+                refundPercentage = 0.5;
+            } else {
+                refundPercentage = 0.0;
+            }
+        }
+
+        const totalPaid = bookingToCancel.pricing?.total || 0;
+        const refundAmount = Math.round(totalPaid * refundPercentage);
+        let refundGatewayResponse = null;
+
+        const isPaid = bookingToCancel.paymentStatus === PAYMENT_STATUS.PAID || bookingToCancel.paymentStatus === 'paid';
+        if (isPaid && refundAmount > 0 && bookingToCancel.payment?.paymentId) {
+            try {
+                const config = await getAppConfig();
+                refundGatewayResponse = await RazorpayService.createRefund(bookingToCancel.payment.paymentId, refundAmount, config?.razorpay);
+            } catch (gatewayErr) {
+                // Gateway refund failed, fallback to marking refund pending
+            }
+        }
+
         const session = await mongoose.startSession();
         let finalBooking;
         try {
@@ -389,18 +424,34 @@ class BookingService {
                 if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
 
                 booking.status = BOOKING_STATUS.CANCELLED;
-                booking.paymentStatus = booking.paymentStatus === PAYMENT_STATUS.UNPAID ? PAYMENT_STATUS.CANCELLED : PAYMENT_STATUS.REFUND_PENDING;
+                if (!isPaid) {
+                    booking.paymentStatus = PAYMENT_STATUS.CANCELLED;
+                } else if (refundGatewayResponse?.id) {
+                    booking.paymentStatus = PAYMENT_STATUS.REFUNDED;
+                } else if (refundAmount > 0) {
+                    booking.paymentStatus = PAYMENT_STATUS.REFUND_PENDING;
+                } else {
+                    booking.paymentStatus = PAYMENT_STATUS.CANCELLED;
+                }
+
+                if (!booking.pricing) booking.pricing = {};
+                booking.pricing.refundAmount = refundAmount;
+                booking.pricing.refundStatus = refundGatewayResponse?.id ? REFUND_STATUS.REFUNDED : (refundAmount > 0 ? REFUND_STATUS.PENDING : REFUND_STATUS.NONE);
+                if (refundGatewayResponse?.id) {
+                    booking.pricing.refundId = refundGatewayResponse.id;
+                    booking.pricing.refundDate = new Date();
+                }
 
                 booking.cancellation = {
                     reason: req?.body?.reason || 'Cancelled by User',
                     date: new Date(),
-                    actor: req?.user?.id
+                    actor: req?.user?.id || 'USER'
                 };
 
                 booking.timeline.push({
                     status: 'Booking Cancelled',
-                    remarks: `Refund of ₹${booking.pricing.total} processed.`,
-                    actor: req?.user?.id
+                    remarks: `Cancelled by user. Eligible refund: ₹${refundAmount} (${Math.round(refundPercentage * 100)}%). ${refundGatewayResponse?.id ? `Gateway Refund ID: ${refundGatewayResponse.id}` : ''}`,
+                    actor: req?.user?.id || 'USER'
                 });
                 await booking.save({ session });
 

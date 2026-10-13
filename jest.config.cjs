@@ -4,6 +4,7 @@ const customJestConfig = {
     globalSetup: './tests/globalSetup.js',
     globalTeardown: './tests/globalTeardown.js',
     testTimeout: 120000,
+    modulePathIgnorePatterns: ['<rootDir>/src/core/Lib/__mocks__'],
     moduleNameMapper: {
         '^chalk$': '<rootDir>/tests/__mocks__/chalkMock.js',
         '\\.jsx$': '<rootDir>/tests/__mocks__/jsxMock.js',

@@ -17,14 +17,15 @@ core_engineering_review_criteria:
   BASE: "Verify eventual consistency design for QStash background jobs and Redis cache invalidation."
 
 review_rules:
+  - "MOBILE_APP_CRASH_PREVENTION: MANDATORY REVIEW GATE: Verify that any proposed change, update, or refactor does NOT break or crash existing Android and iOS mobile applications (Flutter/React Native). Reject any PR that modifies established `/api/v1/` response envelopes (`{ success, message, data }` / `{ success, message, data, pagination }`) or alters payload field types without a major `/v2/` version bump."
   - "HELPER_UTILIZATION: Verify that developers inspect `src/core/Helpers/` first and reuse existing helper functions instead of re-implementing inline logic."
   - "STRICT_MVC_ENFORCEMENT: Reject business logic in `src/app/api/`. Verify `Router.group()` routing. Enforce logic placement in Controllers and Services."
   - "DB_PERF_VERIFICATION: Verify `.lean()` on all read queries. Check for compound text indexes. Reject N+1 query patterns."
   - "SECURITY_AUDIT: Require Zod schemas for all payloads. Verify NoSQL injection sanitization, sliding-window auth rate limiting, RBAC middleware, and PII redaction."
-  - "AUTH_TOKENS: Confirm short-lived JWT access tokens (15m), Redis refresh tokens, and instant JTI blacklisting on logout."
+  - "AUTH_TOKENS: Confirm mobile session continuity with 24h JWT access tokens containing unique `jti`, Redis refresh tokens, and instant JTI blacklisting in Redis upon logout."
   - "TRANSACTION_SAFETY: Ensure Mongoose `session.withTransaction()` is used for multi-doc writes."
   - "CLEAN_CODE: Verify ESM (`.js`) and JSDoc usage. Reject TypeScript. Ensure mobile frontend code remains outside `src/app/`."
-  - "API_STANDARDS: Verify standard payload `{ success, message, data, error, meta }` and standard `HTTP_STATUS` codes."
+  - "API_STANDARDS: Verify standard mobile payload `{ success, message, data }` (and `{ success, message, data, pagination }` for paginated endpoints) and standard `HTTP_STATUS` codes. Reject PRs that inject breaking envelope keys."
   - "API_VERSIONING: Reject mobile API routes missing `/api/v1/` version prefix."
   - "ENV_SAFETY: Reject direct `process.env` calls in business logic. Enforce validated config objects."
   - "ASYNC_OFFLOADING: Verify heavy jobs (Sharp compression, OCR, emails) are queued via QStash, returning `202 Accepted` early."

@@ -11,7 +11,7 @@ const generateAuthTokens = async (payload, rememberMe = false) => {
     const SECRET = config.jwt_secret;
     if (!SECRET) throw new Error('JWT_SECRET is missing in appConfig');
 
-    // Access Token (24 hours)
+    // Access Token (24 hours - mobile session continuity)
     const accessJti = randomUUID();
     const accessToken = jwt.sign({ ...payload, jti: accessJti, type: 'access' }, SECRET, { expiresIn: '24h' });
 

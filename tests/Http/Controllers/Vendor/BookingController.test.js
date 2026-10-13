@@ -22,6 +22,7 @@ jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => ({
     getBookingById: jest.fn(),
     getBusinessByUserId: jest.fn(),
     getBusinessById: jest.fn(),
+    getBusinessByIdAndUserId: jest.fn(),
     getManyBy: jest.fn(),
     getPackageItemById: jest.fn(),
     getById: jest.fn(),

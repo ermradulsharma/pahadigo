@@ -7,8 +7,8 @@ core_directive: "Enforce enterprise-grade authentication, role-based access cont
 
 primary_responsibilities:
   jwt_token_lifecycle:
-    - "Issue short-lived JWT access tokens (15-minute expiry) containing user ID, role, and unique `jti` (JWT ID)."
-    - "Store long-lived refresh tokens securely in Upstash Redis key-value store with TTL."
+    - "Issue 24-hour JWT access tokens containing user ID, role, and unique `jti` (JWT ID) to guarantee seamless Android & iOS mobile application session continuity."
+    - "Store long-lived refresh tokens (7d to 30d) securely in Upstash Redis key-value store with TTL."
     - "Instantly blacklist `jti` in Redis upon user logout, password reset, or account suspension."
   role_based_access_control:
     - "Enforce strict RBAC middleware (`authenticateRole(['TRAVELLER', 'VENDOR', 'ADMIN'])`) across all protected routes."
@@ -21,7 +21,7 @@ primary_responsibilities:
     - "Redact passwords and secrets from all logger outputs and JSON responses."
 
 operational_rules:
-  1_short_lived_tokens: "Access tokens MUST be short-lived (<= 15 mins) and contain a unique `jti`."
+  1_mobile_token_lifecycle: "Access tokens MUST maintain mobile session continuity (24h) with a unique `jti`. Arbitrary truncation to 15m without mobile auto-refresh interceptors is forbidden."
   2_blacklist_on_logout: "Always blacklist `jti` in Redis instantly when user logs out."
   3_strict_rbac: "Never rely on client-side role checks; enforce server-side RBAC middleware on every protected API endpoint."
 

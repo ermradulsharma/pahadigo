@@ -58,17 +58,17 @@ const generateVendors = (users) => {
 const seedMass = async () => {
     try {
         const options = parseArgs();
-        console.log(`Starting Mass Seed: ${options.vendors} Vendors, ${options.users} Travellers`);
 
         loadEnv();
+        if (process.env.NODE_ENV === 'production' || process.env.APP_ENV === 'production') {
+            process.exit(1);
+        }
         await connectDB();
 
-        console.log('Clearing existing data (Mass Seed Mode)...');
         await User.deleteMany({ role: { $in: [USER_ROLES.VENDOR, USER_ROLES.TRAVELLER] } });
         await Vendor.deleteMany({});
 
         // 1. Seed Travellers
-        console.log(`Seeding ${options.users} Travellers...`);
         let totalUsersSeeded = 0;
         let globalPhoneIndex = 0;
         for (let i = 0; i < options.users; i += options.batchSize) {
@@ -77,34 +77,27 @@ const seedMass = async () => {
             await User.insertMany(userBatch, { lean: true });
             totalUsersSeeded += batchCount;
             globalPhoneIndex += batchCount;
-            process.stdout.write(`\rSeeded ${totalUsersSeeded}/${options.users} Travellers`);
         }
-        console.log('\nTravellers Seeded.');
 
         // 2. Seed Vendors
-        console.log(`Seeding ${options.vendors} Vendors...`);
         let totalVendorsSeeded = 0;
         for (let i = 0; i < options.vendors; i += options.batchSize) {
             const batchCount = Math.min(options.batchSize, options.vendors - i);
-            
+
             // Create user records for vendors
             const userBatch = generateUsers(batchCount, USER_ROLES.VENDOR, globalPhoneIndex);
             const insertedUsers = await User.insertMany(userBatch, { lean: true });
-            
+
             // Generate corresponding vendor profiles
             const vendorBatch = generateVendors(insertedUsers);
             await Vendor.insertMany(vendorBatch, { lean: true });
-            
+
             totalVendorsSeeded += batchCount;
             globalPhoneIndex += batchCount;
-            process.stdout.write(`\rSeeded ${totalVendorsSeeded}/${options.vendors} Vendors`);
         }
-        console.log('\nVendors Seeded.');
 
-        console.log('Mass Seeding Completed Successfully.');
         process.exit(0);
     } catch (error) {
-        console.error('\nMass Seeding Failed:', error);
         process.exit(1);
     }
 };

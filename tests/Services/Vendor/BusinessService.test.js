@@ -54,7 +54,8 @@ jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => ({
     getBusinessById: jest.fn(),
     getBusinessByUserId: jest.fn(),
     getManyBy: jest.fn(),
-    getPackageBy: jest.fn()
+    getPackageBy: jest.fn(),
+    getUserById: jest.fn()
 }));
 
 jest.unstable_mockModule('@/core/Helpers/geoUtils.js', () => ({

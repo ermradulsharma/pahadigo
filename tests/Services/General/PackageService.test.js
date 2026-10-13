@@ -36,7 +36,8 @@ jest.unstable_mockModule('@/core/Services/MasterService.js', () => ({
 }));
 
 jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
-    getAppConfig: jest.fn().mockResolvedValue({ tax: { gst: 18, service_tax: 2 } })
+    getAppConfig: jest.fn().mockResolvedValue({ tax: { gst: 18, service_tax: 2 } }),
+    clearAppConfigCache: jest.fn()
 }));
 
 const { default: PackageService } = await import('@/core/Services/General/PackageService.js');

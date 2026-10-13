@@ -44,6 +44,14 @@ class BaseAuthService {
         const accessDecoded = decodeToken(accessToken);
         if (!accessDecoded || !accessDecoded.id) return false;
 
+        // Blacklist access token JTI in Redis until expiry (IAM security law)
+        if (accessDecoded.jti) {
+            const exp = accessDecoded.exp;
+            const now = Math.floor(Date.now() / 1000);
+            const remainingTtl = exp ? Math.max(1, exp - now) : 900;
+            await CacheService.set(`blacklist:${accessDecoded.jti}`, true, remainingTtl);
+        }
+
         if (refreshToken) {
             const refreshDecoded = decodeToken(refreshToken);
             if (refreshDecoded && refreshDecoded.jti) {
