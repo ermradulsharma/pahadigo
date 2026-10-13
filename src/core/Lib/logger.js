@@ -1,8 +1,13 @@
 import pino from 'pino';
 import path from 'path';
 import fs from 'fs';
+import { Writable } from 'stream';
+import pretty from 'pino-pretty';
 
-const isVercel = process.env.VERCEL === '1' || Boolean(process.env.VERCEL) || Boolean(process.env.NEXT_RUNTIME);
+// Do NOT check process.env.NEXT_RUNTIME here.
+// Next.js sets NEXT_RUNTIME ('nodejs' | 'edge') in all server contexts,
+// which previously caused all local server requests to falsely identify as Vercel.
+const isVercel = process.env.VERCEL === '1' || process.env.VERCEL === 'true' || process.env.LOG_TO_STDOUT_ONLY === 'true';
 const isProduction = process.env.NODE_ENV === 'production';
 
 let logger;
@@ -18,47 +23,82 @@ if (isVercel) {
     });
 } else {
     // Local / Container environment with local filesystem access
-    const getLogFilePath = () => {
+    let cachedDateStr = '';
+    let cachedLogFilePath = '';
+
+    const getDailyLogFilePath = () => {
         try {
             const now = new Date();
             const dd = String(now.getDate()).padStart(2, '0');
             const mm = String(now.getMonth() + 1).padStart(2, '0');
             const yyyy = now.getFullYear();
+            const dateStr = `${dd}_${mm}_${yyyy}`;
+
+            if (dateStr === cachedDateStr && cachedLogFilePath) {
+                return cachedLogFilePath;
+            }
+
             const logDir = path.resolve(process.cwd(), 'logs');
             if (!fs.existsSync(logDir)) {
                 fs.mkdirSync(logDir, { recursive: true });
             }
-            return path.join(logDir, `${dd}_${mm}_${yyyy}_pahadigo.log`);
-        } catch (e) {
+
+            const logFilePath = path.join(logDir, `${dateStr}_pahadigo.log`);
+            if (!fs.existsSync(logFilePath)) {
+                fs.writeFileSync(logFilePath, '', { flag: 'a' });
+            }
+
+            cachedDateStr = dateStr;
+            cachedLogFilePath = logFilePath;
+            return logFilePath;
+        } catch {
             return null;
         }
     };
 
-    const logFilePath = getLogFilePath();
+    // Pre-initialize current day's log file so it exists immediately
+    getDailyLogFilePath();
 
-    const targets = [];
-    if (logFilePath) {
-        targets.push({
-            target: 'pino/file',
-            options: {
-                destination: logFilePath,
-                mkdir: true,
-            },
-        });
-    }
+    const streams = [];
 
+    // 1. Console stream (pretty in development, raw stdout in production)
     if (!isProduction) {
-        targets.push({
-            target: 'pino-pretty',
-            options: {
-                colorize: true,
-                translateTime: 'SYS:standard',
-                ignore: 'pid,hostname',
-            },
-        });
+        try {
+            const buildPretty = typeof pretty === 'function' ? pretty : pretty?.default;
+            if (typeof buildPretty === 'function') {
+                streams.push({
+                    stream: buildPretty({
+                        colorize: true,
+                        translateTime: 'SYS:standard',
+                        ignore: 'pid,hostname',
+                    }),
+                });
+            } else {
+                streams.push({ stream: process.stdout });
+            }
+        } catch {
+            streams.push({ stream: process.stdout });
+        }
+    } else {
+        streams.push({ stream: process.stdout });
     }
 
-    const transport = targets.length > 0 ? pino.transport({ targets }) : undefined;
+    // 2. Daily file stream (synchronous append avoids worker_threads bundler issues in Next.js)
+    const fileStream = new Writable({
+        write(chunk, encoding, callback) {
+            try {
+                const filePath = getDailyLogFilePath();
+                if (filePath) {
+                    fs.appendFileSync(filePath, chunk);
+                }
+            } catch {
+                // Silently handle write errors so logging never crashes the request cycle
+            }
+            callback();
+        },
+    });
+
+    streams.push({ stream: fileStream });
 
     logger = pino(
         {
@@ -68,7 +108,7 @@ if (isVercel) {
             },
             timestamp: pino.stdTimeFunctions.isoTime,
         },
-        transport
+        pino.multistream(streams)
     );
 }
 
@@ -80,3 +120,4 @@ export const getLogger = (requestId) => {
 };
 
 export default logger;
+

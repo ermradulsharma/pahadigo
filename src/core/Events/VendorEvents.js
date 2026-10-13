@@ -19,12 +19,12 @@ VendorEvents.on('vendor.profile_created', async ({ identifier, businessName }) =
 
 /**
  * Event: vendor.profile_updated
- * Sends a profile update confirmation email to the vendor.
+ * Sends a profile update confirmation email and push notification to the vendor.
  */
-VendorEvents.on('vendor.profile_updated', async ({ identifier, businessName }) => {
+VendorEvents.on('vendor.profile_updated', async ({ identifier, details }) => {
     try {
         if (identifier && identifier.includes('@'))
-            await NotificationService.sendUserProfileUpdatedEmail(identifier, businessName);
+            await NotificationService.sendUserProfileUpdatedEmail(identifier, details);
     } catch (error) {
         getLogger().error({ err: error }, "[VendorEvents] Error handling vendor.profile_updated");
     }

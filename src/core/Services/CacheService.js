@@ -33,11 +33,12 @@ class CacheService {
                 this.standardClient = createClient({
                     url: REDIS.standard_url,
                     socket: {
+                        connectTimeout: 2000,
                         reconnectStrategy: (retries) => {
-                            if (retries > 20) {
+                            if (retries > 3) {
                                 return new Error('Redis connection retries exhausted');
                             }
-                            return Math.min(retries * 500, 5000);
+                            return Math.min(retries * 500, 2000);
                         }
                     }
                 });

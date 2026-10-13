@@ -43,6 +43,7 @@ export const uploadToCloudinary = async (file, folder = 'general') => {
 
         return { url: uploadResponse.secure_url, publicId: uploadResponse.public_id };
     } catch (error) {
+        console.error('[Cloudinary upload error]:', error?.message || error);
         return Promise.reject({ status: HTTP_STATUS.INTERNAL_SERVER_ERROR, message: RESPONSE_MESSAGES.ERROR.SOMETHING_WENT_WRONG });
     }
 };

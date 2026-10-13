@@ -45,19 +45,23 @@ export class PushNotificationService {
                     priority: 'high',
                     notification: {
                         sound: 'default',
-                        channelId: 'pahadigo_main_channel'
+                        channelId: 'tripdhara_channel'
                     }
                 },
                 // iOS specific settings
                 apns: {
+                    headers: { 'apns-priority': '10' },
                     payload: {
                         aps: {
-                            sound: 'default',
-                            badge: 1
+                            sound: 'default'
                         }
                     }
                 }
             };
+
+            console.log('\n================== 📱 FCM PUSH NOTIFICATION PAYLOAD ==================');
+            console.log(JSON.stringify(payload, null, 2));
+            console.log('=======================================================================\n');
 
             logger.debug({ payload }, 'Sending FCM Payload');
 
@@ -66,12 +70,7 @@ export class PushNotificationService {
             return { success: true, messageId: response };
         } catch (error) {
             // Handle common FCM token-related validation/expiration errors gracefully without printing full stack trace
-            const isInvalidToken =
-                error.code === 'messaging/invalid-registration-token' ||
-                error.code === 'messaging/registration-token-not-registered' ||
-                (error.code === 'messaging/invalid-argument' &&
-                    error.message?.includes('registration token'));
-
+            const isInvalidToken = error.code === 'messaging/invalid-registration-token' || error.code === 'messaging/registration-token-not-registered' || (error.code === 'messaging/invalid-argument' && error.message?.includes('registration token'));
             if (isInvalidToken) {
                 logger.warn({ token }, `[PushNotificationService] Token is invalid or unregistered`);
             } else {

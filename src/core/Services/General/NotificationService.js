@@ -81,16 +81,21 @@ class NotificationService {
     }
 
     /**
+     * Send push notification directly via PushNotificationService
+     */
+    async sendPushNotification(token, notification, data = {}) {
+        return await PushNotificationService.sendToDevice(token, notification, data);
+    }
+
+    /**
      * Send OTP verification email
      */
     async sendOTPEmail(email, otp) {
         try {
             const html = await renderTemplate('Emails/otp.html', { OTP: otp });
-            const info = await this._sendEmailHelper({ to: email, subject: `PahadiGo OTP Verification`, html: html });
-            getLogger().info({ email, messageId: info?.messageId }, "[NotificationService] OTP Verification email sent successfully");
+            await this._sendEmailHelper({ to: email, subject: 'OTP Verification Code', html: html });
             return true;
         } catch (error) {
-            getLogger().error({ err: error, email }, "[NotificationService] sendOTPEmail Error");
             return false;
         }
     }
@@ -246,10 +251,39 @@ class NotificationService {
     /**
      * Send email to user acknowledging profile update
      */
-    async sendUserProfileUpdatedEmail(email, userName) {
+    async sendUserProfileUpdatedEmail(email, details) {
         try {
-            const html = await renderTemplate('Emails/vendor/profile.html', { USER_NAME: userName });
-            await this._sendEmailHelper({ to: email, toName: userName, subject: `Profile Updated - PahadiGo`, html: html });
+            const accountDetails = {
+                USER_NAME: details?.name,
+                BUSINESS_NAME: details?.businessProfile?.businessName,
+                BUSINESS_OWNER_NAME: details?.businessProfile?.ownerName,
+                BUSINESS_ADDRESS: details?.businessProfile?.address,
+                BUSINESS_PHONE: details?.businessProfile?.businessNumber
+            };
+            const html = await renderTemplate('Emails/vendor/profile.html', accountDetails);
+            await this._sendEmailHelper({ to: email, toName: details?.businessProfile?.businessName, subject: 'Update Business Profile', html: html });
+
+            // Push Notification to vendor device using details.fcmToken
+            // if (details?.fcmToken) {
+            const businessProfileId = details?.businessProfile?.id || details?.id || '';
+            const profileImage = details?.businessProfile?.profileImage || details?.profileImage || null;
+
+            await PushNotificationService.sendToDevice(
+                details.fcmToken,
+                {
+                    title: 'Business Profile Updated!',
+                    body: 'Your business profile has been successfully updated.',
+                    ...(profileImage && { image: profileImage }),
+                },
+                {
+                    type: 'profile_updated',
+                    businessProfileId: String(businessProfileId)
+                }
+            );
+            // } else {
+            //     getLogger().info({ email }, "[NotificationService] Skipped push notification: No fcmToken found in details");
+            // }
+
             return true;
         } catch (error) {
             getLogger().error({ err: error }, "[NotificationService] sendUserProfileUpdatedEmail Error");

@@ -14,12 +14,13 @@ export const clearTemplateCache = () => {
  */
 export const renderTemplate = async (templateName, data = {}) => {
   try {
-    let templateContent = process.env.NODE_ENV !== 'test' ? templateCache.get(templateName) : null;
+    const isProduction = process.env.NODE_ENV === 'production';
+    let templateContent = isProduction ? templateCache.get(templateName) : null;
     if (!templateContent) {
       const rootPath = path.resolve(process.cwd(), 'src/core/Templates');
       const filePath = path.join(rootPath, templateName);
       templateContent = await fs.readFile(filePath, 'utf8');
-      if (process.env.NODE_ENV !== 'test') {
+      if (isProduction) {
         templateCache.set(templateName, templateContent);
       }
     }

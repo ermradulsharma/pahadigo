@@ -1,4 +1,6 @@
 import { jest } from '@jest/globals';
+import fs from 'fs';
+import path from 'path';
 
 describe('Industry Standard: Logger (Pino Wrapper)', () => {
     let loggerModule;
@@ -37,4 +39,20 @@ describe('Industry Standard: Logger (Pino Wrapper)', () => {
 
         childSpy.mockRestore();
     });
+
+    it('[File Writing] should write log entries to the daily log file', () => {
+        const testMsg = `Unit test write verification ${Date.now()}`;
+        loggerModule.default.info(testMsg);
+
+        const now = new Date();
+        const dd = String(now.getDate()).padStart(2, '0');
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const yyyy = now.getFullYear();
+        const logFilePath = path.resolve(process.cwd(), 'logs', `${dd}_${mm}_${yyyy}_pahadigo.log`);
+
+        expect(fs.existsSync(logFilePath)).toBe(true);
+        const fileContent = fs.readFileSync(logFilePath, 'utf8');
+        expect(fileContent).toContain(testMsg);
+    });
 });
+

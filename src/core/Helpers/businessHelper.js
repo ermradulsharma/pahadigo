@@ -34,8 +34,9 @@ export function closurePayload(closure) {
  */
 export function businessDetailsFormat(vendor) {
     if (!vendor) return null;
+    const vendorId = vendor._id ? vendor._id.toString() : (vendor.id ? String(vendor.id) : null);
     return {
-        id: vendor._id.toString(),
+        id: vendorId,
         ownerName: vendor.ownerName,
         businessName: vendor.businessName,
         businessNumber: vendor.businessNumber,

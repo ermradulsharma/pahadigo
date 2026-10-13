@@ -45,7 +45,7 @@ class BusinessController extends Controller {
             const result = await BusinessService.syncBusinessProfile(userId, body);
             if (result.user?.email) VendorEvents.emit('vendor.profile_created', { identifier: result.user.email, businessName: result.businessName });
 
-            return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.PROFILE_INITIATED, businessAuthResponse(result));
+            return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.VENDOR.PROFILE_INITIATED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
@@ -56,8 +56,9 @@ class BusinessController extends Controller {
         try {
             const body = await this._prepareProfileBody(req);
             const result = await BusinessService.syncBusinessProfile(req.user.id, body);
+            console.log(result);
             if (!result) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-            if (result.user?.email) VendorEvents.emit('vendor.profile_updated', { identifier: result.user.email, businessName: result.businessName });
+            if (result.email) VendorEvents.emit('vendor.profile_updated', { identifier: result.email, details: result });
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PROFILE_UPDATED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
