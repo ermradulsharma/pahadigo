@@ -35,29 +35,22 @@ class NotificationService {
 
         const isSecure = port === 465;
 
-        // If Gmail, use nodemailer's built-in 'gmail' service to bypass all port/handshake issues
-        if (host === 'smtp.gmail.com' || (user && user.includes('@gmail.com'))) {
-            this._cachedTransporter = nodemailer.createTransport({
-                service: 'gmail',
-                auth: { user, pass }
-            });
-        } else {
-            this._cachedTransporter = nodemailer.createTransport({
-                pool: true,
-                maxConnections: 5,
-                maxMessages: 100,
-                connectionTimeout: 5000,
-                greetingTimeout: 5000,
-                socketTimeout: 10000,
-                host,
-                port,
-                secure: isSecure,
-                auth: { user, pass },
-                ...(port === 587 && {
-                    tls: { rejectUnauthorized: false }
-                })
-            });
-        }
+        this._cachedTransporter = nodemailer.createTransport({
+            pool: true,
+            maxConnections: 5,
+            maxMessages: 100,
+            connectionTimeout: 5000,
+            greetingTimeout: 5000,
+            socketTimeout: 10000,
+            host,
+            port,
+            secure: isSecure,
+            auth: { user, pass },
+            ...(port === 587 && {
+                tls: { rejectUnauthorized: false }
+            })
+        });
+
 
         this._lastSmtpKey = smtpKey;
         return this._cachedTransporter;
@@ -67,30 +60,18 @@ class NotificationService {
      * Internal helper to send emails with standard configuration
      */
     async _sendEmailHelper({ to, toName, subject, html, attachments }) {
-        try {
-            const config = await getAppConfig();
-            const transporter = await this._getTransporter();
-            const toAddress = toName ? `"${toName}" <${to}>` : to;
-            const fromName = config.smtp?.from_name || 'PahadiGo';
-            const fromAddress = config.smtp?.from_address || config.smtp?.user;
-
-            const info = await transporter.sendMail({
-                from: `"${fromName}" <${fromAddress}>`,
-                to: toAddress,
-                subject,
-                html,
-                ...(attachments && { attachments })
-            });
-
-            getLogger().info({ to: toAddress, messageId: info?.messageId }, '[NotificationService] Email sent successfully');
-            return info;
-        } catch (error) {
-            getLogger().error({ err: error, to }, '[NotificationService] SMTP sendMail failed');
-            // Invalidate cached transporter on failure so next request doesn't reuse broken connection
-            this._cachedTransporter = null;
-            this._lastSmtpKey = null;
-            throw error;
-        }
+        const config = await getAppConfig();
+        const transporter = await this._getTransporter();
+        const toAddress = toName ? `"${toName}" <${to}>` : to;
+        const fromName = config.smtp?.from_name || 'PahadiGo';
+        const fromAddress = config.smtp?.from_address || config.smtp?.user;
+        return await transporter.sendMail({
+            from: `"${fromName}" <${fromAddress}>`,
+            to: toAddress,
+            subject,
+            html,
+            ...(attachments && { attachments })
+        });
     }
 
     /**
@@ -109,7 +90,6 @@ class NotificationService {
             await this._sendEmailHelper({ to: email, subject: 'OTP Verification Code', html: html });
             return true;
         } catch (error) {
-            getLogger().error({ err: error, email }, "[NotificationService] sendOTPEmail Error");
             return false;
         }
     }

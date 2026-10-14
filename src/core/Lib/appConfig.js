@@ -99,12 +99,12 @@ export const getAppConfig = async (forceReal = DEFAULTS.FALSE) => {
         const dbSettings = settingDoc ? settingDoc.toObject() : {};
         const config = {
             smtp: {
-                host: (dbSettings.smtp_host && dbSettings.smtp_host !== 'null') ? dbSettings.smtp_host : APP_DETAILS.SMTP_HOST,
-                port: parseInt(dbSettings.smtp_port) || parseInt(APP_DETAILS.SMTP_PORT) || 465,
-                user: (dbSettings.smtp_email && dbSettings.smtp_email !== 'null' && dbSettings.smtp_email.trim() !== '') ? dbSettings.smtp_email : APP_DETAILS.SMTP_USER,
-                pass: (dbSettings.smtp_password && dbSettings.smtp_password !== 'null' && dbSettings.smtp_password.trim() !== '') ? dbSettings.smtp_password : APP_SECRETS.SMTP_ACCOUNT_PASS,
-                from_address: (dbSettings.smtp_from_address && dbSettings.smtp_from_address !== 'null') ? dbSettings.smtp_from_address : (process.env.SMTP_FROM_ADDRESS || APP_DETAILS.MAIL_FROM_EMAIL),
-                from_name: (dbSettings.smtp_from_name && dbSettings.smtp_from_name !== 'null') ? dbSettings.smtp_from_name : APP_DETAILS.APP_NAME,
+                host: dbSettings.smtp_host || APP_DETAILS.SMTP_HOST,
+                port: parseInt(dbSettings.smtp_port) || APP_DETAILS.SMTP_PORT,
+                user: dbSettings.smtp_email || APP_DETAILS.SMTP_USER,
+                pass: dbSettings.smtp_password || APP_SECRETS.SMTP_ACCOUNT_PASS,
+                from_address: dbSettings.smtp_from_address || process.env.SMTP_FROM_ADDRESS || APP_DETAILS.MAIL_FROM_EMAIL,
+                from_name: dbSettings.smtp_from_name || APP_DETAILS.APP_NAME,
             },
             msg91: {
                 auth_key: dbSettings.msg91_auth_key || THIRD_PARTY_APIS.MSG91_AUTH_KEY || DEFAULTS.NULL,
