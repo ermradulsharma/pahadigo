@@ -45,8 +45,22 @@ AuthEvents.on('auth.welcome', async ({ identifier, user }) => {
  */
 AuthEvents.on('auth.login_success', async ({ user, metadata = {} }) => {
     try {
+        // console.log("Login User", user);
+        // console.log("Metadata", metadata);
         const { identifier, realIp, ip, rawDevice = {}, location, appInfo = {}, cdn = {}, isNewDevice, isNewLocation, sessionId } = metadata;
         const isEmail = identifier?.includes('@');
+
+        console.log("Identifier", identifier);
+        console.log("Real IP", realIp);
+        console.log("IP", ip);
+        console.log("Raw Device", rawDevice);
+        console.log("Location", location);
+        console.log("App Info", appInfo);
+        console.log("CDN", cdn);
+        console.log("Is New Device", isNewDevice);
+        console.log("Is New Location", isNewLocation);
+        console.log("Session ID", sessionId);
+        console.log("Is Email", isEmail);
 
         const loginDetails = {
             name: user?.name,
@@ -54,6 +68,7 @@ AuthEvents.on('auth.login_success', async ({ user, metadata = {} }) => {
             authMethod: metadata.authMethod,
             role: metadata.role || user?.role,
             device: rawDevice.deviceName,
+            deviceName: rawDevice.deviceName,
             browser: rawDevice.browser,
             os: rawDevice.os,
             deviceType: rawDevice.deviceType,

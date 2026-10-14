@@ -33,9 +33,7 @@ class NotificationService {
         // In serverless environments (Vercel / AWS Lambda), connection pooling causes stale, broken TCP sockets
         const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
-        if (!isServerless && this._cachedTransporter && this._lastSmtpKey === smtpKey) {
-            return this._cachedTransporter;
-        }
+        if (!isServerless && this._cachedTransporter && this._lastSmtpKey === smtpKey) return this._cachedTransporter;
 
         const isSecure = port === 465;
 
@@ -70,9 +68,7 @@ class NotificationService {
      * Internal helper to send emails with standard configuration
      */
     async _sendEmailHelper({ to, toName, subject, html, text, attachments }) {
-        if (!to) {
-            throw new Error("Recipient email address ('to') is required");
-        }
+        if (!to) throw new Error("Recipient email address ('to') is required");
 
         const config = await getAppConfig();
         const transporter = await this._getTransporter(config);
@@ -101,13 +97,6 @@ class NotificationService {
                 ...(attachments && { attachments })
             });
         } catch (error) {
-            getLogger().error({
-                err: error?.message || error,
-                code: error?.code,
-                command: error?.command,
-                to,
-                subject
-            }, "[NotificationService] _sendEmailHelper SMTP Error");
             throw error;
         }
     }
@@ -128,7 +117,6 @@ class NotificationService {
             await this._sendEmailHelper({ to: email, subject: 'OTP Verification Code', html: html });
             return true;
         } catch (error) {
-            getLogger().error({ err: error?.message || error, email }, "[NotificationService] sendOTPEmail Error");
             return false;
         }
     }
@@ -159,15 +147,11 @@ class NotificationService {
                         recipients: [{ mobiles: formattedPhone, message }]
                     })
                 });
-                const data = await response.json();
-                getLogger().info({ phone, status: response.status, data }, `[MSG91 SMS SENT]: ${message}`);
+                await response.json();
                 return response.ok;
             }
-
-            getLogger().info({ phone }, `[SMS MOCK SENT]: ${message}`);
             return true;
         } catch (error) {
-            getLogger().error({ err: error, phone }, "[NotificationService] sendSMS Error");
             return false;
         }
     }
@@ -177,35 +161,36 @@ class NotificationService {
      */
     async sendLoginAlertEmail(email, details) {
         try {
+            // console.log("Email", email);
+            // console.log("Details", details);
             const config = await getAppConfig();
             const baseUrl = config?.app?.url || 'https://pahadigo.co.in';
             const securityUrl = `${baseUrl}/security`;
             const revokeUrl = details.sessionId ? `${baseUrl}/auth/revoke-session?id=${details.sessionId}` : `${baseUrl}/security`;
 
             const html = await renderTemplate('Emails/alert.html', {
-                NAME: details.name || 'Valued User',
+                NAME: details.name,
                 ACCOUNT_IDENTIFIER: details.accountIdentifier,
-                AUTH_METHOD: details.authMethod || 'OTP Verification',
-                ROLE: details.role || 'traveller',
-                DEVICE: details.device || details.summary,
-                DEVICE_NAME: details.deviceName || 'Desktop PC',
-                DEVICE_TYPE: details.deviceType || 'Desktop',
-                BROWSER: details.browser || 'Web Browser / API Client',
-                OS: details.os || 'Desktop OS',
-                CARRIER: details.carrier || 'Wi-Fi / Broadband Network',
-                IP: details.ip || '127.0.0.1',
-                LOCATION: details.location || 'Local Dev Network (127.0.0.1)',
-                DATACENTER: details.datacenter || 'Direct Origin Node (Primary)',
-                TIME: details.loginTime || new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
+                AUTH_METHOD: details.authMethod,
+                ROLE: details.role,
+                DEVICE: details.device,
+                DEVICE_NAME: details.deviceName,
+                DEVICE_TYPE: details.deviceType,
+                BROWSER: details.browser,
+                OS: details.os,
+                CARRIER: details.carrier,
+                IP: details.ip,
+                LOCATION: details.location,
+                DATACENTER: details.datacenter,
+                TIME: details.loginTime,
                 NEW_DEVICE_BADGE: Boolean(details.isNewDevice),
-                APP_VERSION: details.appVersion || null,
+                APP_VERSION: details.appVersion,
                 SECURITY_URL: securityUrl,
                 REVOKE_URL: revokeUrl
             });
-            await this._sendEmailHelper({ to: email, subject: `PahadiGo Security Alert: New sign-in detected`, html: html });
+            await this._sendEmailHelper({ to: email, subject: 'Security Alert: New login detected', html: html });
             return true;
         } catch (error) {
-            getLogger().error({ err: error }, "[NotificationService] sendLoginAlertEmail Error");
             return false;
         }
     }
