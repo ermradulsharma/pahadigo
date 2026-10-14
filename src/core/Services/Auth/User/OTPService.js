@@ -19,7 +19,7 @@ class OTPService {
         const updatePayload = { otp, otpExpires: expires, role: role, ...metadata };
         isEmail ? updatePayload.email = identifier.toLowerCase().trim() : updatePayload.phone = identifier.trim();
         const user = await User.findOneAndUpdate({ $or: [{ email: identifier }, { phone: identifier }] }, { $set: updatePayload }, { upsert: true, returnDocument: 'after' });
-        AuthEvents.emit('otp.requested', { identifier, otp });
+        await AuthEvents.emitAsync('otp.requested', { identifier, otp });
         return otp;
     }
 

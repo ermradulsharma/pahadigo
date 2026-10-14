@@ -19,59 +19,97 @@ class NotificationService {
     }
 
     /**
-     * Internal helper to create a pooled nodemailer transporter instance
+     * Internal helper to create a nodemailer transporter instance
+     * Automatically adapts for serverless (Vercel) vs persistent Node environments.
      */
-    async _getTransporter() {
-        const config = await getAppConfig();
+    async _getTransporter(configParam = null) {
+        const config = configParam || await getAppConfig();
         const host = config.smtp?.host;
         const port = Number(config.smtp?.port) || 587;
         const user = config.smtp?.user;
         const pass = config.smtp?.pass;
         const smtpKey = `${host}:${port}:${user}:${pass}`;
 
-        if (this._cachedTransporter && this._lastSmtpKey === smtpKey) {
+        // In serverless environments (Vercel / AWS Lambda), connection pooling causes stale, broken TCP sockets
+        const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+
+        if (!isServerless && this._cachedTransporter && this._lastSmtpKey === smtpKey) {
             return this._cachedTransporter;
         }
 
         const isSecure = port === 465;
 
-        this._cachedTransporter = nodemailer.createTransport({
-            pool: true,
-            maxConnections: 5,
-            maxMessages: 100,
-            connectionTimeout: 5000,
-            greetingTimeout: 5000,
-            socketTimeout: 10000,
+        const transporter = nodemailer.createTransport({
+            pool: !isServerless,
+            ...(!isServerless && {
+                maxConnections: 5,
+                maxMessages: 100,
+            }),
+            connectionTimeout: 15000, // 15s to allow cloud-to-SMTP handshakes
+            greetingTimeout: 15000,
+            socketTimeout: 20000,
             host,
             port,
             secure: isSecure,
             auth: { user, pass },
-            ...(port === 587 && {
-                tls: { rejectUnauthorized: false }
-            })
+            tls: {
+                rejectUnauthorized: false,
+                minVersion: 'TLSv1.2'
+            }
         });
 
+        if (!isServerless) {
+            this._cachedTransporter = transporter;
+            this._lastSmtpKey = smtpKey;
+        }
 
-        this._lastSmtpKey = smtpKey;
-        return this._cachedTransporter;
+        return transporter;
     }
 
     /**
      * Internal helper to send emails with standard configuration
      */
-    async _sendEmailHelper({ to, toName, subject, html, attachments }) {
+    async _sendEmailHelper({ to, toName, subject, html, text, attachments }) {
+        if (!to) {
+            throw new Error("Recipient email address ('to') is required");
+        }
+
         const config = await getAppConfig();
-        const transporter = await this._getTransporter();
-        const toAddress = toName ? `"${toName}" <${to}>` : to;
+        const transporter = await this._getTransporter(config);
+
+        const isGmail = Boolean(config.smtp?.host && config.smtp.host.toLowerCase().includes('gmail'));
+        const configuredFrom = config.smtp?.from_address || config.smtp?.from_email;
+        // For Gmail SMTP, sending address must match authenticated user to avoid 550 relay/auth rejection.
+        // Custom domain is retained in replyTo so user replies reach the official inbox.
+        const fromAddress = (isGmail && config.smtp?.user) ? config.smtp.user : (configuredFrom || config.smtp?.user);
         const fromName = config.smtp?.from_name || 'PahadiGo';
-        const fromAddress = config.smtp?.from_address || config.smtp?.user;
-        return await transporter.sendMail({
-            from: `"${fromName}" <${fromAddress}>`,
-            to: toAddress,
-            subject,
-            html,
-            ...(attachments && { attachments })
-        });
+        const replyToAddress = configuredFrom || fromAddress;
+
+        const toRecipient = toName && typeof to === 'string' ? { name: toName, address: to } : to;
+        const fromRecipient = fromAddress ? { name: fromName, address: fromAddress } : fromName;
+
+        const plainText = text || (html ? html.replace(/<[^>]+>/g, ' ').replace(/\s+/g, ' ').trim() : undefined);
+
+        try {
+            return await transporter.sendMail({
+                from: fromRecipient,
+                to: toRecipient,
+                replyTo: replyToAddress ? { name: fromName, address: replyToAddress } : undefined,
+                subject,
+                html,
+                ...(plainText && { text: plainText }),
+                ...(attachments && { attachments })
+            });
+        } catch (error) {
+            getLogger().error({
+                err: error?.message || error,
+                code: error?.code,
+                command: error?.command,
+                to,
+                subject
+            }, "[NotificationService] _sendEmailHelper SMTP Error");
+            throw error;
+        }
     }
 
     /**
@@ -90,6 +128,7 @@ class NotificationService {
             await this._sendEmailHelper({ to: email, subject: 'OTP Verification Code', html: html });
             return true;
         } catch (error) {
+            getLogger().error({ err: error?.message || error, email }, "[NotificationService] sendOTPEmail Error");
             return false;
         }
     }
