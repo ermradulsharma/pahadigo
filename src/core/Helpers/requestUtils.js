@@ -152,7 +152,7 @@ export const getRequestMetadata = (req) => {
 
     // 2. TLS / SSL & CDN Edge Context
     const cfRay = getHeader('cf-ray') || null;
-    const datacenter = cfRay && cfRay.includes('-') ? cfRay.split('-').pop() : (getHeader('x-datacenter') || (req ? 'UNKNOWN' : 'LOCAL'));
+    const datacenter = cfRay && cfRay.includes('-') ? cfRay.split('-').pop() : (getHeader('x-datacenter') || (clientIp === '127.0.0.1' ? 'Local Origin' : 'Direct Origin'));
     const tlsVersion = getHeader('x-ssl-protocol') || getHeader('x-forwarded-tls-version') || (req?.socket?.encrypted ? 'TLSv1.3' : (req ? null : 'TLSv1.3'));
     const tlsCipher = getHeader('cf-tls-cipher') || getHeader('x-ssl-cipher') || null;
     const threatScore = parseInt(getHeader('cf-threat-score') || '0', 10);
@@ -184,7 +184,7 @@ export const getRequestMetadata = (req) => {
     const asn = getHeader('cf-connecting-asn') || getHeader('x-asn') || null;
 
     const validGeoParts = [city, region, country].filter(p => p && p.trim().length > 0);
-    const locationSummary = validGeoParts.length > 0 ? validGeoParts.join(', ') : (req ? 'Unknown Location' : 'Local System');
+    const locationSummary = validGeoParts.length > 0 ? validGeoParts.join(', ') : (clientIp === '127.0.0.1' ? 'Local Network (127.0.0.1)' : (req ? 'Unknown Location' : 'Local System'));
 
     // 6. Localization & Timezone
     const acceptLanguage = getHeader('accept-language') || 'en-US';
@@ -193,11 +193,11 @@ export const getRequestMetadata = (req) => {
     const deviceLocale = getHeader('x-device-locale') || preferredLanguage || 'en_IN';
 
     // 7. Mobile App Client Metadata, Carrier & SDK State
-    const appVersion = getHeader('x-app-version') || getHeader('x-client-version') || null;
+    const appVersion = getHeader('x-app-version') || getHeader('x-client-version') || (device.browser ? `${device.browser} Client` : null);
     const buildNumber = getHeader('x-app-build') || getHeader('x-build-number') || null;
     const platform = getHeader('x-platform') || (secChUaPlatform || device.os || 'web').toLowerCase();
     const deviceId = getHeader('x-device-id') || getHeader('x-installation-id') || getHeader('x-unique-id') || null;
-    const carrier = getHeader('x-carrier-name') || getHeader('x-network-operator') || null;
+    const carrier = getHeader('x-carrier-name') || getHeader('x-network-operator') || (clientIp === '127.0.0.1' ? 'Local Broadband' : 'Broadband / Wi-Fi');
     const bundleId = getHeader('x-app-bundle-id') || getHeader('x-bundle-id') || null;
     const sdkVersion = getHeader('x-sdk-version') || null;
     const appState = getHeader('x-app-state') || 'active';

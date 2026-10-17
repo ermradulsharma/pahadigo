@@ -47,9 +47,20 @@ class AuthController extends Controller {
             const { email, password, rememberMe } = req.payload;
             const result = await AdminAuthService.authenticateWithPassword({ email, password, rememberMe });
 
-            const ip = req.headers.get('x-forwarded-for') || req.socket?.remoteAddress;
-            const device = req.headers.get('user-agent');
-            await AuthEvents.emitAsync('auth.login_success', { user: result.user, metadata: { ip, device, identifier: email } });
+            const context = requestContextMiddleware(req);
+            const sessionId = result.tokens?.refreshJti || result.tokens?.accessToken || null;
+            await AuthEvents.emitAsync('auth.login_success', {
+                user: result.user,
+                metadata: {
+                    ...context,
+                    identifier: email,
+                    authMethod: 'Password',
+                    role: result.user?.role,
+                    sessionId,
+                    isNewDevice: false,
+                    isNewLocation: false
+                }
+            });
 
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, transformAuthResponse(result));
         } catch (error) {
@@ -68,8 +79,21 @@ class AuthController extends Controller {
             const { identifier, otp, role } = validationResult.data;
             const result = await UserAuthService.authenticateWithOTP({ identifier, otp, role });
 
-            const { ip, realIp, device, rawDevice, location } = requestContextMiddleware(req);
-            await AuthEvents.emitAsync('auth.login_success', { user: result, metadata: { ip, realIp, device, rawDevice, location, identifier, authMethod: 'OTP Verification', role: result.user?.role } });
+            const context = requestContextMiddleware(req);
+            const sessionId = result.tokens?.refreshJti || result.tokens?.accessToken || null;
+            const isNewUser = Boolean(result.isNewUser);
+            await AuthEvents.emitAsync('auth.login_success', {
+                user: result,
+                metadata: {
+                    ...context,
+                    identifier,
+                    authMethod: 'OTP Verification',
+                    role: result.user?.role || role,
+                    sessionId,
+                    isNewDevice: isNewUser,
+                    isNewLocation: isNewUser
+                }
+            });
             if (result.isNewUser) {
                 await AuthEvents.emitAsync('auth.welcome', { identifier, user: result });
             }
@@ -89,9 +113,22 @@ class AuthController extends Controller {
             if (!validationResult.success) return this.error(HTTP_STATUS.BAD_REQUEST, validationResult.error);
             const result = await UserAuthService.authenticateWithGoogle(validationResult.data.token, validationResult.data.role);
 
-            const { ip, realIp, device, rawDevice, location } = requestContextMiddleware(req);
+            const context = requestContextMiddleware(req);
             const identifier = result.user?.email || result.user?.phone || '';
-            await AuthEvents.emitAsync('auth.login_success', { user: result.user, metadata: { ip, realIp, device, rawDevice, location, identifier, authMethod: 'Google OAuth', role: result.user?.role } });
+            const sessionId = result.tokens?.refreshJti || result.tokens?.accessToken || null;
+            const isNewUser = Boolean(result.isNewUser);
+            await AuthEvents.emitAsync('auth.login_success', {
+                user: result.user,
+                metadata: {
+                    ...context,
+                    identifier,
+                    authMethod: 'Google OAuth',
+                    role: result.user?.role,
+                    sessionId,
+                    isNewDevice: isNewUser,
+                    isNewLocation: isNewUser
+                }
+            });
             if (result.isNewUser && identifier) await AuthEvents.emitAsync('auth.welcome', { identifier, user: result.user });
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, transformAuthResponse(result));
         } catch (error) {
@@ -106,9 +143,22 @@ class AuthController extends Controller {
             if (!validationResult.success) return this.error(HTTP_STATUS.BAD_REQUEST, validationResult.error);
             const result = await UserAuthService.authenticateWithFacebook(validationResult.data.token, validationResult.data.role);
 
-            const { ip, realIp, device, rawDevice, location } = requestContextMiddleware(req);
+            const context = requestContextMiddleware(req);
             const identifier = result.user?.email || result.user?.phone || '';
-            await AuthEvents.emitAsync('auth.login_success', { user: result.user, metadata: { ip, realIp, device, rawDevice, location, identifier, authMethod: 'Facebook OAuth', role: result.user?.role } });
+            const sessionId = result.tokens?.refreshJti || result.tokens?.accessToken || null;
+            const isNewUser = Boolean(result.isNewUser);
+            await AuthEvents.emitAsync('auth.login_success', {
+                user: result.user,
+                metadata: {
+                    ...context,
+                    identifier,
+                    authMethod: 'Facebook OAuth',
+                    role: result.user?.role,
+                    sessionId,
+                    isNewDevice: isNewUser,
+                    isNewLocation: isNewUser
+                }
+            });
             if (result.isNewUser && identifier) {
                 await AuthEvents.emitAsync('auth.welcome', { identifier, user: result.user });
             }
@@ -125,9 +175,22 @@ class AuthController extends Controller {
             if (!body.idToken) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
             const result = await UserAuthService.authenticateWithApple(body.idToken, body.role, body.user, body.email);
 
-            const { ip, realIp, device, rawDevice, location } = requestContextMiddleware(req);
+            const context = requestContextMiddleware(req);
             const identifier = result.user?.email || result.user?.phone || '';
-            await AuthEvents.emitAsync('auth.login_success', { user: result.user, metadata: { ip, realIp, device, rawDevice, location, identifier, authMethod: 'Apple OAuth', role: result.user?.role } });
+            const sessionId = result.tokens?.refreshJti || result.tokens?.accessToken || null;
+            const isNewUser = Boolean(result.isNewUser);
+            await AuthEvents.emitAsync('auth.login_success', {
+                user: result.user,
+                metadata: {
+                    ...context,
+                    identifier,
+                    authMethod: 'Apple OAuth',
+                    role: result.user?.role,
+                    sessionId,
+                    isNewDevice: isNewUser,
+                    isNewLocation: isNewUser
+                }
+            });
             if (result.isNewUser && identifier) {
                 await AuthEvents.emitAsync('auth.welcome', { identifier, user: result.user });
             }

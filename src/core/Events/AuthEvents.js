@@ -67,23 +67,37 @@ AuthEvents.on('auth.login_success', async ({ user, metadata = {} }) => {
             accountIdentifier: user?.email || user?.phone || identifier,
             authMethod: metadata.authMethod,
             role: metadata.role || user?.role,
-            device: rawDevice.deviceName,
-            deviceName: rawDevice.deviceName,
-            browser: rawDevice.browser,
+
+            // raw device data
             os: rawDevice.os,
+            browser: rawDevice.browser,
             deviceType: rawDevice.deviceType,
+            deviceName: rawDevice.deviceName,
             summary: rawDevice.summary,
+
+            // raw app info
+            platform: appInfo.platform,
+            appVersion: appInfo.appVersion,
             carrier: appInfo.carrier,
-            appVersion: appInfo.appVersion ? `${appInfo.appVersion} (${appInfo.platform})` : null,
-            datacenter: cdn.datacenter !== 'LOCAL' ? cdn.datacenter : null,
+
+            // cdn
+            datacenter: cdn.datacenter,
+
+            // raw ip and location
+            ip: ip,
+            location: location,
+
+            // login at and time
             loginAt: new Date().toISOString(),
             loginTime: new Date().toLocaleString('en-IN', { timeZone: 'Asia/Kolkata' }),
-            ip: realIp || ip,
-            location: typeof location === 'string' ? location : location?.summary,
-            isNewDevice,
-            isNewLocation,
-            sessionId
+
+            // flags
+            isNewDevice: Boolean(isNewDevice),
+            isNewLocation: Boolean(isNewLocation),
+            sessionId: sessionId || null
         };
+
+        console.log("Login Details", loginDetails);
 
         if (isEmail && user?.email) {
             await NotificationService.sendLoginAlertEmail(user.email, loginDetails);
