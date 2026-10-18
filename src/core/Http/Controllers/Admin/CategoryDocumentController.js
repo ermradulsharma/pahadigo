@@ -1,5 +1,5 @@
 import categoryDocumentService from '@/core/Services/Admin/CategoryDocumentService.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES, APP_DETAILS } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
 import { z } from 'zod';
 import { validate } from '@/core/Helpers/validation.js';
@@ -29,7 +29,7 @@ class CategoryDocumentController extends Controller {
   // GET /admin/category-documents
   async getAll(req) {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost';
+      const baseUrl = APP_DETAILS.APP_URL || 'http://localhost';
       const url = new URL(req.url, baseUrl);
       const category_slug = url.searchParams.get('category_slug');
       const page = parseInt(url.searchParams.get('page')) || 1;

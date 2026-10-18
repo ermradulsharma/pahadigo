@@ -1,6 +1,6 @@
 import PackageService from '@/core/Services/Vendor/PackageService.js';
 import { CATEGORY_MAP } from '@/core/Constants/categories.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES, APP_DETAILS } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
 import { getBusinessByUserId, getReviewsByItemId } from '@/core/Helpers/queryHelpers.js';
 import { vendorPackageItem } from '@/core/Helpers/package.js';
@@ -20,7 +20,7 @@ class PackageController extends Controller {
     // GET /vendor/packages
     async getPackages(req) {
         try {
-            const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+            const baseUrl = APP_DETAILS.APP_URL || 'http://localhost:3000';
             const url = new URL(req.url, baseUrl);
             const page = parseInt(url.searchParams.get('page')) || 1;
             const limit = parseInt(url.searchParams.get('limit')) || 10;
@@ -28,8 +28,11 @@ class PackageController extends Controller {
             const vendorId = await this._getVendorId(req.user.id);
             if (!vendorId) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
-            const packages = await PackageService.getPackages(req.user.id, vendorId, page, limit);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, packages);
+            const result = await PackageService.getPackages(req.user.id, vendorId, page, limit);
+            if (result && result.items !== undefined) {
+                return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, result.items, result.pagination);
+            }
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }

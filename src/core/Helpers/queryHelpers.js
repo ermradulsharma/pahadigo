@@ -17,52 +17,68 @@ const ensurePopulatePathInSelect = (select, populate) => {
 };
 
 /**
- * Generic helper to fetch a single document by ID with projection, population, and lean enabled.
+ * Generic helper to fetch a single document by ID with projection, population, lean, and optional session.
  * @param {import('mongoose').Model} Model - The Mongoose model to query
  * @param {string|import('mongoose').Types.ObjectId} id - The document ID
  * @param {string|Object} select - Space-separated fields or projection object
  * @param {string|Object|Array} populate - Population options
- * @returns {Promise<Object|null>} - The lean document or null
+ * @param {Object} [options={}] - Options like { session, lean: true }
+ * @returns {Promise<Object|null>} - The document or null
  */
-export const getById = async (Model, id, select = '', populate = null) => {
-    if (!id) return null;
+export const getById = async (Model, id, select = '', populate = null, options = {}) => {
+    if (!id || !Model || typeof Model.findById !== 'function') return null;
     let query = Model.findById(id);
-    if (select) query = query.select(ensurePopulatePathInSelect(select, populate));
-    if (populate) query = query.populate(populate);
-    return await query.lean();
+    if (!query) return null;
+    if (select && typeof query?.select === 'function') query = query.select(ensurePopulatePathInSelect(select, populate)) || query;
+    if (populate && typeof query?.populate === 'function') query = query.populate(populate) || query;
+    if (options.session && typeof query?.session === 'function') query = query.session(options.session) || query;
+    if (options.lean !== false && typeof query?.lean === 'function') query = query.lean() || query;
+    if (typeof query?.exec === 'function') return await query.exec();
+    return await query;
 };
 
 /**
- * Generic helper to fetch a single document by any custom conditions with projection, population, and lean.
+ * Generic helper to fetch a single document by any custom conditions with projection, population, lean, and optional session.
  * @param {import('mongoose').Model} Model - The Mongoose model to query
  * @param {Object} conditions - Query criteria (e.g. { email: '...' })
  * @param {string|Object} select - Space-separated fields or projection object
  * @param {string|Object|Array} populate - Population options
- * @returns {Promise<Object|null>} - The lean document or null
+ * @param {Object} [options={}] - Options like { session, lean: true }
+ * @returns {Promise<Object|null>} - The document or null
  */
-export const getBy = async (Model, conditions, select = '', populate = null) => {
-    if (!conditions || Object.keys(conditions).length === 0) return null;
+export const getBy = async (Model, conditions, select = '', populate = null, options = {}) => {
+    if (!conditions || Object.keys(conditions).length === 0 || !Model || typeof Model.findOne !== 'function') return null;
     let query = Model.findOne(conditions);
-    if (select) query = query.select(ensurePopulatePathInSelect(select, populate));
-    if (populate) query = query.populate(populate);
-    return await query.lean();
+    if (!query) return null;
+    if (select && typeof query?.select === 'function') query = query.select(ensurePopulatePathInSelect(select, populate)) || query;
+    if (populate && typeof query?.populate === 'function') query = query.populate(populate) || query;
+    if (options.session && typeof query?.session === 'function') query = query.session(options.session) || query;
+    if (options.lean !== false && typeof query?.lean === 'function') query = query.lean() || query;
+    if (typeof query?.exec === 'function') return await query.exec();
+    return await query;
 };
 
 /**
- * Generic helper to fetch multiple documents by custom conditions with projection, population, lean, and sorting.
+ * Generic helper to fetch multiple documents by custom conditions with projection, population, lean, sorting, and optional session.
  * @param {import('mongoose').Model} Model - The Mongoose model to query
  * @param {Object} conditions - Query criteria (e.g. { status: 'active' })
  * @param {string|Object} select - Space-separated fields or projection object
  * @param {string|Object|Array} populate - Population options
  * @param {string|Object} sort - Sorting options (e.g. { createdAt: -1 })
- * @returns {Promise<Array>} - Array of lean documents
+ * @param {Object} [options={}] - Options like { session, lean: true }
+ * @returns {Promise<Array>} - Array of documents
  */
-export const getManyBy = async (Model, conditions = {}, select = '', populate = null, sort = null) => {
+export const getManyBy = async (Model, conditions = {}, select = '', populate = null, sort = null, options = {}) => {
+    if (!Model || typeof Model.find !== 'function') return [];
     let query = Model.find(conditions);
-    if (select) query = query.select(ensurePopulatePathInSelect(select, populate));
-    if (populate) query = query.populate(populate);
-    if (sort) query = query.sort(sort);
-    return await query.lean();
+    if (!query) return [];
+    if (select && typeof query?.select === 'function') query = query.select(ensurePopulatePathInSelect(select, populate)) || query;
+    if (populate && typeof query?.populate === 'function') query = query.populate(populate) || query;
+    if (sort && typeof query?.sort === 'function') query = query.sort(sort) || query;
+    if (options.session && typeof query?.session === 'function') query = query.session(options.session) || query;
+    if (options.lean !== false && typeof query?.lean === 'function') query = query.lean() || query;
+    if (typeof query?.exec === 'function') return await query.exec();
+    return await query;
 };
 
 // =========================================================================
@@ -72,25 +88,29 @@ export const getManyBy = async (Model, conditions = {}, select = '', populate = 
 /**
  * Fetch a User record by custom conditions.
  */
-export const getUserBy = async (conditions, select = '', populate = null) => {
-    return await getBy(User, conditions, select, populate);
+export const getUserBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(User, conditions, select, populate, options);
 };
 
 /**
  * Fetch a User record by ID.
  */
-export const getUserById = async (id, select = '', populate = null) => {
-    return await getById(User, id, select, populate);
+export const getUserById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(User, id, select, populate, options);
 };
 
 /**
  * Fetch a Vendor (Business) record by custom conditions.
  */
-export const getBusinessBy = async (conditions, select = '', populate = null) => {
-    const vendor = await getBy(Vendor, conditions, select, populate);
+export const getBusinessBy = async (conditions, select = '', populate = null, options = {}) => {
+    const vendor = await getBy(Vendor, conditions, select, populate, options);
     if (vendor && vendor._id) {
-        const closures = await getManyBy(VendorClosure, { vendor: vendor._id, isActive: true }, '', null, { startDate: 1 });
-        vendor.closurePeriods = closures;
+        try {
+            const closures = await getManyBy(VendorClosure, { vendor: vendor._id, isActive: true }, '', null, { startDate: 1 }, options);
+            if (closures) {
+                vendor.closurePeriods = closures;
+            }
+        } catch (e) { }
     }
     return vendor;
 };
@@ -98,57 +118,57 @@ export const getBusinessBy = async (conditions, select = '', populate = null) =>
 /**
  * Fetch a Vendor (Business) record by its Vendor ID.
  */
-export const getBusinessById = async (id, select = '', populate = null) => {
-    return await getById(Vendor, id, select, populate);
+export const getBusinessById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(Vendor, id, select, populate, options);
 };
 
 /**
  * Fetch a Vendor (Business) record by User ID.
  */
-export const getBusinessByUserId = async (userId, select = '', populate = { path: 'user' }) => {
-    return await getBusinessBy({ user: userId, deletedAt: null }, select, populate);
+export const getBusinessByUserId = async (userId, select = '', populate = { path: 'user' }, options = {}) => {
+    return await getBusinessBy({ user: userId, deletedAt: null }, select, populate, options);
 };
 
 /**
  * Fetch a Vendor (Business) record by both its Vendor ID and User ID.
  */
-export const getBusinessByIdAndUserId = async (id, userId, select = '', populate = { path: 'user' }) => {
-    return await getBusinessBy({ _id: id, user: userId, deletedAt: null }, select, populate);
+export const getBusinessByIdAndUserId = async (id, userId, select = '', populate = { path: 'user' }, options = {}) => {
+    return await getBusinessBy({ _id: id, user: userId, deletedAt: null }, select, populate, options);
 };
 
 /**
  * Fetch VendorDocument records by custom conditions.
  */
-export const getVendorDocumentsBy = async (conditions = {}, select = '', populate = null, sort = null) => {
-    return await getManyBy(VendorDocument, conditions, select, populate, sort);
+export const getVendorDocumentsBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
+    return await getManyBy(VendorDocument, conditions, select, populate, sort, options);
 };
 
 /**
  * Fetch a Booking record by custom conditions.
  */
-export const getBookingBy = async (conditions, select = '', populate = null) => {
-    return await getBy(Booking, conditions, select, populate);
+export const getBookingBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(Booking, conditions, select, populate, options);
 };
 
 /**
  * Fetch a Booking record by ID.
  */
-export const getBookingById = async (id, select = '', populate = null) => {
-    return await getById(Booking, id, select, populate);
+export const getBookingById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(Booking, id, select, populate, options);
 };
 
 /**
  * Fetch a Package record by custom conditions.
  */
-export const getPackageBy = async (conditions, select = '', populate = null) => {
-    return await getBy(Package, conditions, select, populate);
+export const getPackageBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(Package, conditions, select, populate, options);
 };
 
 /**
  * Fetch a Package record by ID.
  */
-export const getPackageById = async (id, select = '', populate = null) => {
-    return await getById(Package, id, select, populate);
+export const getPackageById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(Package, id, select, populate, options);
 };
 
 /**
@@ -240,21 +260,80 @@ export const getReviewsByItemId = async (itemId, populate = [{ path: 'user', sel
     }, '', populate);
 };
 
+/**
+ * Fetch multiple User records by custom conditions.
+ */
+export const getUsersBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
+    return await getManyBy(User, conditions, select, populate, sort, options);
+};
+
+/**
+ * Fetch multiple Booking records by custom conditions.
+ */
+export const getBookingsBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
+    return await getManyBy(Booking, conditions, select, populate, sort, options);
+};
+
+/**
+ * Fetch multiple Package records by custom conditions.
+ */
+export const getPackagesBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
+    return await getManyBy(Package, conditions, select, populate, sort, options);
+};
+
+/**
+ * Fetch multiple Vendor records by custom conditions.
+ */
+export const getVendorsBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
+    return await getManyBy(Vendor, conditions, select, populate, sort, options);
+};
+
+/**
+ * Generic helper to update a single document by ID with optional session and lean.
+ */
+export const updateById = async (Model, id, updateData, options = {}) => {
+    if (!id || !Model || typeof Model.findByIdAndUpdate !== 'function') return null;
+    let query = Model.findByIdAndUpdate(id, updateData, { new: true, ...options });
+    if (!query) return null;
+    if (options.session && typeof query?.session === 'function') query = query.session(options.session) || query;
+    if (options.lean !== false && typeof query?.lean === 'function') query = query.lean() || query;
+    if (typeof query?.exec === 'function') return await query.exec();
+    return await query;
+};
+
+/**
+ * Generic helper to delete a single document by ID with optional session.
+ */
+export const deleteById = async (Model, id, options = {}) => {
+    if (!id || !Model || typeof Model.findByIdAndDelete !== 'function') return null;
+    let query = Model.findByIdAndDelete(id, options);
+    if (!query) return null;
+    if (options.session && typeof query?.session === 'function') query = query.session(options.session) || query;
+    if (typeof query?.exec === 'function') return await query.exec();
+    return await query;
+};
+
 export default {
     getById,
     getBy,
     getManyBy,
+    updateById,
+    deleteById,
     getUserBy,
     getUserById,
+    getUsersBy,
     getBusinessBy,
     getBusinessById,
     getBusinessByUserId,
     getBusinessByIdAndUserId,
+    getVendorsBy,
     getVendorDocumentsBy,
     getBookingBy,
     getBookingById,
+    getBookingsBy,
     getPackageBy,
     getPackageById,
+    getPackagesBy,
     getPackageItemById,
     getCategoryBy,
     getCategoriesBy,
@@ -263,3 +342,4 @@ export default {
     getReviewsBy,
     getReviewsByItemId
 };
+

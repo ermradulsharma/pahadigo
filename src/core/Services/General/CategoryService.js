@@ -1,5 +1,6 @@
 import { getCategoriesBy, getCategoryById } from '@/core/Helpers/queryHelpers.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import AppError from '@/core/Errors/AppError.js';
 
 /**
  * CategoryService (Common/General Role)
@@ -13,7 +14,7 @@ class CategoryService {
 
     async getCategoryById(id) {
         const category = await getCategoryById(id);
-        if (!category) throw new Error(RESPONSE_MESSAGES.CATEGORY.NOT_FOUND);
+        if (!category) throw AppError.notFound(RESPONSE_MESSAGES.CATEGORY.NOT_FOUND);
         return category;
     }
 }

@@ -2,6 +2,8 @@ import mongoose from 'mongoose';
 import Booking from '@/core/Models/Booking.js';
 import NotificationService from '@/core/Services/General/NotificationService.js';
 import { BOOKING_STATUS, PAYMENT_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { getBookingById as fetchBookingById, getBookingBy } from '@/core/Helpers/queryHelpers.js';
+import { AppError } from '@/core/Errors/AppError.js';
 
 /**
  * BookingService (Common)
@@ -9,26 +11,26 @@ import { BOOKING_STATUS, PAYMENT_STATUS, RESPONSE_MESSAGES } from '@/core/Consta
  */
 class BookingService {
   async getBookingById(id) {
-    return await Booking.findById(id).populate('package').populate('user').lean();
+    return await fetchBookingById(id, '', ['package', 'user']);
   }
 
   async updatePaymentStatus(orderId, paymentId, signatureOrStatus) {
-    if (!orderId || !paymentId) throw new Error('Order id and payment id are required.');
+    if (!orderId || !paymentId) throw AppError.badRequest('Order id and payment id are required.');
 
     const session = await mongoose.startSession();
     let updatedBooking;
 
     try {
       await session.withTransaction(async () => {
-        const booking = await Booking.findOne({ 'payment.orderId': orderId }).session(session);
-        if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
+        const booking = await getBookingBy({ 'payment.orderId': orderId }, '', null, { session, lean: false });
+        if (!booking) throw AppError.notFound(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
 
         if (!booking.payment) booking.payment = {};
 
         const alreadyPaid = booking.paymentStatus === PAYMENT_STATUS.PAID || booking.paymentStatus === 'paid';
         if (alreadyPaid) {
           if (booking.payment.paymentId && booking.payment.paymentId !== paymentId) {
-            throw new Error('Payment order is already linked to a different payment.');
+            throw AppError.conflict('Payment order is already linked to a different payment.');
           }
           updatedBooking = booking;
           return;

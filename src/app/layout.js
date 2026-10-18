@@ -1,6 +1,19 @@
 import './globals.css';
 import Script from 'next/script';
 import { ToastProvider } from '@/components/ui/ToastContext.js';
+import { Plus_Jakarta_Sans, Outfit } from 'next/font/google';
+
+const plusJakartaSans = Plus_Jakarta_Sans({
+    subsets: ['latin'],
+    variable: '--font-sans',
+    display: 'swap',
+});
+
+const outfit = Outfit({
+    subsets: ['latin'],
+    variable: '--font-display',
+    display: 'swap',
+});
 
 export const metadata = {
     metadataBase: new URL(process.env.NEXT_PUBLIC_SITE_URL || 'https://pahadigo.co.in'),
@@ -30,7 +43,7 @@ export const metadata = {
 
 export default function RootLayout({ children }) {
     return (
-        <html lang="en">
+        <html lang="en" className={`${plusJakartaSans.variable} ${outfit.variable}`}>
             <body className="antialiased font-sans">
                 <ToastProvider>
                     {children}

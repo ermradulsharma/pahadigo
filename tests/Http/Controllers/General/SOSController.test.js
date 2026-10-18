@@ -3,6 +3,8 @@ import SOSController from '@/controllers/General/SOSController.js';
 import SOSService from '@/services/General/SOSService.js';
 import { HTTP_STATUS } from '@/constants/index.js';
 
+import logger from '@/core/Lib/logger.js';
+
 describe('SOSController (Root)', () => {
     let mockReq;
     let mockUser;
@@ -17,6 +19,7 @@ describe('SOSController (Root)', () => {
             user: mockUser
         };
         jest.spyOn(console, 'error').mockImplementation(() => {});
+        jest.spyOn(logger, 'error').mockImplementation(() => {});
     });
 
     afterEach(() => {

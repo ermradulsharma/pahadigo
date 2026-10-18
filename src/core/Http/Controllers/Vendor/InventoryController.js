@@ -1,7 +1,7 @@
 import InventoryService from '@/core/Services/Vendor/InventoryService.js';
 import PackageService from '@/core/Services/Vendor/PackageService.js';
 import BusinessService from '@/core/Services/Vendor/BusinessService.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES, APP_DETAILS } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
 
 /**
@@ -26,7 +26,7 @@ class InventoryController extends Controller {
         try {
             const vendor = await BusinessService.getBusinessByUserId(req.user.id);
             if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-            const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+            const baseUrl = APP_DETAILS.APP_URL || 'http://localhost:3000';
             const url = new URL(req.url, baseUrl);
             const itemId = params.itemId || url.searchParams.get('itemId');
             let serviceType = params.serviceType || url.searchParams.get('serviceType');

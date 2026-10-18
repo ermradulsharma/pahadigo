@@ -7,6 +7,7 @@ import { RESPONSE_MESSAGES, VERIFICATION_STATUS } from '@/core/Constants/index.j
 import CacheService from '@/core/Services/CacheService.js';
 import { getBusinessByUserId, getVendorDocumentsBy } from '@/core/Helpers/queryHelpers.js';
 import { evaluateCategoryDocumentStatus } from '@/core/Helpers/categoryHelper.js';
+import { AppError } from '@/core/Errors/AppError.js';
 
 /**
  * CategoryService (Vendor Scope) - Facilitates the lifecycle of business
@@ -57,17 +58,17 @@ class CategoryService {
         // Fetch category from database instead of constants
         const categoryDoc = await Category.findOne({ slug, isActive: true }).lean();
         if (!categoryDoc) {
-            throw new Error(RESPONSE_MESSAGES.CATEGORY.INVALID);
+            throw AppError.badRequest(RESPONSE_MESSAGES.CATEGORY.INVALID);
         }
 
         // Check if vendor profile exists
         const vendor = await Vendor.findOne({ user: userId, deletedAt: null });
-        if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+        if (!vendor) throw AppError.notFound(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
         // Check if vendor already has this category assigned
         const isDuplicate = vendor.category?.some(c => c.slug === slug);
         if (isDuplicate) {
-            throw new Error(RESPONSE_MESSAGES.CATEGORY.ALREADY_ASSIGNED);
+            throw AppError.conflict(RESPONSE_MESSAGES.CATEGORY.ALREADY_ASSIGNED);
         }
 
         vendor.category.push({
@@ -103,10 +104,10 @@ class CategoryService {
 
     // Get real document requirements for a specific category (Only if assigned)
     async getDocuments(userId, categorySlug) {
-        const vendor = await Vendor.findOne({ user: userId, deletedAt: null }).lean();
+        const vendor = await getBusinessByUserId(userId, 'category');
         const isAssigned = vendor?.category?.some(c => c.slug === categorySlug);
         if (!isAssigned) {
-            throw new Error(RESPONSE_MESSAGES.CATEGORY.NOT_ASSIGNED);
+            throw AppError.badRequest(RESPONSE_MESSAGES.CATEGORY.NOT_ASSIGNED);
         }
         return await this.getRequirementsBySlug(categorySlug);
     }
@@ -119,10 +120,10 @@ class CategoryService {
 
     // Submit/Upload documents for a specific category
     async uploadDocuments(userId, categorySlug, req) {
-        const vendor = await Vendor.findOne({ user: userId, deletedAt: null }).lean();
+        const vendor = await getBusinessByUserId(userId, '_id category');
         const isAssigned = vendor?.category?.some(c => c.slug === categorySlug);
         if (!isAssigned) {
-            throw new Error(RESPONSE_MESSAGES.CATEGORY.NOT_ASSIGNED);
+            throw AppError.badRequest(RESPONSE_MESSAGES.CATEGORY.NOT_ASSIGNED);
         }
 
         const payload = req.payload;
@@ -132,7 +133,7 @@ class CategoryService {
         const expiryDates = Array.isArray(payload.expiry_date) ? payload.expiry_date : (payload.expiry_date ? [payload.expiry_date] : []);
 
         if (documentSlugs.length === 0 || images.length === 0 || documentSlugs.length !== images.length) {
-            throw new Error(RESPONSE_MESSAGES.CATEGORY.DOC_MISMATCH);
+            throw AppError.badRequest(RESPONSE_MESSAGES.CATEGORY.DOC_MISMATCH);
         }
 
         const uploadPromises = documentSlugs.map(async (docSlug, index) => {
@@ -175,8 +176,8 @@ class CategoryService {
 
     // Get list of all documents already uploaded by the vendor across all categories
     async getUploadedDocuments(userId) {
-        const vendor = await Vendor.findOne({ user: userId, deletedAt: null }).lean();
-        if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+        const vendor = await getBusinessByUserId(userId, '_id');
+        if (!vendor) throw AppError.notFound(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
         return await VendorDocument.find({
             user: userId,
             vendor: vendor._id

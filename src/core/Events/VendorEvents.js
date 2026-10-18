@@ -82,4 +82,15 @@ VendorEvents.on('vendor.bank_added', async ({ identifier, businessName }) => {
     }
 });
 
+/**
+ * Asynchronously emit an event and wait for all registered listeners to complete.
+ * Crucial for serverless environments (e.g. Vercel) where background promises are
+ * frozen as soon as the HTTP response is dispatched.
+ */
+VendorEvents.emitAsync = async function (event, data) {
+    const listeners = this.listeners(event);
+    if (!listeners || listeners.length === 0) return [];
+    return await Promise.all(listeners.map(fn => fn(data)));
+};
+
 export default VendorEvents;

@@ -1,7 +1,7 @@
 import { jest } from '@jest/globals';
 
 jest.unstable_mockModule('@/core/Constants/index.js', () => ({
-    HTTP_STATUS: { TOO_MANY_REQUESTS: 429 },
+    HTTP_STATUS: { TO_MANY_REQUESTS: 429 },
     DEFAULTS: { NULL: null, ARRAY: [], TRUE: true }
 }));
 
@@ -24,7 +24,7 @@ jest.unstable_mockModule('@upstash/ratelimit', () => ({
 }));
 
 jest.unstable_mockModule('@upstash/redis', () => ({
-    Redis: class {}
+    Redis: class { }
 }));
 
 const mockConnect = jest.fn();
@@ -117,7 +117,7 @@ describe('RateLimit Middleware', () => {
         mockConnect.mockResolvedValue();
         const mockExec = jest.fn().mockResolvedValue([1]);
         mockMulti.mockReturnValue({ incr: jest.fn(), expire: jest.fn(), exec: mockExec });
-        
+
         const middleware = rateLimit({ limit: 5 });
         const result = await middleware(createReq());
         expect(result).toBeNull();
@@ -128,7 +128,7 @@ describe('RateLimit Middleware', () => {
         mockConnect.mockResolvedValue();
         const mockExec = jest.fn().mockResolvedValue([6]); // Over limit of 5
         mockMulti.mockReturnValue({ incr: jest.fn(), expire: jest.fn(), exec: mockExec });
-        
+
         const middleware = rateLimit({ limit: 5 });
         const result = await middleware(createReq());
         expect(result.status).toBe(429);

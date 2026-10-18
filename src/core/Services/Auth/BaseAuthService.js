@@ -5,6 +5,8 @@ import { verifyToken, generateToken, generateAuthTokens, decodeToken } from '@/c
 import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
 import CacheService from '@/core/Services/CacheService.js';
 import { userAuthResponse, userBusinessProfileById, userProfileById } from '@/core/Helpers/userProfileHelper.js';
+import AppError from '@/core/Errors/AppError.js';
+import { getUserById, updateById, getBusinessBy } from '@/core/Helpers/queryHelpers.js';
 
 class BaseAuthService {
     async generateAndSaveTokens(user, rememberMe = false) {
@@ -18,20 +20,20 @@ class BaseAuthService {
     }
 
     async verifyToken(userId) {
-        const user = await User.findById(userId).select('-password').lean();
-        if (!user) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
+        const user = await getUserById(userId, '-password');
+        if (!user) throw AppError.notFound(RESPONSE_MESSAGES.USER.NOT_FOUND);
         const result = await userAuthResponse(user);
         return result;
     }
 
     async refreshToken(token) {
         const decoded = await verifyToken(token);
-        if (!decoded || decoded.type !== 'refresh' || !decoded.jti) throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
+        if (!decoded || decoded.type !== 'refresh' || !decoded.jti) throw AppError.unauthorized(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
         const cacheKey = `auth:refresh:${decoded.id}:${decoded.jti}`;
         const isRedisAvailable = await CacheService.isAvailable();
         if (isRedisAvailable) {
             const isValid = await CacheService.get(cacheKey);
-            if (!isValid) throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
+            if (!isValid) throw AppError.unauthorized(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
         }
 
         const user = { _id: decoded.id, role: decoded.role, email: decoded.email, phone: decoded.identifier };
@@ -70,14 +72,14 @@ class BaseAuthService {
         if (forceRefresh) await CacheService.delete(cacheKey);
         return await CacheService.getOrSet(cacheKey, async () => {
             const profile = await userProfileById(userId);
-            if (!profile) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
+            if (!profile) throw AppError.notFound(RESPONSE_MESSAGES.USER.NOT_FOUND);
             return profile;
         }, 3600);
     }
 
     async updateUserProfile(userId, updates) {
-        const existingUser = await User.findById(userId);
-        if (!existingUser) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+        const existingUser = await getUserById(userId);
+        if (!existingUser) throw AppError.notFound(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
 
         // Security Whitelist: Strip sensitive security & role fields from updates
         const forbiddenFields = ['role', 'status', 'isVerified', 'isVendorVerified', 'deletedAt', 'deletedBy', 'deletedReason'];
@@ -87,7 +89,7 @@ class BaseAuthService {
             // Prevent tempRole injection via preferences
             const safePreferences = { ...updates.preferences };
             delete safePreferences.tempRole;
-            const existingPrefs = existingUser.preferences?.toObject() || existingUser.preferences || {};
+            const existingPrefs = existingUser.preferences || {};
             updates.preferences = {
                 ...existingPrefs,
                 ...safePreferences,
@@ -100,15 +102,15 @@ class BaseAuthService {
 
         if (updates.address) mapToGeoJSON(updates.address, 'location');
 
-        const user = await User.findByIdAndUpdate(userId, updates, { returnDocument: 'after' });
-        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+        const user = await updateById(User, userId, updates, { returnDocument: 'after' });
+        if (!user) throw AppError.notFound(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
 
         // Invalidate Redis caches so Admin panel and APIs immediately reflect fresh data
         try {
             await CacheService.del(`admin:vendors:${userId}`);
             await CacheService.del('admin:vendors:all');
             await CacheService.del(`user:profile:${userId}`);
-            const vendorProfile = await Vendor.findOne({ user: userId }).lean();
+            const vendorProfile = await getBusinessBy({ user: userId });
             if (vendorProfile?._id) await CacheService.del(`admin:vendors:${vendorProfile._id}`);
         } catch (cacheError) {
             // Non-blocking cache flush error fallback
@@ -123,8 +125,8 @@ class BaseAuthService {
             deletedReason: reason,
             status: STATUS.DELETED
         };
-        const user = await User.findByIdAndUpdate(userId, updates, { returnDocument: 'after' });
-        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+        const user = await updateById(User, userId, updates, { returnDocument: 'after' });
+        if (!user) throw AppError.notFound(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
         return DEFAULTS.TRUE;
     }
 }

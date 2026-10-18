@@ -18,6 +18,7 @@ non_negotiable_engineering_laws:
 
 workflow_rules:
   - "MOBILE_APP_CRASH_PREVENTION_ANALYSIS: MANDATORY FIRST STEP: BEFORE applying ANY change, refactoring, or API update, perform a strict Android & iOS Mobile App Impact Analysis. Verify that changes will NOT crash existing live mobile applications (Flutter/React Native) or cause deserialization errors. NEVER alter live /api/v1/ response envelopes ({ success, message, data } / { success, message, data, pagination }) or break existing mobile contracts without a new /api/v2/ version."
+  - "FRAMEWORK_VERSION_COMPLIANCE: MANDATORY: Kisi bhi new file ko create karne, delete karne, rename karne ya framework-level conventions (e.g., proxy vs middleware, app router conventions, config) configure karne se pehle `package.json` me installed Next.js version (Next.js 16+) ko check aur verify karna anivarya hai. Sabhi files aur routing conventions strictly installed Next.js version ke latest standards aur deprecation policies ke according hona anivarya hai (e.g., Next.js 16 me `src/proxy.js` official standard hai aur deprecated `src/middleware.js` create karna strictly prohibited hai)."
   - "PLAN_FIRST: Analyze DB schemas, edge cases, mobile client compatibility, and architectural impact before coding."
   - "STRICT_MVC: No business logic in `src/app/api/`. API routes mount `Router.group()`. Business logic MUST reside in `src/core/Http/Controllers/` & `src/core/Services/`."
   - "DRY_LOGIC: Share DB queries across roles using helpers in `src/core/Helpers/`."

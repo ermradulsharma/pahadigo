@@ -1,6 +1,6 @@
 import BookingService from '@/core/Services/Admin/BookingService.js';
 import MessageService from '@/core/Services/Admin/MessageService.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES, APP_DETAILS } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
 import { z } from 'zod';
 import { validate } from '@/core/Helpers/validation.js';
@@ -25,7 +25,7 @@ class DisputeController extends Controller {
   // GET /admin/disputes
   async getDisputes(req) {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost';
+      const baseUrl = APP_DETAILS.APP_URL || 'http://localhost';
       const url = new URL(req.url, baseUrl);
       const filter = { 
         status: url.searchParams.get('status'), 

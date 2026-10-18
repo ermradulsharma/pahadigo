@@ -39,7 +39,7 @@ class BusinessController extends Controller {
         try {
             const userId = req.user.id;
             const existingProfile = await getBusinessByUserId(userId);
-            if (existingProfile) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VENDOR.PROFILE_ALREADY_EXISTS);
+            if (existingProfile) return this.error(HTTP_STATUS.ALREADY_EXIST, RESPONSE_MESSAGES.VENDOR.PROFILE_ALREADY_EXISTS);
 
             const body = await this._prepareProfileBody(req);
             const result = await BusinessService.syncBusinessProfile(userId, body);
@@ -56,9 +56,8 @@ class BusinessController extends Controller {
         try {
             const body = await this._prepareProfileBody(req);
             const result = await BusinessService.syncBusinessProfile(req.user.id, body);
-            console.log(result);
             if (!result) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-            if (result.email) VendorEvents.emit('vendor.profile_updated', { identifier: result.email, details: result });
+            if (result.email) VendorEvents.emitAsync('vendor.profile_updated', { identifier: result.email, details: result });
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PROFILE_UPDATED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);

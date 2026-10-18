@@ -1,7 +1,9 @@
-import { Inventory, Package, Booking } from '@/core/Models/index.js';
+import { Inventory } from '@/core/Models/index.js';
 import { formatDateKey, normalizeAvailability, determineDayStatus, calculateEffectivePrice } from '@/core/Helpers/InventoryHelper.js';
 import { getEffectiveDay } from '@/core/Services/Shared/InventoryCore.js';
 import CacheService from '@/core/Services/CacheService.js';
+import { getBy, getBookingsBy, getPackageBy } from '@/core/Helpers/queryHelpers.js';
+import AppError from '@/core/Errors/AppError.js';
 
 
 /**
@@ -28,7 +30,7 @@ class InventoryService {
         const adjustedEnd = isStay ? new Date(new Date(end).setDate(end.getDate() - 1)) : end;
 
         // 1. Fetch Package Data to get Total Capacity
-        const pkg = await Package.findOne({ vendor: vendorId }).session(session).lean();
+        const pkg = await getPackageBy({ vendor: vendorId }, '', null, { session, lean: true });
         if (!pkg || !pkg[serviceType]) return { available: false, reason: 'Package not found' };
         const item = pkg[serviceType].find(i => String(i._id) === String(itemId));
         if (!item) return { available: false, reason: 'Item not found' };
@@ -51,10 +53,10 @@ class InventoryService {
             bookingQuery._id = { $ne: excludeBookingId };
         }
 
-        const liveBookings = await Booking.find(bookingQuery).session(session).lean();
+        const liveBookings = await getBookingsBy(bookingQuery, '', null, null, { session, lean: true });
 
         // 3. Fetch Manual Inventory Overrides
-        const inv = await Inventory.findOne({ vendorId, itemId }).session(session).lean();
+        const inv = await getBy(Inventory, { vendorId, itemId }, '', null, { session, lean: true });
         const calendarMap = new Map(inv?.calendar?.map(d => [formatDateKey(d.date), d]) || []);
 
         // 4. Daily Validation Loop (Memory-Based)
@@ -98,8 +100,8 @@ class InventoryService {
         const isStay = ['homestay', 'hotel', 'camping'].includes(serviceType);
         const adjustedEnd = isStay ? new Date(new Date(end).setDate(end.getDate() - 1)) : end;
 
-        const inv = await Inventory.findOne({ vendorId, itemId }).session(session);
-        if (!inv) throw new Error("Inventory document not found for this item.");
+        const inv = await getBy(Inventory, { vendorId, itemId }, '', null, { session, lean: false });
+        if (!inv) throw AppError.notFound("Inventory document not found for this item.");
 
         for (let d = new Date(start); d <= adjustedEnd; d.setDate(d.getDate() + 1)) {
             const dateStr = formatDateKey(d);
@@ -132,7 +134,7 @@ class InventoryService {
         const isStay = ['homestay', 'hotel', 'camping'].includes(serviceType);
         const adjustedEnd = isStay ? new Date(new Date(end).setDate(end.getDate() - 1)) : end;
 
-        const inv = await Inventory.findOne({ vendorId, itemId }).session(session);
+        const inv = await getBy(Inventory, { vendorId, itemId }, '', null, { session, lean: false });
         if (!inv) return;
 
         for (let d = new Date(start); d <= adjustedEnd; d.setDate(d.getDate() + 1)) {

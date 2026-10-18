@@ -1,6 +1,6 @@
 import { jest } from '@jest/globals';
 
-const { roundToDecimal, toFixed2 } = await import('@/core/Helpers/mathUtils.js');
+const { roundToDecimal, toFixed2, formatINR } = await import('@/core/Helpers/mathUtils.js');
 
 describe('mathUtils Helper Tests', () => {
     beforeEach(() => {
@@ -38,4 +38,23 @@ describe('mathUtils Helper Tests', () => {
             expect(toFixed2('250.456')).toBe(250.46);
         });
     });
+
+    describe('formatINR', () => {
+        it('should format numbers according to the Indian Rupee currency system', () => {
+            const formatted = formatINR(250000);
+            expect(formatted).toContain('2,50,000');
+            expect(formatted).toMatch(/₹|INR/);
+        });
+
+        it('should format numbers without symbol when symbol option is false', () => {
+            const formatted = formatINR(1500, { symbol: false });
+            expect(formatted).toBe('1,500.00');
+        });
+
+        it('should handle invalid or zero values safely', () => {
+            expect(formatINR(0)).toMatch(/0\.00/);
+            expect(formatINR('invalid')).toMatch(/0\.00/);
+        });
+    });
 });
+

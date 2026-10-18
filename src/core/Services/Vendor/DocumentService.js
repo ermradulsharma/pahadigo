@@ -2,6 +2,8 @@ import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import Vendor from '@/core/Models/Vendor.js';
 import CacheService from '@/core/Services/CacheService.js';
+import { AppError } from '@/core/Errors/AppError.js';
+import { getBusinessByUserId } from '@/core/Helpers/queryHelpers.js';
 
 class DocumentService {
     async invalidateVendorCaches(userId, vendorId = null) {
@@ -20,9 +22,8 @@ class DocumentService {
      * Upload and synchronize business verification documents
      */
     async uploadVerificationFiles(userId, files) {
-        const query = Vendor.findOne({ user: userId, deletedAt: null });
-        const vendor = await (query?.lean ? query.lean() : query);
-        if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+        const vendor = await getBusinessByUserId(userId, '_id');
+        if (!vendor) throw AppError.notFound(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
         const updatePayload = {};
 

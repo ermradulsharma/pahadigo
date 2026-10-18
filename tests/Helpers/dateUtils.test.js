@@ -1,4 +1,4 @@
-import { getStartDateByPeriod } from '@/helpers/dateUtils.js';
+import { getStartDateByPeriod, formatIST } from '@/helpers/dateUtils.js';
 
 describe('Industry Standard: Date Utility Logic', () => {
     it('[Yearly] should return start of current year', () => {
@@ -28,4 +28,17 @@ describe('Industry Standard: Date Utility Logic', () => {
             expect(start.getMonth()).toBe(now.getMonth() - 1);
         }
     });
+
+    it('[formatIST] should format dates according to Asia/Kolkata timezone', () => {
+        const utcDate = new Date('2026-08-15T00:00:00.000Z');
+        const formatted = formatIST(utcDate, { includeTime: false });
+        expect(formatted).toBe('15/08/2026');
+    });
+
+    it('[formatIST] should handle null, undefined or empty dates safely', () => {
+        expect(formatIST(null)).toBe('');
+        expect(formatIST(undefined)).toBe('');
+        expect(formatIST('invalid-date')).toBe('');
+    });
 });
+

@@ -1,5 +1,5 @@
 import BookingService from '@/core/Services/Admin/BookingService.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES, APP_DETAILS } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
 import React from 'react';
 import { renderToStream } from '@react-pdf/renderer';
@@ -134,7 +134,7 @@ class BookingController extends Controller {
             const booking = await BookingService.getBookingById(params.id);
             if (!booking) throw new AppError(RESPONSE_MESSAGES.BOOKING.NOT_FOUND, HTTP_STATUS.NOT_FOUND);
             
-            const baseUrl = process.env.NEXT_PUBLIC_APP_URL;
+            const baseUrl = APP_DETAILS.APP_URL || 'http://localhost';
             const url = new URL(req.url, baseUrl);
             const role = url.searchParams.get('type') || 'traveller';
 

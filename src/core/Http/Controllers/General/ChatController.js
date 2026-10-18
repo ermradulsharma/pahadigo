@@ -3,7 +3,7 @@ import ChatMessage from '@/core/Models/ChatMessage.js';
 import Booking from '@/core/Models/Booking.js';
 import Vendor from '@/core/Models/Vendor.js';
 import { successResponse, errorResponse } from '@/core/Helpers/response.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES, APP_DETAILS } from '@/core/Constants/index.js';
 import { EventEmitter } from 'events';
 import { getBookingById, getBusinessById, getUserById } from '@/core/Helpers/queryHelpers.js';
 import { userPayload } from '@/core/Helpers/userProfileHelper.js';
@@ -154,7 +154,7 @@ class ChatController {
                 return errorResponse(HTTP_STATUS.FORBIDDEN, 'Access denied to this conversation.');
             }
 
-            const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost:3000';
+            const baseUrl = APP_DETAILS.APP_URL || 'http://localhost:3000';
             const url = new URL(req.url, baseUrl);
             const limit = parseInt(url.searchParams.get('limit') || '50', 10);
             const before = url.searchParams.get('before');

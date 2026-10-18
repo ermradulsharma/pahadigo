@@ -1,5 +1,5 @@
 import LocationService from '@/core/Services/Admin/LocationService.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES, APP_DETAILS } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
 import { z } from 'zod';
 import { validate } from '@/core/Helpers/validation.js';
@@ -130,7 +130,7 @@ class LocationController extends Controller {
   // GET /admin/locations/states
   async listStates(req) {
     try {
-      const baseUrl = process.env.NEXT_PUBLIC_APP_URL || 'http://localhost';
+      const baseUrl = APP_DETAILS.APP_URL || 'http://localhost';
       const url = new URL(req.url, baseUrl);
       const countryId = url.searchParams.get('countryId');
       const states = await LocationService.listStates(countryId);

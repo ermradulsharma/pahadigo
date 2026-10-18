@@ -26,3 +26,23 @@ export function roundToDecimal(val, decimals = 2) {
 export function toFixed2(val) {
     return roundToDecimal(val, 2);
 }
+
+/**
+ * Format a number or numeric string as Indian Rupee (INR) currency standard.
+ * Examples: 1500 -> "₹1,500.00", 250000 -> "₹2,50,000.00"
+ *
+ * @param {number|string} amount - Input amount in INR
+ * @param {Object} [options={}] - Options (e.g. { showDecimals: true, symbol: true })
+ * @returns {string} Formatted INR currency string
+ */
+export function formatINR(amount, options = {}) {
+    const num = parseFloat(amount);
+    if (isNaN(num)) return options.symbol !== false ? '₹0.00' : '0.00';
+    const showDecimals = options.showDecimals !== false;
+    return new Intl.NumberFormat('en-IN', {
+        style: options.symbol !== false ? 'currency' : 'decimal',
+        currency: 'INR',
+        minimumFractionDigits: showDecimals ? 2 : 0,
+        maximumFractionDigits: showDecimals ? 2 : 0,
+    }).format(num);
+}

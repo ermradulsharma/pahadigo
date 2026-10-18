@@ -14,9 +14,10 @@ class BusinessDocumentController extends Controller {
     async getDocuments(req) {
         try {
             const vendor = await BusinessService.getBusinessByUserId(req.user.id);
+            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.DOCUMENTS_FETCHED, vendor.documents);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
+            return this.error(error.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
         }
     }
 
@@ -24,12 +25,12 @@ class BusinessDocumentController extends Controller {
     async uploadDocuments(req) {
         try {
             const vendor = await BusinessService.getBusinessByUserId(req.user.id);
-            if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+            if (!vendor) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
             await DocumentService.uploadVerificationFiles(req.user.id, req.payload);
             if (vendor?.user?.email) VendorEvents.emit('vendor.documents_uploaded', { identifier: vendor.user.email, businessName: vendor?.businessName });
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.DOCUMENTS_UPLOADED);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
+            return this.error(error.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
         }
     }
 
@@ -40,7 +41,7 @@ class BusinessDocumentController extends Controller {
             const result = await DocumentService.updateDocument(req.user.id, body);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.DOCUMENT_UPDATED, result);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
+            return this.error(error.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
         }
     }
 
@@ -51,7 +52,7 @@ class BusinessDocumentController extends Controller {
             const result = await DocumentService.deleteDocument(req.user.id, body.documentId);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.DOCUMENT_DELETED, result);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
+            return this.error(error.statusCode || HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
         }
     }
 }

@@ -1,5 +1,6 @@
 import { Client } from '@upstash/qstash';
 import { getAppConfig } from '../appConfig.js';
+import { getLogger } from '@/core/Lib/logger.js';
 
 let qstashClient = null;
 
@@ -35,7 +36,7 @@ export const enqueueInvoice = async (email, bookingId, role) => {
                 try {
                     await NotificationService._processInvoiceDelivery(email, bookingId, role);
                 } catch (err) {
-                    console.error('[QueueService] Direct invoice delivery error:', err);
+                    getLogger().error({ err, email, bookingId, role }, '[QueueService] Direct invoice delivery error');
                 }
             });
             return true;
@@ -51,6 +52,7 @@ export const enqueueInvoice = async (email, bookingId, role) => {
         });
         return true;
     } catch (error) {
+        getLogger().error({ err: error, email, bookingId, role }, '[QueueService] enqueueInvoice failed');
         return false;
     }
 };
@@ -65,7 +67,7 @@ export const enqueuePushNotification = async (token, notification, data = {}) =>
                 try {
                     await PushNotificationService.sendToDevice(token, notification, data);
                 } catch (err) {
-                    console.error('[QueueService] Direct push notification error:', err);
+                    getLogger().error({ err, notification }, '[QueueService] Direct push notification error');
                 }
             });
             return true;
@@ -81,6 +83,7 @@ export const enqueuePushNotification = async (token, notification, data = {}) =>
         });
         return true;
     } catch (error) {
+        getLogger().error({ err: error, notification }, '[QueueService] enqueuePushNotification failed');
         return false;
     }
 };
@@ -102,6 +105,48 @@ export const enqueueImageProcessing = async (imageUrl, folder, metadata = {}) =>
         });
         return true;
     } catch (error) {
+        getLogger().error({ err: error, imageUrl, folder }, '[QueueService] enqueueImageProcessing failed');
+        return false;
+    }
+};
+
+export const enqueueOCRProcessing = async (vendorId, docType, imageBufferBase64) => {
+    try {
+        const client = await getQStashClient();
+        if (!client) {
+            // Local fallback when QStash token is not configured (e.g. local development)
+            setImmediate(async () => {
+                try {
+                    const { default: OCRService } = await import('@/core/Services/Admin/OCRService.js');
+                    const { default: Vendor } = await import('@/core/Models/Vendor.js');
+                    const buffer = Buffer.from(imageBufferBase64, 'base64');
+                    const ocrResult = await OCRService.processDocument(buffer);
+                    await Vendor.findByIdAndUpdate(vendorId, {
+                        $set: {
+                            [`documents.${docType}.ocrData`]: {
+                                identifiedId: ocrResult.identifiedId,
+                                text: ocrResult.text
+                            }
+                        }
+                    });
+                } catch (err) {
+                    getLogger().error({ err, vendorId, docType }, '[QueueService] Direct OCR processing error');
+                }
+            });
+            return true;
+        }
+
+        const url = await getWebhookUrl();
+        await client.publishJSON({
+            url,
+            body: {
+                type: 'process_ocr',
+                payload: { vendorId, docType, imageBufferBase64 }
+            }
+        });
+        return true;
+    } catch (error) {
+        getLogger().error({ err: error, vendorId, docType }, '[QueueService] enqueueOCRProcessing failed');
         return false;
     }
 };
@@ -110,5 +155,6 @@ export default {
     getQStashClient,
     enqueueInvoice,
     enqueuePushNotification,
-    enqueueImageProcessing
+    enqueueImageProcessing,
+    enqueueOCRProcessing
 };

@@ -11,7 +11,7 @@ import AppError from '@/core/Helpers/AppError.js';
 import { notifyIndexNow } from './indexNow.js';
 import { getLocationPoint } from './addressHelper.js';
 import { getLogger } from '@/core/Lib/logger.js';
-import { getPackageBy } from './queryHelpers.js';
+import { getPackageBy, getBusinessById } from './queryHelpers.js';
 
 /**
  * Recursively flattens nested objects into dot notation for partial Mongoose subdocument updates.
@@ -68,7 +68,7 @@ export async function processItemPhotos(photos, uploadPath) {
  * @returns {Promise<Object>} Package catalog document or object
  */
 export async function findOrCreateCatalog(userId, vendorId, lean = false) {
-    if (!userId || !vendorId) throw new Error(RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
+    if (!userId || !vendorId) throw AppError.badRequest(RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
     let pkg = lean ? await getPackageBy({ user: userId, vendor: vendorId }) : await Package.findOne({ user: userId, vendor: vendorId });
     if (!pkg) {
         const initialData = { user: userId, vendor: vendorId };
@@ -92,7 +92,7 @@ export async function findOrCreateCatalog(userId, vendorId, lean = false) {
  */
 export async function item(userId, businessId, category, itemDataOrUpdates, itemId = null) {
     // 1. Validate vendor authorization for category
-    const business = await Vendor.findById(businessId).select('category').lean();
+    const business = await getBusinessById(businessId, 'category');
     if (!business) throw AppError.notFound(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
     const allowed = new Set();
@@ -128,7 +128,7 @@ export async function item(userId, businessId, category, itemDataOrUpdates, item
     if (itemId) {
         // Update path: Find subdocument first
         itemDoc = pkg[schemaKey].id(itemId);
-        if (!itemDoc) throw new Error(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
+        if (!itemDoc) throw AppError.notFound(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
 
         if (pricingInput && typeof pricingInput === 'object') {
             const currentPricing = itemDoc.pricing?.toObject?.() || itemDoc.pricing || {};

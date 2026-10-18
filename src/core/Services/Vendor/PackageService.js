@@ -1,12 +1,13 @@
 import Package from '@/core/Models/Package.js';
-import Vendor from '@/core/Models/Vendor.js';
 import { CATEGORY_MAP, SCHEMA_KEYS } from '@/core/Constants/categories.js';
 import InventoryService from '@/core/Services/Vendor/InventoryService.js';
 import { formatInventoryItem } from '@/core/Helpers/InventoryHelper.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { item, vendorPackagePayload, findOrCreateCatalog } from '@/core/Helpers/package.js';
-import { getPackageItemById } from '@/core/Helpers/queryHelpers.js';
+import { getPackageItemById, getPackageById as fetchPackageById, getPackageBy, getBusinessById, deleteById } from '@/core/Helpers/queryHelpers.js';
 import CacheService from '@/core/Services/CacheService.js';
+import { getLogger } from '@/core/Lib/logger.js';
+import { AppError } from '@/core/Errors/AppError.js';
 
 /**
  * PackageService (Vendor Role) - Comprehensive management of vendor catalogs and service items.
@@ -27,7 +28,7 @@ class PackageService {
                 await CacheService.del(`admin:packages:item:${itemId}`);
             }
         } catch (e) {
-            // Non-blocking cache flush error fallback
+            getLogger().warn({ err: e, vendorId, itemId }, '[PackageService] Cache invalidation warning');
         }
     }
 
@@ -38,10 +39,10 @@ class PackageService {
 
     // Helper: Internal catalog ownership verifier
     async _verifyOwnership(id, userId, vendorId) {
-        const pkg = await Package.findById(id);
-        if (!pkg) throw new Error(RESPONSE_MESSAGES.PACKAGE.CATALOG_NOT_FOUND);
+        const pkg = await fetchPackageById(id, '', null, { lean: false });
+        if (!pkg) throw AppError.notFound(RESPONSE_MESSAGES.PACKAGE.CATALOG_NOT_FOUND);
         if (pkg.vendor.toString() !== vendorId.toString() || pkg.user.toString() !== userId.toString()) {
-            throw new Error(RESPONSE_MESSAGES.PACKAGE.CATALOG_UNAUTHORIZED);
+            throw AppError.forbidden(RESPONSE_MESSAGES.PACKAGE.CATALOG_UNAUTHORIZED);
         }
         return pkg;
     }
@@ -49,7 +50,7 @@ class PackageService {
     // Helper: Formats inventory items for a vendor catalog
     async _getFormattedInventory(userId, vendorId) {
         const catalog = await this.ensureCatalog(userId, vendorId);
-        const vendor = await Vendor.findById(vendorId).select("category").lean();
+        const vendor = await getBusinessById(vendorId, 'category');
         const vendorCategories = vendor?.category || [];
 
         const allItems = [];
@@ -143,7 +144,7 @@ class PackageService {
     // Delete Package
     async deletePackage(id, userId, vendorId) {
         await this._verifyOwnership(id, userId, vendorId);
-        return await Package.findByIdAndDelete(id);
+        return await deleteById(Package, id);
     }
 
     // Update Package Status
@@ -179,14 +180,14 @@ class PackageService {
 
     // Remove Item
     async removeItem(userId, vendorId, category, itemId) {
-        const vendor = await Vendor.findById(vendorId).select("_id").lean();
-        if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-        const pkg = await Package.findOne({ user: userId, vendor: vendorId });
-        if (!pkg) throw new Error(RESPONSE_MESSAGES.PACKAGE.CATALOG_NOT_FOUND);
+        const vendor = await getBusinessById(vendorId, '_id');
+        if (!vendor) throw AppError.notFound(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+        const pkg = await getPackageBy({ user: userId, vendor: vendorId }, '', null, { lean: false });
+        if (!pkg) throw AppError.notFound(RESPONSE_MESSAGES.PACKAGE.CATALOG_NOT_FOUND);
 
         const schemaKey = CATEGORY_MAP[category] || category;
         if (pkg[schemaKey] === undefined) {
-            throw new Error(RESPONSE_MESSAGES.CATEGORY.INVALID);
+            throw AppError.badRequest(RESPONSE_MESSAGES.CATEGORY.INVALID);
         }
 
         pkg[schemaKey].pull({ _id: itemId });
@@ -212,7 +213,7 @@ class PackageService {
 
     // Update category range (Vendor Management)
     async updateCategoryRange(userId, vendorId, serviceType, startDate, endDate, settings) {
-        const pkg = await Package.findOne({ user: userId, vendor: vendorId }).lean();
+        const pkg = await getPackageBy({ user: userId, vendor: vendorId });
         if (!pkg || !pkg[serviceType]) return null;
 
         const results = [];
@@ -225,13 +226,13 @@ class PackageService {
 
     // Toggle Category Status (Bulk)
     async toggleCategoryStatus(userId, vendorId, category, isActive) {
-        const vendor = await Vendor.findById(vendorId).select("_id").lean();
-        if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-        const pkg = await Package.findOne({ user: userId, vendor: vendorId });
-        if (!pkg) throw new Error(RESPONSE_MESSAGES.PACKAGE.CATALOG_NOT_FOUND);
+        const vendor = await getBusinessById(vendorId, '_id');
+        if (!vendor) throw AppError.notFound(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+        const pkg = await getPackageBy({ user: userId, vendor: vendorId }, '', null, { lean: false });
+        if (!pkg) throw AppError.notFound(RESPONSE_MESSAGES.PACKAGE.CATALOG_NOT_FOUND);
 
         const schemaKey = CATEGORY_MAP[category] || category;
-        if (pkg[schemaKey] === undefined) throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
+        if (pkg[schemaKey] === undefined) throw AppError.badRequest(RESPONSE_MESSAGES.ERROR.INVALID_CATEGORY);
 
         pkg[schemaKey].forEach(item => {
             item.isActive = isActive;
@@ -251,7 +252,7 @@ class PackageService {
 
     // Helper for controller
     async getPackageById(id) {
-        return await Package.findById(id).lean();
+        return await fetchPackageById(id);
     }
 }
 

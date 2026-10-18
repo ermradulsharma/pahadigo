@@ -14,17 +14,18 @@ import { USER_ROLES, AUTH_PROVIDERS, STATUS, RESPONSE_MESSAGES, VENDOR_STATUS, D
 
 import crypto from 'crypto';
 import jwt from 'jsonwebtoken';
+import { AppError } from '@/core/Errors/AppError.js';
 
 async function getApplePublicKey(kid) {
     try {
         const response = await fetch('https://appleid.apple.com/auth/keys');
-        if (!response.ok) throw new Error('Failed to fetch Apple public keys');
+        if (!response.ok) throw AppError.unauthorized('Failed to fetch Apple public keys');
         const { keys } = await response.json();
         const key = keys.find(k => k.kid === kid);
-        if (!key) throw new Error('Matching Apple public key not found');
+        if (!key) throw AppError.unauthorized('Matching Apple public key not found');
         return crypto.createPublicKey({ format: 'jwk', key });
     } catch (err) {
-        throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
+        throw AppError.unauthorized(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
     }
 }
 
@@ -32,7 +33,7 @@ class AuthService {
 
     async initiateOTP({ identifier, role, termsAccepted }) {
         const existingUser = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
-        if (existingUser && existingUser.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
+        if (existingUser && existingUser.role === USER_ROLES.ADMIN) throw AppError.forbidden(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
         if (existingUser && termsAccepted) {
             existingUser.termsAccepted = DEFAULTS.TRUE;
             existingUser.termsAcceptedAt = new Date();
@@ -43,10 +44,10 @@ class AuthService {
 
     async authenticateWithOTP({ identifier, otp, role }) {
         const user = await OTPService.verifyOTP(identifier, otp, role);
-        if (!user) throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_OTP);
+        if (!user) throw AppError.unauthorized(RESPONSE_MESSAGES.AUTH.INVALID_OTP);
 
         const adminRoles = [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.DEVELOPER];
-        if (adminRoles.includes(user.role)) throw new Error(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
+        if (adminRoles.includes(user.role)) throw AppError.forbidden(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
 
         const { termsAccepted } = user;
         const isTermsAccepted = termsAccepted === DEFAULTS.TRUE || termsAccepted === 'true';
@@ -75,7 +76,7 @@ class AuthService {
     async authenticateWithGoogle(idToken, targetRole) {
         const config = await getAppConfig();
         const googleClientId = config.google?.client_id;
-        if (!googleClientId) throw new Error(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
+        if (!googleClientId) throw AppError.internal(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
 
         const client = new OAuth2Client(googleClientId);
         const ticket = await client.verifyIdToken({ idToken, audience: googleClientId });
@@ -89,13 +90,13 @@ class AuthService {
     async authenticateWithFacebook(accessToken, targetRole) {
         const config = await getAppConfig();
         const facebookAppId = config.facebook?.app_id;
-        if (!facebookAppId) throw new Error(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
+        if (!facebookAppId) throw AppError.internal(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
 
         const response = await fetch(`https://graph.facebook.com/me?fields=id,name,email&access_token=${accessToken}`);
-        if (!response.ok) throw new Error(RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
+        if (!response.ok) throw AppError.unauthorized(RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
 
         const payload = await response.json();
-        if (payload.error || !payload.id) throw new Error(payload.error?.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
+        if (payload.error || !payload.id) throw AppError.unauthorized(payload.error?.message || RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
 
         const { id: facebookId, name, email } = payload;
 
@@ -106,17 +107,17 @@ class AuthService {
     async authenticateWithApple(idToken, targetRole, appleUser, appleEmail) {
         const config = await getAppConfig();
         const appleClientId = config.apple?.client_id;
-        if (!appleClientId) throw new Error(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
+        if (!appleClientId) throw AppError.internal(RESPONSE_MESSAGES.AUTH.CONFIG_MISSING);
 
         const decodedToken = jwt.decode(idToken, { complete: true });
-        if (!decodedToken?.header?.kid) throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
+        if (!decodedToken?.header?.kid) throw AppError.unauthorized(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
 
         const applePublicKey = await getApplePublicKey(decodedToken.header.kid);
         let payload;
         try {
             payload = jwt.verify(idToken, applePublicKey, { algorithms: ['RS256'], issuer: 'https://appleid.apple.com', audience: appleClientId });
         } catch (err) {
-            throw new Error(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
+            throw AppError.unauthorized(RESPONSE_MESSAGES.AUTH.TOKEN_INVALID);
         }
 
         const appleId = payload.sub;
@@ -176,8 +177,8 @@ class AuthService {
 
     async toggleRole(userId) {
         const user = await User.findById(userId);
-        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
-        if (user.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
+        if (!user) throw AppError.notFound(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+        if (user.role === USER_ROLES.ADMIN) throw AppError.forbidden(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
 
         if (!user.preferences) user.preferences = {};
         user.preferences.tempRole = user.preferences?.tempRole === USER_ROLES.VENDOR ? USER_ROLES.TRAVELLER : USER_ROLES.VENDOR;
@@ -188,8 +189,8 @@ class AuthService {
 
     async upgradeToVendor(userId) {
         const user = await User.findById(userId);
-        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
-        if (user.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
+        if (!user) throw AppError.notFound(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+        if (user.role === USER_ROLES.ADMIN) throw AppError.forbidden(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
         if (!user.preferences) user.preferences = {};
         user.preferences.tempRole = USER_ROLES.VENDOR;
         await user.save();
@@ -199,8 +200,8 @@ class AuthService {
 
     async downgradeToTraveller(userId) {
         const user = await User.findById(userId);
-        if (!user) throw new Error(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
-        if (user.role === USER_ROLES.ADMIN) throw new Error(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
+        if (!user) throw AppError.notFound(RESPONSE_MESSAGES.ERROR.NOT_FOUND);
+        if (user.role === USER_ROLES.ADMIN) throw AppError.forbidden(RESPONSE_MESSAGES.AUTH.ADMIN_CANNOT_SWITCH);
         if (!user.preferences) user.preferences = {};
         user.preferences.tempRole = USER_ROLES.TRAVELLER;
         await user.save();

@@ -21,13 +21,14 @@ class PaymentController extends Controller {
   async webhook(req) {
     try {
       const signature = req.headers.get('x-razorpay-signature');
-      const body = req.validData || req.jsonBody || await req.json();
+      const body = req.validData || req.jsonBody || (typeof req.json === 'function' ? await req.json().catch(() => ({})) : {});
+      const rawPayload = req.rawBody || (typeof body === 'string' ? body : JSON.stringify(body));
 
-      const isValid = await RazorpayService.verifyWebhookSignature(body, signature);
+      const isValid = await RazorpayService.verifyWebhookSignature(rawPayload, signature);
       if (!isValid) return this.error(HTTP_STATUS.BAD_REQUEST, 'Invalid webhook signature');
 
-      // Replay Protection: Check if this event was already processed
-      const eventId = req.headers.get('x-razorpay-event-id');
+      // Replay Protection: Check if this event was already processed (via Header or Payload ID)
+      const eventId = req.headers.get('x-razorpay-event-id') || body?.id || body?.event_id;
       if (eventId) {
           const { default: WebhookEvent } = await import('@/core/Models/WebhookEvent.js');
           const existingEvent = await WebhookEvent.findOne({ eventId }).lean();

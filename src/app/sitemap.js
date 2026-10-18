@@ -1,6 +1,8 @@
 import dbConnect from '@/core/Config/db.js';
 import Package from '@/core/Models/Package.js';
 import Category from '@/core/Models/Category.js';
+import Blog from '@/core/Models/Blog.js';
+import { SCHEMA_KEYS } from '@/core/Constants/categories.js';
 
 export default async function sitemap() {
     const baseUrl = process.env.NEXT_PUBLIC_SITE_URL || 'https://pahadigo.co.in';
@@ -30,17 +32,32 @@ export default async function sitemap() {
     try {
         await dbConnect();
 
-        const [packages, categories] = await Promise.all([
-            Package.find({ isPublished: true, isApproved: true }).select('_id updatedAt').lean(),
-            Category.find({ isActive: true }).select('slug updatedAt').lean()
+        const [packageCatalogs, categories, blogs] = await Promise.all([
+            Package.find({}).lean(),
+            Category.find({ isActive: true }).select('slug updatedAt').lean(),
+            Blog.find({ status: 'published' }).select('slug updatedAt publishedAt').lean()
         ]);
 
-        const packageRoutes = (packages || []).map((pkg) => ({
-            url: `${baseUrl}/packages/${pkg._id}`,
-            lastModified: pkg.updatedAt ? new Date(pkg.updatedAt).toISOString() : new Date().toISOString(),
-            changeFrequency: 'weekly',
-            priority: 0.8,
-        }));
+        const packageRoutes = [];
+        const schemaKeyList = Object.values(SCHEMA_KEYS);
+
+        (packageCatalogs || []).forEach((catalog) => {
+            schemaKeyList.forEach((schemaKey) => {
+                const items = catalog[schemaKey];
+                if (Array.isArray(items)) {
+                    items.forEach((item) => {
+                        if (item && item._id && item.isPublished !== false && item.isActive !== false) {
+                            packageRoutes.push({
+                                url: `${baseUrl}/packages/${item._id}`,
+                                lastModified: item.updatedAt ? new Date(item.updatedAt).toISOString() : new Date().toISOString(),
+                                changeFrequency: 'weekly',
+                                priority: 0.8,
+                            });
+                        }
+                    });
+                }
+            });
+        });
 
         const categoryRoutes = (categories || []).map((cat) => ({
             url: `${baseUrl}/categories/${cat.slug}`,
@@ -49,7 +66,14 @@ export default async function sitemap() {
             priority: 0.8,
         }));
 
-        dynamicRoutes = [...packageRoutes, ...categoryRoutes];
+        const blogRoutes = (blogs || []).map((b) => ({
+            url: `${baseUrl}/blog/${b.slug}`,
+            lastModified: b.updatedAt ? new Date(b.updatedAt).toISOString() : (b.publishedAt ? new Date(b.publishedAt).toISOString() : new Date().toISOString()),
+            changeFrequency: 'weekly',
+            priority: 0.7,
+        }));
+
+        dynamicRoutes = [...packageRoutes, ...categoryRoutes, ...blogRoutes];
     } catch (err) {
         // Fallback to static routes if DB connection is unavailable during build
     }

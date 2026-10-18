@@ -10,10 +10,12 @@ import NotificationService from '@/core/Services/General/NotificationService.js'
 import RazorpayService from '@/core/Services/General/RazorpayService.js';
 import PackageService from '@/core/Services/Traveller/PackageService.js';
 import InventoryService from '@/core/Services/Traveller/InventoryService.js';
+import CacheService from '@/core/Services/CacheService.js';
+import { AppError } from '@/core/Errors/AppError.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { RESPONSE_MESSAGES, BOOKING_STATUS, PAYMENT_STATUS, REFUND_STATUS } from '@/core/Constants/index.js';
 import BusinessService from '@/core/Services/Vendor/BusinessService.js';
-import { getPackageItemById, getUserById, getBusinessById, getBookingBy } from '@/core/Helpers/queryHelpers.js';
+import { getPackageItemById, getUserById, getBusinessById, getBookingBy, getBookingById } from '@/core/Helpers/queryHelpers.js';
 import { bookingPayload } from '@/core/Helpers/bookingHelper.js';
 
 const generateNumericOTP = () => randomInt(100000, 1000000).toString();
@@ -33,16 +35,16 @@ class BookingService {
                 const config = await getAppConfig();
                 const checkInDate = new Date(body.startDate);
                 const checkOutDate = new Date(body.endDate);
-                if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) throw new Error("Invalid startDate or endDate format. Use YYYY-MM-DD.");
+                if (isNaN(checkInDate.getTime()) || isNaN(checkOutDate.getTime())) throw AppError.badRequest("Invalid startDate or endDate format. Use YYYY-MM-DD.");
 
                 const packageItem = await PackageService.getAvailablePackageItem(itemId);
-                if (!packageItem) throw new Error(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
+                if (!packageItem) throw AppError.notFound(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
 
                 const travellerProfile = await getUserById(userId);
-                if (!travellerProfile) throw new Error(RESPONSE_MESSAGES.USER.NOT_FOUND);
+                if (!travellerProfile) throw AppError.notFound(RESPONSE_MESSAGES.USER.NOT_FOUND);
 
                 const { catalogId, category, business } = packageItem;
-                if (!business?.id) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+                if (!business?.id) throw AppError.notFound(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
                 const businessId = business.id;
                 const businessAccountDetails = await getBusinessById(businessId, 'bankDetails businessName ownerName');
 
@@ -137,7 +139,7 @@ class BookingService {
                 const grandTotal = Math.max(0, toCent(calculatedSubTotal + calculatedTax + appliedServiceFee - appliedDiscount - appliedCouponAmount));
 
                 const availabilityStatus = await InventoryService.checkAvailabilityRange(businessId, itemId, category, checkInDate, checkOutDate, requiredUnits);
-                if (!availabilityStatus.available) throw new Error(RESPONSE_MESSAGES.BOOKING.SLOTS_NOT_AVAILABLE);
+                if (!availabilityStatus.available) throw AppError.badRequest(RESPONSE_MESSAGES.BOOKING.SLOTS_NOT_AVAILABLE);
 
 
                 let itemUrl = '';
@@ -215,7 +217,7 @@ class BookingService {
                         if (err.code === 11000 && err.message.includes('bookingCode')) {
                             attempts++;
                             if (attempts >= maxAttempts) {
-                                throw new Error('Unable to generate a unique booking code. Please try again.');
+                                throw AppError.internal('Unable to generate a unique booking code. Please try again.');
                             }
                         } else {
                             throw err;
@@ -224,7 +226,7 @@ class BookingService {
                 }
 
                 const finalCheck = await InventoryService.checkAvailabilityRange(businessId, itemId, category, checkInDate, checkOutDate, requiredUnits, session, newBooking._id);
-                if (!finalCheck.available) throw new Error(`Inventory Conflict: Slots became unavailable.`);
+                if (!finalCheck.available) throw AppError.conflict(`Inventory Conflict: Slots became unavailable.`);
 
                 NotificationService.notifyBookingStatus(newBooking._id, 'created');
 
@@ -236,7 +238,7 @@ class BookingService {
             });
             return finalResponse;
         } catch (error) {
-            throw new Error(error.message || 'Booking failed');
+            throw (error instanceof AppError ? error : AppError.badRequest(error.message || 'Booking failed'));
         } finally {
             session.endSession();
         }
@@ -246,10 +248,10 @@ class BookingService {
      * Separate API to get payment details for a booking
      */
     async initializePayment(bookingId, userId) {
-        const booking = await Booking.findOne({ _id: bookingId, user: userId });
-        if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
-        if (booking.status !== BOOKING_STATUS.PENDING) throw new Error(`Payment not allowed. Booking status is ${booking.status}.`);
-        if (booking.paymentStatus === PAYMENT_STATUS.PAID) throw new Error("This booking is already paid.");
+        const booking = await getBookingBy({ _id: bookingId, user: userId }, '', null, { lean: false });
+        if (!booking) throw AppError.notFound(RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
+        if (booking.status !== BOOKING_STATUS.PENDING) throw AppError.badRequest(`Payment not allowed. Booking status is ${booking.status}.`);
+        if (booking.paymentStatus === PAYMENT_STATUS.PAID) throw AppError.badRequest("This booking is already paid.");
         if (booking.payment?.orderId && !booking.payment?.paymentId) return { orderId: booking.payment.orderId, amount: booking.pricing.total, currency: 'INR', bookingCode: booking.bookingCode };
         const config = await getAppConfig();
         let razorpayOrder;
@@ -257,10 +259,10 @@ class BookingService {
         try {
             razorpayOrder = await RazorpayService.createOrder(booking.pricing.total, booking.bookingCode, config.razorpay);
         } catch (error) {
-            throw new Error(error.message || 'Unable to initialize payment gateway order.');
+            throw AppError.internal(error.message || 'Unable to initialize payment gateway order.');
         }
 
-        if (!razorpayOrder?.id) throw new Error('Payment gateway did not return an order id.');
+        if (!razorpayOrder?.id) throw AppError.internal('Payment gateway did not return an order id.');
         booking.payment.gateway = 'razorpay';
         booking.payment.orderId = razorpayOrder.id;
         booking.timeline.push({ status: 'Payment Attempted', remarks: `Razorpay Order ${razorpayOrder.id} generated.`, actor: userId });
@@ -274,23 +276,23 @@ class BookingService {
     async verifyBookingPayment(bookingId, userId, paymentData) {
         const { razorpay_order_id, razorpay_payment_id, razorpay_signature } = paymentData || {};
 
-        const booking = await Booking.findOne({ _id: bookingId, user: userId }).populate(['user', { path: 'vendor', populate: { path: 'user' } }]);
-        if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
+        const booking = await getBookingBy({ _id: bookingId, user: userId }, '', ['user', { path: 'vendor', populate: { path: 'user' } }], { lean: false });
+        if (!booking) throw AppError.notFound(RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
 
-        if (!booking.payment?.orderId) throw new Error('Payment order has not been initialized for this booking.');
-        if (booking.payment.orderId !== razorpay_order_id) throw new Error('Payment order does not match this booking.');
+        if (!booking.payment?.orderId) throw AppError.badRequest('Payment order has not been initialized for this booking.');
+        if (booking.payment.orderId !== razorpay_order_id) throw AppError.badRequest('Payment order does not match this booking.');
 
         if (booking.paymentStatus === PAYMENT_STATUS.PAID || booking.status === BOOKING_STATUS.CONFIRMED) {
             const samePayment = !booking.payment.paymentId || booking.payment.paymentId === razorpay_payment_id;
             if (samePayment) return bookingPayload(booking);
-            throw new Error('This booking is already paid with a different payment id.');
+            throw AppError.badRequest('This booking is already paid with a different payment id.');
         }
 
-        if (booking.payment.paymentId && booking.payment.paymentId !== razorpay_payment_id) throw new Error('A different payment attempt is already recorded for this booking.');
+        if (booking.payment.paymentId && booking.payment.paymentId !== razorpay_payment_id) throw AppError.badRequest('A different payment attempt is already recorded for this booking.');
 
         const config = await getAppConfig();
         const isValid = RazorpayService.verifySignature(razorpay_order_id, razorpay_payment_id, razorpay_signature, config.razorpay);
-        if (!isValid) throw new Error(RESPONSE_MESSAGES.ERROR.INVALID_SIGNATURE);
+        if (!isValid) throw AppError.badRequest(RESPONSE_MESSAGES.ERROR.INVALID_SIGNATURE);
 
         booking.verification.startOTP = generateNumericOTP();
         booking.verification.endOTP = generateNumericOTP();
@@ -318,6 +320,17 @@ class BookingService {
         });
 
         await booking.save();
+
+        // Invalidate booking caches
+        try {
+            await CacheService.del('admin:bookings:all');
+            await CacheService.deletePattern('admin:bookings:*');
+            await CacheService.del(`admin:bookings:${bookingId}`);
+            await CacheService.del('admin:dashboard:stats');
+            await CacheService.del('admin:dashboard:revenue');
+        } catch (cacheErr) {
+            // Non-blocking cache flush
+        }
 
         // Reserve inventory slots upon booking confirmation
         if (booking.vendor && booking.item?.itemId && booking.startDate && booking.endDate) {
@@ -347,14 +360,14 @@ class BookingService {
      */
     async getBookingOTP(bookingId, userId) {
         const booking = await getBookingBy({ _id: bookingId, user: userId });
-        if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
+        if (!booking) throw AppError.notFound(RESPONSE_MESSAGES.BOOKING.NOT_FOUND_OR_UNAUTHORIZED);
 
         if (booking.status === BOOKING_STATUS.COMPLETED) {
-            throw new Error("Trip is already completed. No OTPs available.");
+            throw AppError.badRequest("Trip is already completed. No OTPs available.");
         }
 
         if (booking.status === BOOKING_STATUS.CANCELLED) {
-            throw new Error("This booking has been cancelled.");
+            throw AppError.badRequest("This booking has been cancelled.");
         }
         let otpType = '';
         let otpValue = '';
@@ -365,13 +378,13 @@ class BookingService {
             const today = new Date().setHours(0, 0, 0, 0);
             const startDate = new Date(booking.startDate).setHours(0, 0, 0, 0);
             if (today < startDate) {
-                throw new Error(`Start OTP will be available on ${new Date(booking.startDate).toDateString()}`);
+                throw AppError.badRequest(`Start OTP will be available on ${new Date(booking.startDate).toDateString()}`);
             }
         } else if (booking.status === BOOKING_STATUS.ONGOING) {
             otpType = 'End OTP';
             otpValue = booking.verification.endOTP;
         } else {
-            throw new Error(`OTP not available for current status: ${booking.status}`);
+            throw AppError.badRequest(`OTP not available for current status: ${booking.status}`);
         }
         NotificationService.notifyBookingStatus(booking._id, 'otp_sent');
         return { type: otpType, otp: otpValue };
@@ -381,11 +394,11 @@ class BookingService {
      * Process cancellation with tiered refund policy (100% > 7d, 50% 3-7d, 0% < 48h) and cancel booking
      */
     async refundBooking(bookingId, req = null) {
-        const bookingToCancel = await Booking.findById(bookingId).lean();
-        if (!bookingToCancel) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
+        const bookingToCancel = await getBookingById(bookingId);
+        if (!bookingToCancel) throw AppError.notFound(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
 
         if (bookingToCancel.status === BOOKING_STATUS.CANCELLED) {
-            throw new Error("This booking is already cancelled.");
+            throw AppError.badRequest("This booking is already cancelled.");
         }
 
         // Tiered cancellation policy (100% > 7 days, 50% 3-7 days, 0% < 48 hours)
@@ -420,8 +433,8 @@ class BookingService {
         let finalBooking;
         try {
             await session.withTransaction(async () => {
-                const booking = await Booking.findById(bookingId).session(session);
-                if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
+                const booking = await getBookingById(bookingId, '', null, { session, lean: false });
+                if (!booking) throw AppError.notFound(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
 
                 booking.status = BOOKING_STATUS.CANCELLED;
                 if (!isPaid) {
@@ -458,6 +471,17 @@ class BookingService {
                 NotificationService.notifyBookingStatus(bookingId, 'cancelled');
                 finalBooking = booking;
             });
+
+            try {
+                await CacheService.del('admin:bookings:all');
+                await CacheService.deletePattern('admin:bookings:*');
+                await CacheService.del(`admin:bookings:${bookingId}`);
+                await CacheService.del('admin:dashboard:stats');
+                await CacheService.del('admin:dashboard:revenue');
+            } catch (cacheErr) {
+                // Non-blocking cache flush
+            }
+
             return finalBooking;
         } catch (error) {
             throw error;
@@ -469,8 +493,8 @@ class BookingService {
     async reportDispute(bookingId, userId, payload) {
         let { reason, description, evidenceUrls } = payload;
 
-        const booking = await Booking.findOne({ _id: bookingId, user: userId });
-        if (!booking) throw new Error(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
+        const booking = await getBookingBy({ _id: bookingId, user: userId }, '', null, { lean: false });
+        if (!booking) throw AppError.notFound(RESPONSE_MESSAGES.BOOKING.NOT_FOUND);
 
         // Map reason to allowed enum if strictly necessary, or ensure user sends correct ones
         const validReasons = ['vendor_no_show', 'quality_issue', 'safety_concern', 'wrong_information', 'other'];

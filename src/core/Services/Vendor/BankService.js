@@ -1,8 +1,10 @@
 import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
-import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { RESPONSE_MESSAGES, HTTP_STATUS } from '@/core/Constants/index.js';
 import Vendor from '@/core/Models/Vendor.js';
 import RazorpayService from '@/core/Services/General/RazorpayService.js';
 import CacheService from '@/core/Services/CacheService.js';
+import AppError from '@/core/Helpers/AppError.js';
+import { getBusinessByUserId } from '@/core/Helpers/queryHelpers.js';
 
 class BankService {
     async invalidateVendorCaches(userId, vendorId = null) {
@@ -20,8 +22,8 @@ class BankService {
     // Update Bank Details
     // Synchronize and update payout credentials
     async updateBankDetails(userId, bankData) {
-        const vendor = await Vendor.findOne({ user: userId, deletedAt: null }).populate('user').lean();
-        if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+        const vendor = await getBusinessByUserId(userId, '', { path: 'user' });
+        if (!vendor) throw new AppError(RESPONSE_MESSAGES.VENDOR.NOT_FOUND, HTTP_STATUS.NOT_FOUND);
         const updatePayload = { ...vendor.bankDetails };
         if (bankData.accountHolderName) updatePayload.accountHolderName = bankData.accountHolderName;
         if (bankData.accountNumber) updatePayload.accountNumber = bankData.accountNumber;
@@ -30,11 +32,19 @@ class BankService {
 
         // Create RazorpayX Contact and Fund Account if basic details exist
         if (updatePayload.accountHolderName && updatePayload.accountNumber && updatePayload.ifscCode) {
+            const contactName = updatePayload.accountHolderName || vendor.ownerName || vendor.businessName;
+            const contactPhone = vendor.businessNumber || vendor.personalNumber || vendor.user?.phone;
+            const contactEmail = vendor.businessEmail || vendor.user?.email || `vendor_${vendor._id}@pahadigo.co.in`;
+
+            if (!contactName || !contactPhone) {
+                throw new AppError("Vendor owner name and contact number are required to register bank details.", HTTP_STATUS.UNPROCESSABLE_ENTITY);
+            }
+
             try {
                 const contactData = {
-                    name: updatePayload.accountHolderName || vendor.ownerName || 'Vendor',
-                    email: vendor.user?.email || `vendor_${vendor._id}@pahadigo.co.in`,
-                    contact: vendor.businessNumber || vendor.personalNumber || '9999999999',
+                    name: contactName,
+                    email: contactEmail,
+                    contact: contactPhone,
                     type: 'vendor',
                     reference_id: vendor._id.toString()
                 };
@@ -53,7 +63,7 @@ class BankService {
                 const fundAccount = await RazorpayService.createFundAccount(fundAccountData);
                 updatePayload.razorpayFundAccountId = fundAccount.id;
             } catch (err) {
-                throw new Error("Failed to register bank details with payment gateway: " + err.message);
+                throw new AppError("Failed to register bank details with payment gateway: " + err.message, HTTP_STATUS.BAD_REQUEST);
             }
         }
 

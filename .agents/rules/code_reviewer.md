@@ -18,6 +18,7 @@ core_engineering_review_criteria:
 
 review_rules:
   - "MOBILE_APP_CRASH_PREVENTION: MANDATORY REVIEW GATE: Verify that any proposed change, update, or refactor does NOT break or crash existing Android and iOS mobile applications (Flutter/React Native). Reject any PR that modifies established `/api/v1/` response envelopes (`{ success, message, data }` / `{ success, message, data, pagination }`) or alters payload field types without a major `/v2/` version bump."
+  - "FRAMEWORK_VERSION_VALIDATION: MANDATORY REVIEW GATE: Verify that any new file, configuration, or architectural convention strictly adheres to the exact installed Next.js version in `package.json` (Next.js 16+). Reject PRs introducing deprecated Next.js file conventions (e.g. creating `src/middleware.js` when Next.js 16 requires `src/proxy.js`)."
   - "HELPER_UTILIZATION: Verify that developers inspect `src/core/Helpers/` first and reuse existing helper functions instead of re-implementing inline logic."
   - "STRICT_MVC_ENFORCEMENT: Reject business logic in `src/app/api/`. Verify `Router.group()` routing. Enforce logic placement in Controllers and Services."
   - "DB_PERF_VERIFICATION: Verify `.lean()` on all read queries. Check for compound text indexes. Reject N+1 query patterns."

@@ -11,6 +11,7 @@ import AuditService from '@/core/Services/Admin/AuditService.js';
 import AppError from '@/core/Helpers/AppError.js';
 import { RESPONSE_MESSAGES, USER_ROLES, STATUS, VERIFICATION_STATUS, HTTP_STATUS } from '@/core/Constants/index.js';
 import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
+import { getUserBy, getUserById, getBusinessBy, getBusinessById } from '@/core/Helpers/queryHelpers.js';
 import crypto from 'crypto';
 import mongoose from 'mongoose';
 
@@ -126,7 +127,7 @@ class VendorService {
         let result = null;
 
         await session.withTransaction(async () => {
-            let existingUser = await User.findOne({ email: data.email }).session(session).lean();
+            let existingUser = await getUserBy({ email: data.email }, '', null, { session, lean: true });
             let userId;
 
             if (existingUser) {
@@ -147,7 +148,7 @@ class VendorService {
                 existingUser = newUser[0];
             }
 
-            const existingVendor = await Vendor.findOne({ user: userId }).session(session).lean();
+            const existingVendor = await getBusinessBy({ user: userId }, '', null, { session, lean: true });
             if (existingVendor) {
                 throw new AppError(RESPONSE_MESSAGES.VENDOR.ALREADY_EXISTS, HTTP_STATUS.CONFLICT);
             }
@@ -176,14 +177,14 @@ class VendorService {
         let result = null;
 
         await session.withTransaction(async () => {
-            let vendor = await Vendor.findById(id).session(session).lean();
+            let vendor = await getBusinessById(id, '', null, { session, lean: true });
             let user = null;
 
             if (vendor) {
-                user = await User.findById(vendor.user).session(session).lean();
+                user = await getUserById(vendor.user, '', null, { session, lean: true });
             } else {
-                user = await User.findById(id).session(session).lean();
-                if (user) vendor = await Vendor.findOne({ user: id }).session(session).lean();
+                user = await getUserById(id, '', null, { session, lean: true });
+                if (user) vendor = await getBusinessBy({ user: id }, '', null, { session, lean: true });
             }
 
             if (!vendor && !user) {
@@ -222,7 +223,7 @@ class VendorService {
                 await AuditService.logAction(req.user.id, 'UPDATE', 'VENDOR', id, { changes: data }, req);
             }
 
-            result = await User.findById(user?._id || id).populate('vendorProfile').session(session).lean();
+            result = await getUserById(user?._id || id, '', 'vendorProfile', { session, lean: true });
         });
 
         session.endSession();
@@ -238,8 +239,8 @@ class VendorService {
         let result = null;
 
         await session.withTransaction(async () => {
-            let vendor = await Vendor.findById(vendorId).session(session);
-            if (!vendor) vendor = await Vendor.findOne({ user: vendorId }).session(session);
+            let vendor = await getBusinessById(vendorId, '', null, { session, lean: false });
+            if (!vendor) vendor = await getBusinessBy({ user: vendorId }, '', null, { session, lean: false });
 
             if (!vendor) throw new AppError(RESPONSE_MESSAGES.VENDOR.NOT_FOUND, HTTP_STATUS.NOT_FOUND);
 
@@ -263,7 +264,7 @@ class VendorService {
         if (isApproved) NotificationService.notifyVendorApproval(result.vendorId, true);
         await this.invalidateVendorCaches(result.vendorId);
 
-        return await User.findById(result.userId).populate('vendorProfile').lean();
+        return await getUserById(result.userId, '', 'vendorProfile');
     }
 
     async deleteVendor(id, deletedBy = null) {
@@ -271,7 +272,7 @@ class VendorService {
         const session = await mongoose.startSession();
 
         await session.withTransaction(async () => {
-            let vendor = await Vendor.findById(id).session(session).lean();
+            let vendor = await getBusinessById(id, '', null, { session, lean: true });
             let vendorIdToClean = id;
             if (vendor) {
                 await User.findByIdAndUpdate(vendor.user, {
@@ -282,7 +283,7 @@ class VendorService {
                 }, { session });
                 await Vendor.findByIdAndUpdate(id, { isApproved: false }, { session });
             } else {
-                const user = await User.findById(id).session(session).lean();
+                const user = await getUserById(id, '', null, { session, lean: true });
                 if (user) {
                     await User.findByIdAndUpdate(id, {
                         status: STATUS.DELETED,
@@ -290,7 +291,7 @@ class VendorService {
                         deletedBy: deletedBy || null,
                         deletedReason: 'Admin initiated deletion'
                     }, { session });
-                    const vendorProfile = await Vendor.findOne({ user: id }).session(session).lean();
+                    const vendorProfile = await getBusinessBy({ user: id }, '', null, { session, lean: true });
                     if (vendorProfile) {
                         vendorIdToClean = vendorProfile._id;
                         await Vendor.findByIdAndUpdate(vendorProfile._id, { isApproved: false }, { session });
@@ -342,7 +343,7 @@ class VendorService {
         const { vendorId, documentField, index } = data;
         let identityData = null;
         
-        let vendor = await Vendor.findById(vendorId);
+        let vendor = await getBusinessById(vendorId, '', null, { lean: false });
         if (!vendor) throw new AppError(RESPONSE_MESSAGES.VENDOR.NOT_FOUND, HTTP_STATUS.NOT_FOUND);
 
         let doc = null;
@@ -381,7 +382,7 @@ class VendorService {
                 { upsert: true, session }
             );
 
-            let vendorToUpdate = await Vendor.findById(vendorId).session(session);
+            let vendorToUpdate = await getBusinessById(vendorId, '', null, { session, lean: false });
             
             if (Array.isArray(vendorToUpdate.documents[documentField])) {
                 vendorToUpdate.documents[documentField][index].status = 'verified';
@@ -414,8 +415,8 @@ class VendorService {
         const session = await mongoose.startSession();
         
         await session.withTransaction(async () => {
-            let vendor = await Vendor.findById(vendorId).session(session);
-            if (!vendor) vendor = await Vendor.findOne({ user: vendorId }).session(session);
+            let vendor = await getBusinessById(vendorId, '', null, { session, lean: false });
+            if (!vendor) vendor = await getBusinessBy({ user: vendorId }, '', null, { session, lean: false });
             if (!vendor) throw new AppError(RESPONSE_MESSAGES.VENDOR.NOT_FOUND, HTTP_STATUS.NOT_FOUND);
             
             const pathParts = documentField.includes('.') ? documentField.split('.') : ['documents', documentField];

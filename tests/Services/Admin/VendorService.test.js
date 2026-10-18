@@ -1,59 +1,108 @@
 import { jest } from '@jest/globals';
 
 jest.unstable_mockModule('mongoose', () => {
+    const mockObjectId = Object.assign(
+        jest.fn().mockImplementation((id) => id),
+        { isValid: jest.fn(() => true) }
+    );
     const mockMongoose = {
         startSession: jest.fn(() => ({
             withTransaction: jest.fn(async (cb) => {
                 return await cb();
             }),
-            endSession: jest.fn()
+            endSession: jest.fn(),
+            startTransaction: jest.fn(),
+            commitTransaction: jest.fn(),
+            abortTransaction: jest.fn()
         })),
         Types: {
-            ObjectId: jest.fn().mockImplementation((id) => id)
-        }
+            ObjectId: mockObjectId
+        },
+        Schema: Object.assign(
+            jest.fn().mockImplementation(() => ({
+                virtual: jest.fn().mockReturnThis(),
+                set: jest.fn().mockReturnThis(),
+                index: jest.fn().mockReturnThis(),
+                pre: jest.fn().mockReturnThis(),
+                post: jest.fn().mockReturnThis()
+            })),
+            { Types: { ObjectId: mockObjectId } }
+        ),
+        model: jest.fn(),
+        models: {}
     };
-    mockMongoose.Types.ObjectId.isValid = jest.fn(() => true);
     return {
         __esModule: true,
         default: mockMongoose,
+        Schema: mockMongoose.Schema,
+        model: mockMongoose.model,
+        models: mockMongoose.models,
         Types: mockMongoose.Types
     };
 });
 
-jest.unstable_mockModule('@/core/Models/User.js', () => ({
-    default: {
-        aggregate: jest.fn(),
-        findOne: jest.fn(),
-        findById: jest.fn(),
-        create: jest.fn(),
-        findByIdAndUpdate: jest.fn()
-    }
-}));
+const mockUser = {
+    aggregate: jest.fn(),
+    findOne: jest.fn(),
+    findById: jest.fn(),
+    create: jest.fn(),
+    findByIdAndUpdate: jest.fn()
+};
 
-jest.unstable_mockModule('@/core/Models/Vendor.js', () => ({
-    default: {
-        findOne: jest.fn(),
-        create: jest.fn(),
-        findById: jest.fn(),
-        findByIdAndUpdate: jest.fn()
-    }
-}));
+const mockVendor = {
+    findOne: jest.fn(),
+    create: jest.fn(),
+    findById: jest.fn(),
+    findByIdAndUpdate: jest.fn()
+};
 
-jest.unstable_mockModule('@/core/Models/VendorDocument.js', () => ({
-    default: {
-        findById: jest.fn()
-    }
-}));
+const mockVendorDocument = {
+    findById: jest.fn()
+};
 
-jest.unstable_mockModule('@/core/Models/Package.js', () => ({
-    default: {}
-}));
+const mockPackage = {
+    updateMany: jest.fn()
+};
 
-jest.unstable_mockModule('@/core/Models/VerifiedIdentity.js', () => ({
-    default: {
-        findOneAndUpdate: jest.fn()
-    }
-}));
+const mockVerifiedIdentity = {
+    findOneAndUpdate: jest.fn()
+};
+
+jest.unstable_mockModule('@/core/Models/User.js', () => ({ default: mockUser }));
+jest.unstable_mockModule('@/core/Models/Vendor.js', () => ({ default: mockVendor }));
+jest.unstable_mockModule('@/core/Models/VendorDocument.js', () => ({ default: mockVendorDocument }));
+jest.unstable_mockModule('@/core/Models/Package.js', () => ({ default: mockPackage }));
+jest.unstable_mockModule('@/core/Models/VerifiedIdentity.js', () => ({ default: mockVerifiedIdentity }));
+
+const mockModelsIndex = {
+    User: mockUser,
+    Vendor: mockVendor,
+    VendorDocument: mockVendorDocument,
+    Package: mockPackage,
+    VerifiedIdentity: mockVerifiedIdentity,
+    Booking: {},
+    Category: {},
+    VendorClosure: {},
+    Review: {},
+    AuditLog: {},
+    Banner: {},
+    CategoryDocument: {},
+    Country: {},
+    Coupon: {},
+    Dispute: {},
+    EmergencyAlert: {},
+    Inquiry: {},
+    Inventory: {},
+    Policy: {},
+    RateLimit: {},
+    SearchLog: {},
+    Setting: {},
+    State: {},
+    Wishlist: {}
+};
+
+jest.unstable_mockModule('@/core/Models/index.js', () => mockModelsIndex);
+jest.unstable_mockModule('@/models/index.js', () => mockModelsIndex);
 
 jest.unstable_mockModule('@/core/Services/Admin/OCRService.js', () => ({
     default: {
@@ -107,10 +156,52 @@ jest.unstable_mockModule('@/core/Constants/index.js', () => ({
         AUTH: { ROLE_MISMATCH: 'Role mismatch' },
         ERROR: { INDEX_REQUIRED: 'Index required' }
     },
-    USER_ROLES: { VENDOR: 'vendor' },
-    STATUS: { ACTIVE: 'active', SUSPENDED: 'suspended', DELETED: 'deleted' },
-    VERIFICATION_STATUS: { REJECTED: 'rejected' },
-    HTTP_STATUS: { NOT_FOUND: 404, CONFLICT: 409, BAD_REQUEST: 400 }
+    USER_ROLES: { SUPER_ADMIN: 'super_admin', ADMIN: 'admin', DEVELOPER: 'developer', VENDOR: 'vendor', TRAVELLER: 'traveller' },
+    STATUS: { PENDING: 'pending', ACTIVE: 'active', INACTIVE: 'inactive', REJECT: 'reject', BLOCKED: 'blocked', SUSPENDED: 'suspended', DELETED: 'deleted' },
+    VERIFICATION_STATUS: { PENDING: 'pending', VERIFIED: 'verified', REJECTED: 'rejected' },
+    HTTP_STATUS: { OK: 200, CREATED: 201, BAD_REQUEST: 400, UNAUTHORIZED: 401, FORBIDDEN: 403, NOT_FOUND: 404, CONFLICT: 409, INTERNAL_SERVER_ERROR: 500 },
+    BOOKING_STATUS: { PENDING: 'pending', CONFIRMED: 'confirmed', ONGOING: 'ongoing', CANCELLED: 'cancelled', COMPLETED: 'completed', EXPIRED: 'expired' },
+    PAYMENT_STATUS: { PENDING: 'pending', PAID: 'paid', FAILED: 'failed', CANCELLED: 'cancelled', DISPUTE: 'dispute', PARTIALLY_PAID: 'partially_paid', REFUNDED: 'refunded', REFUND_PENDING: 'refund_pending', UNPAID: 'unpaid', PARTIALLY_REFUNDED: 'partially_refunded' },
+    PAYOUT_STATUS: { PENDING: 'pending', PAID: 'paid', FAILED: 'failed', REFUNDED: 'refunded', CANCELLED: 'cancelled', DISPUTE: 'dispute', REJECTED: 'rejected', HOLD: 'hold', NOT_PAID: 'not-paid', NOT_REFUNDED: 'not-refunded' },
+    REFUND_STATUS: { NONE: 'none', REFUNDED: 'refunded' },
+    PAYMENT_METHODS: { UPI: 'upi', CARD: 'card', NET_BANKING: 'net_banking', WALLET: 'wallet', CASH: 'cash' },
+    PAYMENT_GATEWAYS: { RAZORPAY: 'razorpay', STRIPE: 'stripe', PAYPAL: 'paypal' },
+    BOOKING_SOURCE: { WEB: 'web', ANDROID: 'android', IOS: 'ios', ADMIN: 'admin' },
+    AUTH_PROVIDERS: { LOCAL: 'local', GOOGLE: 'google', FACEBOOK: 'facebook', APPLE: 'apple', PHONE: 'phone' },
+    GENDER: { MALE: 'male', FEMALE: 'female', OTHER: 'other' },
+    DISCOUNT_TYPES: { PERCENTAGE: 'percentage', FLAT: 'flat' },
+    CURRENCIES: { EUR: 'EUR', GBP: 'GBP', INR: 'INR', USD: 'USD' },
+    NOTIFICATION_TYPES: { BOOKING_CONFIRMED: 'BOOKING_CONFIRMED', BOOKING_CANCELLED: 'BOOKING_CANCELLED', NEW_BOOKING: 'NEW_BOOKING', PAYMENT_SUCCESS: 'PAYMENT_SUCCESS', VENDOR_VERIFIED: 'VENDOR_VERIFIED', VENDOR_REJECTED: 'VENDOR_REJECTED', PACKAGE_APPROVED: 'PACKAGE_APPROVED', PACKAGE_REJECTED: 'PACKAGE_REJECTED', MESSAGE_RECEIVED: 'MESSAGE_RECEIVED' },
+    NOTIFICATION_MESSAGES: {},
+    LANGUAGES: { BENGALI: 'bn', ENGLISH: 'en', GUJARATI: 'gu', HINDI: 'hi', KANNADA: 'kn', MALAYALAM: 'ml', MARATHI: 'mr', PUNJABI: 'pa', TAMIL: 'ta', TELUGU: 'te' },
+    PACKAGE: {},
+    VENDOR_PROFILE_TYPES: { BUSINESS: 'business', INDIVIDUAL: 'individual' },
+    VENDOR_STATUS: { SET_PROFILE: 'setBusinessProfile', UPLOAD_DOCUMENTS: 'uploadDocuments', COMPLETED: 'profileCompleted' },
+    PAGINATION: { DEFAULT_PAGE: 1, DEFAULT_LIMIT: 10, MAX_LIMIT: 100 },
+    FILE_UPLOAD: { MAX_SIZE: 5242880, ALLOWED_TYPES: [] },
+    UPLOAD_PATHS: {},
+    SEED_ACCOUNTS: {},
+    THIRD_PARTY_APIS: {},
+    SYSTEM_ENV: {},
+    APP_DETAILS: { APP_URL: 'http://localhost:3000' },
+    APP_SECRETS: {},
+    APP_CONSTANTS: {},
+    DEFAULTS: {
+        USER_ROLE: 'traveller',
+        STATUS: 'pending',
+        AUTH_PROVIDER: 'phone',
+        GENDER: 'other',
+        CURRENCY: 'INR',
+        COUNTRY: 'India',
+        TRUE: true,
+        FALSE: false,
+        NULL: null,
+        ARRAY: [],
+        STRING: '',
+        UNDEFINED: undefined,
+        COUNTS: { ZERO: 0, ONE: 1, TWO: 2, THREE: 3, FOUR: 4, FIVE: 5, SIX: 6, SEVEN: 7, EIGHT: 8, NINE: 9 }
+    },
+    default: {}
 }));
 
 const { default: VendorService } = await import('@/core/Services/Admin/VendorService.js');

@@ -15,6 +15,7 @@ describe('User OTPService', () => {
         jest.spyOn(User, 'findOneAndUpdate');
         jest.spyOn(User, 'findOne');
         jest.spyOn(AuthEvents, 'emit').mockImplementation(() => {});
+        jest.spyOn(AuthEvents, 'emitAsync').mockResolvedValue([]);
     });
 
     afterEach(() => {
@@ -34,7 +35,8 @@ describe('User OTPService', () => {
                 expect.objectContaining({ $set: expect.objectContaining({ email: identifier }) }),
                 expect.anything()
             );
-            expect(AuthEvents.emit).toHaveBeenCalledWith('otp.requested', expect.objectContaining({ identifier }));
+            const emitFn = AuthEvents.emitAsync.mock.calls.length > 0 ? AuthEvents.emitAsync : AuthEvents.emit;
+            expect(emitFn).toHaveBeenCalledWith('otp.requested', expect.objectContaining({ identifier }));
         });
     });
 

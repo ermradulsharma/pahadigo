@@ -1,6 +1,7 @@
 import { Inventory, Package, Booking } from '@/core/Models/index.js';
 import { formatDateKey, normalizeAvailability, determineDayStatus, calculateEffectivePrice } from '@/core/Helpers/InventoryHelper.js';
 import { getEffectiveDay } from '@/core/Services/Shared/InventoryCore.js';
+import AppError from '@/core/Errors/AppError.js';
 
 
 class InventoryService {
@@ -150,7 +151,7 @@ class InventoryService {
       const newBooked = (dayData?.bookedUnits || 0) + unitsToReserve;
 
       if (newBooked > total) {
-        throw new Error(`Insufficient units on ${d.toISOString().split('T')[0]}`);
+        throw AppError.badRequest(`Insufficient units on ${d.toISOString().split('T')[0]}`);
       }
 
       updates.push({ date: new Date(d), bookedUnits: newBooked });

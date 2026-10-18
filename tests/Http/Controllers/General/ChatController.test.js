@@ -27,6 +27,7 @@ const { default: User } = await import('@/core/Models/User.js');
 const { PushNotificationService } = await import('@/core/Services/PushNotificationService.js');
 const { HTTP_STATUS } = await import('@/core/Constants/index.js');
 const queryHelpers = await import('@/core/Helpers/queryHelpers.js');
+const { default: logger } = await import('@/core/Lib/logger.js');
 
 describe('ChatController (Root/General)', () => {
     let mockReq;
@@ -44,6 +45,7 @@ describe('ChatController (Root/General)', () => {
             url: 'http://localhost/chat/conversations/convo123/messages'
         };
         jest.spyOn(console, 'error').mockImplementation(() => {});
+        jest.spyOn(logger, 'error').mockImplementation(() => {});
         jest.spyOn(ChatMessage, 'countDocuments').mockResolvedValue(0);
         queryHelpers.getBookingById.mockResolvedValue(null);
     });

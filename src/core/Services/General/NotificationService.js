@@ -1,12 +1,12 @@
 import nodemailer from 'nodemailer';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { renderTemplate } from '@/core/Helpers/TemplateHelper.js';
-import Booking from '@/core/Models/Booking.js';
-import User from '@/core/Models/User.js';
-import Vendor from '@/core/Models/Vendor.js';
 import { PushNotificationService } from '@/core/Services/PushNotificationService.js';
 import { enqueueInvoice, enqueuePushNotification } from '@/core/Lib/Queue/QueueService.js';
 import { getLogger } from '@/core/Lib/logger.js';
+import { getBookingById, getUserById, getBusinessById } from '@/core/Helpers/queryHelpers.js';
+import { formatIST } from '@/core/Helpers/dateUtils.js';
+import AppError from '@/core/Errors/AppError.js';
 
 /**
  * NotificationService - Centralized service for sending communications
@@ -68,7 +68,7 @@ class NotificationService {
      * Internal helper to send emails with standard configuration
      */
     async _sendEmailHelper({ to, toName, subject, html, text, attachments }) {
-        if (!to) throw new Error("Recipient email address ('to') is required");
+        if (!to) throw AppError.badRequest("Recipient email address ('to') is required");
 
         const config = await getAppConfig();
         const transporter = await this._getTransporter(config);
@@ -127,8 +127,8 @@ class NotificationService {
     async sendSMS(phone, message) {
         try {
             const config = await getAppConfig();
-            const authKey = config?.msg91?.auth_key || config?.secrets?.msg91_auth_key || process.env.MSG91_AUTH_KEY;
-            const templateId = config?.msg91?.template_id || config?.secrets?.msg91_template_id || process.env.MSG91_TEMPLATE_ID;
+            const authKey = config?.msg91?.auth_key || config?.secrets?.msg91_auth_key;
+            const templateId = config?.msg91?.template_id || config?.secrets?.msg91_template_id;
 
             const isRealKey = Boolean(authKey && !authKey.startsWith('your_') && authKey !== 'default' && authKey.length >= 10);
 
@@ -161,8 +161,6 @@ class NotificationService {
      */
     async sendLoginAlertEmail(email, details) {
         try {
-            // console.log("Email", email);
-            // console.log("Details", details);
             const config = await getAppConfig();
             const baseUrl = config?.app?.url || 'https://pahadigo.co.in';
             const securityUrl = `${baseUrl}/security`;
@@ -282,25 +280,25 @@ class NotificationService {
             await this._sendEmailHelper({ to: email, toName: details?.businessProfile?.businessName, subject: 'Update Business Profile', html: html });
 
             // Push Notification to vendor device using details.fcmToken
-            // if (details?.fcmToken) {
-            const businessProfileId = details?.businessProfile?.id || details?.id || '';
-            const profileImage = details?.businessProfile?.profileImage || details?.profileImage || null;
+            if (details?.fcmToken) {
+                const businessProfileId = details?.businessProfile?.id || details?.id || '';
+                const profileImage = details?.businessProfile?.profileImage || details?.profileImage || null;
 
-            await PushNotificationService.sendToDevice(
-                details.fcmToken,
-                {
-                    title: 'Business Profile Updated!',
-                    body: 'Your business profile has been successfully updated.',
-                    ...(profileImage && { image: profileImage }),
-                },
-                {
-                    type: 'profile_updated',
-                    businessProfileId: String(businessProfileId)
-                }
-            );
-            // } else {
-            //     getLogger().info({ email }, "[NotificationService] Skipped push notification: No fcmToken found in details");
-            // }
+                await PushNotificationService.sendToDevice(
+                    details.fcmToken,
+                    {
+                        title: 'Business Profile Updated!',
+                        body: 'Your business profile has been successfully updated.',
+                        ...(profileImage && { image: profileImage }),
+                    },
+                    {
+                        type: 'profile_updated',
+                        businessProfileId: String(businessProfileId)
+                    }
+                );
+            } else {
+                getLogger().debug({ email }, "[NotificationService] Skipped push notification: No fcmToken found in details");
+            }
 
             return true;
         } catch (error) {
@@ -359,7 +357,7 @@ class NotificationService {
 
             let booking;
             try {
-                booking = await Booking.findById(bookingId).lean();
+                booking = await getBookingById(bookingId);
             } catch (findErr) {
                 return false;
             }
@@ -369,16 +367,16 @@ class NotificationService {
 
             // Parallel lookup of traveller User and vendor doc
             const [travellerUser, vendorDoc] = await Promise.all([
-                travellerId ? User.findById(travellerId).select('fcmToken').lean() : Promise.resolve(null),
-                booking.vendor ? Vendor.findById(booking.vendor).select('user').lean() : Promise.resolve(null)
+                travellerId ? getUserById(travellerId, 'fcmToken') : Promise.resolve(null),
+                booking.vendor ? getBusinessById(booking.vendor, 'user') : Promise.resolve(null)
             ]);
 
             const vendorUserId = vendorDoc ? vendorDoc.user : null;
             const vendorUser = vendorUserId
-                ? await User.findById(vendorUserId).select('fcmToken').lean()
+                ? await getUserById(vendorUserId, 'fcmToken')
                 : null;
 
-            const startDateStr = booking.startDate ? new Date(booking.startDate).toLocaleDateString() : '';
+            const startDateStr = booking.startDate ? formatIST(booking.startDate, { includeTime: false }) : '';
 
             let travellerTitle = '';
             let travellerBody = '';
@@ -525,7 +523,7 @@ class NotificationService {
     async _processInvoiceDelivery(email, bookingId, role = 'traveller') {
         try {
             const config = await getAppConfig();
-            const booking = await Booking.findById(bookingId).populate('vendor user').lean();
+            const booking = await getBookingById(bookingId, '', 'vendor user');
             if (!booking) {
                 getLogger().error({ bookingId }, `[NotificationService] Invoice generation failed: Booking not found`);
                 return false;

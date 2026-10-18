@@ -17,13 +17,11 @@ describe('General BookingService', () => {
 
     test('getBookingById should return populated booking', async () => {
         const mockBooking = { _id: 'b1' };
-        Booking.findById.mockReturnValue({
-            populate: jest.fn().mockReturnValue({
-                populate: jest.fn().mockReturnValue({
-                    lean: jest.fn().mockResolvedValue(mockBooking)
-                })
-            })
-        });
+        const queryMock = {
+            populate: jest.fn().mockReturnThis(),
+            lean: jest.fn().mockResolvedValue(mockBooking)
+        };
+        Booking.findById.mockReturnValue(queryMock);
 
         const result = await BookingService.getBookingById('b1');
         expect(result).toEqual(mockBooking);

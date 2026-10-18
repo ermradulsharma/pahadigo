@@ -11,7 +11,13 @@ const createMockQuery = (val) => ({
 jest.unstable_mockModule('@/models/index.js', () => ({
     Inventory: { findOne: jest.fn() },
     Package: { findOne: jest.fn() },
-    Booking: { find: jest.fn() }
+    Booking: { find: jest.fn() },
+    Category: {},
+    User: {},
+    Vendor: {},
+    VendorDocument: {},
+    VendorClosure: {},
+    Review: {}
 }));
 
 jest.unstable_mockModule('@/helpers/InventoryHelper.js', () => ({

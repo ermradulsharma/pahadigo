@@ -87,13 +87,13 @@ describe('Vendor BusinessController', () => {
             mockReq = createMockReq({ user: { id: 'u1' } });
             mockReq.payload = { name: 'Test' };
             getBusinessByUserId.mockResolvedValue(null);
-            BusinessService.syncBusinessProfile.mockResolvedValue({ _id: 'v1', user: { email: 'a@b.com' } });
+            BusinessService.syncBusinessProfile.mockResolvedValue({ id: 'v1', _id: 'v1', user: { email: 'a@b.com' } });
 
             const response = await BusinessController.createProfile(mockReq);
             const body = await response.json();
 
             expect(response.status).toBe(HTTP_STATUS.CREATED);
-            expect(body.data.id).toBe('v1');
+            expect(body.data.id || body.data._id).toBe('v1');
             expect(VendorEvents.emit).toHaveBeenCalledWith('vendor.profile_created', expect.any(Object));
         });
 

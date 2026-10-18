@@ -8,6 +8,7 @@ import CacheService from '@/core/Services/CacheService.js';
 import AppError from '@/core/Helpers/AppError.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { PAYMENT_STATUS, BOOKING_STATUS, REFUND_STATUS, HTTP_STATUS } from '@/core/Constants/index.js';
+import { getBookingById } from '@/core/Helpers/queryHelpers.js';
 import mongoose from 'mongoose';
 
 /**
@@ -53,11 +54,11 @@ class BookingService {
         const cached = await CacheService.get(cacheKey);
         if (cached) return cached;
 
-        const booking = await Booking.findById(id)
-            .populate('user', 'name email phone address')
-            .populate('vendor', 'businessName ownerName phone email businessEmail')
-            .populate('package', 'title price')
-            .lean();
+        const booking = await getBookingById(id, '', [
+            { path: 'user', select: 'name email phone address' },
+            { path: 'vendor', select: 'businessName ownerName phone email businessEmail' },
+            { path: 'package', select: 'title price' }
+        ]);
 
         if (booking) await CacheService.set(cacheKey, booking, 1800);
         return booking;
@@ -167,7 +168,7 @@ class BookingService {
         let updatedBooking = null;
 
         await session.withTransaction(async () => {
-            const booking = await Booking.findById(bookingId).populate('vendor').session(session).lean();
+            const booking = await getBookingById(bookingId, '', 'vendor', { session, lean: true });
             if (!booking) throw new AppError("Booking Node Not Found", HTTP_STATUS.NOT_FOUND);
 
             const settlementAmount = amount || booking.pricing?.basePrice || 0;
@@ -206,7 +207,7 @@ class BookingService {
         let booking = null;
 
         // Fetch first to validate (outside transaction to avoid blocking during external API call)
-        booking = await Booking.findById(bookingId).lean();
+        booking = await getBookingById(bookingId);
         if (!booking) throw new AppError("Booking not found", HTTP_STATUS.NOT_FOUND);
 
         if (![PAYMENT_STATUS.PAID, PAYMENT_STATUS.REFUND_PENDING].includes(booking.paymentStatus.toLowerCase())) {
@@ -319,10 +320,10 @@ class BookingService {
         let booking = null;
 
         await session.withTransaction(async () => {
-            booking = await Booking.findById(id)
-                .populate('user', 'email name')
-                .populate('vendor', 'businessEmail businessName')
-                .session(session);
+            booking = await getBookingById(id, '', [
+                { path: 'user', select: 'email name' },
+                { path: 'vendor', select: 'businessEmail businessName' }
+            ], { session, lean: false });
 
             if (!booking) throw new AppError('Booking Node Not Found', HTTP_STATUS.NOT_FOUND);
 

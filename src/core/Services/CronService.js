@@ -7,6 +7,7 @@ import { BOOKING_STATUS, PAYMENT_STATUS, STATUS } from '@/core/Constants/index.j
 import { getLogger } from '@/core/Lib/logger.js';
 import CacheService from '@/core/Services/CacheService.js';
 import InventoryService from '@/core/Services/Traveller/InventoryService.js';
+import { getBookingsBy } from '@/core/Helpers/queryHelpers.js';
 
 class CronService {
 
@@ -15,10 +16,10 @@ class CronService {
      */
     static async autoCompleteBookings() {
         try {
-            const bookingsToComplete = await Booking.find({
+            const bookingsToComplete = await getBookingsBy({
                 status: { $in: [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.ONGOING] },
                 endDate: { $lt: new Date() }
-            }).select('_id').lean();
+            }, '_id');
 
             if (bookingsToComplete.length === 0) return { matched: 0, modified: 0 };
 
@@ -53,11 +54,11 @@ class CronService {
      */
     static async autoExpireBookings() {
         try {
-            const bookingsToExpire = await Booking.find({
+            const bookingsToExpire = await getBookingsBy({
                 paymentStatus: { $in: [PAYMENT_STATUS.UNPAID, PAYMENT_STATUS.PENDING] },
                 status: BOOKING_STATUS.PENDING,
                 expiresAt: { $lt: new Date() }
-            }).select('_id vendor item startDate endDate occupancy').lean();
+            }, '_id vendor item startDate endDate occupancy');
 
             if (bookingsToExpire.length === 0) return { matched: 0, modified: 0 };
 

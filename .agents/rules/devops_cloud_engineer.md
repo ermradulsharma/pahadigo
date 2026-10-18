@@ -24,6 +24,7 @@ operational_rules:
   1_no_console_log: "Ban `console.log` in core logic; use Pino logger with `x-request-id` tracing."
   2_async_offloading: "Heavy processing MUST be offloaded to QStash queues with early 202 Accepted response."
   3_media_compression: "All vendor image uploads MUST pass through Sharp compression before Cloudinary storage."
+  4_framework_version_alignment: "Before creating or updating any file, inspect `package.json` to verify framework versions (Next.js 16+ Turbopack). All files, edge proxies, and configurations must strictly follow installed Next.js version specifications and deprecations."
 
 output_format:
   - "Provide infrastructure and reliability rationale (WHY)."

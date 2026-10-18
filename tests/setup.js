@@ -34,7 +34,7 @@ afterAll(async () => {
 });
 
 afterEach(async () => {
-  if (mongoose.connection.readyState !== 0) {
+  if (mongoose.connection.readyState === 1) {
     const collections = mongoose.connection.collections;
     for (const key in collections) {
       const collection = collections[key];
@@ -87,4 +87,41 @@ console.warn = (...args) => {
   const combinedMsg = args.map(arg => String(arg)).join(' ');
   if (noise.some(n => combinedMsg.includes(n))) return;
   originalWarn(...args);
+};
+
+// Suppress known expected Pino logger noise from printing large stack traces during tests
+const originalStdoutWrite = process.stdout.write.bind(process.stdout);
+const originalStderrWrite = process.stderr.write.bind(process.stderr);
+
+const suppressedLogPatterns = [
+  '[SOSController]',
+  '[ChatController]',
+  '[QueueService]',
+  '[AuthEvents] OTP email sending failed',
+  '[CACHE] Redis credentials not found',
+  '[ENV VALIDATION ERROR]',
+  '[ENV VALIDATION FAILED]'
+];
+
+const shouldSuppress = (chunk) => {
+  const str = typeof chunk === 'string' ? chunk : chunk?.toString() || '';
+  return suppressedLogPatterns.some((pattern) => str.includes(pattern));
+};
+
+process.stdout.write = function (chunk, encoding, callback) {
+  if (shouldSuppress(chunk)) {
+    if (typeof encoding === 'function') encoding();
+    else if (typeof callback === 'function') callback();
+    return true;
+  }
+  return originalStdoutWrite(chunk, encoding, callback);
+};
+
+process.stderr.write = function (chunk, encoding, callback) {
+  if (shouldSuppress(chunk)) {
+    if (typeof encoding === 'function') encoding();
+    else if (typeof callback === 'function') callback();
+    return true;
+  }
+  return originalStderrWrite(chunk, encoding, callback);
 };

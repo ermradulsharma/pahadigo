@@ -1,12 +1,11 @@
 import User from '@/core/Models/User.js';
-import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { RESPONSE_MESSAGES, HTTP_STATUS } from '@/core/Constants/index.js';
 import AuditService from '@/core/Services/Admin/AuditService.js';
 import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
-import Booking from '@/core/Models/Booking.js';
 import Wishlist from '@/core/Models/Wishlist.js';
 import CacheService from '@/core/Services/CacheService.js';
 import AppError from '@/core/Helpers/AppError.js';
-import mongoose from 'mongoose';
+import { getUserBy, getUsersBy, getBookingsBy, getManyBy, updateById, deleteById } from '@/core/Helpers/queryHelpers.js';
 
 /**
  * TravellerService (Admin Role)
@@ -18,24 +17,24 @@ class TravellerService {
     const cached = await CacheService.get(cacheKey);
     if (cached) return cached;
 
-    const travellers = await User.find({ role: 'traveller' }).sort({ createdAt: -1 }).select('-password').lean();
+    const travellers = await getUsersBy({ role: 'traveller' }, '-password', null, { createdAt: -1 });
     await CacheService.set(cacheKey, travellers, 300);
     return travellers;
   }
 
   async getTravellerById(id) {
-    const user = await User.findOne({ _id: id, role: 'traveller' }).select('-password').lean();
-    if (!user) throw new AppError(RESPONSE_MESSAGES.ERROR.NOT_FOUND, 404);
+    const user = await getUserBy({ _id: id, role: 'traveller' }, '-password');
+    if (!user) throw new AppError(RESPONSE_MESSAGES.ERROR.NOT_FOUND, HTTP_STATUS.NOT_FOUND);
     
-    const bookings = await Booking.find({ user: id }).sort({ createdAt: -1 }).lean();
-    const wishlists = await Wishlist.find({ user: id }).sort({ createdAt: -1 }).lean();
+    const bookings = await getBookingsBy({ user: id }, '', null, { createdAt: -1 });
+    const wishlists = await getManyBy(Wishlist, { user: id }, '', null, { createdAt: -1 });
 
     return { ...user, bookings, wishlists };
   }
 
   async createTraveller(data, req = null) {
     const { email, phone, name, password } = data;
-    const exists = await User.findOne({ email }).lean();
+    const exists = await getUserBy({ email });
     if (exists) throw new AppError(RESPONSE_MESSAGES.ERROR.ALREADY_EXISTS, 400);
 
     const user = await User.create({
@@ -54,14 +53,14 @@ class TravellerService {
     if (data.address) {
       mapToGeoJSON(data.address, 'location');
     }
-    const user = await User.findByIdAndUpdate(id, data, { new: true, lean: true });
+    const user = await updateById(User, id, data, { new: true });
     if (req && req.user) await AuditService.logAction(req.user.id, 'UPDATE', 'USER', id, { changes: data }, req);
     await CacheService.delete('admin:travellers:all');
     return user;
   }
 
   async deleteTraveller(id) {
-    const deleted = await User.findByIdAndDelete(id);
+    const deleted = await deleteById(User, id);
     await CacheService.delete('admin:travellers:all');
     return deleted;
   }

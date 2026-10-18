@@ -45,22 +45,8 @@ AuthEvents.on('auth.welcome', async ({ identifier, user }) => {
  */
 AuthEvents.on('auth.login_success', async ({ user, metadata = {} }) => {
     try {
-        // console.log("Login User", user);
-        // console.log("Metadata", metadata);
         const { identifier, realIp, ip, rawDevice = {}, location, appInfo = {}, cdn = {}, isNewDevice, isNewLocation, sessionId } = metadata;
         const isEmail = identifier?.includes('@');
-
-        console.log("Identifier", identifier);
-        console.log("Real IP", realIp);
-        console.log("IP", ip);
-        console.log("Raw Device", rawDevice);
-        console.log("Location", location);
-        console.log("App Info", appInfo);
-        console.log("CDN", cdn);
-        console.log("Is New Device", isNewDevice);
-        console.log("Is New Location", isNewLocation);
-        console.log("Session ID", sessionId);
-        console.log("Is Email", isEmail);
 
         const loginDetails = {
             name: user?.name,
@@ -96,8 +82,6 @@ AuthEvents.on('auth.login_success', async ({ user, metadata = {} }) => {
             isNewLocation: Boolean(isNewLocation),
             sessionId: sessionId || null
         };
-
-        console.log("Login Details", loginDetails);
 
         if (isEmail && user?.email) {
             await NotificationService.sendLoginAlertEmail(user.email, loginDetails);

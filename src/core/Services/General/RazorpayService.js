@@ -2,6 +2,7 @@ import Razorpay from 'razorpay';
 import crypto from 'crypto';
 import { withRetry } from '@/core/Helpers/resilience.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
+import { AppError } from '@/core/Errors/AppError.js';
 
 const safeCompare = (expected, received) => {
     const expectedBuffer = Buffer.from(expected);
@@ -30,7 +31,7 @@ class RazorpayService {
             return { key_id: keyId, key_secret: keySecret };
         }
 
-        throw new Error('Razorpay credentials are not configured in environment or appConfig.');
+        throw AppError.internal('Razorpay credentials are not configured in environment or appConfig.');
     }
 
     async getClient(dynamicConfig = null) {
@@ -48,7 +49,7 @@ class RazorpayService {
 
     async createOrder(amount, receipt, notes = {}, dynamicConfig = null) {
         if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
-            throw new Error('A valid positive payment amount is required.');
+            throw AppError.badRequest('A valid positive payment amount is required.');
         }
 
         const client = await this.getClient(dynamicConfig);
@@ -69,7 +70,7 @@ class RazorpayService {
                 shouldRetry: (err) => !err?.error?.code?.includes('BAD_REQUEST')
             });
         } catch (error) {
-            throw new Error(error?.error?.description || error?.message || 'Unable to create Razorpay order.');
+            throw AppError.badRequest(error?.error?.description || error?.message || 'Unable to create Razorpay order.');
         }
     }
 
@@ -87,9 +88,9 @@ class RazorpayService {
     }
 
     async createRefund(paymentId, amount, dynamicConfig = null) {
-        if (!paymentId) throw new Error('Payment id is required to create a refund.');
+        if (!paymentId) throw AppError.badRequest('Payment id is required to create a refund.');
         if (!Number.isFinite(Number(amount)) || Number(amount) <= 0) {
-            throw new Error('A valid positive refund amount is required.');
+            throw AppError.badRequest('A valid positive refund amount is required.');
         }
 
         const client = await this.getClient(dynamicConfig);
@@ -107,7 +108,7 @@ class RazorpayService {
                 shouldRetry: (err) => !err?.error?.code?.includes('BAD_REQUEST')
             });
         } catch (error) {
-            throw new Error(error?.error?.description || error?.message || 'Unable to create Razorpay refund.');
+            throw AppError.badRequest(error?.error?.description || error?.message || 'Unable to create Razorpay refund.');
         }
     }
 
@@ -116,7 +117,7 @@ class RazorpayService {
 
         const appConfig = await getAppConfig();
         const webhookSecret = secret || appConfig?.razorpay?.webhook_secret;
-        if (!webhookSecret) throw new Error('Razorpay webhook secret is not configured.');
+        if (!webhookSecret) throw AppError.internal('Razorpay webhook secret is not configured.');
 
         const expectedSignature = crypto
             .createHmac('sha256', webhookSecret)
@@ -127,32 +128,32 @@ class RazorpayService {
     }
 
     async getPaymentDetails(paymentId, dynamicConfig = null) {
-        if (!paymentId) throw new Error('Payment id is required.');
+        if (!paymentId) throw AppError.badRequest('Payment id is required.');
         const client = await this.getClient(dynamicConfig);
         try {
             return await client.payments.fetch(paymentId);
         } catch (error) {
-            throw new Error(error?.error?.description || error?.message || 'Unable to fetch payment details.');
+            throw AppError.badRequest(error?.error?.description || error?.message || 'Unable to fetch payment details.');
         }
     }
 
     async getOrderDetails(orderId, dynamicConfig = null) {
-        if (!orderId) throw new Error('Order id is required.');
+        if (!orderId) throw AppError.badRequest('Order id is required.');
         const client = await this.getClient(dynamicConfig);
         try {
             return await client.orders.fetch(orderId);
         } catch (error) {
-            throw new Error(error?.error?.description || error?.message || 'Unable to fetch order details.');
+            throw AppError.badRequest(error?.error?.description || error?.message || 'Unable to fetch order details.');
         }
     }
 
     async getRefundDetails(refundId, dynamicConfig = null) {
-        if (!refundId) throw new Error('Refund id is required.');
+        if (!refundId) throw AppError.badRequest('Refund id is required.');
         const client = await this.getClient(dynamicConfig);
         try {
             return await client.refunds.fetch(refundId);
         } catch (error) {
-            throw new Error(error?.error?.description || error?.message || 'Unable to fetch refund details.');
+            throw AppError.badRequest(error?.error?.description || error?.message || 'Unable to fetch refund details.');
         }
     }
 
@@ -184,11 +185,11 @@ class RazorpayService {
             });
             const result = await response.json();
             if (!response.ok) {
-                throw new Error(result.error?.description || result.error?.message || 'Unable to create RazorpayX contact.');
+                throw AppError.badRequest(result.error?.description || result.error?.message || 'Unable to create RazorpayX contact.');
             }
             return result;
         } catch (error) {
-            throw new Error(error.message || 'Unable to create RazorpayX contact.');
+            throw AppError.badRequest(error.message || 'Unable to create RazorpayX contact.');
         }
     }
 
@@ -215,11 +216,11 @@ class RazorpayService {
             });
             const result = await response.json();
             if (!response.ok) {
-                throw new Error(result.error?.description || result.error?.message || 'Unable to create RazorpayX fund account.');
+                throw AppError.badRequest(result.error?.description || result.error?.message || 'Unable to create RazorpayX fund account.');
             }
             return result;
         } catch (error) {
-            throw new Error(error.message || 'Unable to create RazorpayX fund account.');
+            throw AppError.badRequest(error.message || 'Unable to create RazorpayX fund account.');
         }
     }
 
@@ -230,7 +231,7 @@ class RazorpayService {
      */
     async createPayout(data, dynamicConfig = null) {
         if (!Number.isFinite(Number(data.amount)) || Number(data.amount) <= 0) {
-            throw new Error('A valid positive payout amount is required.');
+            throw AppError.badRequest('A valid positive payout amount is required.');
         }
         
         const credentials = await this.getCredentials(dynamicConfig);
@@ -257,11 +258,11 @@ class RazorpayService {
             });
             const result = await response.json();
             if (!response.ok) {
-                throw new Error(result.error?.description || result.error?.message || 'Unable to create RazorpayX payout.');
+                throw AppError.badRequest(result.error?.description || result.error?.message || 'Unable to create RazorpayX payout.');
             }
             return result;
         } catch (error) {
-            throw new Error(error.message || 'Unable to create RazorpayX payout.');
+            throw AppError.badRequest(error.message || 'Unable to create RazorpayX payout.');
         }
     }
 }

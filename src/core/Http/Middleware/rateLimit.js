@@ -54,19 +54,19 @@ export const rateLimit = ({ limit = 5, windowMs = 60000, message = 'Too many req
     return async (req) => {
         const config = await getAppConfig();
         const REDIS = config.redis || {};
-        
+
         const forwardedFor = req.headers.get('x-forwarded-for');
         const ip = req.ip || (forwardedFor ? forwardedFor.split(',')[0].trim() : '127.0.0.1');
         const cacheKey = `${ip}:${new URL(req.url).pathname}`;
-        
+
         // 1. Try Upstash Redis (REST) First (Best for Next.js Serverless)
         if (REDIS.upstash_url && REDIS.upstash_token) {
             try {
                 const limiter = getUpstashRateLimiter(limit, windowMs, REDIS.upstash_url, REDIS.upstash_token);
                 const { success, pending, limit: _limit, remaining, reset } = await limiter.limit(cacheKey);
-                
+
                 if (!success) {
-                    return errorResponse(HTTP_STATUS.TOO_MANY_REQUESTS, message, DEFAULTS.ARRAY, {
+                    return errorResponse(HTTP_STATUS.TO_MANY_REQUESTS, message, DEFAULTS.ARRAY, {
                         'X-RateLimit-Limit': _limit.toString(),
                         'X-RateLimit-Remaining': remaining.toString(),
                         'Retry-After': Math.max(0, Math.ceil((reset - Date.now()) / 1000)).toString()
@@ -85,16 +85,16 @@ export const rateLimit = ({ limit = 5, windowMs = 60000, message = 'Too many req
                 if (client) {
                     const currentWindow = Math.floor(Date.now() / windowMs);
                     const redisKey = `ratelimit:${cacheKey}:${currentWindow}`;
-                    
+
                     const multi = client.multi();
                     multi.incr(redisKey);
                     multi.expire(redisKey, Math.ceil(windowMs / 1000) * 2); // Buffer TTL
                     const results = await multi.exec();
-                    
+
                     const currentCount = results[0];
                     if (currentCount > limit) {
                         const resetAt = (currentWindow + 1) * windowMs;
-                        return errorResponse(HTTP_STATUS.TOO_MANY_REQUESTS, message, DEFAULTS.ARRAY, {
+                        return errorResponse(HTTP_STATUS.TO_MANY_REQUESTS, message, DEFAULTS.ARRAY, {
                             'X-RateLimit-Limit': limit.toString(),
                             'X-RateLimit-Remaining': '0',
                             'Retry-After': Math.max(0, Math.ceil((resetAt - Date.now()) / 1000)).toString()
@@ -137,7 +137,7 @@ export const rateLimit = ({ limit = 5, windowMs = 60000, message = 'Too many req
                 { upsert: DEFAULTS.TRUE, returnDocument: 'after', setDefaultsOnInsert: DEFAULTS.TRUE, updatePipeline: true }
             );
 
-            return rateData.count > limit ? errorResponse(HTTP_STATUS.TOO_MANY_REQUESTS, message, DEFAULTS.ARRAY, {
+            return rateData.count > limit ? errorResponse(HTTP_STATUS.TO_MANY_REQUESTS, message, DEFAULTS.ARRAY, {
                 'X-RateLimit-Limit': limit.toString(),
                 'X-RateLimit-Remaining': '0',
                 'Retry-After': Math.max(0, Math.ceil((rateData.resetAt - Date.now()) / 1000)).toString()

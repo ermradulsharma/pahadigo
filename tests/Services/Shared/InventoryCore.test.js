@@ -15,7 +15,13 @@ const chainableMock = (data) => {
 jest.unstable_mockModule('@/core/Models/index.js', () => ({
     Inventory: { findOne: mockFindOne },
     Package: { findOne: mockFindOne },
-    Booking: { find: mockFind }
+    Booking: { find: mockFind },
+    Category: {},
+    User: {},
+    Vendor: {},
+    VendorDocument: {},
+    VendorClosure: {},
+    Review: {}
 }));
 
 jest.unstable_mockModule('@/core/Helpers/InventoryHelper.js', () => ({

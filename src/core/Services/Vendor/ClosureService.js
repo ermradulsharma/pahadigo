@@ -2,6 +2,8 @@ import VendorClosure from '@/core/Models/VendorClosure.js';
 import Vendor from '@/core/Models/Vendor.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import CacheService from '@/core/Services/CacheService.js';
+import { AppError } from '@/core/Errors/AppError.js';
+import { getBusinessByUserId } from '@/core/Helpers/queryHelpers.js';
 
 class ClosureService {
   async invalidateVendorCaches(userId, vendorId = null) {
@@ -17,12 +19,12 @@ class ClosureService {
   }
 
   async addClosurePeriod(userId, closureData) {
-    const vendor = await Vendor.findOne({ user: userId, deletedAt: null }).lean();
-    if (!vendor) throw new Error(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+    const vendor = await getBusinessByUserId(userId, '_id user');
+    if (!vendor) throw AppError.notFound(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
     const closure = await VendorClosure.create({
       vendor: vendor._id,
-      user: vendor.user,
+      user: vendor.user?._id || vendor.user || userId,
       startDate: closureData.startDate,
       endDate: closureData.endDate,
       reason: closureData.reason || 'Vacation',
@@ -39,7 +41,7 @@ class ClosureService {
 
   async updateClosurePeriod(userId, closureId, updateData) {
     const closure = await VendorClosure.findOne({ _id: closureId, user: userId });
-    if (!closure) throw new Error(RESPONSE_MESSAGES.CLOSURE.NOT_FOUND);
+    if (!closure) throw AppError.notFound(RESPONSE_MESSAGES.CLOSURE.NOT_FOUND);
 
     if (updateData.startDate) closure.startDate = updateData.startDate;
     if (updateData.endDate) closure.endDate = updateData.endDate;
@@ -57,10 +59,6 @@ class ClosureService {
     }
     return res;
   }
-
-  // --- INDUSTRY STANDARD ALIASES ---
-  async createClosurePeriod(...args) { return this.addClosurePeriod(...args); }
-  async removeClosurePeriod(...args) { return this.deleteClosurePeriod(...args); }
 }
 
 export default new ClosureService();

@@ -24,16 +24,16 @@ describe('Integration: Rate Limiting Middleware', () => {
         jest.clearAllMocks();
         mockReq = {
             ip: '127.0.0.1',
-            headers: { 
+            headers: {
                 'x-forwarded-for': '127.0.0.1',
-                get: function(key) { return this[key]; }
+                get: function (key) { return this[key]; }
             },
             url: 'http://localhost/api/v1/auth/login'
         };
     });
 
     it('should allow request if under limit', async () => {
-        RateLimit.findOneAndUpdate.mockResolvedValue({ count: 1 }); 
+        RateLimit.findOneAndUpdate.mockResolvedValue({ count: 1 });
 
         const middleware = rateLimit({ limit: 5 });
         const result = await middleware(mockReq);
@@ -43,13 +43,13 @@ describe('Integration: Rate Limiting Middleware', () => {
     });
 
     it('should block request if over limit', async () => {
-        RateLimit.findOneAndUpdate.mockResolvedValue({ count: 6, resetAt: Date.now() + 60000 }); 
+        RateLimit.findOneAndUpdate.mockResolvedValue({ count: 6, resetAt: Date.now() + 60000 });
 
         const middleware = rateLimit({ limit: 5 });
         const result = await middleware(mockReq);
 
         expect(RateLimit.findOneAndUpdate).toHaveBeenCalled();
         expect(result).not.toBeNull();
-        expect(result.status).toBe(HTTP_STATUS.TOO_MANY_REQUESTS);
+        expect(result.status).toBe(HTTP_STATUS.TO_MANY_REQUESTS);
     });
 });

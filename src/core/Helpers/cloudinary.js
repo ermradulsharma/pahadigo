@@ -2,6 +2,7 @@ import { v2 as cloudinary } from 'cloudinary';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { withRetry } from '@/core/Helpers/resilience.js';
+import { getLogger } from '@/core/Lib/logger.js';
 
 const ALLOWED_MIME_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'application/pdf'];
 const MAX_FILE_SIZE_MB = 5;
@@ -27,7 +28,7 @@ export const uploadToCloudinary = async (file, folder = 'general') => {
                 mimeType = 'image/webp';
             } catch (sharpError) {
                 // If sharp binary is blocked by Windows AppLocker/Security, fallback gracefully to uploading original buffer
-                console.warn('[Cloudinary Helper] Sharp module unavailable, skipping pre-compression:', sharpError.message);
+                getLogger().warn({ err: sharpError }, '[Cloudinary Helper] Sharp module unavailable, skipping pre-compression');
             }
         }
 
@@ -43,7 +44,7 @@ export const uploadToCloudinary = async (file, folder = 'general') => {
 
         return { url: uploadResponse.secure_url, publicId: uploadResponse.public_id };
     } catch (error) {
-        console.error('[Cloudinary upload error]:', error?.message || error);
+        getLogger().error({ err: error, folder }, '[Cloudinary upload error]');
         return Promise.reject({ status: HTTP_STATUS.INTERNAL_SERVER_ERROR, message: RESPONSE_MESSAGES.ERROR.SOMETHING_WENT_WRONG });
     }
 };

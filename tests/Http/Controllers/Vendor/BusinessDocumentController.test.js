@@ -91,7 +91,7 @@ describe('Industry Standard: BusinessDocumentController API Controller', () => {
             const response = await MockedBusinessDocumentController.uploadDocuments(req);
             const body = await response.json();
 
-            expect(response.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
+            expect(response.status).toBe(HTTP_STATUS.NOT_FOUND);
             expect(body.message).toBe(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
         });
     });

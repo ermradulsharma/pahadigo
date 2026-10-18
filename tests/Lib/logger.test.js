@@ -41,6 +41,7 @@ describe('Industry Standard: Logger (Pino Wrapper)', () => {
     });
 
     it('[File Writing] should write log entries to the daily log file', () => {
+        loggerModule.default.level = 'info';
         const testMsg = `Unit test write verification ${Date.now()}`;
         loggerModule.default.info(testMsg);
 

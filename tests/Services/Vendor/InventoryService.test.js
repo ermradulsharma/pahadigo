@@ -17,7 +17,13 @@ const mockQuery = { lean: jest.fn() };
 jest.unstable_mockModule('@/models/index.js', () => ({
     Inventory: MockInventory,
     Package: { findOne: jest.fn(() => mockQuery) },
-    Booking: { find: jest.fn(() => mockQuery) }
+    Booking: { find: jest.fn(() => mockQuery) },
+    Category: {},
+    User: {},
+    Vendor: {},
+    VendorDocument: {},
+    VendorClosure: {},
+    Review: {}
 }));
 
 const { default: InventoryService } = await import('@/services/Vendor/InventoryService.js');

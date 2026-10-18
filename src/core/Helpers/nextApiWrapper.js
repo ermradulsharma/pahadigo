@@ -102,6 +102,7 @@ export function createNextRouter(routes) {
                         bodyToValidate = parseNestedFormData(req.formDataBody);
                     } else if (contentType.includes('application/json')) {
                         const text = await req.text();
+                        req.rawBody = text;
                         if (text && text.trim().length > 0) {
                             const body = JSON.parse(text);
                             const sanitizedBody = sanitizeNoSQL(body);

@@ -1,11 +1,12 @@
-import { Inventory, Package, Booking } from '@/core/Models/index.js';
+import { Inventory } from '@/core/Models/index.js';
 import { formatDateKey, normalizeAvailability, determineDayStatus, calculateEffectivePrice } from '@/core/Helpers/InventoryHelper.js';
+import { getBy, getBookingsBy, getPackageBy } from '@/core/Helpers/queryHelpers.js';
 
 export async function getEffectiveDay(vendorId, itemId, serviceType, date, inventoryDoc = null, session = null) {
     const targetDateStr = formatDateKey(date);
     const targetDate = new Date(targetDateStr);
 
-    const inv = inventoryDoc || await Inventory.findOne({ vendorId, itemId }).session(session).lean();
+    const inv = inventoryDoc || await getBy(Inventory, { vendorId, itemId }, '', null, { session, lean: true });
     const customDay = inv?.calendar?.find(d => formatDateKey(d.date) === targetDateStr);
 
     const isExclusive = serviceType === 'customTrip';
@@ -21,9 +22,9 @@ export async function getEffectiveDay(vendorId, itemId, serviceType, date, inven
         bookingQuery['item.itemId'] = itemId;
     }
 
-    const liveBookings = await Booking.find(bookingQuery).session(session).lean();
+    const liveBookings = await getBookingsBy(bookingQuery, '', null, null, { session, lean: true });
 
-    const pkg = await Package.findOne({ vendor: vendorId }).session(session).lean();
+    const pkg = await getPackageBy({ vendor: vendorId }, '', null, { session, lean: true });
     if (!pkg || !pkg[serviceType]) return null;
 
     const item = pkg[serviceType].find(i => String(i._id) === String(itemId));

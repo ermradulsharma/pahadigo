@@ -59,12 +59,14 @@ const nextConfig = {
         ];
     },
     async rewrites() {
-        return [
-            {
-                source: '/api/v1/:path*',
-                destination: '/api/:path*'
-            }
-        ];
+        return {
+            fallback: [
+                {
+                    source: '/api/v1/:path((?!vendor|traveller|raw-markdown).*)',
+                    destination: '/api/:path*'
+                }
+            ]
+        };
     }
 };
 

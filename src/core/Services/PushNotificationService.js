@@ -22,12 +22,14 @@ export class PushNotificationService {
      */
     static async sendToDevice(token, notification, data = {}) {
         const logger = getLogger();
+        if (!token) {
+            logger.warn('[PushNotificationService] Skipped: No FCM registration token provided');
+            return { success: false, error: 'No FCM registration token provided' };
+        }
+
         try {
             const messaging = await getMessaging();
-            if (!messaging) {
-                logger.warn('Firebase Messaging is not initialized. Cannot send notification.');
-                return { success: false, error: 'Firebase not initialized' };
-            }
+            if (!messaging) return { success: false, error: 'Firebase not initialized' };
 
             const sanitizedData = sanitizeDataPayload(data);
             sanitizedData.click_action = sanitizedData.click_action || 'FLUTTER_NOTIFICATION_CLICK';
@@ -58,21 +60,18 @@ export class PushNotificationService {
                     }
                 }
             };
-
-            console.log('\n================== 📱 FCM PUSH NOTIFICATION PAYLOAD ==================');
-            console.log(JSON.stringify(payload, null, 2));
-            console.log('=======================================================================\n');
-
-            logger.debug({ payload }, 'Sending FCM Payload');
-
             const response = await messaging.send(payload);
-            logger.info({ token, response }, `Successfully sent FCM push notification`);
             return { success: true, messageId: response };
         } catch (error) {
-            // Handle common FCM token-related validation/expiration errors gracefully without printing full stack trace
-            const isInvalidToken = error.code === 'messaging/invalid-registration-token' || error.code === 'messaging/registration-token-not-registered' || (error.code === 'messaging/invalid-argument' && error.message?.includes('registration token'));
-            if (isInvalidToken) {
-                logger.warn({ token }, `[PushNotificationService] Token is invalid or unregistered`);
+            // Handle common FCM token/credential validation errors gracefully without printing huge server stack trace
+            const isExpectedTokenOrCredentialError =
+                error.code === 'messaging/invalid-registration-token' ||
+                error.code === 'messaging/registration-token-not-registered' ||
+                error.code === 'messaging/mismatched-credential' ||
+                (error.code === 'messaging/invalid-argument' && error.message?.includes('registration token'));
+
+            if (isExpectedTokenOrCredentialError) {
+                logger.warn({ token, code: error.code, reason: error.message }, `[PushNotificationService] Push notification skipped (token invalid, unregistered, or mismatched Firebase project credentials)`);
             } else {
                 logger.error({ err: error }, 'Error sending push notification');
             }

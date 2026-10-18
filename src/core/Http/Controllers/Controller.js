@@ -1,4 +1,4 @@
-import { successResponse, errorResponse } from '@/core/Helpers/response.js';
+import { successResponse, errorResponse, paginatedResponse } from '@/core/Helpers/response.js';
 
 /**
  * Base Controller class for providing standardized response methods
@@ -26,12 +26,7 @@ class Controller {
      * Send a standardized paginated success response (data: array, pagination: object at root level)
      */
     paginatedSuccess(status, message, items = [], pagination = {}) {
-        return new Response(JSON.stringify({
-            success: true,
-            message,
-            data: items,
-            pagination
-        }), { status, headers: { 'Content-Type': 'application/json' } });
+        return paginatedResponse(status, message, items, pagination);
     }
 
     /**

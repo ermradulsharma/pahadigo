@@ -3,6 +3,9 @@ import { jest } from '@jest/globals';
 const consoleErrorSpy = jest.spyOn(console, 'error').mockImplementation(() => {});
 const exitSpy = jest.spyOn(process, 'exit').mockImplementation(() => {});
 
+const { default: logger } = await import('@/core/Lib/logger.js');
+const loggerErrorSpy = jest.spyOn(logger, 'error').mockImplementation(() => {});
+
 const { validateEnv } = await import('@/core/Config/envValidator.js');
 
 describe('envValidator', () => {
