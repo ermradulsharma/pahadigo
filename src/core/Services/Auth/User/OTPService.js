@@ -9,30 +9,14 @@ import { getAppConfig } from '@/core/Lib/appConfig.js';
  * One-Time Passwords for authentication and high-security actions.
  */
 class OTPService {
-    /**
-     * Generate and save an OTP for a given user identifier (email/phone)
-     */
-    async generateOTP(identifier, role = USER_ROLES.TRAVELLER, metadata = {}) {
-        const otp = randomInt(100000, 1000000).toString();
-        const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
-        const isEmail = identifier.includes('@');
-        const updatePayload = { otp, otpExpires: expires, role: role, ...metadata };
-        isEmail ? updatePayload.email = identifier.toLowerCase().trim() : updatePayload.phone = identifier.trim();
-        const user = await User.findOneAndUpdate({ $or: [{ email: identifier }, { phone: identifier }] }, { $set: updatePayload }, { upsert: true, returnDocument: 'after' });
-        await AuthEvents.emitAsync('otp.requested', { identifier, otp });
-        return otp;
-    }
 
     /**
-     * Verify an OTP against the stored value for a user identifier.
-     * Master OTP is restricted strictly to designated reviewer/test accounts.
+     * Check if an identifier belongs to allowed reviewer/test accounts
      */
-    async verifyOTP(identifier, otp, role) {
+    async _isTestAccount(identifier) {
+        if (!identifier) return false;
         const config = await getAppConfig();
-        const masterOTP = config.secrets?.master_otp;
         const testIdentifiersConfig = config.secrets?.test_identifiers;
-
-        // Designated reviewer & automated test accounts permitted to use Master OTP
         const allowedTestAccounts = new Set([
             'reviewer@pahadigo.co.in',
             'apple@pahadigo.co.in',
@@ -44,9 +28,40 @@ class OTPService {
             '8888888888',
             ...(testIdentifiersConfig ? testIdentifiersConfig.split(',').map(s => s.trim().toLowerCase()).filter(Boolean) : [])
         ]);
-
         const normalizedIdentifier = identifier.toLowerCase().trim();
-        const isAllowedTestAccount = allowedTestAccounts.has(normalizedIdentifier) || normalizedIdentifier.endsWith('@pahadigo.test');
+        return allowedTestAccounts.has(normalizedIdentifier) || normalizedIdentifier.endsWith('@pahadigo.test');
+    }
+
+    /**
+     * Generate and save an OTP for a given user identifier (email/phone)
+     */
+    async generateOTP(identifier, role, metadata = {}) {
+        const isTest = await this._isTestAccount(identifier);
+        let otp;
+        if (isTest) {
+            const config = await getAppConfig();
+            const masterOTP = config.secrets?.master_otp;
+            otp = masterOTP;
+        } else {
+            otp = randomInt(100000, 1000000).toString();
+        }
+        const expires = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes expiry
+        const isEmail = identifier.includes('@');
+        const updatePayload = { otp, otpExpires: expires, ...metadata };
+        isEmail ? updatePayload.email = identifier.toLowerCase().trim() : updatePayload.phone = identifier.trim();
+        const user = await User.findOneAndUpdate({ $or: [{ email: identifier }, { phone: identifier }] }, { $set: updatePayload, $setOnInsert: { role: role } }, { upsert: true, returnDocument: 'after' });
+        if (!isTest) await AuthEvents.emitAsync('otp.requested', { identifier, otp });
+        return otp;
+    }
+
+    /**
+     * Verify an OTP against the stored value for a user identifier.
+     * Master OTP is restricted strictly to designated reviewer/test accounts.
+     */
+    async verifyOTP(identifier, otp, role) {
+        const config = await getAppConfig();
+        const masterOTP = config.secrets?.master_otp;
+        const isAllowedTestAccount = await this._isTestAccount(identifier);
 
         const query = { $or: [{ email: identifier }, { phone: identifier }], role: role };
         if (masterOTP && otp === masterOTP && isAllowedTestAccount) {

@@ -1,86 +1,44 @@
 import { EventEmitter } from 'events';
 import NotificationService from '@/core/Services/General/NotificationService.js';
 import { getLogger } from '@/core/Lib/logger.js';
+import { NOTIFICATION } from '../Constants/notification';
 
 const VendorEvents = new EventEmitter();
 
-/**
- * Event: vendor.profile_created
- * Sends a welcome email to the vendor upon successful profile creation.
- */
-VendorEvents.on('vendor.profile_created', async ({ identifier, businessName }) => {
-    try {
-        if (identifier && identifier.includes('@'))
-            await NotificationService.sendVendorWelcomeEmail(identifier, businessName);
-    } catch (error) {
-        getLogger().error({ err: error }, "[VendorEvents] Error handling vendor.profile_created");
-    }
-});
+// ================================================================== //
+//                                                                    //
+//                   BUSINESS Events Emails                           //
+//                                                                    //
+// ================================================================== //
 
 /**
- * Event: vendor.profile_updated
- * Sends a profile update confirmation email and push notification to the vendor.
+ * Helper to eliminate repetitive try-catch and email validations
  */
-VendorEvents.on('vendor.profile_updated', async ({ identifier, details }) => {
-    try {
-        if (identifier && identifier.includes('@'))
-            await NotificationService.sendUserProfileUpdatedEmail(identifier, details);
-    } catch (error) {
-        getLogger().error({ err: error }, "[VendorEvents] Error handling vendor.profile_updated");
-    }
-});
+const registerEmailListener = (eventKey, handlerFn) => {
+    VendorEvents.on(eventKey, async ({ identifier, details, businessName }) => {
+        try {
+            if (identifier && identifier.includes('@')) {
+                await handlerFn(identifier, details || businessName);
+            }
+        } catch (error) {
+            getLogger().error({ err: error }, `[VendorEvents] Error handling ${eventKey}`);
+        }
+    });
+};
 
-/**
- * Event: vendor.profile_deleted
- * Sends email notification when vendor profile is soft-deleted.
- */
-VendorEvents.on('vendor.profile_deleted', async ({ identifier, businessName }) => {
-    try {
-        if (identifier && identifier.includes('@'))
-            await NotificationService.sendVendorProfileDeletedEmail(identifier, businessName);
-    } catch (error) {
-        getLogger().error({ err: error }, "[VendorEvents] Error handling vendor.profile_deleted");
-    }
-});
+// Business Profile Emails
+registerEmailListener(NOTIFICATION.KEY.BUSINESS.PROFILE_CREATED, (id, data) => NotificationService.sendBusinessWelcomeEmail(id, data));
+registerEmailListener(NOTIFICATION.KEY.BUSINESS.PROFILE_UPDATED, (id, data) => NotificationService.sendBusinessProfileUpdateEmail(id, data));
+registerEmailListener(NOTIFICATION.KEY.BUSINESS.PROFILE_ACTIVATED, (id, data) => NotificationService.sendBusinessProfileActivatedEmail(id, data));
+registerEmailListener(NOTIFICATION.KEY.BUSINESS.PROFILE_DEACTIVATED, (id, data) => NotificationService.sendBusinessProfileDeactivatedEmail(id, data));
+registerEmailListener(NOTIFICATION.KEY.BUSINESS.OPERATING_STATUS_UPDATED, (id, data) => NotificationService.sendBusinessOperationalStatusEmail(id, data));
+registerEmailListener(NOTIFICATION.KEY.BUSINESS.PROFILE_DELETED, (id, data) => NotificationService.sendBusinessProfileDeletedEmail(id, data));
 
-/**
- * Event: vendor.profile_operating_status_updated
- * Sends email notification when vendor operating status is updated.
- */
-VendorEvents.on('vendor.profile_operating_status_updated', async ({ identifier, businessName, isOperating }) => {
-    try {
-        if (identifier && identifier.includes('@'))
-            await NotificationService.sendVendorOperatingStatusUpdatedEmail(identifier, businessName, isOperating);
-    } catch (error) {
-        getLogger().error({ err: error }, "[VendorEvents] Error handling vendor.profile_operating_status_updated");
-    }
-});
+// Business Document Emails
+registerEmailListener(NOTIFICATION.KEY.BUSINESS.DOCUMENT_UPLOADED, (id, data) => NotificationService.sendVendorDocumentsReceivedEmail(id, data));
 
-/**
- * Event: vendor.documents_uploaded
- * Sends an email to the vendor acknowledging receipt of verification documents.
- */
-VendorEvents.on('vendor.documents_uploaded', async ({ identifier, businessName }) => {
-    try {
-        if (identifier && identifier.includes('@'))
-            await NotificationService.sendVendorDocumentsReceivedEmail(identifier, businessName);
-    } catch (error) {
-        getLogger().error({ err: error }, "[VendorEvents] Error handling vendor.documents_uploaded");
-    }
-});
-
-/**
- * Event: vendor.bank_added
- * Sends an email to the vendor acknowledging receipt of their bank details.
- */
-VendorEvents.on('vendor.bank_added', async ({ identifier, businessName }) => {
-    try {
-        if (identifier && identifier.includes('@'))
-            await NotificationService.sendVendorBankAddedEmail(identifier, businessName);
-    } catch (error) {
-        getLogger().error({ err: error }, "[VendorEvents] Error handling vendor.bank_added");
-    }
-});
+// Business Bank Details Emails
+registerEmailListener(NOTIFICATION.KEY.BUSINESS.BANK_DETAILS_ADDED, (id, data) => NotificationService.sendVendorBankAddedEmail(id, data));
 
 /**
  * Asynchronously emit an event and wait for all registered listeners to complete.

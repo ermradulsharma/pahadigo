@@ -51,7 +51,9 @@ export function businessDetailsFormat(vendor) {
         isOperating: vendor.isOperating,
         closurePeriods: closurePayload(vendor.closurePeriods),
         status: vendor.status,
-        createdAt: vendor.createdAt
+        createdAt: vendor.createdAt,
+        deletedAt: vendor.deletedAt || null,
+        deletedBy: vendor.deletedBy || null
     };
 }
 

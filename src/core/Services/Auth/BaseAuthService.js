@@ -42,12 +42,21 @@ class BaseAuthService {
         return newTokens;
     }
 
-    async logout(accessToken, refreshToken = null) {
+    async logout(accessToken, refreshToken = null, explicitUserId = null) {
         const accessDecoded = decodeToken(accessToken);
-        if (!accessDecoded || !accessDecoded.id) return false;
+        const userId = explicitUserId || accessDecoded?.id;
+        if (!userId) return false;
+
+        // Clear user's FCM token upon logout
+        try {
+            await User.findByIdAndUpdate(userId, { $set: { fcmToken: DEFAULTS.NULL } });
+            await CacheService.delete(`user:profile:${userId}`);
+        } catch (fcmErr) {
+            // Non-blocking fallback
+        }
 
         // Blacklist access token JTI in Redis until expiry (IAM security law)
-        if (accessDecoded.jti) {
+        if (accessDecoded?.jti) {
             const exp = accessDecoded.exp;
             const now = Math.floor(Date.now() / 1000);
             const remainingTtl = exp ? Math.max(1, exp - now) : 900;
@@ -63,7 +72,7 @@ class BaseAuthService {
         }
 
         // Fallback: Invalidate all sessions for this user if no specific refresh token provided
-        await CacheService.deletePattern(`auth:refresh:${accessDecoded.id}:*`);
+        await CacheService.deletePattern(`auth:refresh:${userId}:*`);
         return true;
     }
 

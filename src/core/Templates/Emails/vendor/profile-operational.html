@@ -1,0 +1,136 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Business Operational Status Updated - Tripdhara</title>
+</head>
+
+<body
+    style="margin: 0; padding: 0; font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif; background-color: #f4f7f6; color: #333333; -webkit-font-smoothing: antialiased;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+        style="background-color: #f4f7f6; width: 100%;">
+        <tr>
+            <td align="center">
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" border="0"
+                    style="width: 100%; background-color: #ffffff; border-radius: 10px; overflow: hidden; box-shadow: 0 4px 20px rgba(0, 0, 0, 0.06);">
+                    <!-- Header Banner -->
+                    <tr>
+                        <td
+                            style="background: linear-gradient(135deg, #0f4c3a 0%, #1a7045 100%); color: #ffffff; text-align: center; padding: 40px 25px;">
+                            <h1
+                                style="margin: 0 0 8px 0; font-size: 28px; font-weight: 800; color: #ffffff; letter-spacing: 0.5px;">
+                                Tripdhara</h1>
+                            <h2 style="margin: 0; font-size: 20px; font-weight: 600; color: #e8f5e9; line-height: 1.4;">
+                                Business Operational Status Updated</h2>
+                        </td>
+                    </tr>
+
+                    <!-- Body Content -->
+                    <tr>
+                        <td style="padding: 40px 35px; color: #4a4a4a; line-height: 1.7;">
+                            <p style="margin: 0 0 18px 0; font-size: 16px; color: #333333; font-weight: 600;">Hello
+                                {{USER_NAME}},</p>
+                            <p style="margin: 0 0 20px 0; font-size: 15px; color: #4a4a4a; line-height: 1.6;">This email
+                                is to notify you that the operational availability status of your business profile
+                                <strong>{{BUSINESS_NAME}}</strong> on <strong>Tripdhara</strong> has been updated.</p>
+
+                            <!-- Operational Status Box -->
+                            <div
+                                style="background-color: #f2f9f6; border-left: 4px solid #1a7045; padding: 22px 24px; margin: 28px 0; border-radius: 0 8px 8px 0;">
+                                <span
+                                    style="display: block; font-weight: 700; color: #0f4c3a; margin-bottom: 12px; font-size: 16px;">Current
+                                    Status Summary</span>
+                                <ul
+                                    style="margin: 0; padding-left: 20px; color: #2c3e50; font-size: 14px; line-height: 1.7;">
+                                    <li style="margin-bottom: 6px;"><strong>Business Name:</strong> {{BUSINESS_NAME}}
+                                    </li>
+                                    <li style="margin-bottom: 6px;"><strong>Owner:</strong> {{BUSINESS_OWNER_NAME}}</li>
+                                    <li style="margin-bottom: 6px;"><strong>Current Operational Status:</strong><span
+                                            style="display: inline-block; padding: 2px 10px; border-radius: 12px; font-size: 13px; font-weight: 700; background-color: #e8f5e9; color: #0f4c3a; text-transform: uppercase;">{{STATUS_TEXT}}</span>
+                                    </li>
+                                    <li style="margin-bottom: 0;"><strong>Updated Date:</strong> {{UPDATED_AT}}</li>
+                                </ul>
+                            </div>
+
+                            <!-- If Operational (Active / Open) -->
+                            {{#IS_OPERATIONAL}}
+                            <div
+                                style="background-color: #f0fdf4; border: 1px solid #bbf7d0; padding: 18px 20px; margin: 24px 0; border-radius: 8px;">
+                                <span
+                                    style="display: block; font-weight: 700; color: #166534; margin-bottom: 6px; font-size: 15px;">&#x2705;
+                                    Your Business is Live & Accepting Bookings</span>
+                                <p style="margin: 0; font-size: 14px; color: #14532d; line-height: 1.5;">Travelers can
+                                    now find your listings, packages, and services on the platform and send new booking
+                                    requests.</p>
+                            </div>
+                            {{/IS_OPERATIONAL}}
+
+                            <!-- If Non-Operational (Closed / Paused) -->
+                            {{#IS_NON_OPERATIONAL}}
+                            <div
+                                style="background-color: #fffbeb; border: 1px solid #fde68a; padding: 18px 20px; margin: 24px 0; border-radius: 8px;">
+                                <span
+                                    style="display: block; font-weight: 700; color: #92400e; margin-bottom: 6px; font-size: 15px;">&#x23F8;&#xFE0F;
+                                    Your Business is Temporarily Paused</span>
+                                <p style="margin: 0; font-size: 14px; color: #78350f; line-height: 1.5;">Your listings
+                                    are currently hidden from travelers to prevent new inquiries while you are away. Any
+                                    confirmed bookings must still be fulfilled.</p>
+                            </div>
+                            {{/IS_NON_OPERATIONAL}}
+
+                            <!-- Key Points Box -->
+                            <div
+                                style="background-color: #fafbfc; border: 1px solid #e5e7eb; padding: 20px 22px; margin: 24px 0; border-radius: 8px;">
+                                <span
+                                    style="display: block; font-weight: 700; color: #1f2937; margin-bottom: 8px; font-size: 15px;">What
+                                    You Should Know:</span>
+                                <ul
+                                    style="margin: 0; padding-left: 20px; color: #4b5563; font-size: 14px; line-height: 1.6;">
+                                    <li style="margin-bottom: 6px;"><strong>Easy Toggle:</strong> You can turn your
+                                        operational status ON or OFF at any time through your partner dashboard.</li>
+                                    <li style="margin-bottom: 6px;"><strong>Existing Bookings:</strong> Changing
+                                        operational status does not affect bookings that are already confirmed.</li>
+                                    <li style="margin-bottom: 0;"><strong>Catalog Visibility:</strong> Travelers only
+                                        see and book services from vendors with an active operational status.</li>
+                                </ul>
+                            </div>
+
+                            <!-- Security Notice Box -->
+                            <div
+                                style="background-color: #fef9e7; border-left: 4px solid #f39c12; padding: 18px 22px; margin: 24px 0; border-radius: 0 8px 8px 0;">
+                                <span
+                                    style="display: block; font-weight: 700; color: #b7791f; margin-bottom: 6px; font-size: 15px;">Did
+                                    Not Request This Change?</span>
+                                <p style="margin: 0; font-size: 13px; color: #744210; line-height: 1.5;">If you did not
+                                    update your operational status, please log in to your partner account immediately or
+                                    contact our support team at <a href="mailto:support@tripdhara.com"
+                                        style="color: #b7791f; font-weight: 600; text-decoration: underline;">support@tripdhara.com</a>.
+                                </p>
+                            </div>
+
+                            <p style="margin: 28px 0 0 0; font-size: 14px; color: #666666; line-height: 1.6;">Thank you
+                                for partnering with Tripdhara to provide amazing mountain experiences to travelers.</p>
+                        </td>
+                    </tr>
+
+                    <!-- Footer -->
+                    <tr>
+                        <td
+                            style="background-color: #fbfcfc; color: #888888; text-align: center; padding: 25px 30px; font-size: 13px; border-top: 1px solid #f0f0f0; line-height: 1.6;">
+                            <p style="margin: 0 0 6px 0;">&copy; {{YEAR}} <a href="https://tripdhara.com"
+                                    target="_blank" style="color: #1a7045; text-decoration: none;">Tripdhara</a>. All
+                                rights reserved.</p>
+                            <p style="margin: 0;">Need help? Contact us at <a href="mailto:support@tripdhara.com"
+                                    style="color: #1a7045; text-decoration: none; font-weight: 500;">support@tripdhara.com</a>
+                            </p>
+                        </td>
+                    </tr>
+                </table>
+            </td>
+        </tr>
+    </table>
+</body>
+
+</html>

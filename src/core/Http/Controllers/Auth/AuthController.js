@@ -20,8 +20,7 @@ class AuthController extends Controller {
     // POST /auth/otp
     async initiateOTP(req) {
         try {
-            const body = req.payload || {};
-
+            const body = req.payload;
             // Basic presence checks
             if (!body.email && !body.phone) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.EITHER_IDENTIFIER_REQUIRED);
             if (!body.termsAccepted) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.TERMS_REQUIRED);
@@ -36,8 +35,7 @@ class AuthController extends Controller {
             const otp = await UserAuthService.initiateOTP({ identifier, role: validRole, termsAccepted: true });
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.OTP_SENT, { otp, email: validEmail, phone: validPhone });
         } catch (error) {
-            if (error.message === RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD) return this.error(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.AUTH.OTP_FAILED);
+            return this.error(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.AUTH.OTP_FAILED);
         }
     }
 
@@ -207,10 +205,10 @@ class AuthController extends Controller {
             if (!token) return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGOUT_SUCCESS);
 
             let body = {};
-            try { body = req.payload; } catch (e) { }
-            const refreshToken = body.refreshToken || null;
+            try { body = req.payload || {}; } catch (e) { }
+            const refreshToken = body?.refreshToken || null;
 
-            await BaseAuthService.logout(token, refreshToken);
+            await BaseAuthService.logout(token, refreshToken, req.user?.id);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGOUT_SUCCESS);
         } catch (error) {
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGOUT_SUCCESS);

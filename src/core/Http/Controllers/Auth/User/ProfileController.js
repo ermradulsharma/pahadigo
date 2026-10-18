@@ -188,9 +188,9 @@ class ProfileController extends Controller {
     }
 
     /**
-         * POST /traveller/sos or /vendor/sos
-         * Triggers an SOS emergency alert for any authenticated user.
-         */
+     * POST /traveller/sos or /vendor/sos
+     * Triggers an SOS emergency alert for any authenticated user.
+     */
     async triggerSOS(req) {
         try {
             const location = req.payload;

@@ -7,6 +7,8 @@ import { getLogger } from '@/core/Lib/logger.js';
 import { getBookingById, getUserById, getBusinessById } from '@/core/Helpers/queryHelpers.js';
 import { formatIST } from '@/core/Helpers/dateUtils.js';
 import AppError from '@/core/Errors/AppError.js';
+import { NOTIFICATION } from '@/core/Constants/notification';
+import { STATUS } from '@/core/Constants/index';
 
 /**
  * NotificationService - Centralized service for sending communications
@@ -18,10 +20,12 @@ class NotificationService {
         this._lastSmtpKey = null;
     }
 
-    /**
-     * Internal helper to create a nodemailer transporter instance
-     * Automatically adapts for serverless (Vercel) vs persistent Node environments.
-     */
+    // =========================================================== //
+    //                                                             //
+    //                          CORE HELPERS                       //
+    //                                                             //
+    // =========================================================== //
+
     async _getTransporter(configParam = null) {
         const config = configParam || await getAppConfig();
         const host = config.smtp?.host;
@@ -64,9 +68,6 @@ class NotificationService {
         return transporter;
     }
 
-    /**
-     * Internal helper to send emails with standard configuration
-     */
     async _sendEmailHelper({ to, toName, subject, html, text, attachments }) {
         if (!to) throw AppError.badRequest("Recipient email address ('to') is required");
 
@@ -78,7 +79,7 @@ class NotificationService {
         // For Gmail SMTP, sending address must match authenticated user to avoid 550 relay/auth rejection.
         // Custom domain is retained in replyTo so user replies reach the official inbox.
         const fromAddress = (isGmail && config.smtp?.user) ? config.smtp.user : (configuredFrom || config.smtp?.user);
-        const fromName = config.smtp?.from_name || 'PahadiGo';
+        const fromName = config.smtp?.from_name || 'Tripdhara';
         const replyToAddress = configuredFrom || fromAddress;
 
         const toRecipient = toName && typeof to === 'string' ? { name: toName, address: to } : to;
@@ -101,16 +102,34 @@ class NotificationService {
         }
     }
 
-    /**
-     * Send push notification directly via PushNotificationService
-     */
+    async _sendPushNotificationPayload(details) {
+        if (details?.fcmToken) {
+            await PushNotificationService.sendToDevice(
+                details.fcmToken,
+                {
+                    title: details?.title,
+                    body: details?.body,
+                    ...(details?.image && { image: details?.image }),
+                },
+                {
+                    type: details?.type,
+                    ...(details?.id && { id: details?.id }),
+                }
+            );
+        }
+        return true;
+    }
+
     async sendPushNotification(token, notification, data = {}) {
         return await PushNotificationService.sendToDevice(token, notification, data);
     }
 
-    /**
-     * Send OTP verification email
-     */
+    // =========================================================== //
+    //                                                             //
+    //                        USER NOTIFICATIONS                   //
+    //                                                             //
+    // =========================================================== //
+
     async sendOTPEmail(email, otp) {
         try {
             const html = await renderTemplate('Emails/otp.html', { OTP: otp });
@@ -121,9 +140,6 @@ class NotificationService {
         }
     }
 
-    /**
-     * Send SMS via MSG91 REST API with graceful fallback to logger
-     */
     async sendSMS(phone, message) {
         try {
             const config = await getAppConfig();
@@ -156,9 +172,6 @@ class NotificationService {
         }
     }
 
-    /**
-     * Send login alert email
-     */
     async sendLoginAlertEmail(email, details) {
         try {
             const config = await getAppConfig();
@@ -193,17 +206,11 @@ class NotificationService {
         }
     }
 
-    /**
-     * Send login alert SMS
-     */
     async sendLoginAlertSMS(phone, details) {
         const message = `PahadiGo Alert: Your account was logged in from ${details.device} (${details.location}) at ${details.loginTime}. If this wasn't you, please secure your account.`;
         return await this.sendSMS(phone, message);
     }
 
-    /**
-     * Send welcome email to new user
-     */
     async sendWelcomeEmail(email, userData = {}) {
         try {
             const config = await getAppConfig();
@@ -222,109 +229,157 @@ class NotificationService {
         }
     }
 
-    /**
-     * Send welcome email to vendor upon profile creation
-     */
-    async sendVendorWelcomeEmail(email, businessName) {
+    // ================================================================== //
+    //                                                                    //
+    //                   BUSINESS Events Emails                           //
+    //                                                                    //
+    // ================================================================== //
+    async sendBusinessWelcomeEmail(email, details) {
         try {
-            const html = await renderTemplate('Emails/vendor/welcome.html', { BUSINESS_NAME: businessName });
-            await this._sendEmailHelper({ to: email, toName: businessName, subject: `Welcome to PahadiGo!`, html: html });
-            return true;
-        } catch (error) {
-            getLogger().error({ err: error }, "[NotificationService] sendVendorWelcomeEmail Error");
-            return false;
-        }
-    }
+            const businessProfile = details?.businessProfile || {};
+            const businessName = businessProfile?.businessName || 'Partner';
 
-    /**
-     * Send email to vendor acknowledging document upload
-     */
-    async sendVendorDocumentsReceivedEmail(email, businessName) {
-        try {
-            const html = await renderTemplate('Emails/vendor/documents.html', { BUSINESS_NAME: businessName });
-            await this._sendEmailHelper({ to: email, toName: businessName, subject: `Documents Received - PahadiGo`, html: html });
-            return true;
-        } catch (error) {
-            getLogger().error({ err: error }, "[NotificationService] sendVendorDocumentsReceivedEmail Error");
-            return false;
-        }
-    }
-
-    /**
-     * Send email to vendor acknowledging bank details submission
-     */
-    async sendVendorBankAddedEmail(email, businessName) {
-        try {
-            const html = await renderTemplate('Emails/vendor/bank.html', { BUSINESS_NAME: businessName });
-            await this._sendEmailHelper({ to: email, toName: businessName, subject: `Bank Details Submitted - PahadiGo`, html: html });
-            return true;
-        } catch (error) {
-            getLogger().error({ err: error }, "[NotificationService] sendVendorBankAddedEmail Error");
-            return false;
-        }
-    }
-
-    /**
-     * Send email to user acknowledging profile update
-     */
-    async sendUserProfileUpdatedEmail(email, details) {
-        try {
             const accountDetails = {
-                USER_NAME: details?.name,
-                BUSINESS_NAME: details?.businessProfile?.businessName,
-                BUSINESS_OWNER_NAME: details?.businessProfile?.ownerName,
-                BUSINESS_ADDRESS: details?.businessProfile?.address,
-                BUSINESS_PHONE: details?.businessProfile?.businessNumber
+                // USER INFO
+                USER_NAME: details?.name || '',
+                FCM_TOKEN: details?.fcmToken,
+                ID: String(details?.id || ''),
+
+                // IMAGE INFO
+                IMAGE_URL: String(businessProfile?.profileImage || details?.profileImage || null),
+
+                // BUSINESS INFO
+                BUSINESS_NAME: businessName,
+                BUSINESS_OWNER_NAME: businessProfile?.ownerName || '',
+                BUSINESS_ADDRESS: businessProfile?.address || '',
+                BUSINESS_PHONE: businessProfile?.businessNumber || ''
             };
-            const html = await renderTemplate('Emails/vendor/profile.html', accountDetails);
-            await this._sendEmailHelper({ to: email, toName: details?.businessProfile?.businessName, subject: 'Update Business Profile', html: html });
 
-            // Push Notification to vendor device using details.fcmToken
-            if (details?.fcmToken) {
-                const businessProfileId = details?.businessProfile?.id || details?.id || '';
-                const profileImage = details?.businessProfile?.profileImage || details?.profileImage || null;
+            const html = await renderTemplate(NOTIFICATION.TEMPLATE.BUSINESS.WELCOME, accountDetails);
+            const tasks = [
+                this._sendEmailHelper({
+                    to: email,
+                    toName: accountDetails.BUSINESS_NAME,
+                    subject: NOTIFICATION.SUBJECT.BUSINESS.WELCOME,
+                    html: html
+                })
+            ];
 
-                await PushNotificationService.sendToDevice(
-                    details.fcmToken,
-                    {
-                        title: 'Business Profile Updated!',
-                        body: 'Your business profile has been successfully updated.',
-                        ...(profileImage && { image: profileImage }),
-                    },
-                    {
-                        type: 'profile_updated',
-                        businessProfileId: String(businessProfileId)
-                    }
-                );
-            } else {
-                getLogger().debug({ email }, "[NotificationService] Skipped push notification: No fcmToken found in details");
+            if (accountDetails.FCM_TOKEN) {
+                const payload = {
+                    fcmToken: accountDetails.FCM_TOKEN,
+                    id: accountDetails.ID,
+                    image: accountDetails.IMAGE_URL,
+                    title: NOTIFICATION.PUSH.BUSINESS.TITLE.WELCOME,
+                    body: NOTIFICATION.PUSH.BUSINESS.BODY.WELCOME,
+                    type: NOTIFICATION.PUSH.BUSINESS.TYPE.WELCOME
+                };
+                tasks.push(this._sendPushNotificationPayload(payload));
             }
 
+            const results = await Promise.allSettled(tasks);
+
+            results.forEach((res, index) => {
+                if (res.status === 'rejected') getLogger().error({ err: res.reason, task: index === 0 ? 'Email' : 'PushNotification', email }, '[NotificationService] sendVendorWelcomeEmail subtask failed');
+            });
+
             return true;
         } catch (error) {
-            getLogger().error({ err: error }, "[NotificationService] sendUserProfileUpdatedEmail Error");
+            getLogger().error({ err: error, email }, '[NotificationService] sendVendorWelcomeEmail Error');
             return false;
         }
     }
 
-    /**
-     * Send email to vendor acknowledging profile deletion
-     */
-    async sendVendorProfileDeletedEmail(email, businessName) {
+    async sendBusinessProfileUpdateEmail(email, details) {
         try {
-            const html = `<p>Dear <strong>${businessName}</strong>,</p><p>Your vendor business profile on PahadiGo has been deleted successfully.</p><p>If this was not done by you, please contact support immediately.</p>`;
-            await this._sendEmailHelper({ to: email, toName: businessName, subject: `Vendor Profile Deleted - PahadiGo`, html });
+            const businessProfile = details?.businessProfile || {};
+            const businessName = businessProfile?.businessName || 'Partner';
+            const accountDetails = {
+                USER_NAME: details?.name,
+                FCM_TOKEN: details?.fcmToken,
+                IMAGE_URL: businessProfile?.profileImage || details?.profileImage || null,
+                ID: businessProfile?.id || details?.id || '',
+                BUSINESS_NAME: businessName,
+                BUSINESS_OWNER_NAME: businessProfile?.ownerName || '',
+                BUSINESS_ADDRESS: businessProfile?.address || '',
+                BUSINESS_PHONE: businessProfile?.businessNumber || ''
+            };
+            const html = await renderTemplate(NOTIFICATION.TEMPLATE.BUSINESS.PROFILE_UPDATE, accountDetails);
+            const tasks = [
+                this._sendEmailHelper({
+                    to: email,
+                    toName: accountDetails.BUSINESS_NAME,
+                    subject: NOTIFICATION.SUBJECT.BUSINESS.PROFILE_UPDATE,
+                    html: html
+                })
+            ];
+            if (accountDetails.FCM_TOKEN) {
+                const payload = {
+                    fcmToken: accountDetails.FCM_TOKEN,
+                    id: accountDetails.ID,
+                    image: accountDetails.IMAGE_URL,
+                    title: NOTIFICATION.PUSH.BUSINESS.TITLE.PROFILE_UPDATE,
+                    body: NOTIFICATION.PUSH.BUSINESS.BODY.PROFILE_UPDATE,
+                    type: NOTIFICATION.PUSH.BUSINESS.TYPE.PROFILE_UPDATE
+                };
+                tasks.push(this._sendPushNotificationPayload(payload));
+            }
+            const results = await Promise.allSettled(tasks);
+            results.forEach((res, index) => {
+                if (res.status === 'rejected') getLogger().error({ err: res.reason, task: index === 0 ? 'Email' : 'PushNotification', email }, '[NotificationService] sendUpdateBusinessProfileEmail subtask failed');
+            });
             return true;
         } catch (error) {
-            getLogger().error({ err: error }, "[NotificationService] sendVendorProfileDeletedEmail Error");
+            getLogger().error({ err: error, email }, '[NotificationService] sendUpdateBusinessProfileEmail Error');
             return false;
         }
     }
 
-    /**
-     * Send email to vendor acknowledging operating status update
-     */
-    async sendVendorOperatingStatusUpdatedEmail(email, businessName, isOperating) {
+    async sendBusinessOperationalStatusEmail(email, details) {
+        try {
+            const businessProfile = details?.businessProfile || {};
+            const businessName = businessProfile?.businessName || 'Partner';
+            const accountDetails = {
+                USER_NAME: details?.name,
+                FCM_TOKEN: details?.fcmToken,
+                IMAGE_URL: businessProfile?.profileImage || details?.profileImage || null,
+                ID: businessProfile?.id || details?.id || '',
+                BUSINESS_NAME: businessName,
+                BUSINESS_OWNER_NAME: businessProfile?.ownerName || '',
+                BUSINESS_ADDRESS: businessProfile?.address || '',
+                BUSINESS_PHONE: businessProfile?.businessNumber || '',
+                DEACTIVATION_DATE: businessProfile?.deletedAt,
+                STATUS: businessProfile?.status
+            };
+            const html = await renderTemplate(NOTIFICATION.TEMPLATE.BUSINESS.OPERATING_STATUS_UPDATED, accountDetails);
+            const tasks = [
+                this._sendEmailHelper({
+                    to: email,
+                    toName: accountDetails.BUSINESS_NAME,
+                    subject: NOTIFICATION.SUBJECT.BUSINESS.OPERATING_STATUS_UPDATED,
+                    html: html
+                })
+            ];
+            if (accountDetails.FCM_TOKEN) {
+                const payload = {
+                    fcmToken: accountDetails.FCM_TOKEN,
+                    id: accountDetails.ID,
+                    image: accountDetails.IMAGE_URL,
+                    title: NOTIFICATION.PUSH.BUSINESS.TITLE.OPERATING_STATUS_UPDATED,
+                    body: NOTIFICATION.PUSH.BUSINESS.BODY.OPERATING_STATUS_UPDATED,
+                    type: NOTIFICATION.PUSH.BUSINESS.TYPE.OPERATING_STATUS_UPDATED
+                };
+                tasks.push(this._sendPushNotificationPayload(payload));
+            }
+            const results = await Promise.allSettled(tasks);
+            results.forEach((res, index) => {
+                if (res.status === 'rejected') getLogger().error({ err: res.reason, task: index === 0 ? 'Email' : 'PushNotification', email }, '[NotificationService] sendUpdateBusinessProfileEmail subtask failed');
+            });
+            return true;
+        } catch (error) {
+            getLogger().error({ err: error, email }, '[NotificationService] sendUpdateBusinessProfileEmail Error');
+            return false;
+        }
         try {
             const statusText = isOperating ? 'ONLINE / OPERATING' : 'OFFLINE / CLOSED';
             const html = `<p>Dear <strong>${businessName}</strong>,</p><p>Your operational status on PahadiGo has been updated to <strong>${statusText}</strong>.</p>`;
@@ -335,6 +390,233 @@ class NotificationService {
             return false;
         }
     }
+
+    async sendBusinessProfileDeletedEmail(email, details) {
+        try {
+            const businessProfile = details?.businessProfile || {};
+            const businessName = businessProfile?.businessName || 'Partner';
+            const accountDetails = {
+                USER_NAME: details?.name,
+                FCM_TOKEN: details?.fcmToken,
+                IMAGE_URL: businessProfile?.profileImage || details?.profileImage || null,
+                ID: businessProfile?.id || details?.id || '',
+                BUSINESS_NAME: businessName,
+                BUSINESS_OWNER_NAME: businessProfile?.ownerName || '',
+                BUSINESS_ADDRESS: businessProfile?.address || '',
+                BUSINESS_PHONE: businessProfile?.businessNumber || ''
+            };
+            const html = await renderTemplate(NOTIFICATION.TEMPLATE.BUSINESS.PROFILE_UPDATE, accountDetails);
+            const tasks = [
+                this._sendEmailHelper({
+                    to: email,
+                    toName: accountDetails.BUSINESS_NAME,
+                    subject: NOTIFICATION.SUBJECT.BUSINESS.PROFILE_UPDATE,
+                    html: html
+                })
+            ];
+            if (accountDetails.FCM_TOKEN) {
+                const payload = {
+                    fcmToken: accountDetails.FCM_TOKEN,
+                    id: accountDetails.ID,
+                    image: accountDetails.IMAGE_URL,
+                    title: NOTIFICATION.PUSH.BUSINESS.TITLE.PROFILE_UPDATE,
+                    body: NOTIFICATION.PUSH.BUSINESS.BODY.PROFILE_UPDATE,
+                    type: NOTIFICATION.PUSH.BUSINESS.TYPE.PROFILE_UPDATE
+                };
+                tasks.push(this._sendPushNotificationPayload(payload));
+            }
+            const results = await Promise.allSettled(tasks);
+            results.forEach((res, index) => {
+                if (res.status === 'rejected') getLogger().error({ err: res.reason, task: index === 0 ? 'Email' : 'PushNotification', email }, '[NotificationService] sendUpdateBusinessProfileEmail subtask failed');
+            });
+            return true;
+        } catch (error) {
+            getLogger().error({ err: error, email }, '[NotificationService] sendUpdateBusinessProfileEmail Error');
+            return false;
+        }
+    }
+
+    async sendBusinessProfileDeactivatedEmail(email, details) {
+        try {
+            const businessProfile = details?.businessProfile || {};
+            const businessName = businessProfile?.businessName || 'Partner';
+            const accountDetails = {
+                USER_NAME: details?.name,
+                FCM_TOKEN: details?.fcmToken,
+                IMAGE_URL: businessProfile?.profileImage || details?.profileImage || null,
+                ID: businessProfile?.id || details?.id || '',
+                BUSINESS_NAME: businessName,
+                BUSINESS_OWNER_NAME: businessProfile?.ownerName || '',
+                BUSINESS_ADDRESS: businessProfile?.address || '',
+                BUSINESS_PHONE: businessProfile?.businessNumber || '',
+                DEACTIVATION_DATE: businessProfile?.updatedAt,
+                STATUS: businessProfile?.status
+            };
+            const html = await renderTemplate(NOTIFICATION.TEMPLATE.BUSINESS.PROFILE_DEACTIVATED, accountDetails);
+            const tasks = [
+                this._sendEmailHelper({
+                    to: email,
+                    toName: accountDetails.BUSINESS_NAME,
+                    subject: NOTIFICATION.SUBJECT.BUSINESS.PROFILE_DEACTIVATED,
+                    html: html
+                })
+            ];
+            if (accountDetails.FCM_TOKEN) {
+                const payload = {
+                    fcmToken: accountDetails.FCM_TOKEN,
+                    id: accountDetails.ID,
+                    image: accountDetails.IMAGE_URL,
+                    title: NOTIFICATION.PUSH.BUSINESS.TITLE.PROFILE_DEACTIVATED,
+                    body: NOTIFICATION.PUSH.BUSINESS.BODY.PROFILE_DEACTIVATED,
+                    type: NOTIFICATION.PUSH.BUSINESS.TYPE.PROFILE_DEACTIVATED
+                };
+                tasks.push(this._sendPushNotificationPayload(payload));
+            }
+            const results = await Promise.allSettled(tasks);
+            results.forEach((res, index) => {
+                if (res.status === 'rejected') getLogger().error({ err: res.reason, task: index === 0 ? 'Email' : 'PushNotification', email }, '[NotificationService] sendUpdateBusinessProfileEmail subtask failed');
+            });
+            return true;
+        } catch (error) {
+            getLogger().error({ err: error, email }, '[NotificationService] sendUpdateBusinessProfileEmail Error');
+            return false;
+        }
+    }
+
+    // Business's Bank Details Created/Updated
+    async sendBusinessBankDetailsCreatedEmail(email, details) {
+        try {
+            const businessProfile = details?.businessProfile || {};
+            const businessName = businessProfile?.businessName || 'Partner';
+
+            const accountDetails = {
+                // USER INFO
+                USER_NAME: details?.name || '',
+                FCM_TOKEN: details?.fcmToken,
+                ID: String(details?.id || ''),
+
+                // IMAGE INFO
+                IMAGE_URL: String(businessProfile?.profileImage || details?.profileImage || null),
+
+                // BUSINESS INFO
+                BUSINESS_NAME: businessName,
+                BUSINESS_OWNER_NAME: businessProfile?.ownerName || '',
+                BUSINESS_ADDRESS: businessProfile?.address || '',
+                BUSINESS_PHONE: businessProfile?.businessNumber || ''
+            };
+
+            const html = await renderTemplate('Emails/vendor/bank.html', accountDetails);
+            const tasks = [
+                this._sendEmailHelper({
+                    to: email,
+                    toName: accountDetails.BUSINESS_NAME,
+                    subject: NOTIFICATION.SUBJECT.BUSINESS.BANK_DETAILS_UPDATED,
+                    html: html
+                })
+            ];
+
+            if (accountDetails.FCM_TOKEN) {
+                const payload = {
+                    fcmToken: accountDetails.FCM_TOKEN,
+                    id: accountDetails.ID,
+                    image: accountDetails.IMAGE_URL,
+                    title: NOTIFICATION.PUSH.BUSINESS.TITLE.BANK_DETAILS_UPDATED,
+                    body: NOTIFICATION.PUSH.BUSINESS.BODY.BANK_DETAILS_UPDATED,
+                    type: NOTIFICATION.PUSH.BUSINESS.TYPE.BANK_DETAILS_UPDATED
+                };
+                tasks.push(this._sendPushNotificationPayload(payload));
+            }
+            const results = await Promise.allSettled(tasks);
+
+            results.forEach((res, index) => {
+                if (res.status === 'rejected') getLogger().error({ err: res.reason, task: index === 0 ? 'Email' : 'PushNotification', email }, '[NotificationService] sendBusinessBankDetailsUpdatedEmail subtask failed');
+            });
+            return true;
+        } catch (error) {
+            getLogger().error({ err: error }, "[NotificationService] sendBusinessBankDetailsUpdatedEmail Error");
+            return false;
+        }
+    }
+
+    async sendBusinessBankDetailsUpdatedEmail(email, details) {
+        try {
+            const businessProfile = details?.businessProfile || {};
+            const businessName = businessProfile?.businessName || 'Partner';
+
+            const accountDetails = {
+                // USER INFO
+                USER_NAME: details?.name || '',
+                FCM_TOKEN: details?.fcmToken,
+                ID: String(details?.id || ''),
+
+                // IMAGE INFO
+                IMAGE_URL: String(businessProfile?.profileImage || details?.profileImage || null),
+
+                // BUSINESS INFO
+                BUSINESS_NAME: businessName,
+                BUSINESS_OWNER_NAME: businessProfile?.ownerName || '',
+                BUSINESS_ADDRESS: businessProfile?.address || '',
+                BUSINESS_PHONE: businessProfile?.businessNumber || ''
+            };
+
+            const html = await renderTemplate('Emails/vendor/bank.html', accountDetails);
+            const tasks = [
+                this._sendEmailHelper({
+                    to: email,
+                    toName: accountDetails.BUSINESS_NAME,
+                    subject: NOTIFICATION.SUBJECT.BUSINESS.BANK_DETAILS_UPDATED,
+                    html: html
+                })
+            ];
+
+            if (accountDetails.FCM_TOKEN) {
+                const payload = {
+                    fcmToken: accountDetails.FCM_TOKEN,
+                    id: accountDetails.ID,
+                    image: accountDetails.IMAGE_URL,
+                    title: NOTIFICATION.PUSH.BUSINESS.TITLE.BANK_DETAILS_UPDATED,
+                    body: NOTIFICATION.PUSH.BUSINESS.BODY.BANK_DETAILS_UPDATED,
+                    type: NOTIFICATION.PUSH.BUSINESS.TYPE.BANK_DETAILS_UPDATED
+                };
+                tasks.push(this._sendPushNotificationPayload(payload));
+            }
+            const results = await Promise.allSettled(tasks);
+
+            results.forEach((res, index) => {
+                if (res.status === 'rejected') getLogger().error({ err: res.reason, task: index === 0 ? 'Email' : 'PushNotification', email }, '[NotificationService] sendBusinessBankDetailsUpdatedEmail subtask failed');
+            });
+            return true;
+        } catch (error) {
+            getLogger().error({ err: error }, "[NotificationService] sendBusinessBankDetailsUpdatedEmail Error");
+            return false;
+        }
+    }
+
+    // Business Document Uploaded
+    async sendBusinessDocumentsEmail(email, businessName) {
+        try {
+            const html = await renderTemplate('Emails/vendor/documents.html', { BUSINESS_NAME: businessName });
+            await this._sendEmailHelper({ to: email, toName: businessName, subject: `Documents Received - PahadiGo`, html: html });
+            return true;
+        } catch (error) {
+            getLogger().error({ err: error }, "[NotificationService] sendVendorDocumentsReceivedEmail Error");
+            return false;
+        }
+    }
+
+    // Business Document Updated 
+    async sendBusinessDocumentsUpdatedEmail(email, businessName) {
+        try {
+            const html = await renderTemplate('Emails/vendor/documents.html', { BUSINESS_NAME: businessName });
+            await this._sendEmailHelper({ to: email, toName: businessName, subject: `Documents Received - PahadiGo`, html: html });
+            return true;
+        } catch (error) {
+            getLogger().error({ err: error }, "[NotificationService] sendVendorDocumentsReceivedEmail Error");
+            return false;
+        }
+    }
+
+
 
     /**
      * Send welcome email for newsletter subscription
@@ -349,7 +631,6 @@ class NotificationService {
             return false;
         }
     }
-
 
     async notifyBookingStatus(bookingId, status) {
         try {

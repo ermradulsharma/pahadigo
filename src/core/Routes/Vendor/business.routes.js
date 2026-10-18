@@ -13,8 +13,10 @@ export default [
             { method: 'GET', path: '/', handler: wrap(() => BusinessController, 'getProfile') },
             { method: 'POST', path: '/create', schema: schemas.businessProfile, handler: wrap(() => BusinessController, 'createProfile') },
             { method: 'PATCH', path: '/update/:id', schema: schemas.businessProfile, handler: wrap(() => BusinessController, 'updateProfile') },
-            { method: 'DELETE', path: '/delete/:id', schema: schemas.accountDelete, handler: wrap(() => BusinessController, 'deleteProfile') },
+            { method: 'PATCH', path: '/deactivate/:id', schema: schemas.businessProfileDeactivate, handler: wrap(() => BusinessController, 'updateBusinessProfileStatus') },
+            { method: 'PATCH', path: '/activate/:id', schema: schemas.businessProfileActivate, handler: wrap(() => BusinessController, 'updateBusinessProfileStatus') },
             { method: 'PATCH', path: '/status/:id', schema: schemas.businessOperatingStatus, handler: wrap(() => BusinessController, 'updateOperatingStatus') },
+            { method: 'DELETE', path: '/delete/:id', schema: schemas.businessProfileDelete, handler: wrap(() => BusinessController, 'deleteProfile') },
         ]),
         ...Router.group({ prefix: '/documents' }, [
             { method: 'GET', path: '/', handler: wrap(() => BusinessDocumentController, 'getDocuments') },

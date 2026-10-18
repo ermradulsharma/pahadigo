@@ -111,7 +111,8 @@ class BusinessService {
         if (vendor) {
             await this.invalidateVendorCaches(userId, vendor._id);
         }
-        return vendor;
+        const user = await User.findById(userId);
+        return userAuthResponse(user);
     }
 
     // Logic to evaluate and update the trust badge based on performance
@@ -168,16 +169,17 @@ class BusinessService {
     }
 
     // Update Verification/Moderation Status
-    async updateBusinessStatus(userId, status) {
+    async updateBusinessStatus(userId, vendorId, status) {
         const vendor = await Vendor.findOneAndUpdate(
-            { user: userId, deletedAt: null },
+            { user: userId, _id: vendorId, deletedAt: null },
             { status: status },
             { returnDocument: 'after' }
         );
         if (vendor) {
             await this.invalidateVendorCaches(userId, vendor._id);
         }
-        return vendor;
+        const user = await User.findById(userId);
+        return userAuthResponse(user);
     }
 
     // Toggle Operational/Availability status
