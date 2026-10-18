@@ -106,6 +106,8 @@ const UserSchema = new mongoose.Schema({
     // 9. SYSTEM & METADATA
     // ============================================
     fcmToken: { type: String, default: DEFAULTS.NULL },
+    deviceType: { type: String, default: DEFAULTS.NULL },
+    deviceId: { type: String, default: DEFAULTS.NULL },
     otp: { type: String, select: DEFAULTS.FALSE, default: DEFAULTS.NULL },
     otpExpires: { type: Date, select: DEFAULTS.FALSE, default: DEFAULTS.NULL },
     isVerified: { type: Boolean, default: DEFAULTS.FALSE },

@@ -327,9 +327,8 @@ class AuthController extends Controller {
 
     async updateFCMToken(req) {
         try {
-            const { fcmToken } = req.payload;
-            if (!fcmToken) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
-            const responseData = await BaseAuthService.updateUserProfile(req.user.id, { fcmToken });
+            const body = req.payload;
+            const responseData = await BaseAuthService.updateUserProfile(req.user.id, body);
             return this.success(HTTP_STATUS.OK, "FCM token updated successfully.", { fcmToken: responseData?.fcmToken });
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);

@@ -16,7 +16,7 @@ class ReviewService {
   }
 
   async toggleReviewVisibility(reviewId, isVisible, req = null) {
-    const review = await Review.findByIdAndUpdate(reviewId, { isVisible }, { new: true });
+    const review = await Review.findByIdAndUpdate(reviewId, { isVisible }, { returnDocument: 'after' });
     if (!review) throw new AppError('Review not found', 404);
     if (req && req.user) {
       await AuditService.logAction(req.user.id, 'UPDATE_VISIBILITY', 'REVIEW', reviewId, { isVisible }, req);

@@ -140,6 +140,8 @@ export async function userAuthResponse(user) {
         tempRole: user.preferences?.tempRole,
         tempExtraData: user.preferences?.tempExtraData,
         fcmToken: user.fcmToken,
+        deviceType: user.deviceType,
+        deviceId: user.deviceId,
         businessProfileStatus,
         businessProfile: businessData,
     };

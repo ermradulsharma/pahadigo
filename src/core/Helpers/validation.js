@@ -121,8 +121,10 @@ export const schemas = {
     }).passthrough(),
 
     fcmToken: z.object({
-        fcmToken: z.string().min(1, 'FCM token is required')
-    }),
+        fcmToken: z.string().min(1, 'FCM token is required'),
+        deviceType: z.string().optional().nullable(),
+        deviceId: z.string().optional().nullable(),
+    }).passthrough(),
 
     accountDelete: z.object({
         otp: z.string().min(4, RESPONSE_MESSAGES.VALIDATION.OTP_MIN_LENGTH),

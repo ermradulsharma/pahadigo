@@ -23,7 +23,7 @@ class PolicyService {
     return await Policy.findOneAndUpdate(
       { target, type },
       { content: sanitized, lastUpdatedBy: adminId },
-      { new: true, upsert: true }
+      { returnDocument: 'after', upsert: true }
     );
   }
 
@@ -35,7 +35,7 @@ class PolicyService {
     ];
 
     for (const p of defaults) {
-      await Policy.findOneAndUpdate({ target: p.target, type: p.type }, p, { upsert: true, new: true });
+      await Policy.findOneAndUpdate({ target: p.target, type: p.type }, p, { upsert: true, returnDocument: 'after' });
     }
     return true;
   }
@@ -50,7 +50,7 @@ class PolicyService {
   }
 
   async updateInquiry(id, data) {
-    const inquiry = await Inquiry.findByIdAndUpdate(id, data, { new: true });
+    const inquiry = await Inquiry.findByIdAndUpdate(id, data, { returnDocument: 'after' });
     if (!inquiry) throw new AppError('Inquiry not found', 404);
     return inquiry;
   }

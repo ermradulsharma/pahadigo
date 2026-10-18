@@ -19,7 +19,7 @@ class MarketingService {
   }
 
   async updateBanner(id, data, req = null) {
-    const b = await Banner.findByIdAndUpdate(id, data, { new: true });
+    const b = await Banner.findByIdAndUpdate(id, data, { returnDocument: 'after' });
     if (!b) throw new AppError('Banner not found', 404);
     if (req && req.user) await AuditService.logAction(req.user.id, 'UPDATE', 'BANNER', id, { changes: data }, req);
     return b;
@@ -43,7 +43,7 @@ class MarketingService {
   }
 
   async updateCoupon(id, data, req = null) {
-    const c = await Coupon.findByIdAndUpdate(id, data, { new: true });
+    const c = await Coupon.findByIdAndUpdate(id, data, { returnDocument: 'after' });
     if (!c) throw new AppError('Coupon not found', 404);
     if (req && req.user) await AuditService.logAction(req.user.id, 'UPDATE', 'COUPON', id, { changes: data }, req);
     return c;

@@ -208,7 +208,7 @@ class VendorService {
                     vendorUpdateData.address = { ...(vendor.address || {}), ...data.address };
                     mapToGeoJSON(vendorUpdateData.address, 'location');
                 }
-                await Vendor.findByIdAndUpdate(vendor._id, { $set: vendorUpdateData }, { session, new: true, lean: true });
+                await Vendor.findByIdAndUpdate(vendor._id, { $set: vendorUpdateData }, { session, returnDocument: 'after', lean: true });
             }
 
             if (user && Object.keys(userData).length > 0) {
@@ -216,7 +216,7 @@ class VendorService {
                     const existing = user.preferences || {};
                     userData.preferences = { ...existing, ...data.preferences };
                 }
-                await User.findByIdAndUpdate(user._id, { $set: userData }, { session, new: true, lean: true });
+                await User.findByIdAndUpdate(user._id, { $set: userData }, { session, returnDocument: 'after', lean: true });
             }
 
             if (req && req.user) {

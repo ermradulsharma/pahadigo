@@ -10,10 +10,6 @@ const VendorEvents = new EventEmitter();
 //                   BUSINESS Events Emails                           //
 //                                                                    //
 // ================================================================== //
-
-/**
- * Helper to eliminate repetitive try-catch and email validations
- */
 const registerEmailListener = (eventKey, handlerFn) => {
     VendorEvents.on(eventKey, async ({ identifier, details, businessName }) => {
         try {
@@ -40,11 +36,6 @@ registerEmailListener(NOTIFICATION.KEY.BUSINESS.DOCUMENT_UPLOADED, (id, data) =>
 // Business Bank Details Emails
 registerEmailListener(NOTIFICATION.KEY.BUSINESS.BANK_DETAILS_ADDED, (id, data) => NotificationService.sendVendorBankAddedEmail(id, data));
 
-/**
- * Asynchronously emit an event and wait for all registered listeners to complete.
- * Crucial for serverless environments (e.g. Vercel) where background promises are
- * frozen as soon as the HTTP response is dispatched.
- */
 VendorEvents.emitAsync = async function (event, data) {
     const listeners = this.listeners(event);
     if (!listeners || listeners.length === 0) return [];

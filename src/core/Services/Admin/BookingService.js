@@ -189,7 +189,7 @@ class BookingService {
                 adminNotes: note
             };
 
-            updatedBooking = await Booking.findByIdAndUpdate(bookingId, snapshot, { session, new: true, lean: true });
+            updatedBooking = await Booking.findByIdAndUpdate(bookingId, snapshot, { session, returnDocument: 'after', lean: true });
 
             if (req && req.user) {
                 await AuditService.logAction(req.user.id, 'PAYOUT', 'BOOKING', bookingId, { amount, transactionId }, req);
@@ -245,7 +245,7 @@ class BookingService {
                 }
             };
 
-            booking = await Booking.findByIdAndUpdate(bookingId, updateData, { session, new: true, lean: true });
+            booking = await Booking.findByIdAndUpdate(bookingId, updateData, { session, returnDocument: 'after', lean: true });
 
             if (req && req.user) {
                 await AuditService.logAction(req.user.id, 'REFUND', 'BOOKING', bookingId, { amount, reason, refundId: refundResponse.id }, req);
@@ -301,7 +301,7 @@ class BookingService {
                 adminNotes,
                 resolvedAt: new Date(),
                 resolvedBy: adminId
-            }, { session, new: true, lean: true });
+            }, { session, returnDocument: 'after', lean: true });
 
             if (!dispute) throw new AppError("Dispute not found", HTTP_STATUS.NOT_FOUND);
 

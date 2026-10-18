@@ -16,7 +16,7 @@ class LocationService {
   }
 
   async updateCountry(id, data) {
-      const country = await Country.findByIdAndUpdate(id, data, { new: true });
+      const country = await Country.findByIdAndUpdate(id, data, { returnDocument: 'after' });
       if (!country) throw new AppError('Country not found', 404);
       await CacheService.delete('admin:locations:countries');
       return country;
@@ -35,7 +35,7 @@ class LocationService {
   }
 
   async updateState(id, data) {
-      const state = await State.findByIdAndUpdate(id, data, { new: true });
+      const state = await State.findByIdAndUpdate(id, data, { returnDocument: 'after' });
       if (!state) throw new AppError('State not found', 404);
       await CacheService.deletePattern('admin:locations:states:*');
       return state;

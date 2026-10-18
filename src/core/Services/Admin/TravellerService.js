@@ -53,7 +53,7 @@ class TravellerService {
     if (data.address) {
       mapToGeoJSON(data.address, 'location');
     }
-    const user = await updateById(User, id, data, { new: true });
+    const user = await updateById(User, id, data, { returnDocument: 'after' });
     if (req && req.user) await AuditService.logAction(req.user.id, 'UPDATE', 'USER', id, { changes: data }, req);
     await CacheService.delete('admin:travellers:all');
     return user;
