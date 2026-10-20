@@ -24,7 +24,9 @@ jest.unstable_mockModule('mongoose', () => {
                 set: jest.fn().mockReturnThis(),
                 index: jest.fn().mockReturnThis(),
                 pre: jest.fn().mockReturnThis(),
-                post: jest.fn().mockReturnThis()
+                post: jest.fn().mockReturnThis(),
+                methods: {},
+                statics: {}
             })),
             { Types: { ObjectId: mockObjectId } }
         ),
@@ -98,7 +100,8 @@ const mockModelsIndex = {
     SearchLog: {},
     Setting: {},
     State: {},
-    Wishlist: {}
+    Wishlist: {},
+    Notification: {}
 };
 
 jest.unstable_mockModule('@/core/Models/index.js', () => mockModelsIndex);

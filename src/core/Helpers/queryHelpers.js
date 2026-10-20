@@ -1,4 +1,4 @@
-import { User, Vendor, Booking, Package, Category, VendorDocument, VendorClosure, Review } from '@/core/Models/index.js';
+import { User, Vendor, Booking, Package, Category, VendorDocument, VendorClosure, Review, Notification } from '@/core/Models/index.js';
 import { SCHEMA_KEYS, CATEGORY_MAP } from '@/core/Constants/categories.js';
 
 /**
@@ -75,6 +75,8 @@ export const getManyBy = async (Model, conditions = {}, select = '', populate = 
     if (select && typeof query?.select === 'function') query = query.select(ensurePopulatePathInSelect(select, populate)) || query;
     if (populate && typeof query?.populate === 'function') query = query.populate(populate) || query;
     if (sort && typeof query?.sort === 'function') query = query.sort(sort) || query;
+    if (options.skip !== undefined && typeof query?.skip === 'function') query = query.skip(Number(options.skip)) || query;
+    if (options.limit !== undefined && typeof query?.limit === 'function') query = query.limit(Number(options.limit)) || query;
     if (options.session && typeof query?.session === 'function') query = query.session(options.session) || query;
     if (options.lean !== false && typeof query?.lean === 'function') query = query.lean() || query;
     if (typeof query?.exec === 'function') return await query.exec();
@@ -289,11 +291,48 @@ export const getVendorsBy = async (conditions = {}, select = '', populate = null
 };
 
 /**
+ * Fetch a single Notification record by custom conditions.
+ * @param {Object} conditions - Query criteria
+ * @param {string|Object} select - Space-separated fields or projection object
+ * @param {string|Object|Array} populate - Population options
+ * @param {Object} [options={}] - Options like { session, lean: true }
+ * @returns {Promise<Object|null>}
+ */
+export const getNotificationBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(Notification, conditions, select, populate, options);
+};
+
+/**
+ * Fetch a Notification record by ID.
+ * @param {string|import('mongoose').Types.ObjectId} id - The notification ID
+ * @param {string|Object} select - Space-separated fields or projection object
+ * @param {string|Object|Array} populate - Population options
+ * @param {Object} [options={}] - Options like { session, lean: true }
+ * @returns {Promise<Object|null>}
+ */
+export const getNotificationById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(Notification, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple Notification records by custom conditions.
+ * @param {Object} conditions - Query criteria
+ * @param {string|Object} select - Space-separated fields or projection object
+ * @param {string|Object|Array} populate - Population options
+ * @param {string|Object} sort - Sorting options
+ * @param {Object} [options={}] - Options like { skip, limit, session, lean: true }
+ * @returns {Promise<Array>}
+ */
+export const getNotificationsBy = async (conditions = {}, select = '', populate = null, sort = { createdAt: -1 }, options = {}) => {
+    return await getManyBy(Notification, conditions, select, populate, sort, options);
+};
+
+/**
  * Generic helper to update a single document by ID with optional session and lean.
  */
 export const updateById = async (Model, id, updateData, options = {}) => {
     if (!id || !Model || typeof Model.findByIdAndUpdate !== 'function') return null;
-    let query = Model.findByIdAndUpdate(id, updateData, { returnDocument: 'after', ...options });
+    let query = Model.findByIdAndUpdate(id, updateData, { returnDocument: 'after', new: true, ...options });
     if (!query) return null;
     if (options.session && typeof query?.session === 'function') query = query.session(options.session) || query;
     if (options.lean !== false && typeof query?.lean === 'function') query = query.lean() || query;
@@ -340,6 +379,9 @@ export default {
     getCategoryById,
     getCategoryBySlug,
     getReviewsBy,
-    getReviewsByItemId
+    getReviewsByItemId,
+    getNotificationBy,
+    getNotificationById,
+    getNotificationsBy
 };
 

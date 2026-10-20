@@ -23,7 +23,8 @@ jest.unstable_mockModule('@/models/index.js', () => ({
     Vendor: {},
     VendorDocument: {},
     VendorClosure: {},
-    Review: {}
+    Review: {},
+    Notification: {}
 }));
 
 const { default: InventoryService } = await import('@/services/Vendor/InventoryService.js');

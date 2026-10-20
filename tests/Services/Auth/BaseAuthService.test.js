@@ -47,6 +47,13 @@ jest.unstable_mockModule('@/core/Services/CacheService.js', () => ({
     }
 }));
 
+jest.unstable_mockModule('@/core/Services/General/NotificationService.js', () => ({
+    default: {
+        notifyProfileUpdated: jest.fn().mockResolvedValue(true),
+        createInAppNotification: jest.fn().mockResolvedValue({})
+    }
+}));
+
 const { default: BaseAuthService } = await import('@/core/Services/Auth/BaseAuthService.js');
 const { default: User } = await import('@/core/Models/User.js');
 const { default: Vendor } = await import('@/core/Models/Vendor.js');

@@ -18,7 +18,9 @@ jest.unstable_mockModule('mongoose', () => {
                 set: jest.fn().mockReturnThis(),
                 index: jest.fn().mockReturnThis(),
                 pre: jest.fn().mockReturnThis(),
-                post: jest.fn().mockReturnThis()
+                post: jest.fn().mockReturnThis(),
+                methods: {},
+                statics: {}
             })),
             { Types: { ObjectId: jest.fn() } }
         ),

@@ -8,5 +8,6 @@ describe('Models Index', () => {
         expect(Models.Package).toBeDefined();
         expect(Models.Inventory).toBeDefined();
         expect(Models.Category).toBeDefined();
+        expect(Models.Notification).toBeDefined();
     });
 });

@@ -15,7 +15,8 @@ jest.unstable_mockModule('@/core/Models/Category.js', () => ({
 
 jest.unstable_mockModule('@/core/Models/User.js', () => ({
     default: {
-        findByIdAndUpdate: jest.fn(),
+        findById: jest.fn().mockResolvedValue({ _id: 'u1' }),
+        findByIdAndUpdate: jest.fn().mockResolvedValue({ _id: 'u1' }),
     }
 }));
 
@@ -209,9 +210,9 @@ describe('BusinessService', () => {
 
     describe('status updates', () => {
         it('should updateBusinessStatus', async () => {
-            await BusinessService.updateBusinessStatus('u1', 'active');
+            await BusinessService.updateBusinessStatus('u1', 'v1', 'active');
             expect(Vendor.findOneAndUpdate).toHaveBeenCalledWith(
-                { user: 'u1', deletedAt: null },
+                { user: 'u1', _id: 'v1', deletedAt: null },
                 { status: 'active' },
                 expect.any(Object)
             );

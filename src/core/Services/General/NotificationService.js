@@ -4,11 +4,18 @@ import { renderTemplate } from '@/core/Helpers/TemplateHelper.js';
 import { PushNotificationService } from '@/core/Services/PushNotificationService.js';
 import { enqueueInvoice, enqueuePushNotification } from '@/core/Lib/Queue/QueueService.js';
 import { getLogger } from '@/core/Lib/logger.js';
-import { getBookingById, getUserById, getBusinessById } from '@/core/Helpers/queryHelpers.js';
+import { getBookingById, getUserById, getBusinessById, getBy, getNotificationBy, getNotificationById, getNotificationsBy } from '@/core/Helpers/queryHelpers.js';
 import { formatIST } from '@/core/Helpers/dateUtils.js';
 import AppError from '@/core/Errors/AppError.js';
 import { NOTIFICATION } from '@/core/Constants/notification';
 import { STATUS } from '@/core/Constants/index';
+import Notification from '@/core/Models/Notification.js';
+import CacheService from '@/core/Services/CacheService.js';
+import { EventEmitter } from 'events';
+
+// In-memory event emitter for live real-time notification push (SSE)
+export const notificationEmitter = new EventEmitter();
+notificationEmitter.setMaxListeners(0);
 
 /**
  * NotificationService - Centralized service for sending communications
@@ -25,6 +32,32 @@ class NotificationService {
     //                          CORE HELPERS                       //
     //                                                             //
     // =========================================================== //
+
+    /**
+     * Persist an In-App Notification directly to MongoDB
+     */
+    async createInAppNotification(payload) {
+        try {
+            if (!payload || !payload.recipient) return null;
+            const notif = await Notification.create(payload);
+            try {
+                await CacheService.del(`user:notifications:unread:${payload.recipient}`);
+            } catch {}
+
+            // Broadcast real-time event to connected SSE clients
+            try {
+                notificationEmitter.emit('notification', {
+                    recipientId: payload.recipient.toString(),
+                    notification: notif
+                });
+            } catch {}
+
+            return notif;
+        } catch (error) {
+            getLogger().error({ err: error, recipient: payload?.recipient }, '[NotificationService] Error creating in-app notification');
+            return null;
+        }
+    }
 
     async _getTransporter(configParam = null) {
         const config = configParam || await getAppConfig();
@@ -752,10 +785,31 @@ class NotificationService {
                     break;
             }
 
-            // Dispatch push notifications to Traveller and Vendor in parallel
+            // Dispatch in-app and push notifications to Traveller and Vendor in parallel
             const pushDispatches = [];
 
-            if (travellerTitle && travellerBody) {
+            if (travellerTitle && travellerBody && travellerId) {
+                // Save in-app notification to DB
+                this.createInAppNotification({
+                    recipient: travellerId,
+                    recipientRole: 'traveller',
+                    title: travellerTitle,
+                    message: travellerBody,
+                    type: `BOOKING_${status.toUpperCase()}`,
+                    category: 'booking',
+                    priority: status === 'cancelled' ? 'high' : 'medium',
+                    actionUrl: `/traveller/bookings/${booking._id}`,
+                    data: dataPayload,
+                    groupKey: `booking_${booking._id}`,
+                    deliveryStatus: {
+                        inApp: true,
+                        push: {
+                            sent: Boolean(travellerUser && travellerUser.fcmToken),
+                            sentAt: (travellerUser && travellerUser.fcmToken) ? new Date() : null
+                        }
+                    }
+                });
+
                 getLogger().info({ travellerId, title: travellerTitle }, '[Push Notification INTENDED for Traveller]');
                 if (travellerUser && travellerUser.fcmToken) {
                     getLogger().info({ fcmToken: travellerUser.fcmToken.substring(0, 15) }, '=> Enqueueing Push Notification to Traveller');
@@ -772,6 +826,27 @@ class NotificationService {
             }
 
             if (vendorUserId && vendorTitle && vendorBody) {
+                // Save in-app notification to DB
+                this.createInAppNotification({
+                    recipient: vendorUserId,
+                    recipientRole: 'vendor',
+                    title: vendorTitle,
+                    message: vendorBody,
+                    type: `BOOKING_${status.toUpperCase()}`,
+                    category: 'booking',
+                    priority: status === 'cancelled' ? 'high' : 'medium',
+                    actionUrl: `/vendor/bookings/${booking._id}`,
+                    data: dataPayload,
+                    groupKey: `booking_${booking._id}`,
+                    deliveryStatus: {
+                        inApp: true,
+                        push: {
+                            sent: Boolean(vendorUser && vendorUser.fcmToken),
+                            sentAt: (vendorUser && vendorUser.fcmToken) ? new Date() : null
+                        }
+                    }
+                });
+
                 getLogger().info({ vendorUserId, title: vendorTitle }, '[Push Notification INTENDED for Vendor]');
                 if (vendorUser && vendorUser.fcmToken) {
                     getLogger().info({ fcmToken: vendorUser.fcmToken.substring(0, 15) }, '=> Enqueueing Push Notification to Vendor');
@@ -890,6 +965,142 @@ class NotificationService {
             getLogger().error({ err: error, email }, '[NotificationService] sendInvoice Error');
             return false;
         }
+    }
+
+    // ================================================================== //
+    //                                                                    //
+    //                   IN-APP NOTIFICATIONS DOMAIN HUB                  //
+    //                                                                    //
+    // ================================================================== //
+
+    /**
+     * Fetch user notifications with pagination and unread counts
+     */
+    async getUserNotifications(userId, { page = 1, limit = 15, filter = 'all' } = {}) {
+        const pageNum = Math.max(1, parseInt(page, 10) || 1);
+        const limitNum = Math.min(50, Math.max(1, parseInt(limit, 10) || 15));
+
+        const query = {
+            recipient: userId,
+            isDeleted: false
+        };
+
+        if (filter === 'unread') {
+            query.isRead = false;
+        }
+
+        const [notifications, total, unreadCount] = await Promise.all([
+            getNotificationsBy(query, '', null, { createdAt: -1 }, {
+                skip: (pageNum - 1) * limitNum,
+                limit: limitNum,
+                lean: true
+            }),
+            Notification.countDocuments(query),
+            Notification.getUnreadCount(userId)
+        ]);
+
+        return {
+            notifications,
+            pagination: {
+                page: pageNum,
+                limit: limitNum,
+                total,
+                totalPages: Math.ceil(total / limitNum) || 1,
+                unreadCount
+            }
+        };
+    }
+
+    /**
+     * Get unread notifications count for a user (Redis cached)
+     */
+    async getUnreadCount(userId) {
+        if (!userId) return 0;
+        const cacheKey = `user:notifications:unread:${userId}`;
+        try {
+            const cached = await CacheService.get(cacheKey);
+            if (cached !== null && cached !== undefined) return Number(cached);
+        } catch {}
+
+        const count = await Notification.getUnreadCount(userId);
+        try {
+            await CacheService.set(cacheKey, count, 120);
+        } catch {}
+        return count;
+    }
+
+    /**
+     * Mark a single notification as read
+     */
+    async markAsRead(notificationId, userId) {
+        const notification = await getNotificationBy({ _id: notificationId, recipient: userId, isDeleted: false }, '', null, { lean: false });
+        if (!notification) return null;
+
+        await notification.markAsRead();
+        try {
+            await CacheService.del(`user:notifications:unread:${userId}`);
+        } catch {}
+        const unreadCount = await this.getUnreadCount(userId);
+        return { notification, unreadCount };
+    }
+
+    /**
+     * Mark all notifications as read for a user
+     */
+    async markAllAsRead(userId) {
+        await Notification.markAllAsRead(userId);
+        try {
+            await CacheService.del(`user:notifications:unread:${userId}`);
+        } catch {}
+        return true;
+    }
+
+    /**
+     * Soft dismiss a single notification
+     */
+    async dismissNotification(notificationId, userId) {
+        const notification = await getNotificationBy({ _id: notificationId, recipient: userId }, '', null, { lean: false });
+        if (!notification) return null;
+
+        await notification.dismiss();
+        try {
+            await CacheService.del(`user:notifications:unread:${userId}`);
+        } catch {}
+        const unreadCount = await this.getUnreadCount(userId);
+        return { unreadCount };
+    }
+
+    /**
+     * Soft dismiss all notifications for a user
+     */
+    async clearAllNotifications(userId) {
+        await Notification.clearAll(userId);
+        try {
+            await CacheService.del(`user:notifications:unread:${userId}`);
+        } catch {}
+        return true;
+    }
+
+    /**
+     * Centrally dispatch profile update notification
+     */
+    async notifyProfileUpdated(user) {
+        const userId = user?._id || user?.id;
+        if (!userId) return null;
+
+        return await this.createInAppNotification({
+            recipient: userId,
+            recipientRole: user.role || 'traveller',
+            title: 'Profile Updated',
+            message: 'Your profile details have been updated successfully.',
+            type: 'PROFILE_UPDATED',
+            category: 'account',
+            priority: 'low',
+            actionUrl: user.role === 'admin' ? '/admin/profile' : (user.role === 'vendor' ? '/vendor/profile' : '/profile'),
+            data: { updatedAt: new Date() },
+            groupKey: `profile_update_${userId}`,
+            deliveryStatus: { inApp: true }
+        });
     }
 }
 

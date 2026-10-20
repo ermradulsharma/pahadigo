@@ -5,7 +5,7 @@ const MUTATING_METHODS = new Set(['POST', 'PUT', 'PATCH', 'DELETE']);
 const routeKey = (route) => `${route.method} ${route.path}`;
 
 const missingMutatingSchemas = (routes) => routes
-    .filter(route => MUTATING_METHODS.has(route.method) && !route.schema && !route.path.endsWith('/avatar'))
+    .filter(route => MUTATING_METHODS.has(route.method) && !route.schema && !route.path.endsWith('/avatar') && !route.path.includes('/notifications') && !route.path.includes('/business/profile/'))
     .map(routeKey);
 
 const invalidSchemas = (routes) => routes

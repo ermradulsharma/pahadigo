@@ -32,7 +32,8 @@ jest.unstable_mockModule('@/core/Models/User.js', () => ({
 }));
 
 jest.unstable_mockModule('@/core/Services/Auth/index.js', () => ({
-    BaseAuthService: mockBaseAuthService
+    BaseAuthService: mockBaseAuthService,
+    UserAuthService: {}
 }));
 
 jest.unstable_mockModule('@/core/Services/General/SOSService.js', () => ({

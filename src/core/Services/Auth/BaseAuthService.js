@@ -7,6 +7,8 @@ import CacheService from '@/core/Services/CacheService.js';
 import { userAuthResponse, userBusinessProfileById, userProfileById } from '@/core/Helpers/userProfileHelper.js';
 import AppError from '@/core/Errors/AppError.js';
 import { getUserById, updateById, getBusinessBy } from '@/core/Helpers/queryHelpers.js';
+import NotificationService from '@/core/Services/General/NotificationService.js';
+import { getLogger } from '@/core/Lib/logger.js';
 
 class BaseAuthService {
     async generateAndSaveTokens(user, rememberMe = false) {
@@ -124,6 +126,13 @@ class BaseAuthService {
         } catch (cacheError) {
             // Non-blocking cache flush error fallback
         }
+        // Trigger in-app notification for profile update
+        try {
+            await NotificationService.notifyProfileUpdated(user);
+        } catch (notifErr) {
+            getLogger().error({ err: notifErr, userId }, '[BaseAuthService] Failed to dispatch profile update notification');
+        }
+
         return await userAuthResponse(user);
     }
 

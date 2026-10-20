@@ -59,7 +59,7 @@ describe('Industry Standard: ReviewService Business Logic Service', () => {
 
             const result = await ReviewService.toggleReviewVisibility(reviewId, true, req);
 
-            expect(Review.findByIdAndUpdate).toHaveBeenCalledWith(reviewId, { isVisible: true }, { new: true });
+            expect(Review.findByIdAndUpdate).toHaveBeenCalledWith(reviewId, { isVisible: true }, { returnDocument: 'after' });
             expect(AuditService.logAction).toHaveBeenCalledWith('admin1', 'UPDATE_VISIBILITY', 'REVIEW', reviewId, { isVisible: true }, req);
             expect(result).toEqual(updatedReview);
         });

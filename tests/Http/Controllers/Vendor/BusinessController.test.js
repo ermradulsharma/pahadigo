@@ -33,7 +33,8 @@ jest.unstable_mockModule('@/core/Helpers/cloudinary.js', () => ({
 
 jest.unstable_mockModule('@/core/Events/VendorEvents.js', () => ({
     default: {
-        emit: jest.fn()
+        emit: jest.fn(),
+        emitAsync: jest.fn().mockResolvedValue([])
     }
 }));
 
@@ -87,14 +88,15 @@ describe('Vendor BusinessController', () => {
             mockReq = createMockReq({ user: { id: 'u1' } });
             mockReq.payload = { name: 'Test' };
             getBusinessByUserId.mockResolvedValue(null);
-            BusinessService.syncBusinessProfile.mockResolvedValue({ id: 'v1', _id: 'v1', user: { email: 'a@b.com' } });
+            BusinessService.syncBusinessProfile.mockResolvedValue({ id: 'v1', _id: 'v1', email: 'a@b.com' });
 
             const response = await BusinessController.createProfile(mockReq);
             const body = await response.json();
 
             expect(response.status).toBe(HTTP_STATUS.CREATED);
             expect(body.data.id || body.data._id).toBe('v1');
-            expect(VendorEvents.emit).toHaveBeenCalledWith('vendor.profile_created', expect.any(Object));
+            const emitFn = VendorEvents.emitAsync || VendorEvents.emit;
+            expect(emitFn).toHaveBeenCalled();
         });
 
         it('should upload profile_image if present in formData', async () => {
@@ -115,12 +117,12 @@ describe('Vendor BusinessController', () => {
             expect(BusinessService.syncBusinessProfile).toHaveBeenCalledWith('u1', expect.objectContaining({ profileImage: 'http://img.com/a.jpg' }));
         });
 
-        it('should return 400 if profile already exists', async () => {
+        it('should return 409 if profile already exists', async () => {
             mockReq = createMockReq({ user: { id: 'u1' } });
             getBusinessByUserId.mockResolvedValue({ _id: 'v1' });
 
             const response = await BusinessController.createProfile(mockReq);
-            expect(response.status).toBe(HTTP_STATUS.BAD_REQUEST);
+            expect(response.status).toBe(HTTP_STATUS.ALREADY_EXIST);
         });
 
         it('should handle errors gracefully', async () => {

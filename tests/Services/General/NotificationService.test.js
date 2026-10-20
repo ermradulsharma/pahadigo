@@ -37,7 +37,7 @@ describe('NotificationService', () => {
 
     describe('Email Functions', () => {
         it('should send OTP email successfully', async () => {
-            const result = await NotificationService.sendOTPEmail('test@test.com', '123456');
+            const result = await NotificationService.sendSecureCodeEmail('test@test.com', '123456');
             expect(result).toBe(true);
             expect(renderTemplate).toHaveBeenCalledWith('Emails/otp.html', { OTP: '123456' });
             expect(mockSendMail).toHaveBeenCalled();

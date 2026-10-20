@@ -17,7 +17,8 @@ jest.unstable_mockModule('@/models/index.js', () => ({
     Vendor: {},
     VendorDocument: {},
     VendorClosure: {},
-    Review: {}
+    Review: {},
+    Notification: {}
 }));
 
 jest.unstable_mockModule('@/helpers/InventoryHelper.js', () => ({

@@ -7,6 +7,7 @@ import paymentRoutes from './payment.routes.js';
 import reviewRoutes from './review.routes.js';
 import wishlistRoutes from './wishlist.routes.js';
 import socialRoutes from './social.routes.js';
+import notificationRoutes from './notification.routes.js';
 
 /**
  * Traveller Routes - Consumer Experience Hub for PahadiGo.
@@ -19,7 +20,8 @@ const travellerRoutes = [
         ...paymentRoutes,
         ...reviewRoutes,
         ...wishlistRoutes,
-        ...socialRoutes
+        ...socialRoutes,
+        ...notificationRoutes
     ]),
 ];
 

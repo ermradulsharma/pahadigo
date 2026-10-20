@@ -9,6 +9,7 @@ export { default as Dispute } from './Dispute.js';
 export { default as EmergencyAlert } from './EmergencyAlert.js';
 export { default as Inquiry } from './Inquiry.js';
 export { default as Inventory } from './Inventory.js';
+export { default as Notification } from './Notification.js';
 export { default as Package } from './Package.js';
 export { default as Policy } from './Policy.js';
 export { default as RateLimit } from './RateLimit.js';

@@ -25,7 +25,7 @@ describe('User OTPService', () => {
     describe('generateOTP', () => {
         test('should generate and save OTP for email', async () => {
             const identifier = 'test@test.com';
-            User.findOneAndUpdate.mockResolvedValue({ _id: 'u1', otp: '123456' });
+            User.findOneAndUpdate.mockResolvedValue({ _id: 'u1', email: identifier, otp: '123456' });
 
             const otp = await OTPService.generateOTP(identifier);
 
@@ -36,7 +36,7 @@ describe('User OTPService', () => {
                 expect.anything()
             );
             const emitFn = AuthEvents.emitAsync.mock.calls.length > 0 ? AuthEvents.emitAsync : AuthEvents.emit;
-            expect(emitFn).toHaveBeenCalledWith('otp.requested', expect.objectContaining({ identifier }));
+            expect(emitFn).toHaveBeenCalledWith('auth.otp', expect.objectContaining({ identifier }));
         });
     });
 

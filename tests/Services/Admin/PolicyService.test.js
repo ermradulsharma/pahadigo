@@ -73,7 +73,7 @@ describe('Admin PolicyService', () => {
             expect(Policy.findOneAndUpdate).toHaveBeenCalledWith(
                 { target: 'vendor', type: 'terms' },
                 { content: 'sanitized: raw_html', lastUpdatedBy: 'admin1' },
-                { new: true, upsert: true }
+                { returnDocument: 'after', upsert: true }
             );
             expect(result.content).toBe('sanitized: raw_html');
         });
@@ -112,7 +112,7 @@ describe('Admin PolicyService', () => {
         it('should update an inquiry', async () => {
             Inquiry.findByIdAndUpdate.mockResolvedValue({ _id: 'i1', status: 'resolved' });
             await PolicyService.updateInquiry('i1', { status: 'resolved' });
-            expect(Inquiry.findByIdAndUpdate).toHaveBeenCalledWith('i1', { status: 'resolved' }, { new: true });
+            expect(Inquiry.findByIdAndUpdate).toHaveBeenCalledWith('i1', { status: 'resolved' }, { returnDocument: 'after' });
         });
 
         it('should throw if inquiry not found', async () => {

@@ -6,6 +6,7 @@ import businessRoutes from './business.routes.js';
 import catalogRoutes from './catalog.routes.js';
 import operationsRoutes from './operations.routes.js';
 import socialRoutes from './social.routes.js';
+import notificationRoutes from './notification.routes.js';
 
 /**
  * Vendor Routes - Porto-Nested Strictly as per legacy manifest.
@@ -17,7 +18,8 @@ const vendorRoutes = [
         ...businessRoutes,
         ...catalogRoutes,
         ...operationsRoutes,
-        ...socialRoutes
+        ...socialRoutes,
+        ...notificationRoutes
     ]),
 ];
 

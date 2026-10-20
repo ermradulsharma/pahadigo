@@ -16,7 +16,7 @@ import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { RESPONSE_MESSAGES, BOOKING_STATUS, PAYMENT_STATUS, REFUND_STATUS } from '@/core/Constants/index.js';
 import BusinessService from '@/core/Services/Vendor/BusinessService.js';
 import { getPackageItemById, getUserById, getBusinessById, getBookingBy, getBookingById } from '@/core/Helpers/queryHelpers.js';
-import { bookingPayload } from '@/core/Helpers/bookingHelper.js';
+import { bookingPayload, calculateCancellationRefund } from '@/core/Helpers/bookingHelper.js';
 
 const generateNumericOTP = () => randomInt(100000, 1000000).toString();
 const generateBookingCode = () => `PH-${new Date().toISOString().split('T')[0].replace(/-/g, '')}-${randomBytes(4).toString('hex').toUpperCase()}`;
@@ -401,22 +401,10 @@ class BookingService {
             throw AppError.badRequest("This booking is already cancelled.");
         }
 
-        // Tiered cancellation policy (100% > 7 days, 50% 3-7 days, 0% < 48 hours)
-        let refundPercentage = 0;
-        if (bookingToCancel.startDate) {
-            const msUntilTrip = new Date(bookingToCancel.startDate).getTime() - Date.now();
-            const hoursUntilTrip = msUntilTrip / (1000 * 60 * 60);
-            if (hoursUntilTrip > 7 * 24) {
-                refundPercentage = 1.0;
-            } else if (hoursUntilTrip >= 48) {
-                refundPercentage = 0.5;
-            } else {
-                refundPercentage = 0.0;
-            }
-        }
-
+        // Calculate real-time refund amount using centralized helper
+        const refundAmount = calculateCancellationRefund(bookingToCancel);
         const totalPaid = bookingToCancel.pricing?.total || 0;
-        const refundAmount = Math.round(totalPaid * refundPercentage);
+        const refundPercentage = totalPaid > 0 ? (refundAmount / totalPaid) : 0;
         let refundGatewayResponse = null;
 
         const isPaid = bookingToCancel.paymentStatus === PAYMENT_STATUS.PAID || bookingToCancel.paymentStatus === 'paid';

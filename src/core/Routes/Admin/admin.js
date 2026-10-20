@@ -10,6 +10,7 @@ import marketingRoutes from './marketing.routes.js';
 import taxonomyRoutes from './taxonomy.routes.js';
 import systemRoutes from './system.routes.js';
 import blogRoutes from './blog.routes.js';
+import notificationRoutes from './notification.routes.js';
 
 /**
  * Admin Routes - Full Enterprise Governance Hub.
@@ -25,7 +26,8 @@ const adminRoutes = [
         ...marketingRoutes,
         ...taxonomyRoutes,
         ...systemRoutes,
-        ...blogRoutes
+        ...blogRoutes,
+        ...notificationRoutes
     ]),
 ];
 

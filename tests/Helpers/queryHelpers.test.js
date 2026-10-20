@@ -14,7 +14,10 @@ import {
     getPackageBy,
     getPackageById,
     getPackagesBy,
-    getVendorsBy
+    getVendorsBy,
+    getNotificationBy,
+    getNotificationById,
+    getNotificationsBy
 } from '@/core/Helpers/queryHelpers.js';
 
 describe('queryHelpers Data Access Layer (DAL) Tests', () => {
@@ -98,6 +101,16 @@ describe('queryHelpers Data Access Layer (DAL) Tests', () => {
             expect(mockQuery.lean).toHaveBeenCalled();
             expect(res).toHaveLength(2);
         });
+
+        it('should apply skip and limit when provided in options', async () => {
+            mockQuery.skip = jest.fn().mockReturnThis();
+            mockQuery.limit = jest.fn().mockReturnThis();
+            mockQuery.exec.mockResolvedValueOnce([{ _id: 'doc_1' }]);
+
+            await getManyBy(MockModel, {}, '', null, null, { skip: 10, limit: 5 });
+            expect(mockQuery.skip).toHaveBeenCalledWith(10);
+            expect(mockQuery.limit).toHaveBeenCalledWith(5);
+        });
     });
 
     describe('updateById', () => {
@@ -143,6 +156,9 @@ describe('queryHelpers Data Access Layer (DAL) Tests', () => {
             expect(typeof getPackageById).toBe('function');
             expect(typeof getPackagesBy).toBe('function');
             expect(typeof getVendorsBy).toBe('function');
+            expect(typeof getNotificationBy).toBe('function');
+            expect(typeof getNotificationById).toBe('function');
+            expect(typeof getNotificationsBy).toBe('function');
         });
     });
 });

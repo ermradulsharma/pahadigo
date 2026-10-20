@@ -73,7 +73,7 @@ describe('Admin LocationService', () => {
             const result = await LocationService.updateCountry('c1', mockData);
             
             expect(result._id).toBe('c1');
-            expect(Country.findByIdAndUpdate).toHaveBeenCalledWith('c1', mockData, { new: true });
+            expect(Country.findByIdAndUpdate).toHaveBeenCalledWith('c1', mockData, { returnDocument: 'after' });
             expect(CacheService.delete).toHaveBeenCalledWith('admin:locations:countries');
         });
 

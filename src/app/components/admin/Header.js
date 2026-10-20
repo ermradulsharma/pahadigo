@@ -3,6 +3,7 @@ import { useRouter } from 'next/navigation';
 import { removeToken, getRole } from '@/app/utils/authUtils.js';
 import { useEffect, useState, useRef } from 'react';
 import { Network, LogOut, Settings, User as UserIcon } from 'lucide-react';
+import NotificationBell from '@/app/components/NotificationBell.js';
 
 export default function Header({ title }) {
   const router = useRouter();
@@ -47,7 +48,10 @@ export default function Header({ title }) {
         </div>
       </div>
 
-      <div className="relative" ref={dropdownRef}>
+      <div className="flex items-center gap-3">
+        <NotificationBell theme="dark" />
+
+        <div className="relative" ref={dropdownRef}>
         <button
           onClick={() => setIsDropdownOpen(!isDropdownOpen)}
           className="flex items-center gap-3 hover:bg-white/5 p-1.5 rounded-xl transition-colors focus:outline-none group border border-transparent hover:border-white/10"
@@ -83,6 +87,7 @@ export default function Header({ title }) {
             </div>
           </div>
         )}
+      </div>
       </div>
     </header>
   );
