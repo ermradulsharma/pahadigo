@@ -25,6 +25,14 @@ describe('QueueService', () => {
             getAppConfig: getAppConfigMock
         }));
 
+        jest.unstable_mockModule('@/core/Lib/logger.js', () => ({
+            getLogger: () => ({
+                info: jest.fn(),
+                warn: jest.fn(),
+                error: jest.fn()
+            })
+        }));
+
         QueueServiceModule = await import('@/core/Lib/Queue/QueueService.js');
     });
 
