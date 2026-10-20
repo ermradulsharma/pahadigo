@@ -252,6 +252,34 @@ class NotificationService {
 
     // ================================================================== //
     //                                                                    //
+    //                   USER EVENTS EMAILS                               //
+    //                                                                    //
+    // ================================================================== //
+
+    async sendProfileUpdateEmail(email, details) {
+        try {
+            const defaultAvatar = `https://ui-avatars.com/api/?name=${encodeURIComponent(details?.name)}&background=ffffff&color=2e7d32&size=128&bold=true`;
+            const account = {
+                USER_NAME: details?.name || '',
+                ACCOUNT_IDENTIFIER: details?.email ? details?.email : details?.phone || '',
+                PHONE: details?.phone || '',
+                EMAIL: details?.email || '',
+                UPDATE_TIME: details?.updatedAt || '',
+                PROFILE_IMAGE: details?.profileImage || defaultAvatar,
+                SECURITY_URL: 'https://tripdhara.com/security'
+            }
+            const html = await renderTemplate(NOTIFICATION.TEMPLATE.USER.PROFILE.UPDATED, account);
+            await this._sendEmailHelper({ to: email, subject: NOTIFICATION.SUBJECT.USER.PROFILE_UPDATE, html: html });
+            return true;
+        } catch (error) {
+            getLogger().error({ err: error }, "[NotificationService] sendProfileUpdateEmail Error");
+            return false;
+        }
+    }
+
+
+    // ================================================================== //
+    //                                                                    //
     //                   BUSINESS Events Emails                           //
     //                                                                    //
     // ================================================================== //
@@ -636,8 +664,6 @@ class NotificationService {
             return false;
         }
     }
-
-
 
     /**
      * Send welcome email for newsletter subscription

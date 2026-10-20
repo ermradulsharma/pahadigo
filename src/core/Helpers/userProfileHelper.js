@@ -20,7 +20,7 @@ export function userPayload(u) {
         phone: u.phone,
         profileImage: u.profileImage,
         gender: u.gender,
-        dateOfBirth: u.dateOfBirth ? new Date(u.dateOfBirth).toISOString().split('T')[0] : null,
+        dateOfBirth: (u.dateOfBirth && !isNaN(new Date(u.dateOfBirth).getTime())) ? new Date(u.dateOfBirth).toISOString().split('T')[0] : null,
         address: addressPayload(u.address),
         location: getLocationPoint(u.address),
         rating: u.rating,

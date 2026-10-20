@@ -11,7 +11,7 @@ export const NOTIFICATION = {
 
             PROFILE: {
                 CREATED: 'Emails/profile-created.html',
-                UPDATED: 'Emails/profile-updated.html',
+                UPDATED: 'Emails/Profile/profile-updated.html',
                 DELETED: 'Emails/profile-deleted.html',
             },
 
@@ -77,7 +77,10 @@ export const NOTIFICATION = {
         AUTH: {
             OTP: "Tripdhara - One Time Password",
             WELCOME: "Welcome To Tripdhara",
-            ALERT: "New Login Alert",
+            ALERT: "Tripdhara - New Login Alert",
+        },
+        USER: {
+            PROFILE_UPDATE: 'Tripdhara - Profile Updated',
         },
         BUSINESS: {
             WELCOME: 'Welcome To Tripdhara',

@@ -63,11 +63,29 @@ class ProfileController extends Controller {
             });
 
             // 1. Safe profile image handling
-            const profileImgFile = req.payload?.profileImage;
-
+            const profileImgFile = body.profileImage;
             if (profileImgFile) {
-                const res = await uploadToCloudinary(profileImgFile, `profile/${req.user.id}`);
-                updates.profileImage = res.url;
+                const isFile = typeof profileImgFile === 'object' && typeof profileImgFile.arrayBuffer === 'function';
+                if (isFile) {
+                    const res = await uploadToCloudinary(profileImgFile, `profile/${req.user.id}`);
+                    updates.profileImage = res.url;
+                } else if (typeof profileImgFile === 'string' && profileImgFile.trim().length > 0) {
+                    updates.profileImage = profileImgFile.trim();
+                }
+            }
+
+            // 2. Safe Date of Birth handling
+            if (updates.dateOfBirth !== undefined) {
+                if (!updates.dateOfBirth || updates.dateOfBirth === '') {
+                    updates.dateOfBirth = null;
+                } else {
+                    const parsedDate = new Date(updates.dateOfBirth);
+                    if (!isNaN(parsedDate.getTime())) {
+                        updates.dateOfBirth = parsedDate;
+                    } else {
+                        delete updates.dateOfBirth;
+                    }
+                }
             }
 
             // 2. Emergency contacts normalization

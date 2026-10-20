@@ -10,6 +10,8 @@ import UserEvents from '@/core/Events/UserEvents.js';
 
 import CacheService from '@/core/Services/CacheService.js';
 import SOSService from '@/core/Services/General/SOSService.js';
+import { getLogger } from '@/core/Lib/logger.js';
+import { NOTIFICATION } from '@/core/Constants/notification';
 
 /**
  * ProfileController (Vendor Role) - Specialized management of
@@ -60,18 +62,36 @@ class ProfileController extends Controller {
             ];
             const updates = {};
             Object.keys(body).forEach(key => {
-                if (allowedFields.includes(key)) updates[key] = body[key];
+                if (allowedFields.includes(key) && body[key] !== undefined) updates[key] = body[key];
             });
 
-            // 1. Safe profile image handling
-            const profileImgFile = req.payload?.profileImage;
-
+            // 1. Safe profile image handling (Upload to Cloudinary ONLY if it is an actual file object; if string URL, keep as is)
+            const profileImgFile = body.profileImage;
             if (profileImgFile) {
-                const res = await uploadToCloudinary(profileImgFile, `profile/${req.user.id}`);
-                updates.profileImage = res.url;
+                const isFile = typeof profileImgFile === 'object' && typeof profileImgFile.arrayBuffer === 'function';
+                if (isFile) {
+                    const res = await uploadToCloudinary(profileImgFile, `profile/${req.user.id}`);
+                    updates.profileImage = res.url;
+                } else if (typeof profileImgFile === 'string' && profileImgFile.trim().length > 0) {
+                    updates.profileImage = profileImgFile.trim();
+                }
             }
 
-            // 2. Emergency contacts normalization
+            // 2. Safe Date of Birth handling (prevent Mongoose CastError on empty strings)
+            if (updates.dateOfBirth !== undefined) {
+                if (!updates.dateOfBirth || updates.dateOfBirth === '') {
+                    updates.dateOfBirth = null;
+                } else {
+                    const parsedDate = new Date(updates.dateOfBirth);
+                    if (!isNaN(parsedDate.getTime())) {
+                        updates.dateOfBirth = parsedDate;
+                    } else {
+                        delete updates.dateOfBirth;
+                    }
+                }
+            }
+
+            // 3. Emergency contacts normalization
             if (updates.emergencyContacts) {
                 const list = Array.isArray(updates.emergencyContacts) ? updates.emergencyContacts : [updates.emergencyContacts];
                 updates.emergencyContacts = list.map(c => ({
@@ -81,12 +101,12 @@ class ProfileController extends Controller {
                 }));
             }
 
-            // 3. Comma-separated array & primitive conversions
+            // 4. Comma-separated array & primitive conversions
             if (updates.expertise && typeof updates.expertise === 'string') updates.expertise = updates.expertise.split(',').map(item => item.trim()).filter(Boolean);
             if (updates.medicalConditions && typeof updates.medicalConditions === 'string') updates.medicalConditions = updates.medicalConditions.split(',').map(item => item.trim()).filter(Boolean);
             if (updates.experience !== undefined) updates.experience = Number(updates.experience) || 0;
 
-            // 4. Notifications boolean normalization
+            // 5. Notifications boolean normalization
             if (updates.preferences?.notifications) {
                 Object.keys(updates.preferences.notifications).forEach(key => {
                     const val = updates.preferences.notifications[key];
@@ -94,13 +114,13 @@ class ProfileController extends Controller {
                 });
             }
 
-            // 5. GeoJSON Point calculation
+            // 6. GeoJSON Point calculation
             if (updates.address) mapToGeoJSON(updates.address, 'location');
 
-            // 6. Delegate profile update to BaseAuthService for standardized response payload & Redis caching
+            // 7. Delegate profile update to BaseAuthService for standardized response payload & Redis caching
             const updatedProfile = await BaseAuthService.updateUserProfile(req.user.id, updates);
 
-            if (updatedProfile?.email) UserEvents.emit('user.profile_updated', { identifier: updatedProfile.email, userName: updatedProfile.name });
+            if (updatedProfile?.email) UserEvents.emit(NOTIFICATION.KEY.USER.PROFILE.UPDATED, { identifier: updatedProfile.email, details: updatedProfile });
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.PERSONAL_UPDATED, updatedProfile);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
