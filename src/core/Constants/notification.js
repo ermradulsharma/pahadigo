@@ -37,6 +37,21 @@ export const NOTIFICATION = {
         }
     },
     KEY: {
+        USER: {
+            OTP: 'auth.otp',
+            WELCOME: 'auth.welcome',
+            ALERT: 'auth.alert',
+
+            OFFER: 'user.offer',
+            AD: 'user.ad',
+            NEWSLETTER: 'user.newsletter',
+
+            PROFILE: {
+                CREATED: 'user.profile_created',
+                UPDATED: 'user.profile_updated',
+                DELETED: 'user.profile_deleted',
+            },
+        },
         BUSINESS: {
             PROFILE_CREATED: 'vendor.profile_created',
             PROFILE_UPDATED: 'vendor.profile_updated',
@@ -59,26 +74,31 @@ export const NOTIFICATION = {
         }
     },
     SUBJECT: {
+        AUTH: {
+            OTP: "Tripdhara - One Time Password",
+            WELCOME: "Welcome To Tripdhara",
+            ALERT: "New Login Alert",
+        },
         BUSINESS: {
-            WELCOME: 'Welcome to Tripdhara',
+            WELCOME: 'Welcome To Tripdhara',
             PROFILE_UPDATE: 'Business Profile Updated',
             PROFILE_DEACTIVATED: 'Business Profile Deactivated',
             BANK_DETAILS_UPDATED: "Bank Details Update",
 
 
-            ACCOUNT_DELETED: 'Your account has been deleted',
-            CATEGORY_ASSIGNED: 'Category assigned to you',
-            CATEGORY_REMOVED: 'Category removed from you',
-            CATEGORY_DOCUMENT_UPLOADED: 'Category document uploaded to you',
-            CATEGORY_DOCUMENT_REMOVED: 'Category document removed from you',
-            BANK_DETAILS_ADDED: 'Bank details added to you',
-            BANK_DETAILS_REMOVED: 'Bank details removed from you',
-            PROFILE_CREATED: 'Profile created successfully',
-            PROFILE_UPDATED: 'Profile updated successfully',
-            PROFILE_DELETED: 'Profile deleted successfully',
-            OPERATING_STATUS_UPDATED: 'Operating status updated successfully',
-            DOCUMENT_UPLOADED: 'Document uploaded successfully',
-            ACCOUNT_DELETED: 'Account deleted successfully',
+            ACCOUNT_DELETED: 'Your Account Has Been Deleted',
+            CATEGORY_ASSIGNED: 'Category Assigned To You',
+            CATEGORY_REMOVED: 'Category Removed From You',
+            CATEGORY_DOCUMENT_UPLOADED: 'Category Document Uploaded To You',
+            CATEGORY_DOCUMENT_REMOVED: 'Category Document Removed From You',
+            BANK_DETAILS_ADDED: 'Bank Details Added To You',
+            BANK_DETAILS_REMOVED: 'Bank Details Removed From You',
+            PROFILE_CREATED: 'Profile Created Successfully',
+            PROFILE_UPDATED: 'Profile Updated Successfully',
+            PROFILE_DELETED: 'Profile Deleted Successfully',
+            OPERATING_STATUS_UPDATED: 'Operating Status Updated Successfully',
+            DOCUMENT_UPLOADED: 'Document Uploaded Successfully',
+            ACCOUNT_DELETED: 'Account Deleted Successfully',
         }
     },
 

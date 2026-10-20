@@ -10,6 +10,7 @@ import { transformAuthResponse, userAuthResponse, businessAuthResponse } from '@
 import AuthEvents from '@/core/Events/AuthEvents.js';
 import Controller from '@/core/Controllers/Controller.js';
 import requestContextMiddleware from '@/core/Http/Middleware/requestContext.js';
+import { NOTIFICATION } from '@/core/Constants/notification';
 
 /**
  * AuthController - Handles all authentication related logic.
@@ -46,20 +47,9 @@ class AuthController extends Controller {
             const result = await AdminAuthService.authenticateWithPassword({ email, password, rememberMe });
 
             const context = requestContextMiddleware(req);
-            const sessionId = result.tokens?.refreshJti || result.tokens?.accessToken || null;
-            await AuthEvents.emitAsync('auth.login_success', {
-                user: result.user,
-                metadata: {
-                    ...context,
-                    identifier: email,
-                    authMethod: 'Password',
-                    role: result.user?.role,
-                    sessionId,
-                    isNewDevice: false,
-                    isNewLocation: false
-                }
-            });
-
+            const sessionId = result.tokens?.accessJti || result.tokens?.refreshJti;
+            const isNewUser = Boolean(result.isNewUser);
+            await AuthEvents.emitAsync(NOTIFICATION.KEY.USER.ALERT, { identifier: result.email, details: result, metadata: { ...context, authMethod: 'Password Authentication', sessionId, isNewDevice: isNewUser, isNewLocation: isNewUser } });
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, transformAuthResponse(result));
         } catch (error) {
             return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.INVALID_CREDENTIALS);
@@ -78,22 +68,11 @@ class AuthController extends Controller {
             const result = await UserAuthService.authenticateWithOTP({ identifier, otp, role });
 
             const context = requestContextMiddleware(req);
-            const sessionId = result.tokens?.refreshJti || result.tokens?.accessToken || null;
+            const sessionId = result.tokens?.accessJti || result.tokens?.refreshJti;
             const isNewUser = Boolean(result.isNewUser);
-            await AuthEvents.emitAsync('auth.login_success', {
-                user: result,
-                metadata: {
-                    ...context,
-                    identifier,
-                    authMethod: 'OTP Verification',
-                    role: result.user?.role || role,
-                    sessionId,
-                    isNewDevice: isNewUser,
-                    isNewLocation: isNewUser
-                }
-            });
+            await AuthEvents.emitAsync(NOTIFICATION.KEY.USER.ALERT, { identifier: result.email, details: result, metadata: { ...context, authMethod: 'OTP Verification', sessionId, isNewDevice: isNewUser, isNewLocation: isNewUser } });
             if (result.isNewUser) {
-                await AuthEvents.emitAsync('auth.welcome', { identifier, user: result });
+                await AuthEvents.emitAsync(NOTIFICATION.KEY.USER.WELCOME, { identifier: result.email, details: result });
             }
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGIN_SUCCESS, transformAuthResponse(result));
         } catch (error) {

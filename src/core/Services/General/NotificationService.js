@@ -130,10 +130,11 @@ class NotificationService {
     //                                                             //
     // =========================================================== //
 
-    async sendOTPEmail(email, otp) {
+    async sendSecureCodeEmail(email, data) {
         try {
-            const html = await renderTemplate('Emails/otp.html', { OTP: otp });
-            await this._sendEmailHelper({ to: email, subject: 'OTP Verification Code', html: html });
+            const details = { OTP: data }
+            const html = await renderTemplate(NOTIFICATION.TEMPLATE.USER.OTP, details);
+            await this._sendEmailHelper({ to: email, subject: NOTIFICATION.SUBJECT.AUTH.OTP, html: html });
             return true;
         } catch (error) {
             return false;
@@ -172,34 +173,53 @@ class NotificationService {
         }
     }
 
-    async sendLoginAlertEmail(email, details) {
+    async sendAlertEmail(email, details, metadata = {}) {
         try {
             const config = await getAppConfig();
-            const baseUrl = config?.app?.url || 'https://pahadigo.co.in';
+            const baseUrl = config?.app?.url || 'https://tripdhara.com';
             const securityUrl = `${baseUrl}/security`;
-            const revokeUrl = details.sessionId ? `${baseUrl}/auth/revoke-session?id=${details.sessionId}` : `${baseUrl}/security`;
+            const revokeUrl = metadata.sessionId ? `${baseUrl}/auth/revoke-session?id=${metadata.sessionId}` : `${baseUrl}/security`;
 
-            const html = await renderTemplate('Emails/alert.html', {
+            const account = {
                 NAME: details.name,
-                ACCOUNT_IDENTIFIER: details.accountIdentifier,
-                AUTH_METHOD: details.authMethod,
+                ACCOUNT_IDENTIFIER: details.email,
                 ROLE: details.role,
-                DEVICE: details.device,
-                DEVICE_NAME: details.deviceName,
-                DEVICE_TYPE: details.deviceType,
-                BROWSER: details.browser,
-                OS: details.os,
-                CARRIER: details.carrier,
-                IP: details.ip,
-                LOCATION: details.location,
-                DATACENTER: details.datacenter,
+
+                AUTH_METHOD: metadata.authMethod,
+
+                // rawDevice
+                OS: metadata.rawDevice.os,
+                BROWSER: metadata.rawDevice.browser,
+                DEVICE_TYPE: metadata.rawDevice.deviceType,
+                DEVICE_NAME: metadata.rawDevice.deviceName,
+                SUMMARY: metadata.rawDevice.summary,
+
+                // appInfo
+                APP_VERSION: metadata.appInfo.appVersion,
+                PLATFORM: metadata.appInfo.platform,
+                DEVICE_ID: metadata.appInfo.deviceId,
+                CARRIER: metadata.appInfo.carrier,
+
+                // ip
+                IP_ADDRESS: metadata.ipAddress,
+                REAL_IP: metadata.realIp,
+                IP: metadata.ip,
+
+                // Device
+                DEVICE: metadata.device,
+
+                // location
+                LOCATION: metadata.location,
+
+                // cdn
+                DATACENTER: metadata.cdn.datacenter,
                 TIME: details.loginTime,
-                NEW_DEVICE_BADGE: Boolean(details.isNewDevice),
-                APP_VERSION: details.appVersion,
+                NEW_DEVICE_BADGE: Boolean(metadata.isNewDevice),
                 SECURITY_URL: securityUrl,
                 REVOKE_URL: revokeUrl
-            });
-            await this._sendEmailHelper({ to: email, subject: 'Security Alert: New login detected', html: html });
+            }
+            const html = await renderTemplate(NOTIFICATION.TEMPLATE.USER.ALERT, account);
+            await this._sendEmailHelper({ to: email, subject: NOTIFICATION.SUBJECT.AUTH.ALERT, html: html });
             return true;
         } catch (error) {
             return false;
@@ -211,17 +231,18 @@ class NotificationService {
         return await this.sendSMS(phone, message);
     }
 
-    async sendWelcomeEmail(email, userData = {}) {
+    async sendWelcomeEmail(email, details) {
         try {
             const config = await getAppConfig();
-            const exploreUrl = config?.app?.url ? `${config.app.url}/explore` : 'https://pahadigo.com/explore';
-            const html = await renderTemplate('Emails/welcome.html', {
-                NAME: userData.name || 'Traveler',
-                ACCOUNT_IDENTIFIER: email,
-                JOIN_DATE: new Date().toLocaleDateString('en-IN', { timeZone: 'Asia/Kolkata' }),
+            const exploreUrl = config?.app?.url ? `${config.app.url}/explore` : 'https://tripdhara.com/explore';
+            const account = {
+                NAME: details?.name || '',
+                ACCOUNT_IDENTIFIER: email || details?.email || '',
+                JOIN_DATE: details?.createdAt || '',
                 EXPLORE_URL: exploreUrl
-            });
-            await this._sendEmailHelper({ to: email, subject: `Welcome to PahadiGo!`, html: html });
+            }
+            const html = await renderTemplate(NOTIFICATION.TEMPLATE.USER.WELCOME, account);
+            await this._sendEmailHelper({ to: email, subject: NOTIFICATION.SUBJECT.AUTH.WELCOME, html: html });
             return true;
         } catch (error) {
             getLogger().error({ err: error }, "[NotificationService] sendWelcomeEmail Error");

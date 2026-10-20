@@ -28,7 +28,8 @@ export function userPayload(u) {
         isVerified: u.isVerified,
         experience: u.experience,
         designation: u.designation,
-        bio: u.bio
+        bio: u.bio,
+        createdAt: u.createdAt
     };
 }
 

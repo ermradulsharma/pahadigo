@@ -3,6 +3,8 @@ import { DEFAULTS, USER_ROLES } from '@/core/Constants/index.js';
 import User from '@/core/Models/User.js';
 import AuthEvents from '@/core/Events/AuthEvents.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
+import { NOTIFICATION } from '@/core/Constants/notification';
+import { use } from 'react';
 
 /**
  * OTPService - Handles generation, storage, and verification of
@@ -50,7 +52,7 @@ class OTPService {
         const updatePayload = { otp, otpExpires: expires, ...metadata };
         isEmail ? updatePayload.email = identifier.toLowerCase().trim() : updatePayload.phone = identifier.trim();
         const user = await User.findOneAndUpdate({ $or: [{ email: identifier }, { phone: identifier }] }, { $set: updatePayload, $setOnInsert: { role: role } }, { upsert: true, returnDocument: 'after' });
-        if (!isTest) await AuthEvents.emitAsync('otp.requested', { identifier, otp });
+        if (!isTest) await AuthEvents.emitAsync(NOTIFICATION.KEY.USER.OTP, { identifier: user.email, details: otp });
         return otp;
     }
 

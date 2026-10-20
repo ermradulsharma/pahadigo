@@ -96,7 +96,7 @@
         "lucide-react": "^1.59.0",
         "mongoose": "^9.11.2",
         "next": "^16.4.2",
-        "nodemailer": "^10.1.2",
+        "nodemailer": "^10.1.7",
         "pino": "^10.4.0",
         "pino-pretty": "^13.2.0",
         "razorpay": "^2.9.8",
@@ -123,7 +123,7 @@
         "jest": "^30.5.2",
         "mongodb": "^7.7.0",
         "mongodb-memory-server": "^11.3.0",
-        "postcss": "^8.5.30",
+        "postcss": "^8.5.31",
         "supertest": "^7.3.1",
         "tailwindcss": "^4.3.3",
         "nanoid": "^6.0.2"
