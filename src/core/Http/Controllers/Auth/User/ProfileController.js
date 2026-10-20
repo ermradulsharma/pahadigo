@@ -1,6 +1,6 @@
 import User from '@/core/Models/User.js';
 import Vendor from '@/core/Models/Vendor.js';
-import { BaseAuthService } from '@/core/Services/Auth/index.js';
+import { BaseAuthService, UserAuthService } from '@/core/Services/Auth/index.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, STATUS } from '@/core/Constants/index.js';
 import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
 import { businessPayload, getBusinessById, getPackageBy, getUserById, itemsFormate, transformAuthResponse, userAuthResponse } from '@/core/Helpers/index.js';
