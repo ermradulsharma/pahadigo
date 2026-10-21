@@ -102,6 +102,13 @@ export default function NotificationBell({ theme = 'dark', apiPrefix = '/api/adm
                     // Ignore non-json or heartbeat
                 }
             };
+
+            eventSource.onerror = () => {
+                // If connection is closed or fatal auth failure occurs, close the eventSource
+                if (eventSource && eventSource.readyState === EventSource.CLOSED) {
+                    eventSource.close();
+                }
+            };
         } catch {
             // Silently handle if EventSource fails
         }

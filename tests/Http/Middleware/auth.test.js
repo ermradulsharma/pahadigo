@@ -80,6 +80,31 @@ describe('Auth Middleware', () => {
         expect(result.user.id).toBe('u1');
     });
 
+    it('should return user if authorized with query parameter token (SSE / EventSource)', async () => {
+        verifyToken.mockResolvedValue({ id: 'u1' });
+        User.findById.mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue({ _id: { toString: () => 'u1' }, status: 'active' }) }) });
+        const req = {
+            headers: { get: () => null },
+            url: 'http://localhost:3000/api/admin/notifications/stream?token=validQueryToken'
+        };
+        const result = await authMiddleware(req);
+        expect(result.authorized).toBe(true);
+        expect(result.user.id).toBe('u1');
+        expect(verifyToken).toHaveBeenCalledWith('validQueryToken');
+    });
+
+    it('should return user if authorized with cookie token', async () => {
+        verifyToken.mockResolvedValue({ id: 'u1' });
+        User.findById.mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue({ _id: { toString: () => 'u1' }, status: 'active' }) }) });
+        const req = {
+            headers: { get: (name) => name === 'cookie' ? 'token=validCookieToken; other=1' : null }
+        };
+        const result = await authMiddleware(req);
+        expect(result.authorized).toBe(true);
+        expect(result.user.id).toBe('u1');
+        expect(verifyToken).toHaveBeenCalledWith('validCookieToken');
+    });
+
     it('should handle thrown errors gracefully', async () => {
         verifyToken.mockRejectedValue(new Error('crash'));
         const result = await authMiddleware(createRequest('Bearer token'));

@@ -26,8 +26,6 @@ export function userPayload(u) {
         rating: u.rating,
         status: u.status,
         isVerified: u.isVerified,
-        experience: u.experience,
-        designation: u.designation,
         bio: u.bio,
         createdAt: u.createdAt
     };
@@ -143,8 +141,16 @@ export async function userAuthResponse(user) {
         fcmToken: user.fcmToken,
         deviceType: user.deviceType,
         deviceId: user.deviceId,
-        businessProfileStatus,
-        businessProfile: businessData,
+        ...((user.role || user.preferences?.tempRole) === USER_ROLES.VENDOR ? {
+            experience: user.experience,
+            designation: user.designation,
+            businessProfileStatus,
+            businessProfile: businessData,
+        } : {
+            emergencyContacts: user.emergencyContacts,
+            medicalConditions: user.medicalConditions,
+            bloodGroup: user.bloodGroup
+        })
     };
 }
 

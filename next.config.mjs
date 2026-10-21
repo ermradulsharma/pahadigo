@@ -18,9 +18,7 @@ const nextConfig = {
     },
     experimental: {
         proxyClientMaxBodySize: '50mb',
-        serverActions: {
-            bodySizeLimit: '50mb',
-        },
+        optimizePackageImports: ['recharts', 'lucide-react', 'framer-motion'],
     },
     compiler: {
         removeConsole: process.env.NODE_ENV === 'production',

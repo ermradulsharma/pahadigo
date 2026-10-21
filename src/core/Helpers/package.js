@@ -247,6 +247,8 @@ export function itemsFormate(packages) {
  */
 export function formatPackageItem(item, wishlistMap = new Map(), reviews = []) {
     const base = normalizePackageItem(item, reviews);
+
+    // console.log(base, '--------------------------------------------------------');
     if (!base) return null;
 
     const { itemObj, id, title, pricing, address, location, image, rating, reviews: reviewList } = base;

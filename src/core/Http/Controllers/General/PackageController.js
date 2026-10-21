@@ -14,25 +14,36 @@ import { formatPackageItem } from '@/core/Helpers/package.js';
  */
 class PackageController extends Controller {
 
-    // Helper: Parse pagination & common URL params (DRY)
+    // Helper: Parse pagination & common filter URL params (DRY)
     _parsePagination(urlStr) {
         const url = new URL(urlStr);
-        const page = parseInt(url.searchParams.get('page')) || 1;
-        const limit = url.searchParams.get('limit') === 'all' ? 0 : parseInt(url.searchParams.get('limit')) || 10;
-        return { url, page, limit };
+
+        const page = Math.max(1, parseInt(url.searchParams.get('page')) || 1);
+        const limit = url.searchParams.get('limit') === 'all' ? 0 : parseInt(url.searchParams.get('limit')) || 100;
+
+        const minPrice = !isNaN(parseInt(url.searchParams.get('minPrice'))) ? parseInt(url.searchParams.get('minPrice')) : 0;
+        const maxPrice = (url.searchParams.has('maxPrice') && !isNaN(parseInt(url.searchParams.get('maxPrice')))) ? parseInt(url.searchParams.get('maxPrice')) : null;
+
+        const format = url.searchParams.get('format') || '';
+        const isFlat = format === 'flat';
+        const sort = url.searchParams.get('sort') || '';
+        const query = url.searchParams.get('q') || '';
+
+        // 📍 Lat, Long & Address Support:
+        const lat = url.searchParams.get('lat') || url.searchParams.get('latitude') || null;
+        const lng = url.searchParams.get('lng') || url.searchParams.get('longitude') || null;
+        const radius = parseFloat(url.searchParams.get('radius')) || 50; // default 50 km
+        const address = url.searchParams.get('address') || url.searchParams.get('city') || url.searchParams.get('location') || '';
+        return { url, page, limit, minPrice, maxPrice, format, isFlat, sort, query, lat, lng, radius, address };
     }
+
 
     // GET /packages (Public)
     async browsePackages(req) {
         try {
-            const { url, page, limit } = this._parsePagination(req.url);
-            const query = url.searchParams.get('q') || '';
-            const minPrice = parseInt(url.searchParams.get('minPrice')) || 0;
-            const maxPrice = url.searchParams.has('maxPrice') ? parseInt(url.searchParams.get('maxPrice')) : null;
-            const sort = url.searchParams.get('sort') || '';
-            const isFlat = url.searchParams.get('format') === 'flat';
+            const { url, page, limit, query, minPrice, maxPrice, sort, isFlat, lat, lng, radius, address } = this._parsePagination(req.url);
 
-            const packages = await PackageService.getAvailablePackagesByCategory(query, minPrice, maxPrice, sort);
+            const packages = await PackageService.getAvailablePackagesByCategory(query, minPrice, maxPrice, sort, lat, lng, radius, address);
             const wishlistMap = await this._getWishlistMap(req.user?.id);
 
             let totalCount = 0;

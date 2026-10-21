@@ -6,8 +6,36 @@ import { getLogger } from '@/core/Lib/logger.js';
 
 const authMiddleware = async (req) => {
     try {
-        const authHeader = req.headers.get('authorization') || '';
-        const token = authHeader.match(/^Bearer\s+(.+)$/i)?.[1];
+        let token = null;
+
+        // 1. Authorization header (Bearer <token>)
+        const authHeader = req?.headers?.get ? (req.headers.get('authorization') || '') : '';
+        const bearerMatch = authHeader.match(/^Bearer\s+(.+)$/i);
+        if (bearerMatch) {
+            token = bearerMatch[1];
+        }
+
+        // 2. Query parameter (?token= or ?access_token=) - required for SSE (EventSource) & WebSockets
+        if (!token && req?.url) {
+            try {
+                const url = new URL(req.url, 'http://localhost');
+                token = url.searchParams.get('token') || url.searchParams.get('access_token');
+            } catch {}
+        }
+
+        // 3. Cookies (fallback for cookie-based sessions / SSR)
+        if (!token) {
+            if (typeof req?.cookies?.get === 'function') {
+                token = req.cookies.get('token')?.value;
+            } else if (req?.headers?.get) {
+                const cookieHeader = req.headers.get('cookie') || '';
+                const cookieMatch = cookieHeader.match(/(?:^|;\s*)token=([^;]+)/);
+                if (cookieMatch) {
+                    token = decodeURIComponent(cookieMatch[1]);
+                }
+            }
+        }
+
         if (!token) return { authorized: DEFAULTS.FALSE, message: RESPONSE_MESSAGES.AUTH.NO_TOKEN };
 
         const decoded = await verifyToken(token);
