@@ -24,5 +24,6 @@ const ReviewSchema = new mongoose.Schema({
 // Optimize lookups
 ReviewSchema.index({ vendor: 1, createdAt: -1 });
 ReviewSchema.index({ user: 1 });
+ReviewSchema.index({ 'item.itemId': 1, isVisible: 1 });
 
 export default mongoose.models.Review || mongoose.model('Review', ReviewSchema);

@@ -1,11 +1,14 @@
 import mongoose from 'mongoose';
 import Package from '@/core/Models/Package.js';
 import Vendor from '@/core/Models/Vendor.js';
+import VendorClosure from '@/core/Models/VendorClosure.js';
+import VendorDocument from '@/core/Models/VendorDocument.js';
 import Category from '@/core/Models/Category.js';
-import { CATEGORY_MAP } from '@/core/Constants/categories.js';
-import { STATUS } from '@/core/Constants/index.js';
+import { CATEGORY_MAP, SCHEMA_KEYS } from '@/core/Constants/categories.js';
+import { STATUS, VERIFICATION_STATUS, VENDOR_PROFILE_TYPES } from '@/core/Constants/index.js';
 import MasterService from '@/core/Services/MasterService.js';
 import { getPackageItemById } from '@/core/Helpers/queryHelpers.js';
+import { addressPayload } from '@/core/Helpers/addressHelper.js';
 import {
     getItemDetailsPayload,
     getFlattenPackageItemsStages,
@@ -15,8 +18,42 @@ import {
     normalizeCoordinates,
     getTaxConfig,
     applyTaxesToPricing,
-    enrichItemsWithTaxes
+    enrichItemsWithTaxes,
+    calculateDistanceKm
 } from '@/core/Services/Shared/PackageCore.js';
+
+// In-memory 5-minute cache for static Category master data
+let cachedCategories = null;
+let lastCategoryFetchTime = 0;
+const CATEGORY_CACHE_TTL_MS = 5 * 60 * 1000;
+
+async function getCachedCategories() {
+    const now = Date.now();
+    if (cachedCategories && (now - lastCategoryFetchTime < CATEGORY_CACHE_TTL_MS)) {
+        return cachedCategories;
+    }
+    cachedCategories = await Category.find({}).lean();
+    lastCategoryFetchTime = now;
+    return cachedCategories;
+}
+
+// In-memory 120-second (2 minutes) cache for browse packages results (instant repeated requests)
+const browseCache = new Map();
+const BROWSE_CACHE_TTL_MS = 120 * 1000;
+
+function getBrowseCacheKey(params) {
+    return [
+        params.query || '',
+        params.category || '',
+        params.minPrice || 0,
+        params.maxPrice ?? '',
+        params.sort || '',
+        params.lat ?? '',
+        params.lng ?? '',
+        params.radius || 50,
+        params.address || ''
+    ].join('::');
+}
 
 /**
  * PackageService (General Role)
@@ -119,6 +156,473 @@ class PackageService {
         ]);
 
         return results;
+    }
+
+    /**
+     * Complete browsing and filtering logic for public packages.
+     * Fulfills all 6 core business requirements:
+     * 1. Vendor Basic (active, isOperating, isApproved)
+     * 2. Vendor KYC (PAN + Aadhaar Front & Back; + Business Registration for Business)
+     * 3. Vendor Availability (Current closures check: 0)
+     * 4. Geo-Location Radius (Haversine formula within radiusKm)
+     * 5. Category Compliance (Verified document in vendordocuments)
+     * 6. Package Items (Only items.isActive === true)
+     */
+    async getBrowsePackages(params = {}) {
+        let query = '', category = '', minPrice = 0, maxPrice = null, sort = '', lat = null, lng = null, radius = 50, address = '';
+
+        if (typeof params === 'object' && params !== null) {
+            ({
+                query = '',
+                category = '',
+                minPrice = 0,
+                maxPrice = null,
+                sort = '',
+                lat = null,
+                lng = null,
+                radius = 50,
+                address = ''
+            } = params);
+        } else {
+            query = arguments[0] || '';
+            category = arguments[1] || '';
+            minPrice = arguments[2] || 0;
+            maxPrice = arguments[3] ?? null;
+            sort = arguments[4] || '';
+            lat = arguments[5] || null;
+            lng = arguments[6] || null;
+            radius = arguments[7] || 50;
+            address = arguments[8] || '';
+        }
+
+        const t0 = performance.now();
+        const cacheKey = getBrowseCacheKey({ query, category, minPrice, maxPrice, sort, lat, lng, radius, address });
+        const cached = browseCache.get(cacheKey);
+        if (cached && (Date.now() - cached.time < BROWSE_CACHE_TTL_MS)) {
+            const tEnd = performance.now();
+            // console.log(`[getBrowsePackages] (CACHE HIT) Served in ${(tEnd - t0).toFixed(2)}ms`);
+            return cached.data;
+        }
+
+        // =========================================================================
+        // STEP 1: Fast Parallel Pre-fetching & Vendor-First Verification
+        // =========================================================================
+
+        const now = new Date();
+        const docFilter = { status: VERIFICATION_STATUS.VERIFIED };
+        if (category && typeof category === 'string' && category.trim()) {
+            const catSlug = category.trim().toLowerCase();
+            const schemaKey = (CATEGORY_MAP[catSlug] || catSlug).toLowerCase();
+            docFilter.category_slug = { $in: [catSlug, schemaKey] };
+        }
+
+        // 1.1 Parallel execution of independent queries (Drastically cuts initial latency)
+        const [compliantDocs, activeClosures, categories] = await Promise.all([
+            VendorDocument.find(docFilter).select('vendor category_slug').lean(),
+            VendorClosure.find({
+                isActive: true,
+                startDate: { $lte: now },
+                endDate: { $gte: now }
+            }).select('vendor').lean(),
+            getCachedCategories()
+        ]);
+
+        const buildEmptyResult = () => {
+            const empty = {};
+            browseCache.set(cacheKey, { data: empty, time: Date.now() });
+            return empty;
+        };
+
+        if (!compliantDocs || compliantDocs.length === 0) return buildEmptyResult();
+
+        const vendorCategoryMap = new Map();
+        compliantDocs.forEach(doc => {
+            const vId = doc.vendor?.toString();
+            if (vId) {
+                let set = vendorCategoryMap.get(vId);
+                if (!set) {
+                    set = new Set();
+                    vendorCategoryMap.set(vId, set);
+                }
+                set.add(doc.category_slug.toLowerCase());
+            }
+        });
+
+        // 1.2 Vendor Availability Check: Filter out active vacation/closure vendors
+        const closedVendorIdSet = new Set(activeClosures.map(c => c.vendor?.toString()).filter(Boolean));
+
+        const eligibleVendorIdStrings = [];
+        for (const id of vendorCategoryMap.keys()) {
+            if (!closedVendorIdSet.has(id)) {
+                eligibleVendorIdStrings.push(id);
+            }
+        }
+
+        if (eligibleVendorIdStrings.length === 0) {
+            return buildEmptyResult();
+        }
+
+        const eligibleVendorObjectIds = eligibleVendorIdStrings.map(id => new mongoose.Types.ObjectId(id));
+
+        // 1.3 Vendor Basic (Active, Operating, Approved) & KYC (PAN + Aadhaar) Query
+        const vendorQuery = {
+            _id: { $in: eligibleVendorObjectIds },
+            status: STATUS.ACTIVE,
+            isOperating: true,
+            isApproved: true,
+            $or: [
+                {
+                    profileType: VENDOR_PROFILE_TYPES.INDIVIDUAL,
+                    'documents.panCard.status': VERIFICATION_STATUS.VERIFIED,
+                    'documents.aadharCard.0.status': VERIFICATION_STATUS.VERIFIED,
+                    'documents.aadharCard.1.status': VERIFICATION_STATUS.VERIFIED,
+                    'documents.aadharCard': { $size: 2 }
+                },
+                {
+                    profileType: VENDOR_PROFILE_TYPES.BUSINESS,
+                    'documents.panCard.status': VERIFICATION_STATUS.VERIFIED,
+                    'documents.aadharCard.0.status': VERIFICATION_STATUS.VERIFIED,
+                    'documents.aadharCard.1.status': VERIFICATION_STATUS.VERIFIED,
+                    'documents.aadharCard': { $size: 2 },
+                    'documents.businessRegistration.status': VERIFICATION_STATUS.VERIFIED
+                }
+            ]
+        };
+
+        // 1.4 Address / Location Query: Priority to vendor/business location, fallback to package location
+        if (address && typeof address === 'string' && address.trim()) {
+            const addrRegex = new RegExp(address.trim(), 'i');
+
+            // Priority 1: Match directly on vendor address
+            const vendorAddressMatchQuery = {
+                _id: { $in: eligibleVendorObjectIds },
+                $or: [
+                    { 'address.city': addrRegex },
+                    { 'address.addressLine1': addrRegex },
+                    { 'address.addressLine2': addrRegex },
+                    { 'address.state': addrRegex }
+                ]
+            };
+
+            let targetCategoryKeys = Object.values(SCHEMA_KEYS);
+            if (category && typeof category === 'string' && category.trim()) {
+                const catSlug = category.trim().toLowerCase();
+                const targetKey = (CATEGORY_MAP[catSlug] || catSlug).toLowerCase();
+                const matchedKey = Object.values(SCHEMA_KEYS).find(k => k.toLowerCase() === targetKey);
+                if (matchedKey) targetCategoryKeys = [matchedKey];
+            }
+
+            const packageAddressConditions = [];
+            for (const key of targetCategoryKeys) {
+                packageAddressConditions.push(
+                    { [`${key}.location.address`]: addrRegex },
+                    { [`${key}.location.city`]: addrRegex }
+                );
+            }
+
+            // Execute vendor address check and package address check concurrently
+            const [directVendorMatches, vendorIdsWithMatchingPackages] = await Promise.all([
+                Vendor.find(vendorAddressMatchQuery).distinct('_id'),
+                Package.find({
+                    vendor: { $in: eligibleVendorObjectIds },
+                    $or: packageAddressConditions
+                }).distinct('vendor')
+            ]);
+
+            const allMatchedVendorIds = Array.from(new Set([
+                ...directVendorMatches.map(id => id.toString()),
+                ...vendorIdsWithMatchingPackages.map(id => id.toString())
+            ])).map(id => new mongoose.Types.ObjectId(id));
+
+            if (allMatchedVendorIds.length === 0) {
+                return buildEmptyResult();
+            }
+
+            vendorQuery._id = { $in: allMatchedVendorIds };
+        }
+
+        // 1.5 Execute Vendor pre-filter query with thin projection (_id and address only)
+        const validVendors = await Vendor.find(vendorQuery).select('_id address').lean();
+        if (!validVendors || validVendors.length === 0) {
+            return buildEmptyResult();
+        }
+
+        const validVendorMap = new Map(validVendors.map(v => [v._id.toString(), v]));
+        const validVendorObjectIds = validVendors.map(v => v._id);
+
+        // =========================================================================
+        // STEP 2: Ultra-Fast Targeted Aggregation Pipeline on Package Collection
+        // =========================================================================
+
+        let categoriesToFlatten = Object.values(SCHEMA_KEYS);
+        if (category && typeof category === 'string' && category.trim()) {
+            const catSlug = category.trim().toLowerCase();
+            const targetKey = (CATEGORY_MAP[catSlug] || catSlug).toLowerCase();
+            const matchingKey = Object.values(SCHEMA_KEYS).find(k => k.toLowerCase() === targetKey);
+            if (matchingKey) {
+                categoriesToFlatten = [matchingKey];
+            }
+        }
+
+        // Filter active items before unwinding to reduce document memory and processing overhead
+        const pipeline = [
+            {
+                $match: {
+                    vendor: { $in: validVendorObjectIds }
+                }
+            },
+            {
+                $project: {
+                    vendor: 1,
+                    items: {
+                        $concatArrays: categoriesToFlatten.map(key => ({
+                            $map: {
+                                input: {
+                                    $filter: {
+                                        input: { $ifNull: [`$${key}`, []] },
+                                        as: "subItem",
+                                        cond: { $eq: ["$$subItem.isActive", true] }
+                                    }
+                                },
+                                as: "item",
+                                in: {
+                                    $mergeObjects: [
+                                        "$$item",
+                                        { category: key, catalogId: "$_id" }
+                                    ]
+                                }
+                            }
+                        }))
+                    }
+                }
+            },
+            {
+                $unwind: "$items"
+            }
+        ];
+
+        // Keyword / Text search across title, description, and location
+        if (query && typeof query === 'string' && query.trim()) {
+            const qRegex = new RegExp(query.trim(), 'i');
+            pipeline.push({
+                $match: {
+                    $or: [
+                        { "items.title": qRegex },
+                        { "items.description": qRegex },
+                        { "items.location.address": qRegex },
+                        { "items.location.city": qRegex }
+                    ]
+                }
+            });
+        }
+
+        // Price range filter on sellingPrice
+        const min = Number(minPrice) || 0;
+        const max = (maxPrice !== null && maxPrice !== undefined && !isNaN(Number(maxPrice))) ? Number(maxPrice) : null;
+        if (min > 0 || max !== null) {
+            const priceFilter = {};
+            if (min > 0) priceFilter.$gte = min;
+            if (max !== null) priceFilter.$lte = max;
+            pipeline.push({
+                $match: {
+                    "items.pricing.sellingPrice": priceFilter
+                }
+            });
+        }
+
+        // Category filter (if specific category provided)
+        if (category && typeof category === 'string' && category.trim()) {
+            const catSlug = category.trim().toLowerCase();
+            const schemaKey = (CATEGORY_MAP[catSlug] || catSlug).toLowerCase();
+            pipeline.push({
+                $match: {
+                    "items.category": { $in: [catSlug, schemaKey] }
+                }
+            });
+        }
+
+        // Price Sorting
+        if (sort === 'price_asc' || sort === 'price_desc') {
+            const sortDir = sort === 'price_asc' ? 1 : -1;
+            pipeline.push(
+                {
+                    $addFields: {
+                        sortPrice: { $ifNull: ["$items.pricing.sellingPrice", sort === 'price_asc' ? 99999999 : 0] }
+                    }
+                },
+                {
+                    $sort: { sortPrice: sortDir }
+                }
+            );
+        }
+
+        // Fast Reviews Lookup: Pure B-Tree index seek on { 'item.itemId': 1, isVisible: 1 }
+        pipeline.push({
+            $lookup: {
+                from: 'reviews',
+                let: { itemId: "$items._id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$item.itemId", "$$itemId"] },
+                                    { $eq: ["$isVisible", true] }
+                                ]
+                            }
+                        }
+                    },
+                    {
+                        $project: {
+                            _id: 0,
+                            rating: 1
+                        }
+                    }
+                ],
+                as: 'reviews'
+            }
+        });
+
+        // Standalone Projection
+        pipeline.push({
+            $project: {
+                _id: "$items._id",
+                vendor: "$vendor",
+                title: "$items.title",
+                isActive: "$items.isActive",
+                pricing: "$items.pricing",
+                pricePerNight: "$items.pricePerNight",
+                pricePerPerson: "$items.pricePerPerson",
+                pricePerDay: "$items.pricePerDay",
+                location: "$items.location",
+                photos: "$items.photos",
+                category: "$items.category",
+                catalogId: "$items.catalogId",
+                reviews: "$reviews"
+            }
+        });
+
+        // Execute MongoDB Aggregation
+        const items = await Package.aggregate(pipeline);
+
+        // =========================================================================
+        // STEP 3: Post-Aggregation Filtering & Standardized Response Grouping
+        // Single O(N) grouping pass with vendor location priority
+        // =========================================================================
+
+        const { latitude, longitude, hasCoords } = normalizeCoordinates(lat, lng);
+        const radiusKm = parseFloat(radius) || 50;
+
+        const itemsByCategory = new Map();
+
+        for (const item of items) {
+            // 3.1 Item-level Category Compliance Verification
+            const vId = item.vendor?.toString();
+            const itemCatKey = (item.category || '').toLowerCase();
+            const catSlug = Object.keys(CATEGORY_MAP).find(s => CATEGORY_MAP[s].toLowerCase() === itemCatKey) || itemCatKey;
+            const allowedCategories = vendorCategoryMap.get(vId);
+            if (!allowedCategories || (!allowedCategories.has(catSlug) && !allowedCategories.has(itemCatKey))) {
+                continue;
+            }
+
+            // 3.2 Geo-location distance calculation & radius filter
+            // Priority given to vendor/business location coordinates, as traveller visits vendor first
+            const vendor = validVendorMap.get(vId);
+            const vendorCoords = vendor?.address?.location?.coordinates;
+            const itemCoords = item.location?.coordinates;
+            const hasVendorCoords = Array.isArray(vendorCoords) && (vendorCoords[0] !== 0 || vendorCoords[1] !== 0);
+            const itemLng = hasVendorCoords ? vendorCoords[0] : itemCoords?.[0];
+            const itemLat = hasVendorCoords ? vendorCoords[1] : itemCoords?.[1];
+
+            if (hasCoords) {
+                if (itemLat !== undefined && itemLng !== undefined && (itemLat !== 0 || itemLng !== 0)) {
+                    const dist = calculateDistanceKm(latitude, longitude, itemLat, itemLng);
+                    item.distance = dist;
+                    if (dist !== null && dist > radiusKm) {
+                        continue;
+                    }
+                } else {
+                    item.distance = null;
+                }
+            } else {
+                item.distance = null;
+            }
+
+            let group = itemsByCategory.get(itemCatKey);
+            if (!group) {
+                group = [];
+                itemsByCategory.set(itemCatKey, group);
+            }
+            group.push(item);
+        }
+
+        // 3.3 Group by category and enrich pricing with taxes
+        const result = {};
+
+        for (const cat of categories) {
+            const slug = (cat.slug || '').toLowerCase();
+            const schemaKey = (CATEGORY_MAP[slug] || slug).toLowerCase();
+
+            if (category) {
+                const target = category.trim().toLowerCase();
+                const targetKey = (CATEGORY_MAP[target] || target).toLowerCase();
+                const isMatch = (slug === target || schemaKey === target || slug === targetKey || schemaKey === targetKey);
+                if (!isMatch) {
+                    continue;
+                }
+            }
+
+            const matchedItems = (itemsByCategory.get(schemaKey) || []).concat(
+                (schemaKey !== slug ? (itemsByCategory.get(slug) || []) : [])
+            );
+
+            // Sirf wahi category include karo jinme data ho (Skip empty categories)
+            if (matchedItems.length === 0) {
+                continue;
+            }
+
+            result[slug] = matchedItems.map(item => {
+                const vendor = validVendorMap.get(item.vendor?.toString());
+                const vendorAddressString = vendor?.address?.addressLine1 || addressPayload(vendor?.address) || '';
+                const effectiveAddress = item.location?.address || vendorAddressString || '';
+                const vendorCoords = vendor?.address?.location?.coordinates;
+                const hasVendorCoords = Array.isArray(vendorCoords) && (vendorCoords[0] !== 0 || vendorCoords[1] !== 0);
+
+                const effectiveLocation = (item.location && Array.isArray(item.location.coordinates) && (item.location.coordinates[0] !== 0 || item.location.coordinates[1] !== 0)) ? item.location : (hasVendorCoords ? vendor.address.location : (item.location || {}));
+
+                return {
+                    id: item._id,
+                    _id: item._id,
+                    title: item.title,
+                    isActive: item.isActive,
+                    pricing: item.pricing || {},
+                    pricePerNight: item.pricePerNight,
+                    pricePerPerson: item.pricePerPerson,
+                    pricePerDay: item.pricePerDay,
+                    address: effectiveAddress,
+                    location: effectiveLocation,
+                    photos: item.photos || "",
+                    distance: item.distance ?? null,
+                    category_name: cat.name || "",
+                    category_slug: slug,
+                    category_id: cat._id || "",
+                    reviews: item.reviews || []
+                };
+            });
+        }
+
+        browseCache.set(cacheKey, { data: result, time: Date.now() });
+        if (browseCache.size > 200) {
+            const expireBefore = Date.now() - BROWSE_CACHE_TTL_MS;
+            for (const [k, v] of browseCache.entries()) {
+                if (v.time < expireBefore) browseCache.delete(k);
+            }
+        }
+
+        const tEnd = performance.now();
+        // console.log(`[getBrowsePackages] (DB FETCH) Completed in ${(tEnd - t0).toFixed(2)}ms`);
+
+        return result;
     }
 
     async getAvailablePackagesByCategory({ query = '', category = '', minPrice = 0, maxPrice = null, sort = '', lat = null, lng = null, radius = 50, address = '' } = {}) {

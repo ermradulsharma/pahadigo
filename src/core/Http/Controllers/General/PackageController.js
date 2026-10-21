@@ -42,7 +42,7 @@ class PackageController extends Controller {
         try {
             const { url, page, limit, minPrice, maxPrice, format, isFlat, sort, query, category, lat, lng, radius, address } = this._parsePagination(req.url);
 
-            const packages = await PackageService.getAvailablePackagesByCategory({ query, category, minPrice, maxPrice, sort, lat, lng, radius, address });
+            const packages = await PackageService.getBrowsePackages({ query, category, minPrice, maxPrice, sort, lat, lng, radius, address });
             const wishlistMap = await this._getWishlistMap(req.user?.id);
 
             let totalCount = 0;

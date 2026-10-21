@@ -20,5 +20,8 @@ const VendorDocumentSchema = new mongoose.Schema({
 // Ensure unique document per vendor + category + doc_type
 VendorDocumentSchema.index({ vendor: 1, category_slug: 1, document_slug: 1 }, { unique: DEFAULTS.TRUE });
 
+// Optimize category compliance checks
+VendorDocumentSchema.index({ status: 1, category_slug: 1 });
+
 const VendorDocument = mongoose.models.VendorDocument || mongoose.model('VendorDocument', VendorDocumentSchema);
 export default VendorDocument;
