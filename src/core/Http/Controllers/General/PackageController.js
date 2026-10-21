@@ -28,22 +28,21 @@ class PackageController extends Controller {
         const isFlat = format === 'flat';
         const sort = url.searchParams.get('sort') || '';
         const query = url.searchParams.get('q') || '';
-
-        // 📍 Lat, Long & Address Support:
+        const category = url.searchParams.get('category') || '';
         const lat = url.searchParams.get('lat') || url.searchParams.get('latitude') || null;
         const lng = url.searchParams.get('lng') || url.searchParams.get('longitude') || null;
-        const radius = parseFloat(url.searchParams.get('radius')) || 50; // default 50 km
+        const radius = parseFloat(url.searchParams.get('radius')) || 50;
         const address = url.searchParams.get('address') || url.searchParams.get('city') || url.searchParams.get('location') || '';
-        return { url, page, limit, minPrice, maxPrice, format, isFlat, sort, query, lat, lng, radius, address };
+        return { url, page, limit, minPrice, maxPrice, format, isFlat, sort, query, category, lat, lng, radius, address };
     }
 
 
     // GET /packages (Public)
     async browsePackages(req) {
         try {
-            const { url, page, limit, query, minPrice, maxPrice, sort, isFlat, lat, lng, radius, address } = this._parsePagination(req.url);
+            const { url, page, limit, minPrice, maxPrice, format, isFlat, sort, query, category, lat, lng, radius, address } = this._parsePagination(req.url);
 
-            const packages = await PackageService.getAvailablePackagesByCategory(query, minPrice, maxPrice, sort, lat, lng, radius, address);
+            const packages = await PackageService.getAvailablePackagesByCategory({ query, category, minPrice, maxPrice, sort, lat, lng, radius, address });
             const wishlistMap = await this._getWishlistMap(req.user?.id);
 
             let totalCount = 0;

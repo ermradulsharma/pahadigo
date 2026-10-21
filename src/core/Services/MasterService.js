@@ -14,7 +14,7 @@ class MasterService {
      * 2. Manual Switch -> isOperating: true
      * 3. Admin Approval -> isApproved: true
      * 4. Documents -> All REQUIRED documents must be 'verified'
-     * 5. Operational -> Not currently on vacation (Closure check)
+     * 5. Operational -> Not currently on vacation (Closure check) 
      */
     async isVendorActive(vendor) {
         if (!vendor) return DEFAULTS.FALSE;
@@ -29,12 +29,14 @@ class MasterService {
 
         // 2. Document Verification Checks (Conditional based on Profile Type)
         const docs = vendor.documents || {};
-        const isIndividualVerified = (
-            docs.panCard?.status === VERIFICATION_STATUS.VERIFIED &&
-            (docs.aadharCard && Array.isArray(docs.aadharCard) && docs.aadharCard.every(d => d.status === VERIFICATION_STATUS.VERIFIED))
-        );
+        const isPanVerified = docs.panCard?.status === VERIFICATION_STATUS.VERIFIED;
+        if (!isPanVerified) return DEFAULTS.FALSE;
 
-        if (!isIndividualVerified) return DEFAULTS.FALSE;
+        const isAadharVerified = (Array.isArray(docs.aadharCard) && docs.aadharCard.length === 2 &&
+            docs.aadharCard[0]?.status === VERIFICATION_STATUS.VERIFIED && docs.aadharCard[1]?.status === VERIFICATION_STATUS.VERIFIED
+        );
+        if (!isAadharVerified) return DEFAULTS.FALSE;
+
 
         // If Business, check additional registrations
         if (vendor.profileType === VENDOR_PROFILE_TYPES.BUSINESS) {
@@ -67,11 +69,16 @@ class MasterService {
                     $or: [
                         {
                             [`${vendorProfileField}.profileType`]: VENDOR_PROFILE_TYPES.INDIVIDUAL,
-                            [`${vendorProfileField}.documents.panCard.status`]: VERIFICATION_STATUS.VERIFIED
+                            [`${vendorProfileField}.documents.panCard.status`]: VERIFICATION_STATUS.VERIFIED,
+                            [`${vendorProfileField}.documents.aadharCard.0.status`]: VERIFICATION_STATUS.VERIFIED,
+                            [`${vendorProfileField}.documents.aadharCard.1.status`]: VERIFICATION_STATUS.VERIFIED
+
                         },
                         {
                             [`${vendorProfileField}.profileType`]: VENDOR_PROFILE_TYPES.BUSINESS,
                             [`${vendorProfileField}.documents.panCard.status`]: VERIFICATION_STATUS.VERIFIED,
+                            [`${vendorProfileField}.documents.aadharCard.0.status`]: VERIFICATION_STATUS.VERIFIED,
+                            [`${vendorProfileField}.documents.aadharCard.1.status`]: VERIFICATION_STATUS.VERIFIED,
                             [`${vendorProfileField}.documents.businessRegistration.status`]: VERIFICATION_STATUS.VERIFIED
                         }
                     ]
@@ -86,7 +93,7 @@ class MasterService {
                             $match: {
                                 $expr: {
                                     $and: [
-                                        { $eq: ['$vendor', '$$vendorId'] },
+                                        { $eq: [{ $toString: '$vendor' }, { $toString: '$$vendorId' }] },
                                         { $eq: ['$isActive', DEFAULTS.TRUE] },
                                         { $lte: ['$startDate', now] },
                                         { $gte: ['$endDate', now] }

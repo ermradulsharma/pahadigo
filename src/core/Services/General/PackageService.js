@@ -121,7 +121,7 @@ class PackageService {
         return results;
     }
 
-    async getAvailablePackagesByCategory(query = '', minPrice = 0, maxPrice = null, sort = '') {
+    async getAvailablePackagesByCategory({ query = '', category = '', minPrice = 0, maxPrice = null, sort = '', lat = null, lng = null, radius = 50, address = '' } = {}) {
         const flattened = await this.getAvailablePackages(query, minPrice, maxPrice, sort);
         const categories = await Category.find({}).lean();
         const result = {};
