@@ -263,8 +263,7 @@ export async function getItemDetailsPayload(itemId, masterService = MasterServic
     if (!pkg || !(await masterService.isVendorActive(pkg.vendor))) return null;
 
     const slug = Object.keys(CATEGORY_MAP).find(k => CATEGORY_MAP[k] === item.category) || item.category;
-    const isCategoryVerified = await VendorDocument.findOne({ vendor: pkg.vendor._id, category_slug: slug, status: 'verified' }).lean();
-    if (!isCategoryVerified) return null;
+    if (!(await masterService.isCategoryVerified(pkg.vendor._id, slug))) return null;
 
     if (item.isActive === false) return null;
 
