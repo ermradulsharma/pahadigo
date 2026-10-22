@@ -210,11 +210,7 @@ export async function getBrowsePackages(params = {}) {
     // 1.1 Concurrently fetch category documents, active vendor vacation closures, and categories
     const [allDocs, activeClosures, categories] = await Promise.all([
         getVendorDocumentsBy(docQuery, 'vendor category_slug status url expiry_date'),
-        getManyBy(VendorClosure, {
-            isActive: true,
-            startDate: { $lte: now },
-            endDate: { $gte: now }
-        }, 'vendor'),
+        getManyBy(VendorClosure, { isActive: true, startDate: { $lte: now }, endDate: { $gte: now } }, 'vendor'),
         getCachedCategories()
     ]);
 
@@ -298,25 +294,16 @@ export async function getBrowsePackages(params = {}) {
         // Priority 2: Match on individual package item location fields
         const packageAddressConditions = [];
         for (const key of categoriesToFlatten) {
-            packageAddressConditions.push(
-                { [`${key}.location.address`]: addrRegex },
-                { [`${key}.location.city`]: addrRegex }
-            );
+            packageAddressConditions.push({ [`${key}.location.address`]: addrRegex }, { [`${key}.location.city`]: addrRegex });
         }
 
         // Execute vendor address and package address checks concurrently via queryHelpers
         const [directVendorDocs, packageDocsWithMatchingAddress] = await Promise.all([
             getManyBy(Vendor, vendorAddressMatchQuery, '_id'),
-            getManyBy(Package, {
-                vendor: { $in: eligibleVendorObjectIds },
-                $or: packageAddressConditions
-            }, 'vendor')
+            getManyBy(Package, { vendor: { $in: eligibleVendorObjectIds }, $or: packageAddressConditions }, 'vendor')
         ]);
 
-        const allMatchedVendorIds = Array.from(new Set([
-            ...directVendorDocs.map(v => v._id?.toString()),
-            ...packageDocsWithMatchingAddress.map(p => p.vendor?.toString())
-        ])).filter(Boolean).map(id => new mongoose.Types.ObjectId(id));
+        const allMatchedVendorIds = Array.from(new Set([...directVendorDocs.map(v => v._id?.toString()), ...packageDocsWithMatchingAddress.map(p => p.vendor?.toString())])).filter(Boolean).map(id => new mongoose.Types.ObjectId(id));
 
         if (allMatchedVendorIds.length === 0) return buildEmptyResult();
         vendorQuery._id = { $in: allMatchedVendorIds };
@@ -383,20 +370,12 @@ export async function getBrowsePackages(params = {}) {
         const priceFilter = {};
         if (min > 0) priceFilter.$gte = min;
         if (max !== null) priceFilter.$lte = max;
-        pipeline.push({
-            $match: {
-                "items.pricing.sellingPrice": priceFilter
-            }
-        });
+        pipeline.push({ $match: { "items.pricing.sellingPrice": priceFilter } });
     }
 
     // 2.4 Targeted Category Filter
     if (filterCatSlug) {
-        pipeline.push({
-            $match: {
-                "items.category": { $in: [filterCatSlug, filterCatSchemaKey] }
-            }
-        });
+        pipeline.push({ $match: { "items.category": { $in: [filterCatSlug, filterCatSchemaKey] } } });
     }
 
     // 2.5 Price Sorting
