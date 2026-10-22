@@ -73,7 +73,7 @@ class PackageController extends Controller {
 
         // Output format & sort options
         const format = (url.searchParams.get('format') || '').toLowerCase();
-        const isFlat = format === 'flat';
+        const isFlat = format === 'flat' ? true : false;
         const sort = url.searchParams.get('sort') || '';
 
         // Search, category & location filters
@@ -104,16 +104,12 @@ class PackageController extends Controller {
     async browsePackages(req) {
         try {
             const { page, limit, minPrice, maxPrice, isFlat, sort, query, category, lat, lng, radius, address } = this._parsePagination(req.url);
-
-            // Execute public discovery, filtering, and pagination directly via browsePackages helper
             const packages = await getBrowsePackages({ query, category, minPrice, maxPrice, sort, lat, lng, radius, address, userId: req.user?.id, page, limit, isFlat });
-
-            // Asynchronously log search keyword analytics if search query was provided
             if (query) {
                 const totalCount = isFlat ? (packages?.pagination?.total || 0) : Object.values(packages || {}).reduce((acc, cat) => acc + (cat?.pagination?.total || 0), 0);
                 await this._logSearch(query, req.user, totalCount);
             }
-
+            if (isFlat) return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, packages.items || packages.data || [], packages.pagination || {});
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, packages);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);

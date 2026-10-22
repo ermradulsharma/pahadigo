@@ -179,7 +179,7 @@ export async function getBrowsePackages(params = {}) {
         const totalPages = limitNum > 0 ? (Math.ceil(total / limitNum) || 0) : 1;
 
         return {
-            items: paginatedItems,
+            ...(isFlat ? { data: paginatedItems } : { items: paginatedItems }),
             pagination: {
                 total,
                 page: pageNum,
