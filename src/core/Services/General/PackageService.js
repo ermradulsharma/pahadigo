@@ -1,3 +1,17 @@
+/**
+ * @file PackageService.js
+ * @module core/Services/General/PackageService
+ * @description General / Public Service managing package item availability, multi-tier search pipelines,
+ * geo-spatial radius exploration, tax-enriched pricing, and vendor category compliance.
+ *
+ * Architecture & Key Responsibilities:
+ * 1. Single & Batch Retrieval  : Efficient subdocument item queries with review metrics and tax calculation.
+ * 2. Strict Compliance         : Integrates MasterService to enforce KYC status and active (non-expired) category permits.
+ * 3. Aggregation Pipelines     : High-performance MongoDB pipelines utilizing $geoNear, $lookup, and $unwind.
+ * 4. Browse Delegation         : Connects to browsePackages helper for multi-tier filtering, caching, and dual output formatting.
+ * 5. Geo-Spatial Exploration   : Spherical radius distance calculation with graceful coordinate fallbacks.
+ */
+
 import mongoose from 'mongoose';
 import Package from '@/core/Models/Package.js';
 import Vendor from '@/core/Models/Vendor.js';
@@ -5,7 +19,11 @@ import Category from '@/core/Models/Category.js';
 import { CATEGORY_MAP } from '@/core/Constants/categories.js';
 import { STATUS } from '@/core/Constants/index.js';
 import MasterService from '@/core/Services/MasterService.js';
-import { getPackageItemById } from '@/core/Helpers/queryHelpers.js';
+import {
+    getPackageItemById,
+    getPackageById as fetchPackageById,
+    getCategoriesBy
+} from '@/core/Helpers/queryHelpers.js';
 import {
     getItemDetailsPayload,
     getFlattenPackageItemsStages,
@@ -21,25 +39,63 @@ import { getBrowsePackages } from '@/core/Helpers/browsePackages.js';
 
 /**
  * PackageService (General Role)
- * Focuses on public retrieval, search, and availability.
+ * Focuses on public package retrieval, availability checks, search pipelines, and geo-spatial queries.
  */
 class PackageService {
+    /**
+     * Initializes PackageService with an instance of MasterService.
+     *
+     * @param {Object} [masterService=MasterService] - Compliance and vendor verification service
+     */
     constructor(masterService = MasterService) {
         this.masterService = masterService;
     }
 
+    // =========================================================================
+    // 1. Single & Multiple Item Retrieval
+    // =========================================================================
+
+    /**
+     * Retrieves an entire package document by its MongoDB ObjectId.
+     *
+     * @async
+     * @param {string|mongoose.Types.ObjectId} id - Top-level package document ObjectId
+     * @returns {Promise<Object|null>} Lean Package document or null if not found
+     */
     async getPackageById(id) {
-        return await Package.findById(id);
+        return await fetchPackageById(id);
     }
 
+    /**
+     * Retrieves full, populated details for a single package subdocument item by its ObjectId.
+     * Enforces active vendor status and category compliance (including non-expired documents).
+     *
+     * @async
+     * @param {string|mongoose.Types.ObjectId} itemId - Package item subdocument ObjectId
+     * @returns {Promise<Object|null>} Formatted package item payload or null if unavailable/non-compliant
+     */
     async getAvailablePackageItem(itemId) {
         return await getItemDetailsPayload(itemId, this.masterService);
     }
 
+    /**
+     * Fast lookup for a package item subdocument without full compliance pipelines.
+     *
+     * @async
+     * @param {string|mongoose.Types.ObjectId} itemId - Package item subdocument ObjectId
+     * @returns {Promise<Object|null>} Package item subdocument or null
+     */
     async getPackageItem(itemId) {
         return await getPackageItemById(itemId);
     }
 
+    /**
+     * Batch retrieves multiple package items by their ObjectIds, enriched with review metrics and tax pricing.
+     *
+     * @async
+     * @param {Array<string|mongoose.Types.ObjectId>} itemIds - Array of package item subdocument ObjectIds
+     * @returns {Promise<Array<Object>>} Enriched package items array
+     */
     async getMultiplePackageItems(itemIds) {
         if (!itemIds || itemIds.length === 0) return [];
         const objectIds = itemIds.map(id => (typeof id === 'string' ? id : id.toString()));
@@ -54,12 +110,28 @@ class PackageService {
         return await enrichItemsWithTaxes(items);
     }
 
+    // =========================================================================
+    // 2. Public Catalog Browsing & Full Pipeline Search
+    // =========================================================================
+
+    /**
+     * Aggregation-based multi-filter search for packages.
+     * Matches keywords, price ranges, vendor operational rules, KYC compliance,
+     * category verification, and review metrics.
+     *
+     * @async
+     * @param {string} [query=''] - Keyword search term (title, description)
+     * @param {number} [minPrice=0] - Minimum selling price boundary
+     * @param {number|null} [maxPrice=null] - Maximum selling price boundary
+     * @param {string} [sort=''] - Sorting key ('price_asc' | 'price_desc' | default)
+     * @returns {Promise<Array<Object>>} Matched package items with vendor location and review metrics
+     */
     async getAvailablePackages(query = '', minPrice = 0, maxPrice = null, sort = '') {
         const pipeline = [];
         if (query) pipeline.push({ $match: { $text: { $search: query } } });
         pipeline.push(...getFlattenPackageItemsStages({ extraProjectFields: { vendor: 1 } }));
 
-        // Post-unwind filtering (if text search was too broad or needs regex refinement)
+        // Post-unwind filtering (regex fallback for refined matching)
         const postUnwindFilters = [];
         if (query) {
             const regex = new RegExp(query, 'i');
@@ -90,7 +162,7 @@ class PackageService {
             });
         }
 
-        // Sorting
+        // Price sorting
         if (sort) {
             pipeline.push({
                 $addFields: {
@@ -123,16 +195,54 @@ class PackageService {
     }
 
     /**
-     * Complete browsing and filtering logic for public packages.
-     * Delegated to browsePackages helper for clean modularity.
+     * Unified public discovery and multi-tier filtering method.
+     * Delegates to browsePackages helper for fast vendor caching, category permits verification,
+     * optional geo-radius filtering, and dual output formatting (flat / categorized).
+     *
+     * @async
+     * @param {Object} [params={}] - Filter and pagination criteria
+     * @param {string} [params.query=''] - Search term for title, description, city, or address
+     * @param {string} [params.category=''] - Category slug (e.g. 'homestay', 'trekking')
+     * @param {number} [params.minPrice=0] - Minimum selling price filter
+     * @param {number|null} [params.maxPrice=null] - Maximum selling price filter
+     * @param {string} [params.sort=''] - Sorting option ('price_asc' | 'price_desc' | default)
+     * @param {number|null} [params.lat=null] - User latitude for geo-distance calculation
+     * @param {number|null} [params.lng=null] - User longitude for geo-distance calculation
+     * @param {number} [params.radius=50] - Geo-radius cutoff in kilometers
+     * @param {string} [params.address=''] - Location keyword to match against vendor/package addresses
+     * @param {string|null} [params.userId=null] - Logged-in traveller's ObjectId for wishlist status
+     * @param {boolean|string} [params.isFlat=false] - True for flat array, false for category-grouped dictionary
+     * @param {number|string} [params.page=1] - 1-indexed page number
+     * @param {number|string} [params.limit=100] - Items per page
+     * @returns {Promise<Object>} Formatted result object with items, ratings, wishlist flags, and pagination
      */
     async getBrowsePackages(params = {}) {
         return await getBrowsePackages(params);
     }
 
+    // =========================================================================
+    // 3. Category Grouping & Geo-Spatial Search
+    // =========================================================================
+
+    /**
+     * Retrieves available package items grouped by category slug, with applied platform taxes.
+     *
+     * @async
+     * @param {Object} [filters={}] - Filter options
+     * @param {string} [filters.query=''] - Keyword search term
+     * @param {string} [filters.category=''] - Target category slug filter
+     * @param {number} [filters.minPrice=0] - Minimum selling price boundary
+     * @param {number|null} [filters.maxPrice=null] - Maximum selling price boundary
+     * @param {string} [filters.sort=''] - Sorting option
+     * @param {number|null} [filters.lat=null] - Latitude coordinate
+     * @param {number|null} [filters.lng=null] - Longitude coordinate
+     * @param {number} [filters.radius=50] - Radius cutoff in kilometers
+     * @param {string} [filters.address=''] - Address keyword
+     * @returns {Promise<Object<string, Array<Object>>>} Dictionary mapping category slug to array of package items
+     */
     async getAvailablePackagesByCategory({ query = '', category = '', minPrice = 0, maxPrice = null, sort = '', lat = null, lng = null, radius = 50, address = '' } = {}) {
         const flattened = await this.getAvailablePackages(query, minPrice, maxPrice, sort);
-        const categories = await Category.find({}).lean();
+        const categories = await getCategoriesBy({});
         const result = {};
 
         const taxes = await getTaxConfig();
@@ -162,14 +272,31 @@ class PackageService {
         return result;
     }
 
+    /**
+     * Executes a geo-spatial search pipeline to discover active packages within a radius of given coordinates.
+     * Utilizes MongoDB $geoNear on vendor addresses with spherical calculations, joins packages,
+     * enforces category compliance, and attaches distance metrics.
+     *
+     * @async
+     * @param {number|string|null} lat - Target latitude coordinate
+     * @param {number|string|null} lng - Target longitude coordinate
+     * @param {string} [categorySlug=''] - Optional category slug filter
+     * @param {number} [radiusKm=50] - Search radius cutoff in kilometers
+     * @returns {Promise<Array<Object>>} Array of matching package items with distance metrics
+     */
     async searchPackages(lat, lng, categorySlug = '', radiusKm = 50) {
         const { latitude, longitude, hasCoords } = normalizeCoordinates(lat, lng);
         const targetSchemaKey = categorySlug ? (CATEGORY_MAP[categorySlug] || categorySlug).toLowerCase() : null;
 
+        /**
+         * Builds the MongoDB aggregation pipeline for geo-spatial querying.
+         * @param {boolean} [useGeoNear=true] - Whether to include $geoNear stage
+         * @returns {Array<Object>} Aggregation pipeline stages
+         */
         const buildPipeline = (useGeoNear = true) => {
             const pipeline = [];
 
-            // 1. Initial Match or GeoNear
+            // 1. Initial Match or GeoNear on Vendor address
             if (hasCoords && useGeoNear) {
                 pipeline.push({
                     $geoNear: {
@@ -201,7 +328,7 @@ class PackageService {
             // 2. Compliance Stages
             pipeline.push(...this.masterService.getVendorActiveAggregationStages('vendorProfile'));
 
-            // 3. Joins & Flattening
+            // 3. Joins & Catalog Unwind
             pipeline.push({
                 $lookup: {
                     from: 'packages',
@@ -226,7 +353,7 @@ class PackageService {
                 extraProjectFields: { vendorProfile: 1 }
             }));
 
-            // 5. Verification & Filtering
+            // 5. Category Verification & Filtering
             pipeline.push(...this.masterService.getCategoryVerificationStages('items', 'vendorProfile._id'));
 
             const finalMatch = { "items.isActive": true };
@@ -235,10 +362,10 @@ class PackageService {
             }
             pipeline.push({ $match: finalMatch });
 
-            // 6. Lookup Reviews
+            // 6. Reviews Lookup
             pipeline.push(getReviewsLookupStage("$items._id"));
 
-            // 7. Final Projection
+            // 7. Final Projection with distance metric
             pipeline.push(getPackageItemProjectionStage({
                 distance: "$vendorProfile.distance"
             }));
