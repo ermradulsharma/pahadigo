@@ -29,6 +29,7 @@ import { CATEGORY_MAP, SCHEMA_KEYS } from '@/core/Constants/categories.js';
 import { STATUS, VERIFICATION_STATUS, VENDOR_PROFILE_TYPES } from '@/core/Constants/index.js';
 import { getLocationPoint } from '@/core/Helpers/addressHelper.js';
 import { normalizeCoordinates, calculateDistanceKm } from '@/core/Services/Shared/PackageCore.js';
+import { formatPackageItem } from '@/core/Helpers/search.js';
 
 // =============================================================================
 // CACHING ARCHITECTURE
@@ -543,26 +544,7 @@ export async function getBrowsePackages(params = {}) {
         const matchedItems = (itemsByCategory.get(schemaKey) || []).concat(schemaKey !== slug ? (itemsByCategory.get(slug) || []) : []);
         if (matchedItems.length === 0) continue;
 
-        result[slug] = matchedItems.map(item => ({
-            id: item._id,
-            title: item.title,
-            isActive: item.isActive,
-            pricing: {
-                basePrice: item.pricing?.basePrice || 0,
-                gst: item.pricing?.gst || 18,
-                sellingPrice: item.pricing?.sellingPrice || 0,
-            },
-            address: item?.location?.address || '',
-            location: getLocationPoint(item?.location),
-            photos: typeof item.photos?.[0] === 'string' ? item.photos[0] : (item.photos?.[0]?.url || ""),
-            category_name: cat.name || "",
-            category_id: cat._id || "",
-            rating: {
-                average: item.reviews?.average || 0,
-                count: item.reviews?.count || 0
-            },
-            wishlist: Boolean(item.wishlist)
-        }));
+        result[slug] = matchedItems.map(item => formatPackageItem(item, { name: cat.name, id: cat._id }, item.reviews, { wishlist: item.wishlist }));
     }
 
     // 3.3 Output Formatting (isFlat boolean support) & Pagination

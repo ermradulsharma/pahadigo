@@ -27,7 +27,7 @@ import { getBy, getManyBy, getCategoriesBy } from '@/core/Helpers/queryHelpers.j
 import Controller from '@/core/Controllers/Controller.js';
 import { formatPackageItem } from '@/core/Helpers/package.js';
 import { getBrowsePackages } from '@/core/Helpers/browsePackages.js';
-import parseQuery from '@/core/Helpers/search';
+import { parseQuery } from '@/core/Helpers/search';
 
 /**
  * PackageController (General / Public Role)

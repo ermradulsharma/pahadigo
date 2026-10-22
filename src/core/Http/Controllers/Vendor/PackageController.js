@@ -5,7 +5,7 @@ import Controller from '@/core/Controllers/Controller.js';
 import { getBusinessByUserId, getReviewsByItemId } from '@/core/Helpers/queryHelpers.js';
 import { vendorPackageItem } from '@/core/Helpers/package.js';
 import getVendorPackages from '@/core/Helpers/vendorPackage';
-import parseQuery from '@/core/Helpers/search';
+import { parseQuery } from '@/core/Helpers/search';
 
 /**
  * PackageController (Vendor Role) - Comprehensive management of vendor catalogs and service items.

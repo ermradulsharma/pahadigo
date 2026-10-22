@@ -8,6 +8,7 @@
 import { getPackageBy, getBusinessByUserId, getReviewsBy } from '@/core/Helpers/queryHelpers.js';
 import { getLocationPoint } from '@/core/Helpers/addressHelper.js';
 import { calculateDistanceKm } from '@/core/Services/Shared/PackageCore.js';
+import { formatPackageItem } from '@/core/Helpers/search.js';
 
 /**
  * Retrieves, filters, and formats a vendor's package catalog with search, price, geo, and pagination support.
@@ -136,28 +137,8 @@ export async function getVendorPackages(
                 }
             }
 
-            // Formatted vendor package item
-            const formattedItem = {
-                id: item._id,
-                title: item.title || item.name || '',
-                isActive: item.isActive,
-                pricing: {
-                    basePrice: item.pricing?.basePrice || 0,
-                    gst: item.pricing?.gst || 18,
-                    sellingPrice: item.pricing?.sellingPrice || 0,
-                },
-                address: item?.location?.address || '',
-                location: coords,
-                photos: typeof item.photos?.[0] === 'string' ? item.photos[0] : (item.photos?.[0]?.url || ''),
-                category_name: name,
-                category_id: id,
-                rating: {
-                    average: reviewStatsMap.get(item._id.toString())
-                        ? Math.round((reviewStatsMap.get(item._id.toString()).sum / reviewStatsMap.get(item._id.toString()).count) * 10) / 10
-                        : 0,
-                    count: reviewStatsMap.get(item._id.toString())?.count || 0
-                }
-            };
+            // Formatted vendor package item using shared helper
+            const formattedItem = formatPackageItem(item, { name, id }, reviewStatsMap);
 
             flatItems.push(formattedItem);
             categorizedItems[slug].push(formattedItem);

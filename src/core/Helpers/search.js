@@ -1,10 +1,11 @@
 /**
  * @file search.js
  * @module core/Helpers/search
- * @description Centralized query string parser and sanitizer for pagination, price, geo, and category filters.
+ * @description Centralized query string parser, sanitizer, and standardized package item formatter.
  */
 
 import { APP_DETAILS } from '@/core/Constants/index.js';
+import { getLocationPoint } from '@/core/Helpers/addressHelper.js';
 
 /**
  * Parses and sanitizes URL search parameters into strongly-typed query options.
@@ -81,4 +82,73 @@ export function parseQuery(urlStr) {
     };
 }
 
-export default parseQuery;
+/**
+ * Standardized package item formatter for search, browsing, and vendor inventory.
+ *
+ * @param {Object} item - Raw package subdocument or item object
+ * @param {Object} [categoryInfo={}] - Category metadata ({ name, id })
+ * @param {Map|Object} [reviewStats=null] - Review statistics Map (itemId -> { sum, count }) or rating object ({ average, count })
+ * @param {Object} [extraFields={}] - Optional additional fields like wishlist
+ * @returns {Object|null} Standardized package item representation
+ */
+export function formatPackageItem(item, categoryInfo = {}, reviewStats = null, extraFields = {}) {
+    if (!item) return null;
+
+    const itemId = (item._id || item.id)?.toString() || '';
+    const categoryName = categoryInfo?.name || categoryInfo?.category_name || item.category_name || '';
+    const categoryId = categoryInfo?.id || categoryInfo?._id || categoryInfo?.category_id || item.category_id || '';
+
+    // Calculate rating stats
+    let average = 0;
+    let count = 0;
+
+    if (reviewStats instanceof Map) {
+        const stat = reviewStats.get(itemId);
+        if (stat) {
+            count = stat.count || 0;
+            average = count > 0 ? Math.round((stat.sum / count) * 10) / 10 : 0;
+        }
+    } else if (reviewStats && typeof reviewStats === 'object') {
+        average = reviewStats.average || 0;
+        count = reviewStats.count || 0;
+    } else if (item.reviews) {
+        average = item.reviews.average || 0;
+        count = item.reviews.count || 0;
+    }
+
+    // Single photo / thumbnail extraction
+    const photos = typeof item.photos?.[0] === 'string'
+        ? item.photos[0]
+        : (item.photos?.[0]?.url || (typeof item.photos === 'string' ? item.photos : ''));
+
+    // Coordinates resolution
+    const coords = item.location && typeof item.location === 'object' && Array.isArray(item.location.coordinates)
+        ? item.location.coordinates
+        : getLocationPoint(item?.location);
+
+    return {
+        id: item._id || item.id,
+        title: item.title || item.name || '',
+        isActive: item.isActive !== undefined ? Boolean(item.isActive) : true,
+        pricing: {
+            basePrice: item.pricing?.basePrice || 0,
+            gst: item.pricing?.gst || 18,
+            sellingPrice: item.pricing?.sellingPrice || 0,
+        },
+        address: item?.location?.address || item?.address || '',
+        location: coords,
+        photos,
+        category_name: categoryName,
+        category_id: categoryId ? categoryId.toString() : '',
+        rating: {
+            average,
+            count
+        },
+        ...(extraFields.wishlist !== undefined ? { wishlist: Boolean(extraFields.wishlist) } : {})
+    };
+}
+
+export default {
+    parseQuery,
+    formatPackageItem
+};
