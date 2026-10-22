@@ -40,8 +40,11 @@ describe('MasterService Unit Tests', () => {
                 isApproved: true,
                 profileType: 'individual',
                 documents: {
-                    panCard: { status: 'verified' },
-                    aadharCard: [{ status: 'verified' }]
+                    panCard: { status: 'verified', url: 'https://example.com/pan.jpg' },
+                    aadharCard: [
+                        { status: 'verified', url: 'https://example.com/aadhar-front.jpg' },
+                        { status: 'verified', url: 'https://example.com/aadhar-back.jpg' }
+                    ]
                 }
             };
             mockClosureFindOne.mockResolvedValue(null);
@@ -52,14 +55,17 @@ describe('MasterService Unit Tests', () => {
 
         it('should return false if vendor is currently on vacation (has active closure)', async () => {
             const vendor = {
-                _id: 'v1',
+                _id: 'v2',
                 status: 'active',
                 isOperating: true,
                 isApproved: true,
                 profileType: 'individual',
                 documents: {
-                    panCard: { status: 'verified' },
-                    aadharCard: [{ status: 'verified' }]
+                    panCard: { status: 'verified', url: 'https://example.com/pan.jpg' },
+                    aadharCard: [
+                        { status: 'verified', url: 'https://example.com/aadhar-front.jpg' },
+                        { status: 'verified', url: 'https://example.com/aadhar-back.jpg' }
+                    ]
                 }
             };
             mockClosureFindOne.mockResolvedValue({ _id: 'closure1', isActive: true });

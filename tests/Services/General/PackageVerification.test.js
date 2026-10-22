@@ -34,8 +34,11 @@ describe('Integration Test: Package Visibility & Category Verification', () => {
             isApproved: true,
             profileType: 'individual',
             documents: {
-                panCard: { status: 'verified' },
-                aadharCard: [{ status: 'verified' }]
+                panCard: { status: 'verified', url: 'http://example.com/pan.jpg' },
+                aadharCard: [
+                    { status: 'verified', url: 'http://example.com/aadhar-front.jpg' },
+                    { status: 'verified', url: 'http://example.com/aadhar-back.jpg' }
+                ]
             }
         });
 

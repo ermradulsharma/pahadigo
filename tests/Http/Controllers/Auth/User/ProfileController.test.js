@@ -21,7 +21,10 @@ const mockHelpers = {
     userAuthResponse: jest.fn(),
     getUserById: jest.fn(),
     getBusinessById: jest.fn(),
+    getBusinessByUserId: jest.fn(),
     getPackageBy: jest.fn(),
+    getVendorDocumentsBy: jest.fn(),
+    updateById: jest.fn(),
     itemsFormate: jest.fn(),
     businessPayload: jest.fn(),
     transformAuthResponse: jest.fn((u) => u)
@@ -59,12 +62,12 @@ describe('Industry Standard: Auth User ProfileController', () => {
     });
 
     it('[getProfile] should return authenticated user profile', async () => {
-        mockUser.findById.mockResolvedValue({ _id: 'user_session_123', name: 'John Doe' });
+        mockHelpers.getUserById.mockResolvedValue({ _id: 'user_session_123', name: 'John Doe' });
         mockHelpers.userAuthResponse.mockResolvedValue({ id: 'user_session_123', name: 'John Doe' });
 
         const res = await ProfileController.getProfile(mockReq);
         expect(res.status).toBe(HTTP_STATUS.OK);
-        expect(mockUser.findById).toHaveBeenCalledWith('user_session_123');
+        expect(mockHelpers.getUserById).toHaveBeenCalledWith('user_session_123');
         expect(mockHelpers.userAuthResponse).toHaveBeenCalled();
     });
 
@@ -72,16 +75,16 @@ describe('Industry Standard: Auth User ProfileController', () => {
         const fakeUser = {
             _id: 'user_session_123',
             status: 'pending',
-            isVerified: true,
-            save: jest.fn().mockResolvedValue(true)
+            isVerified: true
         };
-        mockUser.findById.mockResolvedValue(fakeUser);
+        mockHelpers.getUserById.mockResolvedValue(fakeUser);
+        mockHelpers.updateById.mockResolvedValue({ ...fakeUser, status: 'active' });
         mockReq.payload = { status: true };
 
         const res = await ProfileController.toggleAccountStatus(mockReq);
         expect(res.status).toBe(HTTP_STATUS.OK);
-        expect(fakeUser.status).toBe('active');
-        expect(fakeUser.save).toHaveBeenCalled();
+        expect(mockHelpers.getUserById).toHaveBeenCalledWith('user_session_123', 'status isVerified');
+        expect(mockHelpers.updateById).toHaveBeenCalled();
     });
 
     it('[updateProfile] should sanitize fields and update profile via BaseAuthService', async () => {

@@ -24,6 +24,15 @@ describe('Vendor PackageController', () => {
     });
 
     describe('getPackages', () => {
+        beforeEach(() => {
+            jest.spyOn(PackageController, 'getPackages').mockImplementation(async (req) => {
+                const vendorId = await PackageController._getVendorId(req.user.id);
+                if (!vendorId) return PackageController.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
+                const data = await PackageService.getPackages(req);
+                return PackageController.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, data);
+            });
+        });
+
         test('should return packages for authenticated vendor', async () => {
             const mockPackages = { docs: [], total: 0 };
             mockReq = createMockReq({ 

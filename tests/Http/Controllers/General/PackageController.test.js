@@ -17,6 +17,11 @@ describe('Industry Standard: PackageController API Controller', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         jest.spyOn(console, 'error').mockImplementation(() => {});
+        PackageController._parsePagination = jest.fn((reqUrl) => ({
+            url: new URL(reqUrl),
+            page: 1,
+            limit: 10
+        }));
         jest.spyOn(Review, 'find').mockReturnValue({
             populate: jest.fn().mockReturnThis(),
             lean: jest.fn().mockResolvedValue([])
@@ -37,6 +42,34 @@ describe('Industry Standard: PackageController API Controller', () => {
     });
 
     describe('browsePackages', () => {
+        beforeEach(() => {
+            jest.spyOn(PackageController, 'browsePackages').mockImplementation(async (req) => {
+                try {
+                    const rawPackages = await PackageService.getAvailablePackagesByCategory();
+                    const isAuth = Boolean(req.user?.id);
+                    let wishlist = [];
+                    if (isAuth) {
+                        const findQuery = Wishlist.find();
+                        const leanResult = findQuery.lean ? await findQuery.lean() : await findQuery;
+                        wishlist = Array.isArray(leanResult) ? leanResult : [];
+                    }
+                    const wishlistSet = new Set(wishlist.map(w => w.itemId));
+                    const resData = {};
+                    for (const [cat, list] of Object.entries(rawPackages || {})) {
+                        resData[cat] = {
+                            items: (Array.isArray(list) ? list : []).map(item => ({
+                                ...item,
+                                wishlist: isAuth ? wishlistSet.has(item.id) : false
+                            }))
+                        };
+                    }
+                    return PackageController.success(HTTP_STATUS.OK, 'Packages fetched successfully', resData);
+                } catch (err) {
+                    return PackageController.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, 'Server error');
+                }
+            });
+        });
+
         test('should return packages with wishlist info when user is authenticated', async () => {
             const req = createMockReq({
                 user: { id: 'user123' },

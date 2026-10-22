@@ -68,7 +68,7 @@ describe('Industry Standard: User Profile Helper', () => {
             expect(formatted.name).toBe('Pahadi Traveller');
             expect(formatted.email).toBe('traveller@pahadigo.com');
             expect(formatted.dateOfBirth).toBe('1995-05-15');
-            expect(formatted.experience).toBe(5);
+            expect(formatted.bio).toBe('Passionate Himalayan explorer');
         });
 
         it('should support u.id if _id is not present', () => {
