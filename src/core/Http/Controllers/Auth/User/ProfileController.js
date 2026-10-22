@@ -1,9 +1,13 @@
+import mongoose from 'mongoose';
 import User from '@/core/Models/User.js';
-import Vendor from '@/core/Models/Vendor.js';
+import Booking from '@/core/Models/Booking.js';
+import Review from '@/core/Models/Review.js';
+import Dispute from '@/core/Models/Dispute.js';
+import Notification from '@/core/Models/Notification.js';
 import { BaseAuthService, UserAuthService } from '@/core/Services/Auth/index.js';
-import { HTTP_STATUS, RESPONSE_MESSAGES, STATUS } from '@/core/Constants/index.js';
+import { HTTP_STATUS, RESPONSE_MESSAGES, STATUS, BOOKING_STATUS, PAYMENT_STATUS, PAYOUT_STATUS } from '@/core/Constants/index.js';
 import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
-import { businessPayload, getBusinessById, getPackageBy, getUserById, itemsFormate, transformAuthResponse, userAuthResponse } from '@/core/Helpers/index.js';
+import { businessPayload, getBusinessById, getBusinessByUserId, getPackageBy, getUserById, getVendorDocumentsBy, itemsFormate, transformAuthResponse, userAuthResponse } from '@/core/Helpers/index.js';
 import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
 import Controller from '@/core/Controllers/Controller.js';
 import UserEvents from '@/core/Events/UserEvents.js';
@@ -216,6 +220,333 @@ class ProfileController extends Controller {
             const location = req.payload;
             const alert = await SOSService.triggerSOS(req.user.id, location);
             return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.SOS.ALERT_TRIGGERED, alert);
+        } catch (error) {
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+        }
+    }
+
+
+    /**
+     * GET /api/vendor/profile/check
+     * Provides comprehensive operational, verification, catalog, and booking statistics
+     * for the authenticated vendor and user account.
+     */
+    async checkProfile(req) {
+        try {
+            let userId = req.user?.id;
+            const [user, vendor] = await Promise.all([
+                getUserById(userId),
+                getBusinessByUserId(userId, '', null)
+            ]);
+
+            if (!user) {
+                return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.USER.NOT_FOUND);
+            }
+
+            let vendorData = null;
+
+            if (vendor) {
+                let vendorObjectId = vendor._id;
+                try {
+                    vendorObjectId = new mongoose.Types.ObjectId(vendor._id);
+                } catch (e) { }
+
+                let userObjectId = userId;
+                try {
+                    userObjectId = new mongoose.Types.ObjectId(userId);
+                } catch (e) { }
+
+                const startOfToday = new Date();
+                startOfToday.setHours(0, 0, 0, 0);
+                const endOfToday = new Date();
+                endOfToday.setHours(23, 59, 59, 999);
+                const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
+
+                // 2. Concurrently fetch Package catalog, Booking aggregation stats, Vendor documents, Reviews, Disputes & Notifications
+                const [pkg, bookingStatsResult, vendorDocs, reviewStatsResult, disputeStatsResult, unreadCount] = await Promise.all([
+                    getPackageBy({ vendor: vendor._id }),
+                    Booking.aggregate([
+                        { $match: { vendor: vendorObjectId } },
+                        {
+                            $group: {
+                                _id: null,
+                                totalBookings: { $sum: 1 },
+                                confirmedBookings: {
+                                    $sum: { $cond: [{ $eq: ["$status", BOOKING_STATUS.CONFIRMED] }, 1, 0] }
+                                },
+                                todayBookings: {
+                                    $sum: {
+                                        $cond: [
+                                            {
+                                                $and: [
+                                                    { $gte: ["$startDate", startOfToday] },
+                                                    { $lte: ["$startDate", endOfToday] },
+                                                    { $in: ["$status", [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.ONGOING]] }
+                                                ]
+                                            },
+                                            1,
+                                            0
+                                        ]
+                                    }
+                                },
+                                cancelledBookings: {
+                                    $sum: { $cond: [{ $eq: ["$status", BOOKING_STATUS.CANCELLED] }, 1, 0] }
+                                },
+                                completedBookings: {
+                                    $sum: { $cond: [{ $eq: ["$status", BOOKING_STATUS.COMPLETED] }, 1, 0] }
+                                },
+                                pendingBookings: {
+                                    $sum: { $cond: [{ $eq: ["$status", BOOKING_STATUS.PENDING] }, 1, 0] }
+                                },
+                                ongoingBookings: {
+                                    $sum: { $cond: [{ $eq: ["$status", BOOKING_STATUS.ONGOING] }, 1, 0] }
+                                },
+                                totalRevenue: {
+                                    $sum: {
+                                        $cond: [
+                                            { $in: ["$paymentStatus", [PAYMENT_STATUS.PAID, 'paid']] },
+                                            { $ifNull: ["$pricing.total", 0] },
+                                            0
+                                        ]
+                                    }
+                                },
+                                withdrawnAmount: {
+                                    $sum: {
+                                        $cond: [
+                                            {
+                                                $and: [
+                                                    { $eq: ["$status", BOOKING_STATUS.COMPLETED] },
+                                                    { $ne: ["$payout.status", 'paid'] },
+                                                    {
+                                                        $or: [
+                                                            { $lte: ["$endDate", threeDaysAgo] },
+                                                            { $lte: ["$verification.endVerifiedAt", threeDaysAgo] }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                $multiply: [
+                                                    {
+                                                        $cond: [
+                                                            { $gt: [{ $ifNull: ["$payout.amount", 0] }, 0] },
+                                                            "$payout.amount",
+                                                            { $ifNull: ["$pricing.total", 0] }
+                                                        ]
+                                                    },
+                                                    0.882
+                                                ]
+                                            },
+                                            0
+                                        ]
+                                    }
+                                },
+                                pendingAmount: {
+                                    $sum: {
+                                        $cond: [
+                                            {
+                                                $and: [
+                                                    { $ne: ["$payout.status", 'paid'] },
+                                                    {
+                                                        $or: [
+                                                            {
+                                                                $and: [
+                                                                    { $eq: ["$status", BOOKING_STATUS.COMPLETED] },
+                                                                    { $gt: ["$endDate", threeDaysAgo] }
+                                                                ]
+                                                            },
+                                                            {
+                                                                $and: [
+                                                                    { $in: ["$paymentStatus", [PAYMENT_STATUS.PAID, 'paid']] },
+                                                                    { $in: ["$status", [BOOKING_STATUS.CONFIRMED, BOOKING_STATUS.ONGOING, BOOKING_STATUS.PENDING]] }
+                                                                ]
+                                                            }
+                                                        ]
+                                                    }
+                                                ]
+                                            },
+                                            {
+                                                $multiply: [
+                                                    {
+                                                        $cond: [
+                                                            { $gt: [{ $ifNull: ["$payout.amount", 0] }, 0] },
+                                                            "$payout.amount",
+                                                            { $ifNull: ["$pricing.total", 0] }
+                                                        ]
+                                                    },
+                                                    0.882
+                                                ]
+                                            },
+                                            0
+                                        ]
+                                    }
+                                },
+                                earnings: {
+                                    $sum: {
+                                        $cond: [
+                                            { $eq: ["$status", BOOKING_STATUS.COMPLETED] },
+                                            { $ifNull: ["$pricing.total", 0] },
+                                            0
+                                        ]
+                                    }
+                                }
+                            }
+                        }
+                    ]),
+                    getVendorDocumentsBy({ vendor: vendor._id }),
+                    Review.aggregate([
+                        { $match: { vendor: vendorObjectId, isVisible: true } },
+                        {
+                            $group: {
+                                _id: null,
+                                avgRating: { $avg: "$rating" },
+                                totalReviews: { $sum: 1 }
+                            }
+                        }
+                    ]),
+                    Dispute.aggregate([
+                        { $match: { vendor: vendorObjectId } },
+                        {
+                            $group: {
+                                _id: null,
+                                openDisputes: {
+                                    $sum: {
+                                        $cond: [{ $in: ["$status", ["open", "investigating"]] }, 1, 0]
+                                    }
+                                },
+                                resolvedDisputes: {
+                                    $sum: {
+                                        $cond: [{ $in: ["$status", ["resolved_refunded", "resolved_rejected"]] }, 1, 0]
+                                    }
+                                }
+                            }
+                        }
+                    ]),
+                    Notification.countDocuments({ recipient: userObjectId, isRead: false, isDeleted: false })
+                ]);
+
+                const stats = bookingStatsResult?.[0] || {};
+                const bookingStats = {
+                    totalBookings: stats.totalBookings || 0,
+                    confirmedBookings: stats.confirmedBookings || 0,
+                    todayBookings: stats.todayBookings || 0,
+                    cancelledBookings: stats.cancelledBookings || 0,
+                    completedBookings: stats.completedBookings || 0,
+                    pendingBookings: stats.pendingBookings || 0,
+                    ongoingBookings: stats.ongoingBookings || 0,
+                    totalRevenue: Math.round((stats.totalRevenue || 0) * 100) / 100,
+                    withdrawnAmount: Math.round((stats.withdrawnAmount || 0) * 100) / 100,
+                    pendingAmount: Math.round((stats.pendingAmount || 0) * 100) / 100,
+                    earnings: Math.round((stats.earnings || 0) * 100) / 100
+                };
+
+                const closures = vendor.closurePeriods || [];
+                const closurePeriods = closures.map(c => ({
+                    startDate: c.startDate ? new Date(c.startDate).toISOString().split('T')[0] : '',
+                    endDate: c.endDate ? new Date(c.endDate).toISOString().split('T')[0] : '',
+                    reason: c.reason || 'Maintenance'
+                }));
+
+                const packageCategories = ['homestay', 'hotel', 'camping', 'trekking', 'rafting', 'bungeeJumping', 'vehicleRental', 'chardhamTour', 'customTrip'];
+                let totalPackageItems = 0;
+                let activePackageItems = 0;
+
+                packageCategories.forEach(key => {
+                    if (Array.isArray(pkg?.[key])) {
+                        totalPackageItems += pkg[key].length;
+                        activePackageItems += pkg[key].filter(item => item.isActive !== false).length;
+                    }
+                });
+
+                const packages = {
+                    homestay: Boolean(pkg?.homestay && pkg.homestay.length > 0),
+                    hotel: Boolean(pkg?.hotel && pkg.hotel.length > 0),
+                    camping: Boolean(pkg?.camping && pkg.camping.length > 0),
+                    trekking: Boolean(pkg?.trekking && pkg.trekking.length > 0),
+                    rafting: Boolean(pkg?.rafting && pkg.rafting.length > 0),
+                    bungeeJumping: Boolean(pkg?.bungeeJumping && pkg.bungeeJumping.length > 0),
+                    vehicleRental: Boolean(pkg?.vehicleRental && pkg.vehicleRental.length > 0),
+                    chardhamTour: Boolean(pkg?.chardhamTour && pkg.chardhamTour.length > 0),
+                    customTrip: Boolean(pkg?.customTrip && pkg.customTrip.length > 0)
+                };
+
+                const packageSummary = {
+                    totalItems: totalPackageItems,
+                    activeItems: activePackageItems
+                };
+
+                const reviewStats = reviewStatsResult?.[0] || {};
+                const rating = {
+                    average: reviewStats.avgRating ? Math.round(reviewStats.avgRating * 10) / 10 : (vendor.rating?.average || 0),
+                    count: reviewStats.totalReviews || (vendor.rating?.count || 0)
+                };
+
+                const disputeStats = disputeStatsResult?.[0] || {};
+                const disputes = {
+                    open: disputeStats.openDisputes || 0,
+                    resolved: disputeStats.resolvedDisputes || 0
+                };
+
+                const hasPan = Boolean(vendor.documents?.panCard?.url || vendor.personalPanCard);
+                const hasAadhar = Array.isArray(vendor.documents?.aadharCard) && vendor.documents.aadharCard.some(d => Boolean(d?.url));
+                const hasCategoryDocs = Array.isArray(vendorDocs) && vendorDocs.length > 0;
+                const hasDocuments = Boolean((hasPan && hasAadhar) || hasCategoryDocs);
+                const hasBasicInfo = Boolean(vendor.businessName && vendor.ownerName);
+                const hasAddress = Boolean((vendor.address?.addressLine1 || vendor.address?.city) && vendor.address?.state);
+                const hasCategory = Boolean(vendor.category && Array.isArray(vendor.category) && vendor.category.length > 0);
+                const hasBankDetails = Boolean(vendor.bankDetails?.accountNumber && vendor.bankDetails?.ifscCode);
+                const hasPackages = Object.values(packages).some(Boolean);
+
+                const checklist = [hasBasicInfo, hasAddress, hasCategory, hasDocuments, hasBankDetails, hasPackages];
+                const completedSteps = checklist.filter(Boolean).length;
+                const profileCompletion = Math.round((completedSteps / checklist.length) * 100);
+                const isReadyToAcceptBookings = Boolean(vendor.isOperating && vendor.isApproved && (vendor.status === STATUS.ACTIVE || vendor.status === 'active' || vendor.status === 'verified') && hasBankDetails && hasPackages);
+
+                const onboarding = {
+                    profileCompletion,
+                    isReadyToAcceptBookings,
+                    steps: {
+                        basicInfo: hasBasicInfo,
+                        address: hasAddress,
+                        category: hasCategory,
+                        documents: hasDocuments,
+                        bankDetails: hasBankDetails,
+                        packages: hasPackages
+                    }
+                };
+
+                const payoutSetup = {
+                    isFundAccountLinked: Boolean(vendor.bankDetails?.razorpayFundAccountId),
+                    hasCancelledCheque: Boolean(vendor.bankDetails?.cancelledCheque?.url)
+                };
+
+                vendorData = {
+                    isOperating: Boolean(vendor.isOperating),
+                    isApproved: Boolean(vendor.isApproved),
+                    status: Boolean(vendor.status === STATUS.ACTIVE || vendor.status === 'active' || vendor.status === 'verified'),
+                    trustBadge: Boolean(vendor.trustBadge && vendor.trustBadge !== 'none'),
+                    category: hasCategory,
+                    bankDetails: hasBankDetails,
+                    documents: hasDocuments,
+                    packages,
+                    packageSummary,
+                    bookingStats,
+                    closurePeriods,
+                    rating,
+                    disputes,
+                    onboarding,
+                    payoutSetup,
+                    unreadNotifications: Number(unreadCount) || 0
+                };
+            }
+
+            const responsePayload = {
+                isVerified: Boolean(user.isVerified),
+                status: Boolean(user.status === STATUS.ACTIVE),
+                vendor: vendorData
+            };
+
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, responsePayload);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }

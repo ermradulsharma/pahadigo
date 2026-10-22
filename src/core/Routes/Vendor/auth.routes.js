@@ -17,4 +17,6 @@ export default [
     { method: 'POST', path: '/become-traveller', schema: schemas.settingsUpdate, handler: wrap(() => ProfileController, 'downgradeToTraveller') },
     { method: 'PATCH', path: '/emergency-contacts', schema: schemas.emergencyContacts, handler: wrap(() => ProfileController, 'updateEmergencyContacts') },
     { method: 'POST', path: '/sos', schema: schemas.sosAlert, handler: wrap(() => ProfileController, 'triggerSOS') },
+
+    { method: 'GET', path: '/profile/check', handler: wrap(() => ProfileController, 'checkProfile') },
 ];
