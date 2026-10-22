@@ -19,12 +19,33 @@ import { getLogger } from '@/core/Lib/logger.js';
 import { NOTIFICATION } from '@/core/Constants/notification';
 
 /**
- * ProfileController (Vendor Role) - Specialized management of
- * the vendor's personal account, identity, and personal contact info.
+ * @file ProfileController.js
+ * @module Http/Controllers/Auth/User/ProfileController
+ * @description Centralized controller managing user profiles, account state, role transitions,
+ * emergency safety (SOS), and vendor verification/operational dashboard analytics.
+ * Supports dual contexts for Travellers and Vendors with optimized MongoDB aggregation pipelines,
+ * selective subdocument projections, and Redis caching integration.
+ */
+
+/**
+ * @class ProfileController
+ * @extends Controller
+ * @classdesc Orchestrates user profile lifecycle operations for both Travellers and Vendors.
+ * Handles identity verification, security statuses, profile photo uploads to Cloudinary,
+ * GeoJSON coordinate parsing, role elevation/downgrade, and financial withholding metrics.
  */
 class ProfileController extends Controller {
 
-    // GET user profile /traveller/me or /vendor/me
+    /**
+     * Fetch the authenticated user's profile.
+     * 
+     * @route GET /api/traveller/me
+     * @route GET /api/vendor/me
+     * @access Private (Authenticated User)
+     * @param {import('next/server').NextRequest & { user: { id: string, role: string } }} req - Incoming Next.js request with decoded auth payload.
+     * @returns {Promise<import('next/server').NextResponse>} JSON response containing sanitized user profile data.
+     * @throws {500} Internal server error if database lookup fails.
+     */
     async getProfile(req) {
         try {
             const userId = req.user.id;
@@ -36,7 +57,21 @@ class ProfileController extends Controller {
         }
     }
 
-    // PATCH /traveller/status or /vendor/status
+    /**
+     * Toggle the account active/inactive status of the authenticated user.
+     * Blocks activation if the user account is suspended or blocked by administration.
+     * Automatically adjusts status to PENDING if activating an unverified account.
+     * 
+     * @route PATCH /api/traveller/status
+     * @route PATCH /api/vendor/status
+     * @access Private (Authenticated User)
+     * @param {import('next/server').NextRequest & { user: { id: string }, payload: { status: boolean } }} req - Request containing target status boolean.
+     * @returns {Promise<import('next/server').NextResponse>} Success message confirming activation or deactivation.
+     * @throws {400} If status is not a boolean.
+     * @throws {403} If account is currently suspended or blocked.
+     * @throws {404} If user record is not found.
+     * @throws {500} On database or execution failure.
+     */
     async toggleAccountStatus(req) {
         try {
             const { status } = req.payload;
@@ -55,7 +90,19 @@ class ProfileController extends Controller {
         }
     }
 
-    // PATCH /traveller/update or /vendor/update 
+    /**
+     * Update the authenticated user's profile details.
+     * Sanitizes inputs via an explicit field whitelist, parses Cloudinary file uploads or direct URLs,
+     * normalizes Date of Birth to prevent CastErrors, formats emergency contacts,
+     * generates GeoJSON Point coordinates for addresses, updates Redis cache, and emits profile update events.
+     * 
+     * @route PATCH /api/traveller/update
+     * @route PATCH /api/vendor/update
+     * @access Private (Authenticated User)
+     * @param {import('next/server').NextRequest & { user: { id: string }, payload: Object }} req - Request containing partial profile fields.
+     * @returns {Promise<import('next/server').NextResponse>} Standardized updated profile payload.
+     * @throws {500} If profile update or image upload fails.
+     */
     async updateProfile(req) {
         try {
             const body = req.payload;
@@ -132,7 +179,19 @@ class ProfileController extends Controller {
         }
     }
 
-    // POST /traveller/avatar or /vendor/avatar
+    /**
+     * Dedicated endpoint to upload and update the user's avatar image.
+     * Uploads the image binary directly to Cloudinary under the user's folder
+     * and persists the secure image URL to the user profile and Redis cache.
+     * 
+     * @route POST /api/traveller/avatar
+     * @route POST /api/vendor/avatar
+     * @access Private (Authenticated User)
+     * @param {import('next/server').NextRequest & { user: { id: string }, payload: { profileImage: File } }} req - Multipart request containing `profileImage`.
+     * @returns {Promise<import('next/server').NextResponse>} Updated user profile data with new avatar URL.
+     * @throws {400} If profileImage file is missing.
+     * @throws {500} On Cloudinary upload or database update failure.
+     */
     async updateProfileImage(req) {
         try {
             const file = req.payload?.profileImage;
@@ -146,7 +205,18 @@ class ProfileController extends Controller {
         }
     }
 
-    // GET /traveller/profile/vendor/info/:userId
+    /**
+     * Public profile lookup for a vendor's personal user identity.
+     * Allows travellers or other users to view verified vendor credentials.
+     * 
+     * @route GET /api/traveller/profile/vendor/info/:userId
+     * @access Public / Authenticated
+     * @param {import('next/server').NextRequest} req - Incoming request.
+     * @param {{ params: { userId: string } }} context - Route parameters containing vendor's user ID.
+     * @returns {Promise<import('next/server').NextResponse>} Sanitized vendor user details.
+     * @throws {404} If vendor user record does not exist.
+     * @throws {500} On unexpected database error.
+     */
     async getVendorProfile(req, { params }) {
         try {
             const user = await getUserById(params.userId);
@@ -158,7 +228,18 @@ class ProfileController extends Controller {
         }
     }
 
-    // GET /traveller/profile/vendor/:businessId
+    /**
+     * Public lookup for a vendor's business entity and active package catalog.
+     * Populates user details, associated inventory, and categorizes packages (homestay, hotel, trekking, etc.).
+     * 
+     * @route GET /api/traveller/profile/vendor/:businessId
+     * @access Public / Authenticated
+     * @param {import('next/server').NextRequest} req - Incoming request.
+     * @param {{ params: { businessId: string } }} context - Route parameters containing vendor business ID.
+     * @returns {Promise<import('next/server').NextResponse>} Business details along with catalog package items.
+     * @throws {404} If business entity is not found.
+     * @throws {500} On database query error.
+     */
     async getBusinessProfile(req, { params }) {
         try {
             const business = await getBusinessById(params.businessId, '', { path: 'user' });
@@ -175,6 +256,17 @@ class ProfileController extends Controller {
         }
     }
 
+    /**
+     * Upgrade the authenticated user's account role from Traveller to Vendor.
+     * Initiates vendor onboarding and creates associated business records if absent.
+     * 
+     * @route POST /api/user/role/upgrade
+     * @access Private (Authenticated Traveller)
+     * @param {import('next/server').NextRequest & { user: { id: string } }} req - Authenticated request.
+     * @returns {Promise<import('next/server').NextResponse>} Success message confirming role promotion.
+     * @throws {401} If request is unauthenticated.
+     * @throws {400} If role transition validation fails.
+     */
     async upgradeToVendor(req) {
         try {
             if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
@@ -185,6 +277,16 @@ class ProfileController extends Controller {
         }
     }
 
+    /**
+     * Downgrade the authenticated user's account role from Vendor to Traveller.
+     * 
+     * @route POST /api/user/role/downgrade
+     * @access Private (Authenticated Vendor)
+     * @param {import('next/server').NextRequest & { user: { id: string } }} req - Authenticated request.
+     * @returns {Promise<import('next/server').NextResponse>} Success message confirming role demotion.
+     * @throws {401} If request is unauthenticated.
+     * @throws {400} If role transition validation fails.
+     */
     async downgradeToTraveller(req) {
         try {
             if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
@@ -195,6 +297,17 @@ class ProfileController extends Controller {
         }
     }
 
+    /**
+     * Configure emergency contacts for the authenticated user for safety and SOS dispatch.
+     * 
+     * @route PUT /api/traveller/emergency-contacts
+     * @access Private (Authenticated User)
+     * @param {import('next/server').NextRequest & { user: { id: string }, payload: { emergencyContact: Array<{ name: string, phone: string, relationship?: string }> } }} req - Request containing contacts array.
+     * @returns {Promise<import('next/server').NextResponse>} Success message confirming updated emergency contacts.
+     * @throws {401} If unauthenticated.
+     * @throws {400} If emergencyContact array is invalid or missing.
+     * @throws {500} If update fails.
+     */
     async updateEmergencyContacts(req) {
         try {
             const user = req.user;
@@ -213,8 +326,16 @@ class ProfileController extends Controller {
     }
 
     /**
-     * POST /traveller/sos or /vendor/sos
-     * Triggers an SOS emergency alert for any authenticated user.
+     * Trigger a critical emergency SOS alert for the authenticated user.
+     * Captures real-time GPS coordinates, notifies registered emergency contacts,
+     * and alerts the PahadiGo safety response team.
+     * 
+     * @route POST /api/traveller/sos
+     * @route POST /api/vendor/sos
+     * @access Private (Authenticated User)
+     * @param {import('next/server').NextRequest & { user: { id: string }, payload: { latitude: number, longitude: number, accuracy?: number, address?: string } }} req - Request containing GPS location data.
+     * @returns {Promise<import('next/server').NextResponse>} Created SOS alert payload with dispatch status.
+     * @throws {500} On SOS dispatch error.
      */
     async triggerSOS(req) {
         try {
@@ -228,9 +349,27 @@ class ProfileController extends Controller {
 
 
     /**
-     * GET /api/vendor/profile/check
-     * Provides comprehensive operational, verification, catalog, and booking statistics
-     * for the authenticated vendor and user account.
+     * Diagnostic and operational dashboard overview for the authenticated vendor.
+     * Aggregates verification state, catalog inventory readiness, financial withholding metrics,
+     * review ratings, dispute counters, closure periods, and onboarding checklist.
+     * 
+     * ### Financial Metrics & Rules:
+     * - **withdrawnAmount**: Total payout eligible for release. Criteria:
+     *   - Booking status: `COMPLETED`
+     *   - Completion cutoff: `endDate` or `verification.endVerifiedAt` <= 3 days ago
+     *   - Payout status: Not already `paid`
+     *   - Net calculation: Deducts 10% platform commission + 18% GST on commission (1.8%), yielding `amount * 0.882`
+     * - **pendingAmount**: Funds in holding (completed < 3 days ago or active paid bookings), net of 11.8% commission & GST (`amount * 0.882`).
+     * - **totalRevenue**: Gross transaction volume of all paid bookings.
+     * - **earnings**: Gross sum of completed booking revenues.
+     * 
+     * @route GET /api/vendor/profile/check
+     * @access Private (Authenticated Vendor)
+     * @param {import('next/server').NextRequest & { user: { id: string } }} req - Authenticated vendor request.
+     * @returns {Promise<import('next/server').NextResponse>} Comprehensive operational & onboarding dashboard payload:
+     * `{ isVerified: boolean, status: boolean, vendor: { isOperating, isApproved, status, trustBadge, category, bankDetails, documents, packages, packageSummary, bookingStats, closurePeriods, rating, disputes, onboarding, payoutSetup, unreadNotifications } | null }`
+     * @throws {404} If user record is not found.
+     * @throws {500} On database aggregation or server error.
      */
     async checkProfile(req) {
         try {
