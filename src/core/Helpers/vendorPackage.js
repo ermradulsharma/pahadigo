@@ -5,7 +5,7 @@
  * Directly aligned with Vendor (VendorSchema) and Package (VendorPackageSchema) models.
  */
 
-import { getPackageBy, getBusinessByUserId } from '@/core/Helpers/queryHelpers.js';
+import { getPackageBy, getBusinessByUserId, getReviewsBy } from '@/core/Helpers/queryHelpers.js';
 import { getLocationPoint } from '@/core/Helpers/addressHelper.js';
 import { calculateDistanceKm } from '@/core/Services/Shared/PackageCore.js';
 
@@ -62,12 +62,30 @@ export async function getVendorPackages(
         id: _id.toString()
     }));
 
-    // 2. Resolve Vendor Package Catalog
-    const catalog = await getPackageBy({ user: userId, vendor: vendorId });
+    // 2. Resolve Vendor Package Catalog & Reviews Concurrently
+    const [catalog, reviews] = await Promise.all([
+        getPackageBy({ user: userId, vendor: vendorId }),
+        getReviewsBy({ vendor: vendor._id, isVisible: true }, 'item.itemId rating')
+    ]);
+
     if (!catalog) {
         return isFlatBool
             ? { items: [], pagination: { total: 0, page, limit, totalPages: 0 } }
             : {};
+    }
+
+    // 3. Build Review Stats Lookup Map (O(1) in-memory lookup per item)
+    const reviewStatsMap = new Map();
+    if (Array.isArray(reviews)) {
+        for (const rev of reviews) {
+            const itemIdStr = rev.item?.itemId?.toString();
+            if (!itemIdStr) continue;
+
+            const stat = reviewStatsMap.get(itemIdStr) || { sum: 0, count: 0 };
+            stat.sum += (Number(rev.rating) || 0);
+            stat.count += 1;
+            reviewStatsMap.set(itemIdStr, stat);
+        }
     }
 
     const flatItems = [];
@@ -134,8 +152,10 @@ export async function getVendorPackages(
                 category_name: name,
                 category_id: id,
                 rating: {
-                    average: item.reviews?.average || 0,
-                    count: item.reviews?.count || 0
+                    average: reviewStatsMap.get(item._id.toString())
+                        ? Math.round((reviewStatsMap.get(item._id.toString()).sum / reviewStatsMap.get(item._id.toString()).count) * 10) / 10
+                        : 0,
+                    count: reviewStatsMap.get(item._id.toString())?.count || 0
                 }
             };
 
