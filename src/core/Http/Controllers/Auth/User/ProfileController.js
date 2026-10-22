@@ -4,6 +4,7 @@ import Booking from '@/core/Models/Booking.js';
 import Review from '@/core/Models/Review.js';
 import Dispute from '@/core/Models/Dispute.js';
 import Notification from '@/core/Models/Notification.js';
+import VendorDocument from '@/core/Models/VendorDocument.js';
 import { BaseAuthService, UserAuthService } from '@/core/Services/Auth/index.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, STATUS, BOOKING_STATUS, PAYMENT_STATUS, PAYOUT_STATUS } from '@/core/Constants/index.js';
 import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
@@ -235,8 +236,8 @@ class ProfileController extends Controller {
         try {
             let userId = req.user?.id;
             const [user, vendor] = await Promise.all([
-                getUserById(userId),
-                getBusinessByUserId(userId, '', null)
+                getUserById(userId, 'isVerified status isVendorVerified'),
+                getBusinessByUserId(userId, 'isOperating isApproved status trustBadge category bankDetails documents address businessName ownerName rating', null)
             ]);
 
             if (!user) {
@@ -262,11 +263,25 @@ class ProfileController extends Controller {
                 endOfToday.setHours(23, 59, 59, 999);
                 const threeDaysAgo = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000);
 
+                const packageProjection = 'homestay._id homestay.isActive hotel._id hotel.isActive camping._id camping.isActive trekking._id trekking.isActive rafting._id rafting.isActive bungeeJumping._id bungeeJumping.isActive vehicleRental._id vehicleRental.isActive chardhamTour._id chardhamTour.isActive customTrip._id customTrip.isActive';
+
                 // 2. Concurrently fetch Package catalog, Booking aggregation stats, Vendor documents, Reviews, Disputes & Notifications
-                const [pkg, bookingStatsResult, vendorDocs, reviewStatsResult, disputeStatsResult, unreadCount] = await Promise.all([
-                    getPackageBy({ vendor: vendor._id }),
+                const [pkg, bookingStatsResult, hasCategoryDocsCheck, reviewStatsResult, disputeStatsResult, unreadCount] = await Promise.all([
+                    getPackageBy({ vendor: vendor._id }, packageProjection),
                     Booking.aggregate([
                         { $match: { vendor: vendorObjectId } },
+                        {
+                            $project: {
+                                status: 1,
+                                startDate: 1,
+                                endDate: 1,
+                                paymentStatus: 1,
+                                'pricing.total': 1,
+                                'payout.amount': 1,
+                                'payout.status': 1,
+                                'verification.endVerifiedAt': 1
+                            }
+                        },
                         {
                             $group: {
                                 _id: null,
@@ -393,7 +408,7 @@ class ProfileController extends Controller {
                             }
                         }
                     ]),
-                    getVendorDocumentsBy({ vendor: vendor._id }),
+                    VendorDocument.exists({ vendor: vendor._id }),
                     Review.aggregate([
                         { $match: { vendor: vendorObjectId, isVisible: true } },
                         {
@@ -489,7 +504,7 @@ class ProfileController extends Controller {
 
                 const hasPan = Boolean(vendor.documents?.panCard?.url || vendor.personalPanCard);
                 const hasAadhar = Array.isArray(vendor.documents?.aadharCard) && vendor.documents.aadharCard.some(d => Boolean(d?.url));
-                const hasCategoryDocs = Array.isArray(vendorDocs) && vendorDocs.length > 0;
+                const hasCategoryDocs = Boolean(hasCategoryDocsCheck);
                 const hasDocuments = Boolean((hasPan && hasAadhar) || hasCategoryDocs);
                 const hasBasicInfo = Boolean(vendor.businessName && vendor.ownerName);
                 const hasAddress = Boolean((vendor.address?.addressLine1 || vendor.address?.city) && vendor.address?.state);
