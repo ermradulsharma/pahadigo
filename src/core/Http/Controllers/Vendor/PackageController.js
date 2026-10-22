@@ -4,6 +4,7 @@ import { HTTP_STATUS, RESPONSE_MESSAGES, APP_DETAILS } from '@/core/Constants/in
 import Controller from '@/core/Controllers/Controller.js';
 import { getBusinessByUserId, getReviewsByItemId } from '@/core/Helpers/queryHelpers.js';
 import { vendorPackageItem } from '@/core/Helpers/package.js';
+import getVendorPackages from '@/core/Helpers/vendorPackage';
 
 /**
  * PackageController (Vendor Role) - Comprehensive management of vendor catalogs and service items.
@@ -17,21 +18,41 @@ class PackageController extends Controller {
         return vendor?._id ? vendor._id.toString() : null;
     }
 
+    _parsePagination(urlStr) {
+        const url = new URL(urlStr);
+
+        // Pagination bounds
+        const page = Math.max(1, parseInt(url.searchParams.get('page'), 10) || 1);
+        const limit = url.searchParams.get('limit') === 'all' ? 0 : Math.max(0, parseInt(url.searchParams.get('limit'), 10) || 100);
+
+        // Price range bounds
+        const minPrice = !isNaN(parseInt(url.searchParams.get('minPrice'), 10)) ? parseInt(url.searchParams.get('minPrice'), 10) : 0;
+        const maxPrice = (url.searchParams.has('maxPrice') && !isNaN(parseInt(url.searchParams.get('maxPrice'), 10)))
+            ? parseInt(url.searchParams.get('maxPrice'), 10)
+            : null;
+
+        // Output format & sort options
+        const format = (url.searchParams.get('format') || '').toLowerCase();
+        const isFlat = format === 'flat' ? true : false;
+        const sort = url.searchParams.get('sort') || '';
+
+        // Search, category & location filters
+        const query = url.searchParams.get('q') || url.searchParams.get('query') || '';
+        const category = url.searchParams.get('category') || '';
+        const lat = url.searchParams.get('lat') || url.searchParams.get('latitude') || null;
+        const lng = url.searchParams.get('lng') || url.searchParams.get('longitude') || null;
+        const radius = parseFloat(url.searchParams.get('radius')) || 50;
+        const address = url.searchParams.get('address') || url.searchParams.get('city') || url.searchParams.get('location') || '';
+
+        return { url, page, limit, minPrice, maxPrice, isFlat, sort, query, category, lat, lng, radius, address };
+    }
+
     // GET /vendor/packages
     async getPackages(req) {
         try {
-            const baseUrl = APP_DETAILS.APP_URL || 'http://localhost:3000';
-            const url = new URL(req.url, baseUrl);
-            const page = parseInt(url.searchParams.get('page')) || 1;
-            const limit = parseInt(url.searchParams.get('limit')) || 10;
-
-            const vendorId = await this._getVendorId(req.user.id);
-            if (!vendorId) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-
-            const result = await PackageService.getPackages(req.user.id, vendorId, page, limit);
-            if (result && result.items !== undefined) {
-                return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, result.items, result.pagination);
-            }
+            const { page, limit, minPrice, maxPrice, isFlat, sort, query, category, lat, lng, radius, address } = this._parsePagination(req.url);
+            const userId = req.user.id;
+            const result = await getVendorPackages(userId, page, limit);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
