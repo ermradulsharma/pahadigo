@@ -3,18 +3,17 @@ import User from '@/core/Models/User.js';
 import Booking from '@/core/Models/Booking.js';
 import Review from '@/core/Models/Review.js';
 import Dispute from '@/core/Models/Dispute.js';
-import Notification from '@/core/Models/Notification.js';
-import VendorDocument from '@/core/Models/VendorDocument.js';
 import { BaseAuthService, UserAuthService } from '@/core/Services/Auth/index.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, STATUS, BOOKING_STATUS, PAYMENT_STATUS, PAYOUT_STATUS } from '@/core/Constants/index.js';
 import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
-import { businessPayload, getBusinessById, getBusinessByUserId, getPackageBy, getUserById, getVendorDocumentsBy, itemsFormate, transformAuthResponse, userAuthResponse } from '@/core/Helpers/index.js';
+import { businessPayload, getBusinessById, getBusinessByUserId, getPackageBy, getUserById, getVendorDocumentsBy, updateById, itemsFormate, transformAuthResponse, userAuthResponse } from '@/core/Helpers/index.js';
 import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
 import Controller from '@/core/Controllers/Controller.js';
 import UserEvents from '@/core/Events/UserEvents.js';
 
 import CacheService from '@/core/Services/CacheService.js';
 import SOSService from '@/core/Services/General/SOSService.js';
+import NotificationService from '@/core/Services/General/NotificationService.js';
 import { getLogger } from '@/core/Lib/logger.js';
 import { NOTIFICATION } from '@/core/Constants/notification';
 
@@ -49,7 +48,8 @@ class ProfileController extends Controller {
     async getProfile(req) {
         try {
             const userId = req.user.id;
-            const user = await User.findById(userId);
+            const user = await getUserById(userId);
+            if (!user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.USER.NOT_FOUND);
             const result = await userAuthResponse(user);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, result);
         } catch (error) {
@@ -77,14 +77,25 @@ class ProfileController extends Controller {
             const { status } = req.payload;
             if (typeof status !== 'boolean') return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ERROR.INVALID_REQUEST);
 
-            const user = await User.findById(req.user.id);
+            const user = await getUserById(req.user.id, 'status isVerified');
             if (!user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.NOT_FOUND);
-            if (status === true && (user.status === STATUS.BLOCKED || user.status === STATUS.SUSPENDED)) return this.error(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.VENDOR.ACCOUNT_RESTRICTED);
-            if (status === true) user.status = user.isVerified === true ? STATUS.ACTIVE : STATUS.PENDING;
-            else user.status = STATUS.INACTIVE;
-            await user.save();
+            if (status === true && (user.status === STATUS.BLOCKED || user.status === STATUS.SUSPENDED)) {
+                return this.error(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.VENDOR.ACCOUNT_RESTRICTED);
+            }
+
+            const newStatus = status === true 
+                ? (user.isVerified === true ? STATUS.ACTIVE : STATUS.PENDING) 
+                : STATUS.INACTIVE;
+
+            await updateById(User, req.user.id, { status: newStatus });
+
+            try {
+                await CacheService.del(`user:profile:${req.user.id}`);
+                await CacheService.del(`user:profile:full:${req.user.id}`);
+            } catch (cacheError) { }
+
             const message = status ? RESPONSE_MESSAGES.AUTH.ACTIVATED : RESPONSE_MESSAGES.AUTH.DEACTIVATED;
-            return this.success(HTTP_STATUS.OK, message);
+            return this.success(HTTP_STATUS.OK, message, { status: newStatus });
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
         }
@@ -270,8 +281,8 @@ class ProfileController extends Controller {
     async upgradeToVendor(req) {
         try {
             if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
-            await UserAuthService.upgradeToVendor(req.user.id);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.UPGRADED);
+            const result = await UserAuthService.upgradeToVendor(req.user.id);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.UPGRADED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
         }
@@ -290,8 +301,8 @@ class ProfileController extends Controller {
     async downgradeToTraveller(req) {
         try {
             if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
-            await UserAuthService.downgradeToTraveller(req.user.id);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.DOWNGRADED);
+            const result = await UserAuthService.downgradeToTraveller(req.user.id);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.DOWNGRADED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
         }
@@ -313,10 +324,12 @@ class ProfileController extends Controller {
             const user = req.user;
             if (!user) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
 
-            const body = req.payload;
+            const body = req.payload || {};
 
             let emergencyContacts = null;
-            if (Array.isArray(body.emergencyContact)) emergencyContacts = body.emergencyContact;
+            if (Array.isArray(body.emergencyContacts)) emergencyContacts = body.emergencyContacts;
+            else if (Array.isArray(body.emergencyContact)) emergencyContacts = body.emergencyContact;
+            
             if (!emergencyContacts) return this.error(HTTP_STATUS.BAD_REQUEST, 'emergencyContacts must be an array.');
             await SOSService.updateEmergencyContacts(user.id, emergencyContacts);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SOS.CONTACTS_UPDATED);
@@ -547,7 +560,7 @@ class ProfileController extends Controller {
                             }
                         }
                     ]),
-                    VendorDocument.exists({ vendor: vendor._id }),
+                    getVendorDocumentsBy({ vendor: vendor._id }, '_id', null, null, { limit: 1 }),
                     Review.aggregate([
                         { $match: { vendor: vendorObjectId, isVisible: true } },
                         {
@@ -576,7 +589,7 @@ class ProfileController extends Controller {
                             }
                         }
                     ]),
-                    Notification.countDocuments({ recipient: userObjectId, isRead: false, isDeleted: false })
+                    NotificationService.getUnreadCount(userId).catch(() => 0)
                 ]);
 
                 const stats = bookingStatsResult?.[0] || {};
@@ -643,7 +656,7 @@ class ProfileController extends Controller {
 
                 const hasPan = Boolean(vendor.documents?.panCard?.url || vendor.personalPanCard);
                 const hasAadhar = Array.isArray(vendor.documents?.aadharCard) && vendor.documents.aadharCard.some(d => Boolean(d?.url));
-                const hasCategoryDocs = Boolean(hasCategoryDocsCheck);
+                const hasCategoryDocs = Boolean(categoryDocs && categoryDocs.length > 0);
                 const hasDocuments = Boolean((hasPan && hasAadhar) || hasCategoryDocs);
                 const hasBasicInfo = Boolean(vendor.businessName && vendor.ownerName);
                 const hasAddress = Boolean((vendor.address?.addressLine1 || vendor.address?.city) && vendor.address?.state);
