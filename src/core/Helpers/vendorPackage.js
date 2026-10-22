@@ -1,80 +1,189 @@
 /**
  * @file vendorPackage.js
  * @module core/Helpers/vendorPackage
- * @description Unified, lightweight engine for retrieving and formatting a vendor's package inventory.
+ * @description Unified, lightweight engine for retrieving, filtering, and formatting a vendor's package inventory.
  * Directly aligned with Vendor (VendorSchema) and Package (VendorPackageSchema) models.
- *
- * Core Logic:
- * 1. Resolve Vendor: Fetch vendor via userId (or vendorId) to get vendor profile and authorized vendor.category array.
- * 2. Check Catalog: Query Package model by { user: userId, vendor: vendorId }. If none, return empty.
- * 3. CamelCase Mapping: Category names map directly to Package schema keys in camelCase
- *    (e.g., 'Homestay' -> homestay, 'Bungee Jumping' -> bungeeJumping, 'Chardham Tour' -> chardhamTour),
- *    with only 1 exception: 'Bike/Scooter Rental' -> vehicleRental.
- * 4. Iterate vendor.category: Extract, filter, and format items directly from catalog[schemaKey].
  */
 
-import { getPackageBy, getBusinessById, getBusinessByUserId } from '@/core/Helpers/queryHelpers.js';
+import { getPackageBy, getBusinessByUserId } from '@/core/Helpers/queryHelpers.js';
 import { getLocationPoint } from '@/core/Helpers/addressHelper.js';
+import { calculateDistanceKm } from '@/core/Services/Shared/PackageCore.js';
 
 /**
- * Unified function to retrieve a vendor's package inventory.
+ * Retrieves, filters, and formats a vendor's package catalog with search, price, geo, and pagination support.
+ * Supports both flat paginated output and category-grouped dictionary output via `isFlat`.
  *
  * @async
- * @param {Object} [params={}] - Query and filter criteria
- * @param {string} [params.userId] - Authenticated user's ObjectId
- * @param {string} [params.vendorId] - Vendor ObjectId (optional if userId provided)
- * @param {number|string} [params.page=1] - 1-indexed page number
- * @param {number|string} [params.limit=10] - Items per page (0 returns all)
- * @param {string} [params.category=''] - Category slug or name filter
- * @param {string} [params.search=''] - Keyword search (title, address, city)
- * @param {boolean|string|null} [params.isActive=null] - Status filter (true, false, or null for all)
- * @param {string} [params.sort=''] - Sort key ('price_asc' | 'price_desc' | 'oldest' | default)
+ * @param {string} userId - Authenticated user's ObjectId
+ * @param {number} [page=1] - 1-indexed page number
+ * @param {number} [limit=10] - Items per page (0 returns all)
+ * @param {number} [minPrice=0] - Minimum selling price filter
+ * @param {number|null} [maxPrice=null] - Maximum selling price filter
+ * @param {boolean} [isFlat=true] - Flat output format (true) or categorized dictionary (false)
+ * @param {string} [sort=''] - Sort order ('price_asc' | 'price_desc' | 'oldest')
+ * @param {string} [query=''] - Keyword search across title, address, and city
+ * @param {string} [category=''] - Category filter (slug or key)
+ * @param {number|null} [lat=null] - Latitude coordinate for geo-radius filter
+ * @param {number|null} [lng=null] - Longitude coordinate for geo-radius filter
+ * @param {number|null} [radius=null] - Distance radius in kilometers
+ * @param {string} [address=''] - Location/city text filter
  *
- * @returns {Promise<{
- *   catalogId: string|null,
- *   vendorId: string|null,
- *   items: Array<Object>,
- *   itemsByCategory: Object<string, Array<Object>>,
- *   pagination: { total: number, page: number, limit: number, totalPages: number }
- * }>}
+ * @returns {Promise<{ items: Array<Object>, pagination: Object } | Object<string, Array<Object>>>}
  */
-export async function getVendorPackages(userId, page = 1, limit = 10, minPrice = 500, maxPrice = 5000, format = 'flat', sort = 'price_asc', q = '', latitude = 30.0869, longitude = 78.2676, radius = 30, address = 'Manali', category = 'homestay') {
+export async function getVendorPackages(
+    userId,
+    page = 1,
+    limit = 10,
+    minPrice = 0,
+    maxPrice = null,
+    isFlat = true,
+    sort = '',
+    query = '',
+    category = '',
+    lat = null,
+    lng = null,
+    radius = null,
+    address = ''
+) {
+    const isFlatBool = isFlat === true || isFlat === 'true';
 
+    // 1. Resolve Vendor Profile
     const vendor = await getBusinessByUserId(userId, 'category');
-    if (!vendor) return [];
-
-    const vendorId = vendor._id.toString();
-
-    const vendorCategories = (vendor?.category || []).map(({ name, slug, _id }) => ({ name, slug, id: _id.toString() }));
-    const catalog = await getPackageBy({ user: userId, vendor: vendorId });
-    if (!catalog) return [];
-
-    let result = [];
-    for (const { name, slug, id } of vendorCategories) {
-        const key = name === 'Bike/Scooter Rental' ? 'vehicleRental' : name.replace(/[^a-zA-Z0-9 ]/g, '').split(' ').filter(Boolean).map((word, index) => (index === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())).join('');
-        const items = Array.isArray(catalog[key]) ? catalog[key] : [];
-        result = result.concat(items.map(item => ({
-            id: item._id,
-            title: item.title || item.name || '',
-            isActive: item.isActive,
-            pricing: {
-                basePrice: item.pricing?.basePrice || 0,
-                gst: item.pricing?.gst || 18,
-                sellingPrice: item.pricing?.sellingPrice || 0,
-            },
-            address: item?.location?.address || '',
-            location: getLocationPoint(item?.location),
-            photos: typeof item.photos?.[0] === 'string' ? item.photos[0] : (item.photos?.[0]?.url || ''),
-            category_name: name,
-            category_id: id,
-            rating: {
-                average: item.reviews?.average || 0,
-                count: item.reviews?.count || 0
-            }
-        })));
+    if (!vendor) {
+        return isFlatBool
+            ? { items: [], pagination: { total: 0, page, limit, totalPages: 0 } }
+            : {};
     }
 
-    return result;
+    const vendorId = vendor._id.toString();
+    const vendorCategories = (vendor?.category || []).map(({ name, slug, _id }) => ({
+        name,
+        slug,
+        id: _id.toString()
+    }));
+
+    // 2. Resolve Vendor Package Catalog
+    const catalog = await getPackageBy({ user: userId, vendor: vendorId });
+    if (!catalog) {
+        return isFlatBool
+            ? { items: [], pagination: { total: 0, page, limit, totalPages: 0 } }
+            : {};
+    }
+
+    const flatItems = [];
+    const categorizedItems = {};
+
+    // 3. Iterate authorized vendor categories and filter items
+    for (const { name, slug, id } of vendorCategories) {
+        const key = name === 'Bike/Scooter Rental'
+            ? 'vehicleRental'
+            : name.replace(/[^a-zA-Z0-9 ]/g, '').split(' ').filter(Boolean).map((word, index) => (index === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())).join('');
+
+        // Category filter: skip if category param is specified and doesn't match
+        if (category && category !== 'all') {
+            const filterCat = category.toLowerCase();
+            if (slug.toLowerCase() !== filterCat && key.toLowerCase() !== filterCat && name.toLowerCase() !== filterCat) {
+                continue;
+            }
+        }
+
+        categorizedItems[slug] = [];
+        const items = Array.isArray(catalog[key]) ? catalog[key] : [];
+
+        for (const item of items) {
+            const sellingPrice = item.pricing?.sellingPrice || item.pricing?.basePrice || 0;
+            const itemTitle = (item.title || item.name || '').toLowerCase();
+            const itemAddress = (item?.location?.address || item?.location?.city || '').toLowerCase();
+
+            // Price range filter
+            if (minPrice && sellingPrice < minPrice) continue;
+            if (maxPrice && sellingPrice > maxPrice) continue;
+
+            // Keyword search (query) across title and address/city
+            if (query && !itemTitle.includes(query.toLowerCase()) && !itemAddress.includes(query.toLowerCase())) {
+                continue;
+            }
+
+            // Address filter
+            if (address && !itemAddress.includes(address.toLowerCase())) {
+                continue;
+            }
+
+            // Geo distance and radius filter
+            const coords = getLocationPoint(item?.location);
+            if (lat && lng && coords && coords.length === 2) {
+                const dist = calculateDistanceKm(lat, lng, coords[1], coords[0]);
+                if (radius && dist !== null && dist > radius) {
+                    continue;
+                }
+            }
+
+            // Formatted vendor package item
+            const formattedItem = {
+                id: item._id,
+                title: item.title || item.name || '',
+                isActive: item.isActive,
+                pricing: {
+                    basePrice: item.pricing?.basePrice || 0,
+                    gst: item.pricing?.gst || 18,
+                    sellingPrice: item.pricing?.sellingPrice || 0,
+                },
+                address: item?.location?.address || '',
+                location: coords,
+                photos: typeof item.photos?.[0] === 'string' ? item.photos[0] : (item.photos?.[0]?.url || ''),
+                category_name: name,
+                category_id: id,
+                rating: {
+                    average: item.reviews?.average || 0,
+                    count: item.reviews?.count || 0
+                }
+            };
+
+            flatItems.push(formattedItem);
+            categorizedItems[slug].push(formattedItem);
+        }
+    }
+
+    // 4. Reusable Sorting and Pagination Engine
+    const paginateAndSort = (itemsList = []) => {
+        if (sort === 'price_asc') {
+            itemsList.sort((a, b) => (a.pricing?.sellingPrice || 0) - (b.pricing?.sellingPrice || 0));
+        } else if (sort === 'price_desc') {
+            itemsList.sort((a, b) => (b.pricing?.sellingPrice || 0) - (a.pricing?.sellingPrice || 0));
+        } else if (sort === 'oldest') {
+            itemsList.sort((a, b) => (a.id || '').toString().localeCompare((b.id || '').toString()));
+        } else {
+            // Default: newest first by ID
+            itemsList.sort((a, b) => (b.id || '').toString().localeCompare((a.id || '').toString()));
+        }
+
+        const total = itemsList.length;
+        const totalPages = limit > 0 ? (Math.ceil(total / limit) || 0) : 1;
+        const startIndex = (page - 1) * (limit || total);
+        const paginatedItems = limit > 0 ? itemsList.slice(startIndex, startIndex + limit) : itemsList;
+
+        return {
+            items: paginatedItems,
+            pagination: {
+                total,
+                page,
+                limit: limit === 0 ? total : limit,
+                totalPages
+            }
+        };
+    };
+
+    // 5. If isFlat is false, apply pagination & sorting inside each category
+    if (!isFlatBool) {
+        const finalResult = {};
+        for (const slug in categorizedItems) {
+            finalResult[slug] = paginateAndSort(categorizedItems[slug]);
+        }
+        return finalResult;
+    }
+
+    // 6. If isFlat is true, return global flat paginated items
+    return paginateAndSort(flatItems);
 }
 
 export default getVendorPackages;

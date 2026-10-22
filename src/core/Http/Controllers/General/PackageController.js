@@ -27,6 +27,7 @@ import { getBy, getManyBy, getCategoriesBy } from '@/core/Helpers/queryHelpers.j
 import Controller from '@/core/Controllers/Controller.js';
 import { formatPackageItem } from '@/core/Helpers/package.js';
 import { getBrowsePackages } from '@/core/Helpers/browsePackages.js';
+import parseQuery from '@/core/Helpers/search';
 
 /**
  * PackageController (General / Public Role)
@@ -35,60 +36,7 @@ import { getBrowsePackages } from '@/core/Helpers/browsePackages.js';
 class PackageController extends Controller {
 
     // =========================================================================
-    // 1. Parameter Normalization & Parsing
-    // =========================================================================
-
-    /**
-     * Extracts, sanitizes, and normalizes pagination and filter query parameters from the request URL.
-     *
-     * @private
-     * @param {string} urlStr - Full request URL string (e.g. req.url)
-     * @returns {Object} Normalized filter parameters
-     * @property {URL} url - Parsed URL object
-     * @property {number} page - 1-indexed page number (default: 1)
-     * @property {number} limit - Items per page (default: 100, 0 for all)
-     * @property {number} minPrice - Minimum selling price (default: 0)
-     * @property {number|null} maxPrice - Maximum selling price or null
-     * @property {boolean} isFlat - True for flat array output, false for category-grouped dictionary
-     * @property {string} sort - Sort order key ('price_asc' | 'price_desc' | '')
-     * @property {string} query - Keyword search term (title, description, location)
-     * @property {string} category - Category filter slug
-     * @property {string|null} lat - Latitude coordinate string or null
-     * @property {string|null} lng - Longitude coordinate string or null
-     * @property {number} radius - Geo-search radius in kilometers (default: 50)
-     * @property {string} address - Address or city filter string
-     */
-    _parsePagination(urlStr) {
-        const url = new URL(urlStr);
-
-        // Pagination bounds
-        const page = Math.max(1, parseInt(url.searchParams.get('page'), 10) || 1);
-        const limit = url.searchParams.get('limit') === 'all' ? 0 : Math.max(0, parseInt(url.searchParams.get('limit'), 10) || 100);
-
-        // Price range bounds
-        const minPrice = !isNaN(parseInt(url.searchParams.get('minPrice'), 10)) ? parseInt(url.searchParams.get('minPrice'), 10) : 0;
-        const maxPrice = (url.searchParams.has('maxPrice') && !isNaN(parseInt(url.searchParams.get('maxPrice'), 10)))
-            ? parseInt(url.searchParams.get('maxPrice'), 10)
-            : null;
-
-        // Output format & sort options
-        const format = (url.searchParams.get('format') || '').toLowerCase();
-        const isFlat = format === 'flat' ? true : false;
-        const sort = url.searchParams.get('sort') || '';
-
-        // Search, category & location filters
-        const query = url.searchParams.get('q') || url.searchParams.get('query') || '';
-        const category = url.searchParams.get('category') || '';
-        const lat = url.searchParams.get('lat') || url.searchParams.get('latitude') || null;
-        const lng = url.searchParams.get('lng') || url.searchParams.get('longitude') || null;
-        const radius = parseFloat(url.searchParams.get('radius')) || 50;
-        const address = url.searchParams.get('address') || url.searchParams.get('city') || url.searchParams.get('location') || '';
-
-        return { url, page, limit, minPrice, maxPrice, isFlat, sort, query, category, lat, lng, radius, address };
-    }
-
-    // =========================================================================
-    // 2. Public Package Discovery Endpoint
+    // 1. Public Package Discovery Endpoint
     // =========================================================================
 
     /**
@@ -103,7 +51,7 @@ class PackageController extends Controller {
      */
     async browsePackages(req) {
         try {
-            const { page, limit, minPrice, maxPrice, isFlat, sort, query, category, lat, lng, radius, address } = this._parsePagination(req.url);
+            const { page, limit, minPrice, maxPrice, isFlat, sort, query, category, lat, lng, radius, address } = parseQuery(req.url);
             const packages = await getBrowsePackages({ query, category, minPrice, maxPrice, sort, lat, lng, radius, address, userId: req.user?.id, page, limit, isFlat });
             if (query) {
                 const totalCount = isFlat ? (packages?.pagination?.total || 0) : Object.values(packages || {}).reduce((acc, cat) => acc + (cat?.pagination?.total || 0), 0);
