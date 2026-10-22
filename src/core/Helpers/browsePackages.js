@@ -544,7 +544,7 @@ export async function getBrowsePackages(params = {}) {
         const matchedItems = (itemsByCategory.get(schemaKey) || []).concat(schemaKey !== slug ? (itemsByCategory.get(slug) || []) : []);
         if (matchedItems.length === 0) continue;
 
-        result[slug] = matchedItems.map(item => formatPackageItem(item, { name: cat.name, id: cat._id }, item.reviews, { wishlist: item.wishlist }));
+        result[slug] = matchedItems.map(item => formatPackageItem(item, { name: cat.name, slug: cat.slug, id: cat._id }, item.reviews, { wishlist: item.wishlist }));
     }
 
     // 3.3 Output Formatting (isFlat boolean support) & Pagination

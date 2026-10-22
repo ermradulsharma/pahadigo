@@ -96,6 +96,7 @@ export function formatPackageItem(item, categoryInfo = {}, reviewStats = null, e
 
     const itemId = (item._id || item.id)?.toString() || '';
     const categoryName = categoryInfo?.name || categoryInfo?.category_name || item.category_name || '';
+    const categorySlug = categoryInfo?.slug || categoryInfo?.category_slug || item.category_slug || '';
     const categoryId = categoryInfo?.id || categoryInfo?._id || categoryInfo?.category_id || item.category_id || '';
 
     // Calculate rating stats
@@ -139,6 +140,7 @@ export function formatPackageItem(item, categoryInfo = {}, reviewStats = null, e
         location: coords,
         photos,
         category_name: categoryName,
+        category_slug: categorySlug,
         category_id: categoryId ? categoryId.toString() : '',
         rating: {
             average,

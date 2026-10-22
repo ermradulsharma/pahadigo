@@ -138,7 +138,7 @@ export async function getVendorPackages(
             }
 
             // Formatted vendor package item using shared helper
-            const formattedItem = formatPackageItem(item, { name, id }, reviewStatsMap);
+            const formattedItem = formatPackageItem(item, { name, slug, id }, reviewStatsMap);
 
             flatItems.push(formattedItem);
             categorizedItems[slug].push(formattedItem);
