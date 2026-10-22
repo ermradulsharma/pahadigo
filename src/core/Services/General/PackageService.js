@@ -8,7 +8,7 @@ import { CATEGORY_MAP, SCHEMA_KEYS } from '@/core/Constants/categories.js';
 import { STATUS, VERIFICATION_STATUS, VENDOR_PROFILE_TYPES } from '@/core/Constants/index.js';
 import MasterService from '@/core/Services/MasterService.js';
 import { getPackageItemById } from '@/core/Helpers/queryHelpers.js';
-import { addressPayload } from '@/core/Helpers/addressHelper.js';
+import { addressPayload, getLocationPoint } from '@/core/Helpers/addressHelper.js';
 import {
     getItemDetailsPayload,
     getFlattenPackageItemsStages,
@@ -51,7 +51,8 @@ function getBrowseCacheKey(params) {
         params.lat ?? '',
         params.lng ?? '',
         params.radius || 50,
-        params.address || ''
+        params.address || '',
+        params.userId || ''
     ].join('::');
 }
 
@@ -169,7 +170,7 @@ class PackageService {
      * 6. Package Items (Only items.isActive === true)
      */
     async getBrowsePackages(params = {}) {
-        let query = '', category = '', minPrice = 0, maxPrice = null, sort = '', lat = null, lng = null, radius = 50, address = '';
+        let query = '', category = '', minPrice = 0, maxPrice = null, sort = '', lat = null, lng = null, radius = 50, address = '', userId = null;
 
         if (typeof params === 'object' && params !== null) {
             ({
@@ -181,7 +182,8 @@ class PackageService {
                 lat = null,
                 lng = null,
                 radius = 50,
-                address = ''
+                address = '',
+                userId = null
             } = params);
         } else {
             query = arguments[0] || '';
@@ -193,14 +195,14 @@ class PackageService {
             lng = arguments[6] || null;
             radius = arguments[7] || 50;
             address = arguments[8] || '';
+            userId = arguments[9] || null;
         }
 
         const t0 = performance.now();
-        const cacheKey = getBrowseCacheKey({ query, category, minPrice, maxPrice, sort, lat, lng, radius, address });
+        const cacheKey = getBrowseCacheKey({ query, category, minPrice, maxPrice, sort, lat, lng, radius, address, userId });
         const cached = browseCache.get(cacheKey);
         if (cached && (Date.now() - cached.time < BROWSE_CACHE_TTL_MS)) {
             const tEnd = performance.now();
-            // console.log(`[getBrowsePackages] (CACHE HIT) Served in ${(tEnd - t0).toFixed(2)}ms`);
             return cached.data;
         }
 
@@ -253,18 +255,11 @@ class PackageService {
 
         const eligibleVendorIdStrings = [];
         for (const id of vendorCategoryMap.keys()) {
-            if (!closedVendorIdSet.has(id)) {
-                eligibleVendorIdStrings.push(id);
-            }
+            if (!closedVendorIdSet.has(id)) eligibleVendorIdStrings.push(id);
         }
 
-        if (eligibleVendorIdStrings.length === 0) {
-            return buildEmptyResult();
-        }
-
+        if (eligibleVendorIdStrings.length === 0) return buildEmptyResult();
         const eligibleVendorObjectIds = eligibleVendorIdStrings.map(id => new mongoose.Types.ObjectId(id));
-
-        // 1.3 Vendor Basic (Active, Operating, Approved) & KYC (PAN + Aadhaar) Query
         const vendorQuery = {
             _id: { $in: eligibleVendorObjectIds },
             status: STATUS.ACTIVE,
@@ -333,19 +328,13 @@ class PackageService {
                 ...directVendorMatches.map(id => id.toString()),
                 ...vendorIdsWithMatchingPackages.map(id => id.toString())
             ])).map(id => new mongoose.Types.ObjectId(id));
-
-            if (allMatchedVendorIds.length === 0) {
-                return buildEmptyResult();
-            }
-
+            if (allMatchedVendorIds.length === 0) return buildEmptyResult();
             vendorQuery._id = { $in: allMatchedVendorIds };
         }
 
         // 1.5 Execute Vendor pre-filter query with thin projection (_id and address only)
         const validVendors = await Vendor.find(vendorQuery).select('_id address').lean();
-        if (!validVendors || validVendors.length === 0) {
-            return buildEmptyResult();
-        }
+        if (!validVendors || validVendors.length === 0) return buildEmptyResult();
 
         const validVendorMap = new Map(validVendors.map(v => [v._id.toString(), v]));
         const validVendorObjectIds = validVendors.map(v => v._id);
@@ -456,7 +445,7 @@ class PackageService {
             );
         }
 
-        // Fast Reviews Lookup: Pure B-Tree index seek on { 'item.itemId': 1, isVisible: 1 }
+        // Fast Reviews Lookup: Database-level average & count using index { 'item.itemId': 1, isVisible: 1 }
         pipeline.push({
             $lookup: {
                 from: 'reviews',
@@ -473,15 +462,44 @@ class PackageService {
                         }
                     },
                     {
-                        $project: {
-                            _id: 0,
-                            rating: 1
+                        $group: {
+                            _id: null,
+                            average: { $avg: "$rating" },
+                            count: { $sum: 1 }
                         }
                     }
                 ],
-                as: 'reviews'
+                as: 'ratingStats'
             }
         });
+
+        // Wishlist Lookup: ONLY if userId is provided
+        const hasUserId = Boolean(userId && mongoose.Types.ObjectId.isValid(userId));
+        if (hasUserId) {
+            pipeline.push({
+                $lookup: {
+                    from: 'wishlists',
+                    let: { itemId: "$items._id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ["$user", new mongoose.Types.ObjectId(userId)] },
+                                        { $eq: ["$itemId", "$$itemId"] }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $project: { _id: 1 }
+                        },
+                        { $limit: 1 }
+                    ],
+                    as: 'userWishlist'
+                }
+            });
+        }
 
         // Standalone Projection
         pipeline.push({
@@ -491,42 +509,41 @@ class PackageService {
                 title: "$items.title",
                 isActive: "$items.isActive",
                 pricing: "$items.pricing",
-                pricePerNight: "$items.pricePerNight",
-                pricePerPerson: "$items.pricePerPerson",
-                pricePerDay: "$items.pricePerDay",
                 location: "$items.location",
                 photos: "$items.photos",
                 category: "$items.category",
-                catalogId: "$items.catalogId",
-                reviews: "$reviews"
+                reviews: {
+                    average: {
+                        $cond: [
+                            { $gt: [{ $size: "$ratingStats" }, 0] },
+                            { $round: [{ $arrayElemAt: ["$ratingStats.average", 0] }, 1] },
+                            0
+                        ]
+                    },
+                    count: {
+                        $cond: [
+                            { $gt: [{ $size: "$ratingStats" }, 0] },
+                            { $arrayElemAt: ["$ratingStats.count", 0] },
+                            0
+                        ]
+                    }
+                },
+                wishlist: hasUserId
+                    ? { $gt: [{ $size: { $ifNull: ["$userWishlist", []] } }, 0] }
+                    : { $literal: false }
             }
         });
 
-        // Execute MongoDB Aggregation
         const items = await Package.aggregate(pipeline);
-
-        // =========================================================================
-        // STEP 3: Post-Aggregation Filtering & Standardized Response Grouping
-        // Single O(N) grouping pass with vendor location priority
-        // =========================================================================
-
         const { latitude, longitude, hasCoords } = normalizeCoordinates(lat, lng);
         const radiusKm = parseFloat(radius) || 50;
-
         const itemsByCategory = new Map();
-
         for (const item of items) {
-            // 3.1 Item-level Category Compliance Verification
             const vId = item.vendor?.toString();
             const itemCatKey = (item.category || '').toLowerCase();
             const catSlug = Object.keys(CATEGORY_MAP).find(s => CATEGORY_MAP[s].toLowerCase() === itemCatKey) || itemCatKey;
             const allowedCategories = vendorCategoryMap.get(vId);
-            if (!allowedCategories || (!allowedCategories.has(catSlug) && !allowedCategories.has(itemCatKey))) {
-                continue;
-            }
-
-            // 3.2 Geo-location distance calculation & radius filter
-            // Priority given to vendor/business location coordinates, as traveller visits vendor first
+            if (!allowedCategories || (!allowedCategories.has(catSlug) && !allowedCategories.has(itemCatKey))) continue;
             const vendor = validVendorMap.get(vId);
             const vendorCoords = vendor?.address?.location?.coordinates;
             const itemCoords = item.location?.coordinates;
@@ -538,9 +555,7 @@ class PackageService {
                 if (itemLat !== undefined && itemLng !== undefined && (itemLat !== 0 || itemLng !== 0)) {
                     const dist = calculateDistanceKm(latitude, longitude, itemLat, itemLng);
                     item.distance = dist;
-                    if (dist !== null && dist > radiusKm) {
-                        continue;
-                    }
+                    if (dist !== null && dist > radiusKm) continue;
                 } else {
                     item.distance = null;
                 }
@@ -567,46 +582,33 @@ class PackageService {
                 const target = category.trim().toLowerCase();
                 const targetKey = (CATEGORY_MAP[target] || target).toLowerCase();
                 const isMatch = (slug === target || schemaKey === target || slug === targetKey || schemaKey === targetKey);
-                if (!isMatch) {
-                    continue;
-                }
+                if (!isMatch) continue;
             }
 
-            const matchedItems = (itemsByCategory.get(schemaKey) || []).concat(
-                (schemaKey !== slug ? (itemsByCategory.get(slug) || []) : [])
-            );
+            const matchedItems = (itemsByCategory.get(schemaKey) || []).concat(schemaKey !== slug ? (itemsByCategory.get(slug) || []) : []);
 
-            // Sirf wahi category include karo jinme data ho (Skip empty categories)
-            if (matchedItems.length === 0) {
-                continue;
-            }
+            if (matchedItems.length === 0) continue;
 
             result[slug] = matchedItems.map(item => {
-                const vendor = validVendorMap.get(item.vendor?.toString());
-                const vendorAddressString = vendor?.address?.addressLine1 || addressPayload(vendor?.address) || '';
-                const effectiveAddress = item.location?.address || vendorAddressString || '';
-                const vendorCoords = vendor?.address?.location?.coordinates;
-                const hasVendorCoords = Array.isArray(vendorCoords) && (vendorCoords[0] !== 0 || vendorCoords[1] !== 0);
-
-                const effectiveLocation = (item.location && Array.isArray(item.location.coordinates) && (item.location.coordinates[0] !== 0 || item.location.coordinates[1] !== 0)) ? item.location : (hasVendorCoords ? vendor.address.location : (item.location || {}));
-
                 return {
                     id: item._id,
-                    _id: item._id,
                     title: item.title,
                     isActive: item.isActive,
-                    pricing: item.pricing || {},
-                    pricePerNight: item.pricePerNight,
-                    pricePerPerson: item.pricePerPerson,
-                    pricePerDay: item.pricePerDay,
-                    address: effectiveAddress,
-                    location: effectiveLocation,
-                    photos: item.photos || "",
-                    distance: item.distance ?? null,
+                    pricing: {
+                        basePrice: item.pricing.basePrice || 0,
+                        gst: item.pricing.gst || 18,
+                        sellingPrice: item.pricing.sellingPrice || 0,
+                    },
+                    address: item?.location?.address || '',
+                    location: getLocationPoint(item?.location),
+                    photos: item.photos[0]?.url || "",
                     category_name: cat.name || "",
-                    category_slug: slug,
                     category_id: cat._id || "",
-                    reviews: item.reviews || []
+                    rating: {
+                        average: item.reviews?.average || 0,
+                        count: item.reviews?.count || 0
+                    },
+                    wishlist: Boolean(item.wishlist)
                 };
             });
         }
@@ -620,8 +622,6 @@ class PackageService {
         }
 
         const tEnd = performance.now();
-        // console.log(`[getBrowsePackages] (DB FETCH) Completed in ${(tEnd - t0).toFixed(2)}ms`);
-
         return result;
     }
 
