@@ -26,7 +26,7 @@ import { paginateArray } from '@/core/Helpers/queryUtils.js';
 import { getBy, getManyBy, getCategoriesBy } from '@/core/Helpers/queryHelpers.js';
 import Controller from '@/core/Controllers/Controller.js';
 import { formatPackageItem } from '@/core/Helpers/package.js';
-import { getBrowsePackages } from '@/core/Helpers/browsePackages.js';
+import { getBrowsePackages } from '@/core/Helpers/Package/browsePackages.js';
 import { parseQuery } from '@/core/Helpers/search';
 
 /**

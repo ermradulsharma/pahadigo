@@ -6,6 +6,8 @@ import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { paginateArray } from '@/core/Helpers/queryUtils.js';
 import Controller from '@/core/Controllers/Controller.js';
 import { getLocationPoint } from '@/core/Helpers/addressHelper';
+import { parseQuery } from '@/core/Helpers/search';
+import getWishlistPackages from '@/core/Helpers/Package/wishlistPackage';
 
 /**
  * TravellerController (Traveller Role) - Handles Wishlist, Search History, and preferences.
@@ -39,47 +41,17 @@ class TravellerController extends Controller {
     // GET /traveller/wishlist
     async getWishlist(req) {
         try {
-            const url = new URL(req.url);
-            const page = parseInt(url.searchParams.get('page')) || 1;
-            const limit = parseInt(url.searchParams.get('limit')) || 5;
+            const userId = req.user?.id;
+            const options = parseQuery(req.url);
+            const result = await getWishlistPackages({ userId, ...options });
 
-            const wishlistEntries = await Wishlist.find({ user: req.user.id }).sort({ _id: -1 }).lean();
-            if (!wishlistEntries.length) {
-                const { items: emptyItems, pagination: emptyPagination } = paginateArray([], page, limit);
-                return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.WISHLIST.EMPTY, emptyItems, emptyPagination);
+            const isEmpty = !result || (Array.isArray(result.items) && result.items.length === 0);
+            const message = isEmpty ? RESPONSE_MESSAGES.WISHLIST.EMPTY : RESPONSE_MESSAGES.WISHLIST.FETCHED;
+
+            if (result && result.pagination) {
+                return this.paginatedSuccess(HTTP_STATUS.OK, message, result.items, result.pagination);
             }
-
-            const itemIds = wishlistEntries.map(e => e.itemId.toString());
-            const packageItems = await PackageService.getMultiplePackageItems(itemIds);
-            const categories = await Category.find({}).lean();
-
-            const itemMap = packageItems.reduce((acc, item) => { acc[item.id.toString()] = item; return acc; }, {});
-            const categoryMap = categories.reduce((acc, cat) => { acc[cat.slug.toLowerCase()] = cat; return acc; }, {});
-
-            const items = wishlistEntries.map(entry => {
-                const item = itemMap[entry.itemId.toString()];
-                if (!item) return null;
-                const category = categoryMap[item.category_slug.toLowerCase()];
-                return {
-                    wishlistId: entry._id,
-                    id: item.id,
-                    title: item.title,
-                    isActive: item.isActive,
-                    pricing: {
-                        basePrice: item.pricing?.basePrice || 0,
-                        sellingPrice: item.pricing?.sellingPrice || 0,
-                        gst: item.pricing?.gst || 0
-                    },
-                    address: item.location?.address || '',
-                    location: getLocationPoint(item.location?.coordinates),
-                    image: item.photos?.[0].url || "",
-                    category_name: category?.name || item.category_slug,
-                    category_slug: item.category_slug
-                };
-            }).filter(Boolean);
-
-            const { items: paginatedItems, pagination } = paginateArray(items, page, limit);
-            return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.WISHLIST.FETCHED, paginatedItems, pagination);
+            return this.success(HTTP_STATUS.OK, message, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message);
         }

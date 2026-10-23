@@ -35,7 +35,7 @@ import {
     applyTaxesToPricing,
     enrichItemsWithTaxes
 } from '@/core/Services/Shared/PackageCore.js';
-import { getBrowsePackages } from '@/core/Helpers/browsePackages.js';
+import { getBrowsePackages } from '@/core/Helpers/Package/browsePackages.js';
 
 /**
  * PackageService (General Role)

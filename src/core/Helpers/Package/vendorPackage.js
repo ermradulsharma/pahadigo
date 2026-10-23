@@ -8,7 +8,7 @@
 import { getPackageBy, getBusinessByUserId, getReviewsBy } from '@/core/Helpers/queryHelpers.js';
 import { getLocationPoint } from '@/core/Helpers/addressHelper.js';
 import { calculateDistanceKm } from '@/core/Services/Shared/PackageCore.js';
-import { formatPackageItem } from '@/core/Helpers/search.js';
+import { packageItemResponse } from './packageResponse.js';
 
 /**
  * Retrieves, filters, and formats a vendor's package catalog with search, price, geo, and pagination support.
@@ -138,7 +138,7 @@ export async function getVendorPackages(
             }
 
             // Formatted vendor package item using shared helper
-            const formattedItem = formatPackageItem(item, { name, slug, id }, reviewStatsMap);
+            const formattedItem = packageItemResponse(item, { name, slug, id }, reviewStatsMap);
 
             flatItems.push(formattedItem);
             categorizedItems[slug].push(formattedItem);
