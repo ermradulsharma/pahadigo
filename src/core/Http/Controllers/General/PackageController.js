@@ -26,8 +26,9 @@ import { paginateArray } from '@/core/Helpers/queryUtils.js';
 import { getBy, getManyBy, getCategoriesBy } from '@/core/Helpers/queryHelpers.js';
 import Controller from '@/core/Controllers/Controller.js';
 import { formatPackageItem } from '@/core/Helpers/package.js';
-import { getBrowsePackages } from '@/core/Helpers/Package/browsePackages.js';
+// import { getBrowsePackages } from '@/core/Helpers/Package/browsePackages.js';
 import { parseQuery } from '@/core/Helpers/search';
+import { getTestBrowsePackages } from '@/core/Helpers/Package/testBrowsePackages';
 
 /**
  * PackageController (General / Public Role)
@@ -51,14 +52,16 @@ class PackageController extends Controller {
      */
     async browsePackages(req) {
         try {
-            const { page, limit, minPrice, maxPrice, isFlat, sort, query, category, lat, lng, radius, address } = parseQuery(req.url);
-            const packages = await getBrowsePackages({ query, category, minPrice, maxPrice, sort, lat, lng, radius, address, userId: req.user?.id, page, limit, isFlat });
-            if (query) {
-                const totalCount = isFlat ? (packages?.pagination?.total || 0) : Object.values(packages || {}).reduce((acc, cat) => acc + (cat?.pagination?.total || 0), 0);
-                await this._logSearch(query, req.user, totalCount);
+            const userId = req.user?.id;
+            const options = parseQuery(req.url);
+            const result = await getTestBrowsePackages({ userId, ...options });
+            if (options.query) {
+                const totalCount = options.isFlat ? (result?.pagination?.total || 0) : Object.values(result || {}).reduce((acc, cat) => acc + (cat?.pagination?.total || 0), 0);
+                await this._logSearch(options.query, req.user, totalCount);
             }
-            if (isFlat) return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, packages.items || packages.data || [], packages.pagination || {});
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, packages);
+
+            if (result && result.pagination) return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, result.items || result.data, result.pagination);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }

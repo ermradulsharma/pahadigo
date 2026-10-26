@@ -74,10 +74,12 @@ async function getActiveCategories() {
  * 
  * @returns {Promise<{ items: Array<Object>, pagination: Object } | Object<string, Array<Object>>>}
  */
-export async function getWishlistPackages({ userId, page = 1, limit = 10, minPrice = 0, maxPrice = null, isFlat = true, sort = '', query = '', category = '', lat = null, lng = null, radius = null, address = '' } = {}) {
-    if (!userId) {
-        return isFlat ? paginateArray([], page, limit) : {};
-    }
+export async function getWishlistPackages(options = {}) {
+    const { userId, page = 1, limit = 10, minPrice = 0, maxPrice = null, format = 'grouped', sort = '', query = '', category = '', lat = null, lng = null, radius = null, address = '' } = options;
+    let isFlat = true;
+    if (format === '' || format === 'grouped') isFlat = false;
+    if (!userId) return isFlat ? paginateArray([], page, limit) : {};
+
     const userObjectId = new mongoose.Types.ObjectId(userId);
     const categories = await getActiveCategories();
 
@@ -252,7 +254,6 @@ export async function getWishlistPackages({ userId, page = 1, limit = 10, minPri
     if (!isFlat) {
         const categorizedResult = {};
         const categorySlugs = [...new Set(items.map(i => i.category_slug).filter(Boolean))];
-
         for (const slug of categorySlugs) {
             const catItems = items.filter(i => i.category_slug === slug);
             if (catItems.length > 0) {

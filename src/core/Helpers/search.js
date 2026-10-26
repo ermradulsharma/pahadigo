@@ -46,7 +46,7 @@ export function parseQuery(urlStr) {
 
     // Output format & sort options
     const format = (url.searchParams.get('format') || '').toLowerCase();
-    const isFlat = format === 'flat' ? true : false;
+    // const isFlat = format && format.trim() === 'flat' ? true : false;
     const sort = (url.searchParams.get('sort') || '').trim();
 
     // Search, category & location filters
@@ -71,7 +71,7 @@ export function parseQuery(urlStr) {
         limit,
         minPrice,
         maxPrice,
-        isFlat,
+        format,
         sort,
         query,
         category,

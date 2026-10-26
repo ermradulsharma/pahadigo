@@ -24,13 +24,14 @@ import VendorClosure from '@/core/Models/VendorClosure.js';
 import VendorDocument from '@/core/Models/VendorDocument.js';
 import Category from '@/core/Models/Category.js';
 import MasterService from '@/core/Services/MasterService.js';
-import { getManyBy, getCategoriesBy, getVendorDocumentsBy } from '@/core/Helpers/queryHelpers.js';
+import { getManyBy, getCategoriesBy, getVendorDocumentsBy, getCategoryBySlug } from '@/core/Helpers/queryHelpers.js';
 import { CATEGORY_MAP, SCHEMA_KEYS } from '@/core/Constants/categories.js';
 import { STATUS, VERIFICATION_STATUS, VENDOR_PROFILE_TYPES } from '@/core/Constants/index.js';
 import { getLocationPoint } from '@/core/Helpers/addressHelper.js';
 import { normalizeCoordinates, calculateDistanceKm } from '@/core/Services/Shared/PackageCore.js';
 import { formatPackageItem } from '@/core/Helpers/search.js';
 import { packageItemResponse } from './packageResponse.js';
+import { paginateItems, buildEmptyResult, schemaKey } from './shared.js';
 
 // =============================================================================
 // CACHING ARCHITECTURE
@@ -67,24 +68,25 @@ const BROWSE_CACHE_TTL_MS = 120 * 1000;
 
 /**
  * Constructs a unique, deterministic cache key from all normalized input parameters.
- * @param {Object} params - Normalized request parameters
+ * @param {Object} q - Normalized request parameters
  * @returns {string} Colon-delimited cache key
  */
-function getBrowseCacheKey(params) {
+function getBrowseCacheKey(q) {
+    const { query, category, minPrice, maxPrice, sort, lat, lng, radius, address, userId, isFlat, page, limit } = q || {};
     return [
-        params.query || '',
-        params.category || '',
-        params.minPrice || 0,
-        params.maxPrice ?? '',
-        params.sort || '',
-        params.lat ?? '',
-        params.lng ?? '',
-        params.radius || 50,
-        params.address || '',
-        params.userId || '',
-        Boolean(params.isFlat === true || params.isFlat === 'true'),
-        params.page || 1,
-        params.limit !== undefined ? params.limit : 100
+        query || '',
+        category || '',
+        minPrice || 0,
+        maxPrice ?? '',
+        sort || '',
+        lat ?? '',
+        lng ?? '',
+        radius || 50,
+        address || '',
+        userId || '',
+        Boolean(isFlat === true || isFlat === 'true'),
+        page || 1,
+        limit !== undefined ? limit : 100
     ].join('::');
 }
 
@@ -113,110 +115,44 @@ function getBrowseCacheKey(params) {
  *
  * @returns {Promise<Object>} Formatted result object with items, ratings, wishlist flags, and pagination
  */
-export async function getBrowsePackages(params = {}) {
-    const {
-        query = '',
-        category = '',
-        minPrice = 0,
-        maxPrice = null,
-        sort = '',
-        lat = null,
-        lng = null,
-        radius = 50,
-        address = '',
-        userId = null,
-        isFlat = false,
-        page = 1,
-        limit = 100
-    } = typeof params === 'object' && params !== null ? params : {};
+export async function getBrowsePackages(options = {}) {
+    const { userId, page = 1, limit = 10, minPrice = 0, maxPrice = null, format, sort = '', query = '', category = '', lat = null, lng = null, radius = null, address = '' } = options;
 
-    // Parameter Normalization
-    const isFlatBool = isFlat === true || isFlat === 'true';
-    const pageNum = Math.max(1, parseInt(page, 10) || 1);
-    const limitNum = Math.max(0, parseInt(limit, 10) || 0);
+    let isFlat = false;
+    if (format === 'flat') isFlat = true;
 
-    // Category Normalization (resolves schema keys such as 'homestay', 'trekking', 'vehicleRental')
-    const filterCatSlug = (typeof category === 'string' && category.trim()) ? category.trim().toLowerCase() : '';
-    const filterCatSchemaKey = filterCatSlug ? (CATEGORY_MAP[filterCatSlug] || filterCatSlug).toLowerCase() : '';
-    const matchedCategoryKey = filterCatSchemaKey ? Object.values(SCHEMA_KEYS).find(k => k.toLowerCase() === filterCatSchemaKey) : null;
-    const categoriesToFlatten = matchedCategoryKey ? [matchedCategoryKey] : Object.values(SCHEMA_KEYS);
+    let categoryObj = {};
+    let slugQuery = {};
+    if (category) {
+        categoryObj = await getCategoryBySlug(category);
+        slugQuery.category_slug = categoryObj.slug;
+    } else {
+        categoryObj = await getCategoriesBy({ isActive: true })
+    }
 
-    // Check LRU Cache
-    const cacheKey = getBrowseCacheKey({
-        query,
-        category: filterCatSlug,
-        minPrice,
-        maxPrice,
-        sort,
-        lat,
-        lng,
-        radius,
-        address,
-        userId,
-        isFlat: isFlatBool,
-        page: pageNum,
-        limit: limitNum
-    });
-
-    const cached = browseCache.get(cacheKey);
-    if (cached && (Date.now() - cached.time < BROWSE_CACHE_TTL_MS)) return cached.data;
 
     /**
      * Internal helper to sort and paginate an array of package items.
      * @param {Array<Object>} itemsList - Raw package items
      * @returns {{ items: Array<Object>, pagination: Object }} Paginated payload
      */
-    const paginateAndSort = (itemsList = []) => {
-        if (sort === 'price_asc') {
-            itemsList.sort((a, b) => (a.pricing?.sellingPrice || 0) - (b.pricing?.sellingPrice || 0));
-        } else if (sort === 'price_desc') {
-            itemsList.sort((a, b) => (b.pricing?.sellingPrice || 0) - (a.pricing?.sellingPrice || 0));
-        } else {
-            itemsList.sort((a, b) => (b.id || '').toString().localeCompare((a.id || '').toString()));
-        }
-
-        const total = itemsList.length;
-        const skip = (pageNum - 1) * (limitNum || total);
-        const paginatedItems = limitNum > 0 ? itemsList.slice(skip, skip + limitNum) : itemsList;
-        const totalPages = limitNum > 0 ? (Math.ceil(total / limitNum) || 0) : 1;
-
-        return {
-            ...(isFlat ? { data: paginatedItems } : { items: paginatedItems }),
-            pagination: {
-                total,
-                page: pageNum,
-                limit: limitNum === 0 ? total : limitNum,
-                totalPages
-            }
-        };
-    };
-
-    /**
-     * Builds and caches an empty response payload when filters produce zero matches.
-     * @returns {Object} Empty categorized dictionary or empty flat array with pagination
-     */
-    const buildEmptyResult = () => {
-        const emptyResult = isFlatBool ? paginateAndSort([]) : {};
-        browseCache.set(cacheKey, { data: emptyResult, time: Date.now() });
-        return emptyResult;
-    };
+    // const paginateItems = paginateItems([], { sort, page, limit });
+    // const emptyResult = buildEmptyResult(isFlat, { sort, page, limit });
 
     // =========================================================================
     // STEP 1: Parallel Pre-fetching & Strict Vendor-Level Compliance
     // =========================================================================
 
     const now = new Date();
-    const docQuery = {};
-    if (filterCatSlug) docQuery.category_slug = { $in: [filterCatSlug, filterCatSchemaKey] };
 
     // 1.1 Concurrently fetch category documents, active vendor vacation closures, and categories
     const [allDocs, activeClosures, categories] = await Promise.all([
-        getVendorDocumentsBy(docQuery, 'vendor category_slug status url expiry_date'),
+        getVendorDocumentsBy(slugQuery, 'vendor category_slug status url expiry_date'),
         getManyBy(VendorClosure, { isActive: true, startDate: { $lte: now }, endDate: { $gte: now } }, 'vendor'),
-        getCachedCategories()
+        category ? [categoryObj] : categoryObj
     ]);
 
-    if (!allDocs || allDocs.length === 0) return buildEmptyResult();
+    if (!allDocs || allDocs.length === 0) return buildEmptyResult(isFlat, { sort, page, limit });
 
     // 1.2 Evaluate Category Verification & Strict Document Expiry
     // A vendor is permitted for a category IF AND ONLY IF:
@@ -259,7 +195,7 @@ export async function getBrowsePackages(params = {}) {
         }
     }
 
-    if (vendorCategoryMap.size === 0) return buildEmptyResult();
+    if (vendorCategoryMap.size === 0) return buildEmptyResult(isFlat, { sort, page, limit });
 
     // 1.3 Vendor Operational Availability Check: Filter out vendors currently on vacation/closure
     const closedVendorIdSet = new Set(activeClosures.map(c => c.vendor?.toString()).filter(Boolean));
@@ -269,7 +205,7 @@ export async function getBrowsePackages(params = {}) {
         if (!closedVendorIdSet.has(id)) eligibleVendorIdStrings.push(id);
     }
 
-    if (eligibleVendorIdStrings.length === 0) return buildEmptyResult();
+    if (eligibleVendorIdStrings.length === 0) return buildEmptyResult(isFlat, { sort, page, limit });
     const eligibleVendorObjectIds = eligibleVendorIdStrings.map(id => new mongoose.Types.ObjectId(id));
 
     // 1.4 Vendor KYC & MasterService Verification Criteria (PAN, Aadhaar Front+Back, Business Reg)
@@ -283,7 +219,7 @@ export async function getBrowsePackages(params = {}) {
         const addrRegex = new RegExp(address.trim(), 'i');
 
         // Priority 1: Match directly on vendor registered business address
-        const vendorAddressMatchQuery = {
+        const vendorAddressQuery = {
             _id: { $in: eligibleVendorObjectIds },
             $or: [
                 { 'address.city': addrRegex },
@@ -294,26 +230,27 @@ export async function getBrowsePackages(params = {}) {
         };
 
         // Priority 2: Match on individual package item location fields
-        const packageAddressConditions = [];
-        for (const key of categoriesToFlatten) {
-            packageAddressConditions.push({ [`${key}.location.address`]: addrRegex }, { [`${key}.location.city`]: addrRegex });
+        const itemAddressQuery = [];
+        for (const { name } of categories) {
+            const key = schemaKey(name);
+            itemAddressQuery.push({ [`${key}.location.address`]: addrRegex }, { [`${key}.location.city`]: addrRegex });
         }
 
         // Execute vendor address and package address checks concurrently via queryHelpers
         const [directVendorDocs, packageDocsWithMatchingAddress] = await Promise.all([
-            getManyBy(Vendor, vendorAddressMatchQuery, '_id'),
-            getManyBy(Package, { vendor: { $in: eligibleVendorObjectIds }, $or: packageAddressConditions }, 'vendor')
+            getManyBy(Vendor, vendorAddressQuery, '_id'),
+            getManyBy(Package, { vendor: { $in: eligibleVendorObjectIds }, $or: itemAddressQuery }, 'vendor')
         ]);
 
         const allMatchedVendorIds = Array.from(new Set([...directVendorDocs.map(v => v._id?.toString()), ...packageDocsWithMatchingAddress.map(p => p.vendor?.toString())])).filter(Boolean).map(id => new mongoose.Types.ObjectId(id));
 
-        if (allMatchedVendorIds.length === 0) return buildEmptyResult();
+        if (allMatchedVendorIds.length === 0) return buildEmptyResult(isFlat, { sort, page, limit });
         vendorQuery._id = { $in: allMatchedVendorIds };
     }
 
     // 1.6 Fetch compliant vendors with thin projection (_id and address coordinates only)
     const validVendors = await getManyBy(Vendor, vendorQuery, '_id address');
-    if (!validVendors || validVendors.length === 0) return buildEmptyResult();
+    if (!validVendors || validVendors.length === 0) return buildEmptyResult(isFlat, { sort, page, limit });
 
     const validVendorMap = new Map(validVendors.map(v => [v._id.toString(), v]));
     const validVendorObjectIds = validVendors.map(v => v._id);
@@ -329,19 +266,28 @@ export async function getBrowsePackages(params = {}) {
             $project: {
                 vendor: 1,
                 items: {
-                    $concatArrays: categoriesToFlatten.map(key => ({
-                        $map: {
-                            input: {
-                                $filter: {
-                                    input: { $ifNull: [`$${key}`, []] },
-                                    as: "subItem",
-                                    cond: { $eq: ["$$subItem.isActive", true] }
+                    $concatArrays: categories.map(({ name, slug }) => {
+                        const key = schemaKey(name);
+                        return {
+                            $map: {
+                                input: {
+                                    $filter: {
+                                        input: { $ifNull: [`$${key}`, []] },
+                                        as: "subItem",
+                                        cond: { $eq: ["$$subItem.isActive", true] }
+                                    }
+                                },
+                                as: "item",
+                                in: {
+                                    $mergeObjects: ["$$item", {
+                                        catalog_id: "$_id",
+                                        category_name: name,
+                                        category_slug: slug
+                                    }]
                                 }
-                            },
-                            as: "item",
-                            in: { $mergeObjects: ["$$item", { category: key, catalogId: "$_id" }] }
+                            }
                         }
-                    }))
+                    })
                 }
             }
         },
@@ -373,11 +319,6 @@ export async function getBrowsePackages(params = {}) {
         if (min > 0) priceFilter.$gte = min;
         if (max !== null) priceFilter.$lte = max;
         pipeline.push({ $match: { "items.pricing.sellingPrice": priceFilter } });
-    }
-
-    // 2.4 Targeted Category Filter
-    if (filterCatSlug) {
-        pipeline.push({ $match: { "items.category": { $in: [filterCatSlug, filterCatSchemaKey] } } });
     }
 
     // 2.5 Price Sorting
@@ -455,29 +396,18 @@ export async function getBrowsePackages(params = {}) {
     pipeline.push({
         $project: {
             _id: "$items._id",
+            id: "$items._id",
             vendor: "$vendor",
             title: "$items.title",
             isActive: "$items.isActive",
             pricing: "$items.pricing",
+            address: "$items.location.address",
             location: "$items.location",
             photos: "$items.photos",
-            category: "$items.category",
-            reviews: {
-                average: {
-                    $cond: [
-                        { $gt: [{ $size: "$ratingStats" }, 0] },
-                        { $round: [{ $arrayElemAt: ["$ratingStats.average", 0] }, 1] },
-                        0
-                    ]
-                },
-                count: {
-                    $cond: [
-                        { $gt: [{ $size: "$ratingStats" }, 0] },
-                        { $arrayElemAt: ["$ratingStats.count", 0] },
-                        0
-                    ]
-                }
-            },
+            category_slug: "$items.category_slug",
+            category_name: "$items.category_name",
+            category_id: "$items.category_id",
+            rating: { $arrayElemAt: ["$reviewStats", 0] },
             wishlist: hasUserId ? { $gt: [{ $size: { $ifNull: ["$userWishlist", []] } }, 0] } : { $literal: false }
         }
     });
@@ -492,9 +422,10 @@ export async function getBrowsePackages(params = {}) {
     const itemsByCategory = new Map();
 
     for (const item of items) {
+        // console.log("item 1111", item)
         const vId = item.vendor?.toString();
-        const itemCatKey = (item.category || '').toLowerCase();
-        const catSlug = Object.keys(CATEGORY_MAP).find(s => CATEGORY_MAP[s].toLowerCase() === itemCatKey) || itemCatKey;
+        const itemCatKey = item.category_slug;
+        const catSlug = item.category_slug;
 
         // Verify that this vendor's category is still valid and not expired
         const allowedCategories = vendorCategoryMap.get(vId);
@@ -531,48 +462,32 @@ export async function getBrowsePackages(params = {}) {
     }
 
     // 3.2 Structure and Normalize Items with Final Schema
-    const result = {};
-
-    for (const cat of categories) {
-        const slug = (cat.slug || '').toLowerCase();
-        const schemaKey = (CATEGORY_MAP[slug] || slug).toLowerCase();
-
-        // Skip non-requested categories if filter was explicitly provided
-        if (filterCatSlug && slug !== filterCatSlug && schemaKey !== filterCatSlug && slug !== filterCatSchemaKey && schemaKey !== filterCatSchemaKey) {
-            continue;
-        }
-
-        const matchedItems = (itemsByCategory.get(schemaKey) || []).concat(schemaKey !== slug ? (itemsByCategory.get(slug) || []) : []);
-        if (matchedItems.length === 0) continue;
-
-        result[slug] = matchedItems.map(item => packageItemResponse(item, { name: cat.name, slug: cat.slug, id: cat._id }, item.reviews, { wishlist: item.wishlist }));
-    }
 
     // 3.3 Output Formatting (isFlat boolean support) & Pagination
     let finalResult;
 
-    if (isFlatBool) {
-        const allItems = Object.values(result).flat();
-        finalResult = paginateAndSort(allItems);
+    if (isFlat) {
+        const allItems = Object.values(itemsByCategory).flat();
+        finalResult = paginateItems(allItems, options);
     } else {
         finalResult = {};
-        for (const slug in result) {
-            finalResult[slug] = paginateAndSort(result[slug]);
+        for (const slug in itemsByCategory) {
+            finalResult[slug] = paginateItems(itemsByCategory[slug], options);
         }
     }
 
     // 3.4 Bounded Cache Eviction & Storage
-    browseCache.set(cacheKey, { data: finalResult, time: Date.now() });
-    if (browseCache.size > 200) {
-        const expireBefore = Date.now() - BROWSE_CACHE_TTL_MS;
-        for (const [k, v] of browseCache.entries()) {
-            if (v.time < expireBefore) browseCache.delete(k);
-        }
-        while (browseCache.size > 200) {
-            const oldestKey = browseCache.keys().next().value;
-            browseCache.delete(oldestKey);
-        }
-    }
+    // browseCache.set(cacheKey, { data: finalResult, time: Date.now() });
+    // if (browseCache.size > 200) {
+    //     const expireBefore = Date.now() - BROWSE_CACHE_TTL_MS;
+    //     for (const [k, v] of browseCache.entries()) {
+    //         if (v.time < expireBefore) browseCache.delete(k);
+    //     }
+    //     while (browseCache.size > 200) {
+    //         const oldestKey = browseCache.keys().next().value;
+    //         browseCache.delete(oldestKey);
+    //     }
+    // }
 
     return finalResult;
 }

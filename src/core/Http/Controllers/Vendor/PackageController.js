@@ -22,11 +22,19 @@ class PackageController extends Controller {
     // GET /vendor/packages
     async getPackages(req) {
         try {
-            const { page, limit, minPrice, maxPrice, isFlat, sort, query, category, lat, lng, radius, address } = parseQuery(req.url);
             const userId = req.user.id;
-            const result = await getVendorPackages(userId, page, limit, minPrice, maxPrice, isFlat, sort, query, category, lat, lng, radius, address);
-            if (isFlat) return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, result.items, result.pagination);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, result);
+            const options = parseQuery(req.url);
+            const result = await getVendorPackages({ userId, ...options });
+            const isEmpty = !result || (Array.isArray(result.items || result.data) && result.items.length === 0);
+            const message = isEmpty ? RESPONSE_MESSAGES.WISHLIST.EMPTY : RESPONSE_MESSAGES.WISHLIST.FETCHED;
+
+            if (result && result.pagination) {
+                return this.paginatedSuccess(HTTP_STATUS.OK, message, result.items || result.data, result.pagination);
+            }
+            return this.success(HTTP_STATUS.OK, message, result);
+            // if (options.isFlat) return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, result.items || result.data || [], result.pagination || {});
+            // if (options.isFlat) return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, result.items, result.pagination);
+            // return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, result);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }

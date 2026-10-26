@@ -4,11 +4,12 @@
  * @description Unified, lightweight engine for retrieving, filtering, and formatting a vendor's package inventory.
  * Directly aligned with Vendor (VendorSchema) and Package (VendorPackageSchema) models.
  */
-
+import mongoose from 'mongoose';
 import { getPackageBy, getBusinessByUserId, getReviewsBy } from '@/core/Helpers/queryHelpers.js';
 import { getLocationPoint } from '@/core/Helpers/addressHelper.js';
 import { calculateDistanceKm } from '@/core/Services/Shared/PackageCore.js';
 import { packageItemResponse } from './packageResponse.js';
+import { paginateArray } from '../queryUtils.js';
 
 /**
  * Retrieves, filters, and formats a vendor's package catalog with search, price, geo, and pagination support.
@@ -31,37 +32,20 @@ import { packageItemResponse } from './packageResponse.js';
  *
  * @returns {Promise<{ items: Array<Object>, pagination: Object } | Object<string, Array<Object>>>}
  */
-export async function getVendorPackages(
-    userId,
-    page = 1,
-    limit = 10,
-    minPrice = 0,
-    maxPrice = null,
-    isFlat = true,
-    sort = '',
-    query = '',
-    category = '',
-    lat = null,
-    lng = null,
-    radius = null,
-    address = ''
-) {
-    const isFlatBool = isFlat === true || isFlat === 'true';
+export async function getVendorPackages(options = {}) {
+    const { userId, page = 1, limit = 10, minPrice = 0, maxPrice = null, format = 'grouped', sort = '', query = '', category = '', lat = null, lng = null, radius = null, address = '' } = options;
+
+    let isFlat = true;
+    if (format === 'grouped') isFlat = false;
+
+    const userObjectId = new mongoose.Types.ObjectId(userId);
 
     // 1. Resolve Vendor Profile
-    const vendor = await getBusinessByUserId(userId, 'category');
-    if (!vendor) {
-        return isFlatBool
-            ? { items: [], pagination: { total: 0, page, limit, totalPages: 0 } }
-            : {};
-    }
+    const vendor = await getBusinessByUserId(userObjectId, 'category');
+    if (!vendor) return isFlat ? paginateArray([], page, limit) : {};
 
     const vendorId = vendor._id.toString();
-    const vendorCategories = (vendor?.category || []).map(({ name, slug, _id }) => ({
-        name,
-        slug,
-        id: _id.toString()
-    }));
+    const vendorCategories = (vendor?.category || []).map(({ name, slug, _id }) => ({ name, slug, id: _id.toString() }));
 
     // 2. Resolve Vendor Package Catalog & Reviews Concurrently
     const [catalog, reviews] = await Promise.all([
@@ -69,11 +53,7 @@ export async function getVendorPackages(
         getReviewsBy({ vendor: vendor._id, isVisible: true }, 'item.itemId rating')
     ]);
 
-    if (!catalog) {
-        return isFlatBool
-            ? { items: [], pagination: { total: 0, page, limit, totalPages: 0 } }
-            : {};
-    }
+    if (!catalog) return isFlat ? paginateArray([], page, limit) : {};
 
     // 3. Build Review Stats Lookup Map (O(1) in-memory lookup per item)
     const reviewStatsMap = new Map();
@@ -94,9 +74,7 @@ export async function getVendorPackages(
 
     // 3. Iterate authorized vendor categories and filter items
     for (const { name, slug, id } of vendorCategories) {
-        const key = name === 'Bike/Scooter Rental'
-            ? 'vehicleRental'
-            : name.replace(/[^a-zA-Z0-9 ]/g, '').split(' ').filter(Boolean).map((word, index) => (index === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())).join('');
+        const key = name === 'Bike/Scooter Rental' ? 'vehicleRental' : name.replace(/[^a-zA-Z0-9 ]/g, '').split(' ').filter(Boolean).map((word, index) => (index === 0 ? word.toLowerCase() : word.charAt(0).toUpperCase() + word.slice(1).toLowerCase())).join('');
 
         // Category filter: skip if category param is specified and doesn't match
         if (category && category !== 'all') {
@@ -154,7 +132,6 @@ export async function getVendorPackages(
         } else if (sort === 'oldest') {
             itemsList.sort((a, b) => (a.id || '').toString().localeCompare((b.id || '').toString()));
         } else {
-            // Default: newest first by ID
             itemsList.sort((a, b) => (b.id || '').toString().localeCompare((a.id || '').toString()));
         }
 
@@ -175,16 +152,18 @@ export async function getVendorPackages(
     };
 
     // 5. If isFlat is false, apply pagination & sorting inside each category
-    if (!isFlatBool) {
+    if (!isFlat) {
         const finalResult = {};
         for (const slug in categorizedItems) {
             finalResult[slug] = paginateAndSort(categorizedItems[slug]);
         }
         return finalResult;
     }
+    return paginateArray(flatItems, page, limit);
+
 
     // 6. If isFlat is true, return global flat paginated items
-    return paginateAndSort(flatItems);
+    // return paginateAndSort(flatItems);
 }
 
 export default getVendorPackages;
