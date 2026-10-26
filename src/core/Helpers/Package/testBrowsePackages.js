@@ -34,7 +34,7 @@ import { getManyBy, getCategoriesBy, getCategoryBySlug } from '@/core/Helpers/qu
 import { VERIFICATION_STATUS } from '@/core/Constants/index.js';
 import { normalizeCoordinates, calculateDistanceKm } from '@/core/Services/Shared/PackageCore.js';
 import { packageItemResponse } from './packageResponse.js';
-import { paginateItems, buildEmptyResult, schemaKey } from './shared.js';
+import { paginateItems, buildEmptyResult, sortItems, schemaKey, itemsReviews, itemsWishlist } from './shared.js';
 
 // =============================================================================
 // CACHING ARCHITECTURE
@@ -220,7 +220,26 @@ export async function getTestBrowsePackages(options = {}) {
                                     $filter: {
                                         input: { $ifNull: [`$${key}`, []] },
                                         as: "subItem",
-                                        cond: { $eq: ["$$subItem.isActive", true] }
+                                        cond: {
+                                            $and: [
+                                                { $eq: ["$$subItem.isActive", true] },
+                                                {
+                                                    $cond: {
+                                                        if: { $gt: [minPrice, 0] },
+                                                        then: { $gte: ["$$subItem.pricing.sellingPrice", minPrice] },
+                                                        else: true
+                                                    }
+                                                },
+
+                                                {
+                                                    $cond: {
+                                                        if: { $gt: [maxPrice, 0] },
+                                                        then: { $lte: ["$$subItem.pricing.sellingPrice", maxPrice] },
+                                                        else: true
+                                                    }
+                                                }
+                                            ]
+                                        }
                                     }
                                 },
                                 as: "item",
@@ -258,104 +277,17 @@ export async function getTestBrowsePackages(options = {}) {
         });
     }
 
-    // Price Filter
-    const min = Number(minPrice) || 0;
-    const max = (maxPrice !== null && maxPrice !== undefined && !isNaN(Number(maxPrice))) ? Number(maxPrice) : null;
-    if (min > 0 || max !== null) {
-        const priceFilter = {};
-        if (min > 0) priceFilter.$gte = min;
-        if (max !== null) priceFilter.$lte = max;
-        pipeline.push({ $match: { "items.pricing.sellingPrice": priceFilter } });
-    }
-
-    // Price Sorting
-    if (sort === 'price_asc' || sort === 'price_desc') {
-        const sortDir = sort === 'price_asc' ? 1 : -1;
-        pipeline.push(
-            {
-                $addFields: {
-                    sortPrice: { $ifNull: ["$items.pricing.sellingPrice", sort === 'price_asc' ? 99999999 : 0] }
-                }
-            },
-            {
-                $sort: { sortPrice: sortDir }
-            }
-        );
-    }
-
     // Reviews Lookup (Average Rating & Review Count)
-    pipeline.push({
-        $lookup: {
-            from: 'reviews',
-            let: { itemId: "$items._id" },
-            pipeline: [
-                {
-                    $match: {
-                        $expr: {
-                            $and: [
-                                { $eq: ["$item.itemId", "$$itemId"] },
-                                { $eq: ["$isVisible", true] }
-                            ]
-                        }
-                    }
-                },
-                {
-                    $group: {
-                        _id: null,
-                        average: { $avg: "$rating" },
-                        count: { $sum: 1 }
-                    }
-                }
-            ],
-            as: 'ratingStats'
-        }
-    });
+    pipeline.push(itemsReviews('ratingStats'));
+
+    // Sorting (price_asc | price_desc | oldest | Newest | rating_asc | rating_desc | default - no sort)
+    sortItems(pipeline, sort);
 
     // Wishlist Resolution (Authenticated Travellers)
-    const hasUserId = Boolean(userId && mongoose.Types.ObjectId.isValid(userId));
-    if (hasUserId) {
-        pipeline.push({
-            $lookup: {
-                from: 'wishlists',
-                let: { itemId: "$items._id" },
-                pipeline: [
-                    {
-                        $match: {
-                            $expr: {
-                                $and: [
-                                    { $eq: ["$user", new mongoose.Types.ObjectId(userId)] },
-                                    { $eq: ["$itemId", "$$itemId"] }
-                                ]
-                            }
-                        }
-                    },
-                    { $project: { _id: 1 } },
-                    { $limit: 1 }
-                ],
-                as: 'userWishlist'
-            }
-        });
-    }
+    const hasUserId = itemsWishlist(pipeline, userId);
 
     // Final Project Stage
-    pipeline.push({
-        $project: {
-            _id: "$items._id",
-            id: "$items._id",
-            vendor: "$vendor",
-            title: "$items.title",
-            isActive: "$items.isActive",
-            pricing: "$items.pricing",
-            address: "$items.location.address",
-            location: "$items.location",
-            photos: "$items.photos",
-            category_slug: "$items.category_slug",
-            category_name: "$items.category_name",
-            category_id: "$items.category_id",
-            rating: { $arrayElemAt: ["$ratingStats", 0] },
-            wishlist: hasUserId ? { $gt: [{ $size: { $ifNull: ["$userWishlist", []] } }, 0] } : { $literal: false }
-        }
-    });
+    pipeline.push(itemsProject(hasUserId));
 
     // =========================================================================
     // STEP 6: Execute Pipeline, Permitted Category Validation & Haversine Distance
