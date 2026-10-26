@@ -34,7 +34,7 @@ import { getManyBy, getCategoriesBy, getCategoryBySlug } from '@/core/Helpers/qu
 import { VERIFICATION_STATUS } from '@/core/Constants/index.js';
 import { normalizeCoordinates, calculateDistanceKm } from '@/core/Services/Shared/PackageCore.js';
 import { packageItemResponse } from './packageResponse.js';
-import { paginateItems, buildEmptyResult, sortItems, schemaKey, itemsReviews, itemsWishlist } from './shared.js';
+import { paginateItems, buildEmptyResult, sortItems, schemaKey, itemsReviews, itemsWishlist, itemsProject } from './shared.js';
 
 // =============================================================================
 // CACHING ARCHITECTURE
