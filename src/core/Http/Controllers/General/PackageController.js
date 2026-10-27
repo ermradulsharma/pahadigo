@@ -28,7 +28,7 @@ import Controller from '@/core/Controllers/Controller.js';
 import { formatPackageItem } from '@/core/Helpers/package.js';
 // import { getBrowsePackages } from '@/core/Helpers/Package/browsePackages.js';
 import { parseQuery } from '@/core/Helpers/search';
-import { getTestBrowsePackages } from '@/core/Helpers/Package/testBrowsePackages';
+import { getPackageItemById, getTestBrowsePackages } from '@/core/Helpers/Package/testBrowsePackages';
 
 /**
  * PackageController (General / Public Role)
@@ -86,29 +86,11 @@ class PackageController extends Controller {
     async getPackageDetails(req, { params }) {
         try {
             const itemId = params?.id;
+            const userId = req.user?.id || null;
             if (!itemId) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
-
-            // Retrieve package item with vendor & category compliance checks via PackageService
-            const item = await PackageService.getAvailablePackageItem(itemId);
+            const item = await getPackageItemById(itemId, userId);
             if (!item) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
-
-            // Resolve wishlist state for logged-in user via queryHelpers
-            let isWishlisted = false;
-            let wishlistId = null;
-
-            if (req.user?.id) {
-                const wishlisted = await getBy(Wishlist, { user: req.user.id, itemId: item._id }, '_id');
-                if (wishlisted) {
-                    isWishlisted = true;
-                    wishlistId = wishlisted._id.toString();
-                }
-            }
-
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, {
-                ...item,
-                wishlist: isWishlisted,
-                wishlistId
-            });
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, item);
         } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }

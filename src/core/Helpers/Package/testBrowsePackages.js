@@ -35,6 +35,7 @@ import { VERIFICATION_STATUS } from '@/core/Constants/index.js';
 import { normalizeCoordinates, calculateDistanceKm } from '@/core/Services/Shared/PackageCore.js';
 import { packageItemResponse } from './packageResponse.js';
 import { paginateItems, buildEmptyResult, sortItems, schemaKey, itemsReviews, itemsWishlist, itemsProject } from './shared.js';
+import { getAppConfig } from '@/core/Lib/appConfig.js';
 
 // =============================================================================
 // CACHING ARCHITECTURE
@@ -278,7 +279,7 @@ export async function getTestBrowsePackages(options = {}) {
     }
 
     // Reviews Lookup (Average Rating & Review Count)
-    pipeline.push(itemsReviews('ratingStats'));
+    pipeline.push(itemsReviews());
 
     // Sorting (price_asc | price_desc | oldest | Newest | rating_asc | rating_desc | default - no sort)
     sortItems(pipeline, sort);
@@ -376,4 +377,187 @@ export async function getTestBrowsePackages(options = {}) {
     return finalResult;
 }
 
-export default getTestBrowsePackages;
+/**
+ * Pure MongoDB Aggregation Pipeline to fetch a single package item subdocument.
+ * Single database trip: Extracts subdocument, attaches category metadata,
+ * populates vendor, and computes live reviews & ratings.
+ *
+ * @param {string|mongoose.Types.ObjectId} itemId - Package item subdocument _id
+ * @returns {Promise<Object|null>} Populated item object or null
+ */
+export async function getPackageItemById(itemId, userId = null) {
+    if (!itemId || !mongoose.Types.ObjectId.isValid(itemId)) return null;
+    const targetId = new mongoose.Types.ObjectId(itemId);
+
+    const categories = await getCategoriesBy({ isActive: true });
+    if (!categories || categories.length === 0) return null;
+
+    const config = await getAppConfig().catch(() => null);
+    const serviceTax = config?.tax?.service_tax ?? 10;
+
+    const hasUserId = Boolean(userId && mongoose.Types.ObjectId.isValid(userId));
+    const userObjectId = hasUserId ? new mongoose.Types.ObjectId(userId) : null;
+
+    const pipeline = [
+        { $match: { $or: categories.map(cat => ({ [`${schemaKey(cat.name)}._id`]: targetId })) } },
+        {
+            $project: {
+                vendor: 1,
+                item: {
+                    $concatArrays: categories.map(cat => {
+                        const key = schemaKey(cat.name);
+                        return {
+                            $map: {
+                                input: {
+                                    $filter: {
+                                        input: { $ifNull: [`$${key}`, []] },
+                                        as: "sub",
+                                        cond: { $eq: ["$$sub._id", targetId] }
+                                    }
+                                },
+                                as: "item",
+                                in: {
+                                    $mergeObjects: [
+                                        "$$item",
+                                        {
+                                            category_id: { $toString: cat._id },
+                                            category_slug: cat.slug,
+                                            category_name: cat.name,
+                                        }
+                                    ]
+                                }
+                            }
+                        };
+                    })
+                }
+            }
+        },
+        { $unwind: "$item" },
+        {
+            $lookup: {
+                from: 'vendors',
+                localField: 'vendor',
+                foreignField: '_id',
+                pipeline: [
+                    {
+                        $project: {
+                            _id: 0,
+                            id: { $toString: "$_id" },
+                            ownerName: 1,
+                            businessName: 1,
+                            businessNumber: 1,
+                            trustBadge: 1,
+                            isOperating: 1,
+                            isApproved: 1,
+                            profileImage: 1,
+                            address: "$address.addressLine1",
+                            location: { $ifNull: ["$address.location.coordinates", []] },
+
+                        }
+                    }
+                ],
+                as: 'business'
+            }
+        },
+        {
+            $lookup: {
+                from: 'reviews',
+                let: { itemId: "$item._id" },
+                pipeline: [
+                    {
+                        $match: {
+                            $expr: {
+                                $and: [
+                                    { $eq: ["$item.itemId", "$$itemId"] },
+                                    { $eq: ["$isVisible", true] }
+                                ]
+                            }
+                        }
+                    },
+                    // Populate Reviewer User
+                    {
+                        $lookup: {
+                            from: 'users',
+                            localField: 'user',
+                            foreignField: '_id',
+                            pipeline: [
+                                {
+                                    $project: {
+                                        _id: 0,
+                                        id: { $toString: "$_id" },
+                                        name: 1,
+                                        profileImage: 1,
+                                    }
+                                }
+                            ],
+                            as: 'userDetails'
+                        }
+                    },
+                    {
+                        $project: {
+                            _id: 0,
+                            id: { $toString: "$_id" },
+                            rating: 1,
+                            isVisible: 1,
+                            user: { $arrayElemAt: ["$userDetails", 0] },
+                            comment: 1,
+                            createdAt: 1,
+                            booking: { $toString: "$booking" }
+                        }
+                    }
+                ],
+                as: 'reviews'
+            }
+        },
+        {
+            $project: {
+                _id: 0,
+                item: 1,
+                reviews: 1,
+                business: 1
+            }
+        }
+    ];
+    const userIdExists = itemsWishlist(pipeline, userObjectId, "$item._id");
+    pipeline.push({
+        $project: {
+            id: "$item._id",
+            title: "$item.title",
+            description: "$item.description",
+            isActive: "$item.isActive",
+            availability: "$item.availability",
+            pricing: "$item.pricing",
+            address: "$item.location.address",
+            location: "$item.location.coordinates.coordinates",
+            amenities: "$item.amenities",
+            mealsIncluded: "$item.mealsIncluded",
+            mealType: "$item.mealType",
+            details: "$item.details",
+            policies: "$item.policies",
+            category_id: "$item.category_id",
+            category_slug: "$item.category_slug",
+            category_name: "$item.category_name",
+            photos: "$item.photos",
+            createdAt: "$item.createdAt",
+            updatedAt: "$item.updatedAt",
+            business: { $ifNull: [{ $arrayElemAt: ["$business", 0] }, null] },
+            rating: {
+                average: {
+                    $cond: {
+                        if: { $gt: [{ $size: "$reviews" }, 0] },
+                        then: { $round: [{ $avg: "$reviews.rating" }, 1] },
+                        else: 0
+                    }
+                },
+                count: { $size: "$reviews" }
+            },
+            reviews: "$reviews",
+            wishlist: userIdExists ? { $gt: [{ $size: { $ifNull: ["$userWishlist", []] } }, 0] } : { $literal: false }
+        }
+    })
+
+    const results = await Package.aggregate(pipeline);
+    return results[0] || null;
+}
+
+export default { getTestBrowsePackages, getPackageItemById };

@@ -66,13 +66,13 @@ export function itemsReviews(itemIdField = "$items._id", asField = "ratingStats"
  * @param {string} [asField="userWishlist"] - Output field name
  * @returns {boolean} hasUserId (true if valid user and lookup pushed)
  */
-export function itemsWishlist(pipeline, userId, asField = 'userWishlist') {
+export function itemsWishlist(pipeline, userId, itemIdField = "$items._id", asField = 'userWishlist') {
     const hasUserId = Boolean(userId && mongoose.Types.ObjectId.isValid(userId));
     if (hasUserId) {
         pipeline.push({
             $lookup: {
                 from: 'wishlists',
-                let: { itemId: "$items._id" },
+                let: { itemId: itemIdField },
                 pipeline: [
                     {
                         $match: {
