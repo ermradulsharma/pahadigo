@@ -5,11 +5,13 @@
  * Directly aligned with Vendor (VendorSchema) and Package (VendorPackageSchema) models.
  */
 import mongoose from 'mongoose';
-import { getPackageBy, getBusinessByUserId, getReviewsBy } from '@/core/Helpers/queryHelpers.js';
+import { getPackageBy, getBusinessByUserId, getReviewsBy, getCategoryBySlug } from '@/core/Helpers/queryHelpers.js';
 import { getLocationPoint } from '@/core/Helpers/addressHelper.js';
 import { calculateDistanceKm } from '@/core/Services/Shared/PackageCore.js';
 import { packageItemResponse } from './packageResponse.js';
 import { paginateArray } from '../queryUtils.js';
+import { schemaKey } from './shared.js';
+import { Package } from '@/core/Models/index.js';
 
 /**
  * Retrieves, filters, and formats a vendor's package catalog with search, price, geo, and pagination support.
@@ -160,10 +162,132 @@ export async function getVendorPackages(options = {}) {
         return finalResult;
     }
     return paginateArray(flatItems, page, limit);
-
-
-    // 6. If isFlat is true, return global flat paginated items
-    // return paginateAndSort(flatItems);
 }
 
-export default getVendorPackages;
+export async function getVendorPackageItemById(userId, category, itemId) {
+    try {
+
+        if (!itemId || !mongoose.Types.ObjectId.isValid(itemId)) return null;
+        if (!userId || !mongoose.Types.ObjectId.isValid(userId)) return null;
+        if (!category || typeof category !== 'string') return null;
+
+        const targetItemId = new mongoose.Types.ObjectId(itemId);
+        const userObjectId = new mongoose.Types.ObjectId(userId);
+
+        const catDoc = await getCategoryBySlug(category);
+        if (!catDoc) return null;
+
+        const sKey = schemaKey(catDoc.name);
+        if (!sKey) return null;
+
+        const pipeline = [
+            { $match: { user: userObjectId, [`${sKey}._id`]: targetItemId } },
+            {
+                $project: {
+                    vendor: 1,
+                    user: 1,
+                    item: {
+                        $filter: {
+                            input: { $ifNull: [`$${sKey}`, []] },
+                            as: "sub",
+                            cond: { $eq: ["$$sub._id", targetItemId] }
+                        }
+                    }
+                }
+            },
+            { $unwind: "$item" },
+            {
+                $lookup: {
+                    from: 'reviews',
+                    let: { itemId: "$item._id" },
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        { $eq: ["$item.itemId", "$$itemId"] },
+                                        { $eq: ["$isVisible", true] }
+                                    ]
+                                }
+                            }
+                        },
+                        {
+                            $lookup: {
+                                from: 'users',
+                                localField: 'user',
+                                foreignField: '_id',
+                                pipeline: [
+                                    {
+                                        $project: {
+                                            _id: 0,
+                                            id: { $toString: "$_id" },
+                                            name: 1,
+                                            profileImage: 1
+                                        }
+                                    }
+                                ],
+                                as: 'userDetails'
+                            }
+                        },
+                        {
+                            $project: {
+                                _id: 0,
+                                id: { $toString: "$_id" },
+                                user: { $arrayElemAt: ["$userDetails", 0] },
+                                booking: { $toString: "$booking" },
+                                comment: 1,
+                                createdAt: 1,
+                                isVisible: 1,
+                                rating: 1
+                            }
+                        }
+                    ],
+                    as: 'reviews'
+                }
+            },
+            {
+                $replaceRoot: {
+                    newRoot: {
+                        $mergeObjects: [
+                            "$item",
+                            {
+                                id: "$item._id",
+                                address: { $ifNull: ["$item.location.address", ""] },
+                                location: {
+                                    $ifNull: [
+                                        "$item.location.coordinates.coordinates",
+                                        "$item.location.coordinates"
+                                    ]
+                                },
+                                category_id: { $toString: catDoc._id },
+                                category_slug: catDoc.slug,
+                                category_name: catDoc.name,
+                                rating: {
+                                    average: {
+                                        $cond: {
+                                            if: { $gt: [{ $size: "$reviews" }, 0] },
+                                            then: { $round: [{ $avg: "$reviews.rating" }, 1] },
+                                            else: 0
+                                        }
+                                    },
+                                    count: { $size: "$reviews" }
+                                },
+                                reviews: "$reviews"
+                            }
+                        ]
+                    }
+                }
+            },
+            { $unset: "_id" }
+        ];
+
+        const results = await Package.aggregate(pipeline);
+        return results[0] || null;
+
+    } catch (error) {
+        console.error('Error fetching vendor package item:', error);
+        return null;
+    }
+}
+
+export default { getVendorPackages, getVendorPackageItemById };

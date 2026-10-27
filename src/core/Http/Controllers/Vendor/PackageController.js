@@ -4,7 +4,7 @@ import { HTTP_STATUS, RESPONSE_MESSAGES, APP_DETAILS } from '@/core/Constants/in
 import Controller from '@/core/Controllers/Controller.js';
 import { getBusinessByUserId, getReviewsByItemId } from '@/core/Helpers/queryHelpers.js';
 import { vendorPackageItem } from '@/core/Helpers/package.js';
-import getVendorPackages from '@/core/Helpers/Package/vendorPackage';
+import { getVendorPackages, getVendorPackageItemById } from '@/core/Helpers/Package/vendorPackage';
 import { parseQuery } from '@/core/Helpers/search';
 
 /**
@@ -28,15 +28,23 @@ class PackageController extends Controller {
             const isEmpty = !result || (Array.isArray(result.items || result.data) && result.items.length === 0);
             const message = isEmpty ? RESPONSE_MESSAGES.WISHLIST.EMPTY : RESPONSE_MESSAGES.WISHLIST.FETCHED;
 
-            if (result && result.pagination) {
-                return this.paginatedSuccess(HTTP_STATUS.OK, message, result.items || result.data, result.pagination);
-            }
+            if (result && result.pagination) return this.paginatedSuccess(HTTP_STATUS.OK, message, result.items || result.data, result.pagination);
             return this.success(HTTP_STATUS.OK, message, result);
-            // if (options.isFlat) return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, result.items || result.data || [], result.pagination || {});
-            // if (options.isFlat) return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, result.items, result.pagination);
-            // return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, result);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+        }
+    }
+
+    // GET /vendor/package/item/:category/:itemId
+    async getPackageItem(req, { params } = {}) {
+        try {
+            const userId = req.user.id;
+            const { category, itemId } = params;
+            const result = await getVendorPackageItemById(userId, category, itemId);
+            if (!result) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ITEM.NOT_FOUND);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, result);
+        } catch (error) {
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -140,28 +148,6 @@ class PackageController extends Controller {
             if (error.name === 'ValidationError') {
                 return this.error(HTTP_STATUS.BAD_REQUEST, error.message);
             }
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
-        }
-    }
-
-    // GET /vendor/package/item/:category/:itemId
-    async getPackageItem(req, { params } = {}) {
-        try {
-            const vendorId = await this._getVendorId(req.user.id);
-            if (!vendorId) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-
-            const { category, itemId } = params;
-            const schemaKey = CATEGORY_MAP[category] || category;
-            const pkg = await PackageService.ensureCatalog(req.user.id, vendorId);
-            if (pkg[schemaKey] === undefined) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.CATEGORY.INVALID);
-
-            const item = Array.isArray(pkg[schemaKey]) ? pkg[schemaKey].find(i => i._id.toString() === itemId) : null;
-            if (!item) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ITEM.NOT_FOUND);
-
-            const reviews = await getReviewsByItemId(itemId);
-
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, vendorPackageItem(item, reviews));
-        } catch (error) {
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
