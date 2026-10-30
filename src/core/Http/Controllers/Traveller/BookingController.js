@@ -6,6 +6,7 @@ import BookingService from '@/core/Services/Traveller/BookingService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, PAYMENT_STATUS, BOOKING_STATUS } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
 import { getLogger } from '@/core/Lib/logger.js';
+import { initiateBooking } from '@/core/Helpers/Booking/booking';
 
 /**
  * BookingController (Traveller Role) - Specialized management of customer-facing
@@ -38,7 +39,8 @@ class BookingController extends Controller {
             const userId = req.user.id;
             const body = req.payload;
             const itemId = params.id;
-            const booking = await BookingService.initiateBooking({ userId, body, itemId });
+            const booking = await initiateBooking({ userId, body, itemId });
+            // const booking = await BookingService.initiateBooking({ userId, body, itemId });
             return this.success(HTTP_STATUS.CREATED, RESPONSE_MESSAGES.BOOKING.CREATED, booking);
         } catch (error) {
             getLogger(req?.requestId).error({ err: error }, 'Error in initiateBooking');

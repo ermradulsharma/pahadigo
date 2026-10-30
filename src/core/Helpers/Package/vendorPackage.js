@@ -234,7 +234,6 @@ export async function getVendorPackageItemById(userId, category, itemId) {
                                 _id: 0,
                                 id: { $toString: "$_id" },
                                 user: { $arrayElemAt: ["$userDetails", 0] },
-                                booking: { $toString: "$booking" },
                                 comment: 1,
                                 createdAt: 1,
                                 isVisible: 1,

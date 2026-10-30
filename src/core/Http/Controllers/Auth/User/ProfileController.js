@@ -83,8 +83,8 @@ class ProfileController extends Controller {
                 return this.error(HTTP_STATUS.FORBIDDEN, RESPONSE_MESSAGES.VENDOR.ACCOUNT_RESTRICTED);
             }
 
-            const newStatus = status === true 
-                ? (user.isVerified === true ? STATUS.ACTIVE : STATUS.PENDING) 
+            const newStatus = status === true
+                ? (user.isVerified === true ? STATUS.ACTIVE : STATUS.PENDING)
                 : STATUS.INACTIVE;
 
             await updateById(User, req.user.id, { status: newStatus });
@@ -329,7 +329,7 @@ class ProfileController extends Controller {
             let emergencyContacts = null;
             if (Array.isArray(body.emergencyContacts)) emergencyContacts = body.emergencyContacts;
             else if (Array.isArray(body.emergencyContact)) emergencyContacts = body.emergencyContact;
-            
+
             if (!emergencyContacts) return this.error(HTTP_STATUS.BAD_REQUEST, 'emergencyContacts must be an array.');
             await SOSService.updateEmergencyContacts(user.id, emergencyContacts);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SOS.CONTACTS_UPDATED);
@@ -438,9 +438,7 @@ class ProfileController extends Controller {
                             $group: {
                                 _id: null,
                                 totalBookings: { $sum: 1 },
-                                confirmedBookings: {
-                                    $sum: { $cond: [{ $eq: ["$status", BOOKING_STATUS.CONFIRMED] }, 1, 0] }
-                                },
+                                confirmedBookings: { $sum: { $cond: [{ $eq: ["$status", BOOKING_STATUS.CONFIRMED] }, 1, 0] } },
                                 todayBookings: {
                                     $sum: {
                                         $cond: [
@@ -456,18 +454,10 @@ class ProfileController extends Controller {
                                         ]
                                     }
                                 },
-                                cancelledBookings: {
-                                    $sum: { $cond: [{ $eq: ["$status", BOOKING_STATUS.CANCELLED] }, 1, 0] }
-                                },
-                                completedBookings: {
-                                    $sum: { $cond: [{ $eq: ["$status", BOOKING_STATUS.COMPLETED] }, 1, 0] }
-                                },
-                                pendingBookings: {
-                                    $sum: { $cond: [{ $eq: ["$status", BOOKING_STATUS.PENDING] }, 1, 0] }
-                                },
-                                ongoingBookings: {
-                                    $sum: { $cond: [{ $eq: ["$status", BOOKING_STATUS.ONGOING] }, 1, 0] }
-                                },
+                                cancelledBookings: { $sum: { $cond: [{ $eq: ["$status", BOOKING_STATUS.CANCELLED] }, 1, 0] } },
+                                completedBookings: { $sum: { $cond: [{ $eq: ["$status", BOOKING_STATUS.COMPLETED] }, 1, 0] } },
+                                pendingBookings: { $sum: { $cond: [{ $eq: ["$status", BOOKING_STATUS.PENDING] }, 1, 0] } },
+                                ongoingBookings: { $sum: { $cond: [{ $eq: ["$status", BOOKING_STATUS.ONGOING] }, 1, 0] } },
                                 totalRevenue: {
                                     $sum: {
                                         $cond: [
@@ -591,7 +581,6 @@ class ProfileController extends Controller {
                     ]),
                     NotificationService.getUnreadCount(userId).catch(() => 0)
                 ]);
-
                 const stats = bookingStatsResult?.[0] || {};
                 const bookingStats = {
                     totalBookings: stats.totalBookings || 0,
@@ -656,7 +645,7 @@ class ProfileController extends Controller {
 
                 const hasPan = Boolean(vendor.documents?.panCard?.url || vendor.personalPanCard);
                 const hasAadhar = Array.isArray(vendor.documents?.aadharCard) && vendor.documents.aadharCard.some(d => Boolean(d?.url));
-                const hasCategoryDocs = Boolean(categoryDocs && categoryDocs.length > 0);
+                const hasCategoryDocs = Boolean(hasCategoryDocsCheck && hasCategoryDocsCheck?.length > 0);
                 const hasDocuments = Boolean((hasPan && hasAadhar) || hasCategoryDocs);
                 const hasBasicInfo = Boolean(vendor.businessName && vendor.ownerName);
                 const hasAddress = Boolean((vendor.address?.addressLine1 || vendor.address?.city) && vendor.address?.state);
@@ -715,6 +704,7 @@ class ProfileController extends Controller {
 
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, responsePayload);
         } catch (error) {
+            console.log(error);
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }

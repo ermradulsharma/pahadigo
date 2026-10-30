@@ -501,8 +501,7 @@ export async function getPackageItemById(itemId, userId = null) {
                             isVisible: 1,
                             user: { $arrayElemAt: ["$userDetails", 0] },
                             comment: 1,
-                            createdAt: 1,
-                            booking: { $toString: "$booking" }
+                            createdAt: 1
                         }
                     }
                 ],
