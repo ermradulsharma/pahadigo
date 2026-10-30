@@ -2,10 +2,14 @@
     "compilerOptions": {
         "target": "ES6",
         "module": "esnext",
+        "moduleResolution": "bundler",
         "allowJs": true,
         "checkJs": false,
         "skipLibCheck": true,
         "jsx": "preserve",
+        "typeRoots": [
+            "./node_modules/@types"
+        ],
         "lib": [
             "esnext",
             "dom",
@@ -94,10 +98,6 @@
         "dist"
     ],
     "typeAcquisition": {
-        "enable": true,
-        "exclude": [
-            "d3-path",
-            "request"
-        ]
+        "enable": false
     }
 }

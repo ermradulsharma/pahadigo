@@ -2,7 +2,7 @@ import { randomBytes, randomInt } from 'crypto';
 import mongoose from "mongoose";
 import AppError from "@/core/Helpers/AppError.js";
 import { getUserById } from "@/core/Helpers/queryHelpers.js";
-import InventoryService from "@/core/Services/Vendor/InventoryService.js";
+import InventoryService from "@/core/Services/Traveller/InventoryService.js";
 import Booking from "@/core/Models/Booking";
 import { bookingPayload } from "@/core/Helpers/bookingHelper";
 import NotificationService from "@/core/Services/General/NotificationService.js";
