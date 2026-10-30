@@ -19,11 +19,10 @@ class NotificationController extends Controller {
             const userId = req.user?.id;
             if (!userId) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED);
             const result = await getNotifications({ userId, ...options });
-            if (result && result.pagination) return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, result.notifications, result.pagination);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, result);
-            return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, result);
+            if (result && result.pagination) return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, result.notifications, result.pagination);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, result);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
