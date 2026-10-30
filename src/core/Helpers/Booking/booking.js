@@ -142,6 +142,8 @@ export const initiateBooking = async ({ userId, body, itemId }) => {
 
             const pricingRules = packageItem.pricing || {};
 
+            console.log("config", config.tax);
+            console.log("pricingRules", pricingRules);
             // Price logic
             let itemBaseprice = pricingRules.basePrice || 0;
 
@@ -156,7 +158,7 @@ export const initiateBooking = async ({ userId, body, itemId }) => {
             let itemServiceTax = 0;
             if (pricingRules.serviceTax) {
                 itemServiceTax = parseFloat(pricingRules.serviceTax);
-            } else if (pricingRules.serviceTax !== undefined && pricingRules.serviceTax !== null && pricingRules.serviceTax !== '') {
+            } else if (pricingRules.serviceTax === undefined || pricingRules.serviceTax === null || pricingRules.serviceTax == '') {
                 itemServiceTax = parseFloat(config.tax.service_tax || 0);
             }
 

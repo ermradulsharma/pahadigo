@@ -4,6 +4,28 @@ import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { getLogger } from '@/core/Lib/logger.js';
 import { DEFAULTS } from '@/core/Constants/index.js';
 
+/**
+ * Detect transient network or offline disconnection errors
+ * (e.g., ECONNRESET, ENOTFOUND, retries exhausted when internet is down)
+ */
+function isNetworkOrOfflineError(err) {
+    if (!err) return false;
+    const offlineCodes = [
+        'ECONNRESET',
+        'ECONNREFUSED',
+        'ETIMEDOUT',
+        'ENOTFOUND',
+        'EAI_AGAIN',
+        'EHOSTUNREACH',
+        'ENETUNREACH'
+    ];
+    if (offlineCodes.includes(err?.code) || offlineCodes.includes(err?.cause?.code)) {
+        return true;
+    }
+    const msg = err?.message || String(err);
+    return /ECONNRESET|ECONNREFUSED|ETIMEDOUT|ENOTFOUND|EAI_AGAIN|retries exhausted|Socket closed unexpectedly|fetch failed/i.test(msg);
+}
+
 class CacheService {
     constructor() {
         this.upstashClient = null;
@@ -11,6 +33,7 @@ class CacheService {
         this.isStandardConnected = false;
         this.isInitialized = false;
         this.lastStandardErrorMsg = null;
+        this.isOfflineNotified = false;
     }
 
     async init() {
@@ -44,6 +67,10 @@ class CacheService {
                 });
 
                 this.standardClient.on('ready', () => {
+                    if (this.isOfflineNotified) {
+                        getLogger().info('[CACHE] Standard Redis connection restored.');
+                        this.isOfflineNotified = false;
+                    }
                     this.isStandardConnected = true;
                     this.lastStandardErrorMsg = null;
                 });
@@ -63,7 +90,17 @@ class CacheService {
                 this.standardClient.on('error', (err) => {
                     this.isStandardConnected = false;
                     const msg = err?.message || String(err);
-                    if (this.lastStandardErrorMsg !== msg) {
+
+                    if (isNetworkOrOfflineError(err)) {
+                        // Suppress noisy stack trace when offline or connection is reset
+                        if (!this.isOfflineNotified) {
+                            this.isOfflineNotified = true;
+                            getLogger().warn(
+                                { code: err?.code || 'OFFLINE', message: msg },
+                                '[CACHE] Redis unreachable (system offline or connection reset). Bypassing cache gracefully.'
+                            );
+                        }
+                    } else if (this.lastStandardErrorMsg !== msg) {
                         this.lastStandardErrorMsg = msg;
                         getLogger().error({ err }, 'CacheService Standard Redis Client Error');
                     }
@@ -75,7 +112,15 @@ class CacheService {
                 } catch (err) {
                     this.isStandardConnected = false;
                     const msg = err?.message || String(err);
-                    if (this.lastStandardErrorMsg !== msg) {
+                    if (isNetworkOrOfflineError(err)) {
+                        if (!this.isOfflineNotified) {
+                            this.isOfflineNotified = true;
+                            getLogger().warn(
+                                { code: err?.code || 'OFFLINE', message: msg },
+                                '[CACHE] Standard Redis offline on startup. Operating in fallback mode.'
+                            );
+                        }
+                    } else if (this.lastStandardErrorMsg !== msg) {
                         this.lastStandardErrorMsg = msg;
                         getLogger().error({ err }, 'Failed to connect to CacheService Standard Redis');
                     }
@@ -102,7 +147,11 @@ class CacheService {
                 }
             } catch (err) {
                 if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
-                getLogger().error({ err, key }, 'CacheService Upstash get error');
+                if (isNetworkOrOfflineError(err)) {
+                    getLogger().debug({ key, err: err?.message }, '[CACHE] Upstash offline fallback during get');
+                } else {
+                    getLogger().error({ err, key }, 'CacheService Upstash get error');
+                }
             }
         }
         if (this.isStandardConnected) {
@@ -111,7 +160,11 @@ class CacheService {
                 return data ? JSON.parse(data) : null;
             } catch (err) {
                 if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
-                getLogger().error({ err, key }, 'CacheService Standard get error');
+                if (isNetworkOrOfflineError(err)) {
+                    getLogger().debug({ key, err: err?.message }, '[CACHE] Standard Redis offline fallback during get');
+                } else {
+                    getLogger().error({ err, key }, 'CacheService Standard get error');
+                }
             }
         }
         return null;
@@ -127,7 +180,11 @@ class CacheService {
                 success = true;
             } catch (err) {
                 if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
-                getLogger().error({ err, key }, 'CacheService Upstash set error');
+                if (isNetworkOrOfflineError(err)) {
+                    getLogger().debug({ key, err: err?.message }, '[CACHE] Upstash offline fallback during set');
+                } else {
+                    getLogger().error({ err, key }, 'CacheService Upstash set error');
+                }
             }
         }
         if (this.isStandardConnected) {
@@ -136,7 +193,11 @@ class CacheService {
                 success = true;
             } catch (err) {
                 if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
-                getLogger().error({ err, key }, 'CacheService Standard set error');
+                if (isNetworkOrOfflineError(err)) {
+                    getLogger().debug({ key, err: err?.message }, '[CACHE] Standard Redis offline fallback during set');
+                } else {
+                    getLogger().error({ err, key }, 'CacheService Standard set error');
+                }
             }
         }
         return success ? DEFAULTS.TRUE : DEFAULTS.FALSE;
@@ -151,7 +212,11 @@ class CacheService {
                 success = true;
             } catch (err) {
                 if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
-                getLogger().error({ err, key }, 'CacheService Upstash delete error');
+                if (isNetworkOrOfflineError(err)) {
+                    getLogger().debug({ key, err: err?.message }, '[CACHE] Upstash offline fallback during delete');
+                } else {
+                    getLogger().error({ err, key }, 'CacheService Upstash delete error');
+                }
             }
         }
         if (this.isStandardConnected) {
@@ -160,7 +225,11 @@ class CacheService {
                 success = true;
             } catch (err) {
                 if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
-                getLogger().error({ err, key }, 'CacheService Standard delete error');
+                if (isNetworkOrOfflineError(err)) {
+                    getLogger().debug({ key, err: err?.message }, '[CACHE] Standard Redis offline fallback during delete');
+                } else {
+                    getLogger().error({ err, key }, 'CacheService Standard delete error');
+                }
             }
         }
         return success ? DEFAULTS.TRUE : DEFAULTS.FALSE;
@@ -185,7 +254,11 @@ class CacheService {
                 success = true;
             } catch (err) {
                 if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
-                getLogger().error({ err, pattern }, 'CacheService Upstash deletePattern error');
+                if (isNetworkOrOfflineError(err)) {
+                    getLogger().debug({ pattern, err: err?.message }, '[CACHE] Upstash offline fallback during deletePattern');
+                } else {
+                    getLogger().error({ err, pattern }, 'CacheService Upstash deletePattern error');
+                }
             }
         }
         if (this.isStandardConnected) {
@@ -200,7 +273,11 @@ class CacheService {
                 success = true;
             } catch (err) {
                 if (err?.digest === 'DYNAMIC_SERVER_USAGE') throw err;
-                getLogger().error({ err, pattern }, 'CacheService Standard deletePattern error');
+                if (isNetworkOrOfflineError(err)) {
+                    getLogger().debug({ pattern, err: err?.message }, '[CACHE] Standard Redis offline fallback during deletePattern');
+                } else {
+                    getLogger().error({ err, pattern }, 'CacheService Standard deletePattern error');
+                }
             }
         }
         return success ? DEFAULTS.TRUE : DEFAULTS.FALSE;
