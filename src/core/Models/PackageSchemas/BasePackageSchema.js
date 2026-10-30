@@ -105,7 +105,8 @@ export const TransportPricing = {
     ...BasePackageFields.pricing,
     maxAdults: { type: Number, default: DEFAULTS.COUNTS.ZERO },
     maxChildren: { type: Number, default: DEFAULTS.COUNTS.ZERO },
-    childPrice: optionalPriceDecimal
+    childPrice: optionalPriceDecimal,
+    depositAmount: optionalPriceDecimal
 };
 
 export const AccommodationRoomDetails = {
