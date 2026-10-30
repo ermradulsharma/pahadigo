@@ -2,6 +2,8 @@ import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
 import NotificationService, { notificationEmitter } from '@/core/Services/General/NotificationService.js';
 import { verifyToken } from '@/core/Helpers/jwt.js';
+import { notificationParseQuery } from '@/core/Helpers/search.js';
+import { getNotifications } from '@/core/Helpers/Notifications/notifications';
 
 /**
  * NotificationController - Unified HTTP presentation controller.
@@ -13,20 +15,15 @@ class NotificationController extends Controller {
     // GET /notifications (Paginated list with filter)
     async getNotifications(req) {
         try {
-            const userId = req.user?.id || req.user?._id;
+            const options = notificationParseQuery(req.url);
+            const userId = req.user?.id;
             if (!userId) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED);
-
-            const { page = 1, limit = 15, filter = 'all' } = req.query || {};
-            const result = await NotificationService.getUserNotifications(userId, { page, limit, filter });
-
-            return this.paginatedSuccess(
-                HTTP_STATUS.OK,
-                RESPONSE_MESSAGES.SUCCESS.FETCHED,
-                result.notifications,
-                result.pagination
-            );
+            const result = await getNotifications({ userId, ...options });
+            if (result && result.pagination) return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, result.notifications, result.pagination);
+            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.PACKAGE.FETCHED, result);
+            return this.paginatedSuccess(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, result);
         } catch (error) {
-            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error?.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
+            return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }
 
@@ -122,7 +119,7 @@ class NotificationController extends Controller {
                             userRole = decoded.role;
                         }
                     }
-                } catch {}
+                } catch { }
             }
 
             if (!userId) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.TOKEN_REQUIRED);
@@ -139,7 +136,7 @@ class NotificationController extends Controller {
                                 const payload = `data: ${JSON.stringify(data.notification)}\n\n`;
                                 controller.enqueue(new TextEncoder().encode(payload));
                             }
-                        } catch {}
+                        } catch { }
                     };
 
                     notificationEmitter.on('notification', onNotification);
@@ -148,7 +145,7 @@ class NotificationController extends Controller {
                     heartbeat = setInterval(() => {
                         try {
                             controller.enqueue(new TextEncoder().encode(': heartbeat\n\n'));
-                        } catch {}
+                        } catch { }
                     }, 25000);
 
                     req.signal?.addEventListener('abort', () => {

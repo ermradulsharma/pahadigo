@@ -2,12 +2,12 @@ import mongoose from 'mongoose';
 import { DEFAULTS, USER_ROLES } from '../Constants/index.js';
 
 const NotificationSchema = new mongoose.Schema({
-    recipient: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: DEFAULTS.TRUE },
-    recipientRole: { type: String, enum: Object.values(USER_ROLES), default: DEFAULTS.USER_ROLE },
     sender: { type: mongoose.Schema.Types.ObjectId, ref: 'User', default: DEFAULTS.NULL },
+    recipient: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: DEFAULTS.TRUE },
     title: { type: String, required: DEFAULTS.TRUE, trim: DEFAULTS.TRUE },
     message: { type: String, required: DEFAULTS.TRUE, trim: DEFAULTS.TRUE },
     type: { type: String, trim: DEFAULTS.TRUE, default: 'GENERAL', index: DEFAULTS.TRUE },
+    recipientRole: { type: String, enum: Object.values(USER_ROLES), default: DEFAULTS.USER_ROLE },
     category: {
         type: String,
         enum: ['booking', 'payment', 'vendor', 'package', 'account', 'security', 'system', 'chat', 'sos', 'general'],

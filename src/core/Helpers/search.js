@@ -65,23 +65,19 @@ export function parseQuery(urlStr) {
 
     const address = (url.searchParams.get('address') || url.searchParams.get('city') || url.searchParams.get('location') || '').trim();
 
-    return {
-        url,
-        page,
-        limit,
-        minPrice,
-        maxPrice,
-        format,
-        sort,
-        query,
-        category,
-        lat,
-        lng,
-        radius,
-        address
-    };
+    return { url, page, limit, minPrice, maxPrice, format, sort, query, category, lat, lng, radius, address };
 }
 
+export function notificationParseQuery(urlStr) {
+    const baseUrl = APP_DETAILS?.APP_URL || 'https://pahadigo.co.in' || 'https://tripdhara.com' || 'http://localhost:3000';
+    const url = urlStr instanceof URL ? urlStr : new URL(urlStr || '', baseUrl);
+
+    // Pagination bounds
+    const page = Math.max(1, parseInt(url.searchParams.get('page'), 10) || 1);
+    const limitParam = url.searchParams.get('limit');
+    const limit = limitParam === 'all' ? 0 : Math.max(0, parseInt(limitParam, 10) || 10);
+    return { page, limit };
+}
 /**
  * Standardized package item formatter for search, browsing, and vendor inventory.
  *
@@ -152,5 +148,6 @@ export function formatPackageItem(item, categoryInfo = {}, reviewStats = null, e
 
 export default {
     parseQuery,
+    notificationParseQuery,
     formatPackageItem
 };
