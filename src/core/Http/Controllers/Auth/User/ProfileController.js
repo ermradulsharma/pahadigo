@@ -392,9 +392,7 @@ class ProfileController extends Controller {
                 getBusinessByUserId(userId, 'isOperating isApproved status trustBadge category bankDetails documents address businessName ownerName rating', null)
             ]);
 
-            if (!user) {
-                return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.USER.NOT_FOUND);
-            }
+            if (!user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.USER.NOT_FOUND);
 
             let vendorData = null;
 
