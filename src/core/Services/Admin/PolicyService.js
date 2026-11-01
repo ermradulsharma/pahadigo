@@ -2,6 +2,7 @@ import Policy from '@/core/Models/Policy.js';
 import Inquiry from '@/core/Models/Inquiry.js';
 import { sanitizeHTML } from '@/core/Helpers/security.js';
 import AppError from '@/core/Helpers/AppError.js';
+import { getPoliciesBy, getPolicyBy, getInquiriesBy, updateById, deleteById } from '@/core/Helpers/queryHelpers.js';
 
 /**
  * PolicyService (Admin Role)
@@ -11,11 +12,11 @@ import AppError from '@/core/Helpers/AppError.js';
 class PolicyService {
   async getPolicies(target = null) {
     const filter = target ? { target } : {};
-    return await Policy.find(filter).lean();
+    return await getPoliciesBy(filter);
   }
 
   async getPolicy(target, type) {
-    return await Policy.findOne({ target, type }).lean();
+    return await getPolicyBy({ target, type });
   }
 
   async updatePolicy(target, type, content, adminId) {
@@ -46,17 +47,17 @@ class PolicyService {
   }
 
   async getInquiries() {
-    return await Inquiry.find().sort({ createdAt: -1 }).lean();
+    return await getInquiriesBy({}, '', null, { createdAt: -1 });
   }
 
   async updateInquiry(id, data) {
-    const inquiry = await Inquiry.findByIdAndUpdate(id, data, { returnDocument: 'after' });
+    const inquiry = await updateById(Inquiry, id, data);
     if (!inquiry) throw new AppError('Inquiry not found', 404);
     return inquiry;
   }
 
   async deleteInquiry(id) {
-    const deleted = await Inquiry.findByIdAndDelete(id);
+    const deleted = await deleteById(Inquiry, id);
     if (!deleted) throw new AppError('Inquiry not found', 404);
     return deleted;
   }

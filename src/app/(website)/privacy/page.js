@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import connectDB from '@/core/Config/db.js';
-import Policy from '@/core/Models/Policy.js';
+import { getPolicyBy } from '@/core/Helpers/queryHelpers.js';
 import { sanitizeHTML } from '@/core/Helpers/security.js';
 import { Shield, Eye, Database, Lock, Mail, ChevronRight } from 'lucide-react';
 
@@ -28,7 +28,7 @@ export default async function PrivacyPolicy() {
     let policy = null;
     try {
         await connectDB();
-        policy = await Policy.findOne({ target: 'admin', type: 'privacy_policy' });
+        policy = await getPolicyBy({ target: 'admin', type: 'privacy_policy' });
     } catch (error) {
     }
 

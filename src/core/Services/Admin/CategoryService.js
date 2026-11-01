@@ -2,6 +2,7 @@ import Category from '@/core/Models/Category.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import CacheService from '@/core/Services/CacheService.js';
 import AppError from '@/core/Helpers/AppError.js';
+import { getCategoriesBy } from '@/core/Helpers/queryHelpers.js';
 
 /**
  * CategoryService (Admin Role)
@@ -45,7 +46,7 @@ class CategoryService {
     const cached = await CacheService.get(cacheKey);
     if (cached) return cached;
 
-    const categories = await Category.find({}).sort({ name: 1 }).lean();
+    const categories = await getCategoriesBy({}, '', null, { name: 1 });
     await CacheService.set(cacheKey, categories, 300);
     return categories;
   }

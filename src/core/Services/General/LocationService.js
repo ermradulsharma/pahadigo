@@ -1,5 +1,5 @@
-import Country from '@/core/Models/Country.js';
-import State from '@/core/Models/State.js';
+import { Country, State } from '@/core/Models/index.js';
+import { getCountriesBy, getCountryById, getStatesBy, countBy } from '@/core/Helpers/queryHelpers.js';
 
 /**
  * LocationService (General Role)
@@ -12,8 +12,8 @@ class LocationService {
     else if (limitParam) limit = Math.min(parseInt(limitParam), 500);
 
     const skip = (page - 1) * limit;
-    const total = await Country.countDocuments({ status: 'active' });
-    const countries = await Country.find({ status: 'active' }).sort({ name: 1 }).skip(skip).limit(limit).lean();
+    const total = await countBy(Country, { status: 'active' });
+    const countries = await getCountriesBy({ status: 'active' }, '', null, { name: 1 }, { skip, limit });
 
     return {
       countries,
@@ -22,15 +22,15 @@ class LocationService {
   }
 
   async getCountryById(id) {
-    return await Country.findById(id).lean();
+    return await getCountryById(id);
   }
 
   async getStatesByCountry(countryId, page = 1) {
     const limit = 10;
     const skip = (page - 1) * limit;
 
-    const total = await State.countDocuments({ country: countryId, status: 'active' });
-    const states = await State.find({ country: countryId, status: 'active' }).sort({ name: 1 }).skip(skip).limit(limit).lean();
+    const total = await countBy(State, { country: countryId, status: 'active' });
+    const states = await getStatesBy({ country: countryId, status: 'active' }, '', null, { name: 1 }, { skip, limit });
 
     return {
       states,

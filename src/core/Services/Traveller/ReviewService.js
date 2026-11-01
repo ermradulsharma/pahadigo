@@ -2,7 +2,7 @@ import Review from '@/core/Models/Review.js';
 import Booking from '@/core/Models/Booking.js';
 import BusinessService from '@/core/Services/Vendor/BusinessService.js';
 import { AppError } from '@/core/Errors/AppError.js';
-import { getManyBy, getBookingBy } from '@/core/Helpers/queryHelpers.js';
+import { getManyBy, getBookingBy, getReviewBy, deleteById } from '@/core/Helpers/queryHelpers.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 
 /**
@@ -56,7 +56,9 @@ class ReviewService {
     }
 
     async deleteReview(userId, reviewId) {
-        const deletedReview = await Review.findOneAndDelete({ _id: reviewId, user: userId }).lean();
+        const existing = await getReviewBy({ _id: reviewId, user: userId });
+        if (!existing) return null;
+        const deletedReview = await deleteById(Review, reviewId);
         if (deletedReview?.vendor) {
             await BusinessService.calculateTrustBadge(deletedReview.vendor);
         }

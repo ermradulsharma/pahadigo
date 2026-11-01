@@ -1,4 +1,5 @@
 import { Inventory, Package, Booking } from '@/core/Models/index.js';
+import { getInventoryBy, getPackageBy } from '@/core/Helpers/queryHelpers.js';
 import { formatDateKey, normalizeAvailability, determineDayStatus, calculateEffectivePrice } from '@/core/Helpers/InventoryHelper.js';
 import { getEffectiveDay } from '@/core/Services/Shared/InventoryCore.js';
 import AppError from '@/core/Errors/AppError.js';
@@ -16,7 +17,7 @@ class InventoryService {
    * Find specific item inventory (Vendor View).
    */
   async findById(vendorId, itemId, serviceType, startDate, endDate) {
-    const inv = await Inventory.findOne({ vendorId, itemId }).lean() || { calendar: [] };
+    const inv = await getInventoryBy({ vendorId, itemId }) || { calendar: [] };
     const start = new Date(startDate);
     const end = new Date(endDate);
     const resultCalendar = [];
@@ -34,7 +35,7 @@ class InventoryService {
    * Supports optional filtering by itemId.
    */
   async findAllByCategory(vendorId, serviceType, startDate, endDate, itemId = null) {
-    const pkg = await Package.findOne({ vendor: vendorId }).lean();
+    const pkg = await getPackageBy({ vendor: vendorId });
     if (!pkg || !pkg[serviceType]) return [];
 
     let items = pkg[serviceType];
@@ -106,7 +107,7 @@ class InventoryService {
    * Initialize from baseline (Vendor Action).
    */
   async initialize(vendorId, itemId, serviceType, days = 30) {
-    const pkg = await Package.findOne({ vendor: vendorId }).lean();
+    const pkg = await getPackageBy({ vendor: vendorId });
     if (!pkg || !pkg[serviceType]) return null;
 
     const item = pkg[serviceType].find(i => i._id.toString() === itemId.toString());
@@ -204,7 +205,7 @@ class InventoryService {
    * Update range of inventory for all items in a category (Industry Standard).
    */
   async updateServiceInventoryRange(vendorId, serviceType, startDate, endDate, settings) {
-    const pkg = await Package.findOne({ vendor: vendorId }).lean();
+    const pkg = await getPackageBy({ vendor: vendorId });
     if (!pkg || !pkg[serviceType]) return null;
 
     const results = [];

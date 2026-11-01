@@ -40,6 +40,9 @@
             "@/core/Constants/*": [
                 "./src/core/Constants/*"
             ],
+            "@/core/Constants": [
+                "./src/core/Constants/index.js"
+            ],
             "@/core/Seeders/*": [
                 "./src/core/Database/Seeders/*"
             ],
@@ -67,8 +70,17 @@
             "@/constants/*": [
                 "./src/core/Constants/*"
             ],
+            "@/constants": [
+                "./src/core/Constants/index.js"
+            ],
             "@/seeders/*": [
                 "./src/core/Database/Seeders/*"
+            ],
+            "@/database/*": [
+                "./src/core/Database/*"
+            ],
+            "@/middleware/*": [
+                "./src/core/Http/Middleware/*"
             ],
             "@/lib/*": [
                 "./src/core/Lib/*"

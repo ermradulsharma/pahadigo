@@ -13,6 +13,7 @@ import { STATUS, USER_ROLES } from '@/core/Constants/index.js';
 import { SCHEMA_KEYS } from '@/core/Constants/categories.js';
 import CacheService from '@/core/Services/CacheService.js';
 import AppError from '@/core/Helpers/AppError.js';
+import { getBookingsBy, getVendorsBy, getDisputesBy, getAuditLogsBy, getSearchLogsBy } from '@/core/Helpers/queryHelpers.js';
 
 /**
  * DashboardService (Admin Role)
@@ -157,10 +158,10 @@ class DashboardService {
         const nextWeek = new Date();
         nextWeek.setDate(today.getDate() + 7);
 
-        const departuresRaw = await Booking.find({
+        const departuresRaw = await getBookingsBy({
             startDate: { $gte: today, $lte: nextWeek },
             status: 'confirmed'
-        }).populate('user', 'name').sort({ startDate: 1 }).limit(5).lean();
+        }, '', { path: 'user', select: 'name' }, { startDate: 1 }, { limit: 5 });
 
         const departures = departuresRaw.map(d => ({
             user: d.user?.name || 'Traveller',
@@ -170,11 +171,11 @@ class DashboardService {
         }));
 
         // Recent System Activity (Audit Logs)
-        const recentLogs = await AuditLog.find()
-            .populate('userId', 'name')
-            .sort({ createdAt: -1 })
-            .limit(6)
-            .lean();
+        const recentLogs = await getAuditLogsBy({}, '', { path: 'userId', select: 'name' }, { createdAt: -1 }, { limit: 6 });
+
+
+
+
 
         const systemActivity = recentLogs.map(log => ({
             time: new Date(log.createdAt).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' }),
@@ -192,9 +193,9 @@ class DashboardService {
             packages: activeItemsCount,
             categories,
             revenue,
-            recentBookings: await Booking.find().populate('user', 'name').populate('package', 'title').sort({ createdAt: -1 }).limit(50).lean(),
-            recentVendors: await Vendor.find().populate('user', 'name email').sort({ createdAt: -1 }).limit(5).lean(),
-            activeDisputes: (await Dispute.find({ status: 'open' }).populate('bookingId', 'bookingCode traveller').populate('traveller', 'name').limit(3).lean()).map(d => ({
+            recentBookings: await getBookingsBy({}, '', [{ path: 'user', select: 'name' }, { path: 'package', select: 'title' }], { createdAt: -1 }, { limit: 50 }),
+            recentVendors: await getVendorsBy({}, '', { path: 'user', select: 'name email' }, { createdAt: -1 }, { limit: 5 }),
+            activeDisputes: (await getDisputesBy({ status: 'open' }, '', [{ path: 'bookingId', select: 'bookingCode traveller' }, { path: 'traveller', select: 'name' }], null, { limit: 3 })).map(d => ({
                 id: d.bookingId?.bookingCode || `DSP-${d._id.toString().slice(-4).toUpperCase()}`,
                 priority: d.reason === 'safety_concern' ? 'Critical' : 'High',
                 issue: d.reason?.replace(/_/g, ' ').toUpperCase() || 'Service Disruption',
@@ -295,7 +296,7 @@ class DashboardService {
 
         // Resolve vendor names
         const vendorIds = topVendors.map(v => v._id);
-        const vendors = await Vendor.find({ _id: { $in: vendorIds } }).lean();
+        const vendors = await getVendorsBy({ _id: { $in: vendorIds } });
         const vendorMap = vendors.reduce((acc, v) => { acc[v._id.toString()] = v.businessName; return acc; }, {});
 
         const formattedTopVendors = topVendors.map(v => ({
@@ -320,10 +321,10 @@ class DashboardService {
     }
 
     async getCalendarEvents(start, end) {
-        const bookings = await Booking.find({
+        const bookings = await getBookingsBy({
             startDate: { $gte: start },
             endDate: { $lte: end }
-        }).populate('user', 'name').populate('vendor', 'businessName').lean();
+        }, '', [{ path: 'user', select: 'name' }, { path: 'vendor', select: 'businessName' }]);
 
         return bookings.map(b => ({
             id: b._id,
@@ -336,17 +337,17 @@ class DashboardService {
     }
 
     async getSearchAnalytics() {
-        const topSearches = await SearchLog.find()
-            .sort({ count: -1 })
-            .limit(10)
-            .select('query count lastSearched resultsCount')
-            .lean();
+        const topSearches = await getSearchLogsBy({}, 'query count lastSearched resultsCount', null, { count: -1 }, { limit: 10 });
 
-        const zeroResultSearches = await SearchLog.find({ resultsCount: 0 })
-            .sort({ count: -1 })
-            .limit(5)
-            .select('query count lastSearched')
-            .lean();
+
+
+
+
+        const zeroResultSearches = await getSearchLogsBy({ resultsCount: 0 }, 'query count lastSearched', null, { count: -1 }, { limit: 5 });
+
+
+
+
 
         return { topSearches, zeroResultSearches };
     }

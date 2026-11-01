@@ -3,7 +3,7 @@ import VendorDocument from '@/core/Models/VendorDocument.js';
 import { CATEGORY_MAP, SCHEMA_KEYS } from '@/core/Constants/categories.js';
 import MasterService from '@/core/Services/MasterService.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
-import { getPackageItemById, getReviewsByItemId } from '@/core/Helpers/queryHelpers.js';
+import { getPackageItemById, getReviewsByItemId, getPackageById } from '@/core/Helpers/queryHelpers.js';
 import { businessPayload, itemBusinessPayload, vendorPackageItem, userPayloadMini, businessPayloadMini } from '@/core/Helpers/index.js';
 
 /**
@@ -259,7 +259,7 @@ export async function getItemDetailsPayload(itemId, masterService = MasterServic
     const item = await getPackageItemById(itemId);
     if (!item) return null;
 
-    const pkg = await Package.findById(item.catalogId).populate({ path: 'vendor', populate: { path: 'user' } }).lean();
+    const pkg = await getPackageById(item.catalogId, '', { path: 'vendor', populate: { path: 'user' } });
     if (!pkg || !(await masterService.isVendorActive(pkg.vendor))) return null;
 
     const slug = Object.keys(CATEGORY_MAP).find(k => CATEGORY_MAP[k] === item.category) || item.category;

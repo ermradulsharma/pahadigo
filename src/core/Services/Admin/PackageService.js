@@ -4,6 +4,7 @@ import { RESPONSE_MESSAGES, HTTP_STATUS } from '@/core/Constants/index.js';
 import AppError from '@/core/Helpers/AppError.js';
 import CacheService from '@/core/Services/CacheService.js';
 import mongoose from 'mongoose';
+import { getPackagesBy, getPackageBy } from '@/core/Helpers/queryHelpers.js';
 
 /**
  * PackageService (Admin Role)
@@ -22,9 +23,9 @@ class PackageService {
         const cached = await CacheService.get(cacheKey);
         if (cached) return cached;
 
-        const packages = await Package.find()
-            .populate('vendor', 'name email businessName ownerName phone')
-            .lean();
+        const packages = await getPackagesBy({}, '', { path: 'vendor', select: 'name email businessName ownerName phone' });
+
+
 
         const services = [];
         const EXCLUDED_KEYS = ['_id', 'vendor', 'business', 'createdAt', 'updatedAt', '__v'];
@@ -116,9 +117,9 @@ class PackageService {
         const categoryFields = Object.keys(Package.schema.paths)
             .filter(p => !p.includes('.') && Array.isArray(Package.schema.paths[p].options.type));
 
-        const pkg = await Package.findOne({
+        const pkg = await getPackageBy({
             $or: categoryFields.map(key => ({ [`${key}._id`]: oid }))
-        }).populate('vendor', 'name email').lean();
+        }, '', { path: 'vendor', select: 'name email' });
 
         if (!pkg) throw new AppError(RESPONSE_MESSAGES.ITEM.NOT_FOUND, HTTP_STATUS.NOT_FOUND);
 
@@ -152,7 +153,7 @@ class PackageService {
             const categoryFields = Object.keys(Package.schema.paths)
                 .filter(p => !p.includes('.') && Array.isArray(Package.schema.paths[p].options.type));
 
-            const pkg = await Package.findOne({
+            const pkg = await getPackageBy({
                 $or: categoryFields.map(key => ({ [`${key}._id`]: oid }))
             }).session(session);
 
@@ -216,9 +217,9 @@ class PackageService {
         const cached = await CacheService.get(cacheKey);
         if (cached) return cached;
 
-        const packages = await Package.find({
+        const packages = await getPackagesBy({
             $or: [{ vendor: vendorId }, { business: vendorId }]
-        }).populate('vendor', 'name email').lean();
+        }, '', { path: 'vendor', select: 'name email' });
 
         const services = [];
         const EXCLUDED_KEYS = ['_id', 'vendor', 'business', 'createdAt', 'updatedAt', '__v'];

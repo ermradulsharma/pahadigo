@@ -1,6 +1,7 @@
 import Setting from '@/core/Models/Setting.js';
 import { clearAppConfigCache } from '@/core/Lib/appConfig.js';
 import AppError from '@/core/Helpers/AppError.js';
+import { getSettingBy } from '@/core/Helpers/queryHelpers.js';
 
 /**
  * SettingsService (Admin Role)
@@ -8,7 +9,7 @@ import AppError from '@/core/Helpers/AppError.js';
  */
 class SettingsService {
   async getSettings() {
-    let setting = await Setting.findOne().lean();
+    let setting = await getSettingBy();
     if (!setting) {
       const newSetting = await Setting.create({});
       setting = newSetting.toObject();

@@ -1,4 +1,4 @@
-import Policy from '@/core/Models/Policy.js';
+import { getPoliciesBy, getPolicyBy } from '@/core/Helpers/queryHelpers.js';
 import Inquiry from '@/core/Models/Inquiry.js';
 
 /**
@@ -6,20 +6,18 @@ import Inquiry from '@/core/Models/Inquiry.js';
  * Handles public viewing of legal policies and support inquiry submissions.
  */
 class PolicyService {
-  async getPolicies(target = null) {
-    const filter = target ? { target } : {};
-    const query = Policy.find(filter);
-    return await (query?.lean ? query.lean() : query);
-  }
+    async getPolicies(target = null) {
+        const filter = target ? { target } : {};
+        return await getPoliciesBy(filter);
+    }
 
-  async getPolicy(target, type) {
-    const query = Policy.findOne({ target, type });
-    return await (query?.lean ? query.lean() : query);
-  }
+    async getPolicy(target, type) {
+        return await getPolicyBy({ target, type });
+    }
 
-  async submitInquiry(data) {
-    return await Inquiry.create(data);
-  }
+    async submitInquiry(data) {
+        return await Inquiry.create(data);
+    }
 }
 
 export default new PolicyService();

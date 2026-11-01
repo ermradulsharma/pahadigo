@@ -5,7 +5,7 @@ import Vendor from '@/core/Models/Vendor.js';
 import { successResponse, errorResponse } from '@/core/Helpers/response.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, APP_DETAILS } from '@/core/Constants/index.js';
 import { EventEmitter } from 'events';
-import { getBookingById, getBusinessById, getUserById } from '@/core/Helpers/queryHelpers.js';
+import { getBookingById, getBusinessById, getUserById, getConversationById, getChatMessagesBy } from '@/core/Helpers/queryHelpers.js';
 import { userPayload } from '@/core/Helpers/userProfileHelper.js';
 import User from '@/core/Models/User.js';
 import { PushNotificationService } from '@/core/Services/PushNotificationService.js';
@@ -132,12 +132,12 @@ class ChatController {
                 return errorResponse(HTTP_STATUS.BAD_REQUEST, 'Conversation ID is required.');
             }
 
-            const conversation = await Conversation.findById(conversationId)
-                .populate('traveller')
-                .populate('vendor')
-                .populate('admin')
-                .populate({ path: 'bookingId', select: 'bookingCode' })
-                .lean();
+            const conversation = await getConversationById(conversationId, '', ['traveller', 'vendor', 'admin', { path: 'bookingId', select: 'bookingCode' }]);
+
+
+
+
+
 
             if (!conversation) {
                 return errorResponse(HTTP_STATUS.NOT_FOUND, 'Conversation not found.');
@@ -164,11 +164,11 @@ class ChatController {
                 query.createdAt = { $lt: new Date(before) };
             }
 
-            const messages = await ChatMessage.find(query)
-                .populate('sender')
-                .sort({ createdAt: -1 })
-                .limit(limit)
-                .lean();
+            const messages = await getChatMessagesBy(query, '', 'sender', { createdAt: -1 }, { limit });
+
+
+
+
 
             messages.reverse();
 
@@ -257,7 +257,7 @@ class ChatController {
                 }
 
                 if (receiverId && !activeSSEUsers.has(receiverId)) {
-                    const receiverUser = await User.findById(receiverId).select('fcmToken').lean();
+                    const receiverUser = await getUserById(receiverId, 'fcmToken');
                     if (receiverUser && receiverUser.fcmToken) {
                         const senderName = senderUser ? senderUser.name : 'Someone';
 

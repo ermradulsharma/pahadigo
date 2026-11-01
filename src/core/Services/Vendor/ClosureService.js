@@ -3,7 +3,7 @@ import Vendor from '@/core/Models/Vendor.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import CacheService from '@/core/Services/CacheService.js';
 import { AppError } from '@/core/Errors/AppError.js';
-import { getBusinessByUserId } from '@/core/Helpers/queryHelpers.js';
+import { getBusinessByUserId, getVendorClosuresBy, getVendorClosureBy, updateById } from '@/core/Helpers/queryHelpers.js';
 
 class ClosureService {
   async invalidateVendorCaches(userId, vendorId = null) {
@@ -36,7 +36,7 @@ class ClosureService {
   }
 
   async getClosurePeriods(userId) {
-    return await VendorClosure.find({ user: userId, isActive: true }).sort({ startDate: 1 }).lean();
+    return await getVendorClosuresBy({ user: userId, isActive: true });
   }
 
   async updateClosurePeriod(userId, closureId, updateData) {
@@ -45,11 +45,14 @@ class ClosureService {
     if (updateData.endDate) updateFields.endDate = updateData.endDate;
     if (updateData.reason) updateFields.reason = updateData.reason;
 
-    const saved = await VendorClosure.findOneAndUpdate(
-      { _id: closureId, user: userId },
-      { $set: updateFields },
-      { new: true, runValidators: true }
-    ).lean();
+    const existing = await getVendorClosureBy({ _id: closureId, user: userId });
+    if (!existing) throw AppError.notFound(RESPONSE_MESSAGES.CLOSURE.NOT_FOUND);
+
+    const saved = await updateById(VendorClosure, closureId, { $set: updateFields }, { runValidators: true });
+
+
+
+
     if (!saved) throw AppError.notFound(RESPONSE_MESSAGES.CLOSURE.NOT_FOUND);
 
     await this.invalidateVendorCaches(userId, saved.vendor);

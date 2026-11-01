@@ -72,7 +72,7 @@ export function userDetailsPayload(u) {
  */
 async function fetchUserById(id) {
     if (!id) return null;
-    return await User.findById(id).select('-password').lean();
+    return await getUserById(id, '-password');
 }
 
 /**

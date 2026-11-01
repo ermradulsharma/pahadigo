@@ -2,7 +2,7 @@ import PackageService from '@/core/Services/Admin/PackageService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
 import { item } from '@/core/Helpers/package.js';
-import Vendor from '@/core/Models/Vendor.js';
+import { getBusinessById } from '@/core/Helpers/queryHelpers.js';
 import { validate, schemas } from '@/core/Helpers/validation.js';
 
 /**
@@ -97,7 +97,7 @@ class PackageController extends Controller {
             if (!vendorId) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.ID_REQUIRED);
             if (!category) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.ITEM.CATEGORY_REQUIRED);
 
-            const vendor = await Vendor.findById(vendorId).select('user _id').lean();
+            const vendor = await getBusinessById(vendorId, 'user _id');
             if (!vendor || !vendor.user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
             const newItem = await item(vendor.user, vendor._id, category, itemData);

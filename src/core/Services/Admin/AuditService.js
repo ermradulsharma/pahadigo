@@ -1,6 +1,7 @@
 import AuditLog from '@/core/Models/AuditLog.js';
 import { getRequestMetadata } from '@/core/Helpers/requestUtils.js';
 import { redactSensitiveData } from '@/core/Helpers/security.js';
+import { getAuditLogsBy, countAuditLogsBy } from '@/core/Helpers/queryHelpers.js';
 
 /**
  * AuditService (Admin Role)
@@ -44,18 +45,20 @@ class AuditService {
       if (filter.endDate) query.createdAt.$lte = new Date(filter.endDate);
     }
 
-    const total = await AuditLog.countDocuments(query);
-    const logs = await AuditLog.find(query)
-      .populate('userId', 'name email role')
-      .sort({ createdAt: -1 })
-      .skip((page - 1) * limit)
-      .limit(parseInt(limit))
-      .lean();
+    const safeLimit = parseInt(limit) || 20;
+    const total = await countAuditLogsBy(query);
+    const logs = await getAuditLogsBy(
+      query,
+      '',
+      { path: 'userId', select: 'name email role' },
+      { createdAt: -1 },
+      { skip: (page - 1) * safeLimit, limit: safeLimit }
+    );
 
     return {
       logs,
       total,
-      totalPages: Math.ceil(total / limit)
+      totalPages: Math.ceil(total / safeLimit)
     };
   }
 }

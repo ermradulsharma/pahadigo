@@ -1,85 +1,47 @@
-/**
- * Simulates a Next.js Edge Request object for testing the API Dispatcher.
- */
+import { NextRequest } from 'next/server';
+
 class MockRequest {
     constructor(url, options = {}) {
         this.url = url;
-        this.method = (options.method || 'GET').toUpperCase();
-        
-        // Mock headers
-        const headerMap = new Map();
-        if (options.headers) {
-            Object.keys(options.headers).forEach(k => headerMap.set(k.toLowerCase(), options.headers[k]));
-        }
-        
-        // Default content type if body is provided
-        if (options.body && !headerMap.has('content-type')) {
-            if (typeof options.body === 'object') {
-                headerMap.set('content-type', 'application/json');
-            } else {
-                headerMap.set('content-type', 'text/plain');
+        this.method = options.method || 'GET';
+        this.headers = new Headers(options.headers || {});
+        this._json = options.jsonBody || options.body || {};
+        this.cookies = {
+            get: (name) => {
+                const cookieHeader = this.headers.get('cookie') || '';
+                const match = cookieHeader.match(new RegExp(`(^|;\\s*)${name}=([^;]*)`));
+                return match ? { value: decodeURIComponent(match[2]) } : null;
             }
-        }
-        
-        this.headers = {
-            get: (key) => headerMap.get(key.toLowerCase()) || null,
-            set: (key, value) => headerMap.set(key.toLowerCase(), value)
         };
-        
-        this._body = options.body;
     }
-    
-    async text() {
-        if (typeof this._body === 'object') return JSON.stringify(this._body);
-        return String(this._body || '');
-    }
-    
+
     async json() {
-        if (typeof this._body === 'string') return JSON.parse(this._body);
-        return this._body || {};
-    }
-    
-    async formData() {
-        // Simple mock for formData
-        const fd = new Map();
-        if (typeof this._body === 'object') {
-            for (const [k, v] of Object.entries(this._body)) {
-                fd.set(k, v);
-            }
-        }
-        fd.entries = function* () {
-            for (const [k, v] of fd.entries()) {
-                yield [k, v];
-            }
-        };
-        return fd;
+        return this._json;
     }
 }
 
 /**
- * Helper to test the API dispatcher.
- * @param {Function} handler - The GET/POST/etc function from route.js
- * @param {string} slugPath - e.g., 'public/packages'
- * @param {Object} options - { method, body, headers }
+ * Directly invokes the App Router handler with synthesized request
+ * avoiding any port binding or network virtualization!
  */
-async function invokeApi(handler, slugPath, options = {}) {
-    const slug = slugPath.split('/').filter(Boolean);
+export async function invokeApi(handler, options = {}) {
+    const slugPath = options.path || '';
+    const params = options.params || {};
+
     const req = new MockRequest(`http://localhost/api/${slugPath}`, options);
-    
-    // In Next.js App Router, params is often a Promise yielding { slug }
-    const response = await handler(req, { params: Promise.resolve({ slug }) });
+    const response = await handler(req, { params });
     
     let data = null;
-    if (response) {
-       data = await response.json().catch(() => null);
+    try {
+        data = await response.json();
+    } catch (e) {
+        // response might be empty or stream
     }
-    
+
     return {
-        status: response ? response.status : 500,
-        headers: response ? response.headers : null,
+        status: response.status,
+        headers: response.headers,
         data,
         response
     };
 }
-
-export { MockRequest, invokeApi };

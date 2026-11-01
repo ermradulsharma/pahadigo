@@ -1,7 +1,7 @@
 import dbConnect from '@/core/Config/db.js';
-import Package from '@/core/Models/Package.js';
-import Category from '@/core/Models/Category.js';
-import Blog from '@/core/Models/Blog.js';
+import { getPackagesBy, getCategoriesBy, getBlogsBy } from '@/core/Helpers/queryHelpers.js';
+
+
 import { SCHEMA_KEYS } from '@/core/Constants/categories.js';
 
 export default async function sitemap() {
@@ -33,9 +33,9 @@ export default async function sitemap() {
         await dbConnect();
 
         const [packageCatalogs, categories, blogs] = await Promise.all([
-            Package.find({}).lean(),
-            Category.find({ isActive: true }).select('slug updatedAt').lean(),
-            Blog.find({ status: 'published' }).select('slug updatedAt publishedAt').lean()
+            getPackagesBy({}),
+            getCategoriesBy({ isActive: true }, 'slug updatedAt'),
+            getBlogsBy({ status: 'published' }, 'slug updatedAt publishedAt')
         ]);
 
         const packageRoutes = [];

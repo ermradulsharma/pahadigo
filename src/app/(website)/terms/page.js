@@ -1,6 +1,6 @@
 import Link from 'next/link';
 import connectDB from '@/core/Config/db.js';
-import Policy from '@/core/Models/Policy.js';
+import { getPolicyBy } from '@/core/Helpers/queryHelpers.js';
 import { sanitizeHTML } from '@/core/Helpers/security.js';
 import { Shield, ChevronRight, FileText, CreditCard, AlertTriangle, Scale } from 'lucide-react';
 
@@ -28,7 +28,7 @@ export default async function TermsOfService() {
     let policy = null;
     try {
         await connectDB();
-        policy = await Policy.findOne({ target: 'admin', type: 'terms_conditions' });
+        policy = await getPolicyBy({ target: 'admin', type: 'terms_conditions' });
     } catch (error) {
     }
 

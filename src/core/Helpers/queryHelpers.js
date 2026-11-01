@@ -1,6 +1,35 @@
 import mongoose from 'mongoose';
 import { getLogger } from '@/core/Lib/logger.js';
-import { User, Vendor, Booking, Package, Category, VendorDocument, VendorClosure, Review, Notification } from '@/core/Models/index.js';
+import {
+    AuditLog,
+    Banner,
+    Blog,
+    Booking,
+    Category,
+    CategoryDocument,
+    ChatMessage,
+    Conversation,
+    Country,
+    Coupon,
+    Dispute,
+    EmergencyAlert,
+    Inquiry,
+    Inventory,
+    Message,
+    Notification,
+    Package,
+    Policy,
+    Review,
+    SearchLog,
+    Setting,
+    State,
+    User,
+    Vendor,
+    VendorClosure,
+    VendorDocument,
+    WebhookEvent,
+    Wishlist
+} from '@/core/Models/index.js';
 import { SCHEMA_KEYS, CATEGORY_MAP } from '@/core/Constants/categories.js';
 
 /**
@@ -67,7 +96,7 @@ export const getBy = async (Model, conditions, select = '', populate = null, opt
  * @param {string|Object} select - Space-separated fields or projection object
  * @param {string|Object|Array} populate - Population options
  * @param {string|Object} sort - Sorting options (e.g. { createdAt: -1 })
- * @param {Object} [options={}] - Options like { session, lean: true }
+ * @param {Object} [options={}] - Options like { skip, limit, session, lean: true }
  * @returns {Promise<Array>} - Array of documents
  */
 export const getManyBy = async (Model, conditions = {}, select = '', populate = null, sort = null, options = {}) => {
@@ -81,6 +110,22 @@ export const getManyBy = async (Model, conditions = {}, select = '', populate = 
     if (options.limit !== undefined && typeof query?.limit === 'function') query = query.limit(Number(options.limit)) || query;
     if (options.session && typeof query?.session === 'function') query = query.session(options.session) || query;
     if (options.lean !== false && typeof query?.lean === 'function') query = query.lean() || query;
+    if (typeof query?.exec === 'function') return await query.exec();
+    return await query;
+};
+
+/**
+ * Generic helper to count documents matching custom conditions with optional session.
+ * @param {import('mongoose').Model} Model - The Mongoose model to query
+ * @param {Object} conditions - Query criteria
+ * @param {Object} [options={}] - Options like { session }
+ * @returns {Promise<number>}
+ */
+export const countBy = async (Model, conditions = {}, options = {}) => {
+    if (!Model || typeof Model.countDocuments !== 'function') return 0;
+    let query = Model.countDocuments(conditions);
+    if (!query) return 0;
+    if (options.session && typeof query?.session === 'function') query = query.session(options.session) || query;
     if (typeof query?.exec === 'function') return await query.exec();
     return await query;
 };
@@ -101,6 +146,20 @@ export const getUserBy = async (conditions, select = '', populate = null, option
  */
 export const getUserById = async (id, select = '', populate = null, options = {}) => {
     return await getById(User, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple User records by custom conditions.
+ */
+export const getUsersBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
+    return await getManyBy(User, conditions, select, populate, sort, options);
+};
+
+/**
+ * Count User records by custom conditions.
+ */
+export const countUsersBy = async (conditions = {}, options = {}) => {
+    return await countBy(User, conditions, options);
 };
 
 /**
@@ -143,10 +202,59 @@ export const getBusinessByIdAndUserId = async (id, userId, select = '', populate
 };
 
 /**
+ * Fetch multiple Vendor records by custom conditions.
+ */
+export const getVendorsBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
+    return await getManyBy(Vendor, conditions, select, populate, sort, options);
+};
+
+/**
+ * Count Vendor records by custom conditions.
+ */
+export const countVendorsBy = async (conditions = {}, options = {}) => {
+    return await countBy(Vendor, conditions, options);
+};
+
+/**
  * Fetch VendorDocument records by custom conditions.
  */
 export const getVendorDocumentsBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
     return await getManyBy(VendorDocument, conditions, select, populate, sort, options);
+};
+
+/**
+ * Fetch a single VendorDocument record by ID.
+ */
+export const getVendorDocumentById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(VendorDocument, id, select, populate, options);
+};
+
+/**
+ * Fetch a single VendorDocument record by custom conditions.
+ */
+export const getVendorDocumentBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(VendorDocument, conditions, select, populate, options);
+};
+
+/**
+ * Fetch VendorClosure records by custom conditions.
+ */
+export const getVendorClosuresBy = async (conditions = {}, select = '', populate = null, sort = { startDate: 1 }, options = {}) => {
+    return await getManyBy(VendorClosure, conditions, select, populate, sort, options);
+};
+
+/**
+ * Fetch a single VendorClosure record by custom conditions.
+ */
+export const getVendorClosureBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(VendorClosure, conditions, select, populate, options);
+};
+
+/**
+ * Fetch a single VendorClosure record by ID.
+ */
+export const getVendorClosureById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(VendorClosure, id, select, populate, options);
 };
 
 /**
@@ -164,6 +272,20 @@ export const getBookingById = async (id, select = '', populate = null, options =
 };
 
 /**
+ * Fetch multiple Booking records by custom conditions.
+ */
+export const getBookingsBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
+    return await getManyBy(Booking, conditions, select, populate, sort, options);
+};
+
+/**
+ * Count Booking records by custom conditions.
+ */
+export const countBookingsBy = async (conditions = {}, options = {}) => {
+    return await countBy(Booking, conditions, options);
+};
+
+/**
  * Fetch a Package record by custom conditions.
  */
 export const getPackageBy = async (conditions, select = '', populate = null, options = {}) => {
@@ -178,40 +300,23 @@ export const getPackageById = async (id, select = '', populate = null, options =
 };
 
 /**
- * Fetch multiple Category records by custom conditions.
+ * Fetch multiple Package records by custom conditions.
  */
-export const getCategoriesBy = async (conditions = {}, select = '', populate = null, sort = null) => {
-    return await getManyBy(Category, conditions, select, populate, sort);
+export const getPackagesBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
+    return await getManyBy(Package, conditions, select, populate, sort, options);
 };
 
 /**
- * Fetch a Category record by custom conditions.
+ * Count Package records by custom conditions.
  */
-export const getCategoryBy = async (conditions, select = '', populate = null) => {
-    return await getBy(Category, conditions, select, populate);
+export const countPackagesBy = async (conditions = {}, options = {}) => {
+    return await countBy(Package, conditions, options);
 };
-
-/**
- * Fetch a Category record by ID.
- */
-export const getCategoryById = async (id, select = '', populate = null) => {
-    return await getById(Category, id, select, populate);
-};
-
-/**
- * Fetch a Category record by Slug.
- */
-export const getCategoryBySlug = async (slug, select = '', populate = null) => {
-    if (!slug) return null;
-    return await getCategoryBy({ slug: (slug || '').toLowerCase() }, select, populate);
-};
-
 
 /**
  * Fetch a specific package item (subdocument) by its ID.
  */
 export const getPackageItemById = async (itemId, populate = null) => {
-
     const pkg = await getPackageBy({
         $or: Object.values(SCHEMA_KEYS).map(key => ({ [`${key}._id`]: itemId }))
     }, '', populate);
@@ -239,10 +344,88 @@ export const getPackageItemById = async (itemId, populate = null) => {
 };
 
 /**
+ * Fetch multiple Category records by custom conditions.
+ */
+export const getCategoriesBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
+    return await getManyBy(Category, conditions, select, populate, sort, options);
+};
+
+/**
+ * Fetch a Category record by custom conditions.
+ */
+export const getCategoryBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(Category, conditions, select, populate, options);
+};
+
+/**
+ * Fetch a Category record by ID.
+ */
+export const getCategoryById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(Category, id, select, populate, options);
+};
+
+/**
+ * Fetch a Category record by Slug.
+ */
+export const getCategoryBySlug = async (slug, select = '', populate = null, options = {}) => {
+    if (!slug) return null;
+    return await getCategoryBy({ slug: (slug || '').toLowerCase() }, select, populate, options);
+};
+
+/**
+ * Count Category records by custom conditions.
+ */
+export const countCategoriesBy = async (conditions = {}, options = {}) => {
+    return await countBy(Category, conditions, options);
+};
+
+/**
+ * Fetch multiple CategoryDocument records by custom conditions.
+ */
+export const getCategoryDocumentsBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
+    return await getManyBy(CategoryDocument, conditions, select, populate, sort, options);
+};
+
+/**
+ * Fetch a CategoryDocument record by custom conditions.
+ */
+export const getCategoryDocumentBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(CategoryDocument, conditions, select, populate, options);
+};
+
+/**
+ * Fetch a CategoryDocument record by ID.
+ */
+export const getCategoryDocumentById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(CategoryDocument, id, select, populate, options);
+};
+
+/**
  * Fetch Review records by custom conditions.
  */
-export const getReviewsBy = async (conditions = {}, select = '', populate = null, sort = { createdAt: -1 }) => {
-    return await getManyBy(Review, conditions, select, populate, sort);
+export const getReviewsBy = async (conditions = {}, select = '', populate = null, sort = { createdAt: -1 }, options = {}) => {
+    return await getManyBy(Review, conditions, select, populate, sort, options);
+};
+
+/**
+ * Fetch a single Review record by custom conditions.
+ */
+export const getReviewBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(Review, conditions, select, populate, options);
+};
+
+/**
+ * Fetch a single Review record by ID.
+ */
+export const getReviewById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(Review, id, select, populate, options);
+};
+
+/**
+ * Count Review records by custom conditions.
+ */
+export const countReviewsBy = async (conditions = {}, options = {}) => {
+    return await countBy(Review, conditions, options);
 };
 
 /**
@@ -269,40 +452,7 @@ export const getReviewsByItemId = async (itemId, populate = [{ path: 'user', sel
 };
 
 /**
- * Fetch multiple User records by custom conditions.
- */
-export const getUsersBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
-    return await getManyBy(User, conditions, select, populate, sort, options);
-};
-
-/**
- * Fetch multiple Booking records by custom conditions.
- */
-export const getBookingsBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
-    return await getManyBy(Booking, conditions, select, populate, sort, options);
-};
-
-/**
- * Fetch multiple Package records by custom conditions.
- */
-export const getPackagesBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
-    return await getManyBy(Package, conditions, select, populate, sort, options);
-};
-
-/**
- * Fetch multiple Vendor records by custom conditions.
- */
-export const getVendorsBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
-    return await getManyBy(Vendor, conditions, select, populate, sort, options);
-};
-
-/**
  * Fetch a single Notification record by custom conditions.
- * @param {Object} conditions - Query criteria
- * @param {string|Object} select - Space-separated fields or projection object
- * @param {string|Object|Array} populate - Population options
- * @param {Object} [options={}] - Options like { session, lean: true }
- * @returns {Promise<Object|null>}
  */
 export const getNotificationBy = async (conditions, select = '', populate = null, options = {}) => {
     return await getBy(Notification, conditions, select, populate, options);
@@ -310,11 +460,6 @@ export const getNotificationBy = async (conditions, select = '', populate = null
 
 /**
  * Fetch a Notification record by ID.
- * @param {string|import('mongoose').Types.ObjectId} id - The notification ID
- * @param {string|Object} select - Space-separated fields or projection object
- * @param {string|Object|Array} populate - Population options
- * @param {Object} [options={}] - Options like { session, lean: true }
- * @returns {Promise<Object|null>}
  */
 export const getNotificationById = async (id, select = '', populate = null, options = {}) => {
     return await getById(Notification, id, select, populate, options);
@@ -322,15 +467,450 @@ export const getNotificationById = async (id, select = '', populate = null, opti
 
 /**
  * Fetch multiple Notification records by custom conditions.
- * @param {Object} conditions - Query criteria
- * @param {string|Object} select - Space-separated fields or projection object
- * @param {string|Object|Array} populate - Population options
- * @param {string|Object} sort - Sorting options
- * @param {Object} [options={}] - Options like { skip, limit, session, lean: true }
- * @returns {Promise<Array>}
  */
 export const getNotificationsBy = async (conditions = {}, select = '', populate = null, sort = { createdAt: -1 }, options = {}) => {
     return await getManyBy(Notification, conditions, select, populate, sort, options);
+};
+
+/**
+ * Count Notification records by custom conditions.
+ */
+export const countNotificationsBy = async (conditions = {}, options = {}) => {
+    return await countBy(Notification, conditions, options);
+};
+
+/**
+ * Fetch a single Policy record by custom conditions.
+ */
+export const getPolicyBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(Policy, conditions, select, populate, options);
+};
+
+/**
+ * Fetch a Policy record by ID.
+ */
+export const getPolicyById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(Policy, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple Policy records by custom conditions.
+ */
+export const getPoliciesBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
+    return await getManyBy(Policy, conditions, select, populate, sort, options);
+};
+
+/**
+ * Fetch a single Blog record by custom conditions.
+ */
+export const getBlogBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(Blog, conditions, select, populate, options);
+};
+
+/**
+ * Fetch a Blog record by ID.
+ */
+export const getBlogById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(Blog, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple Blog records by custom conditions.
+ */
+export const getBlogsBy = async (conditions = {}, select = '', populate = null, sort = { createdAt: -1 }, options = {}) => {
+    return await getManyBy(Blog, conditions, select, populate, sort, options);
+};
+
+/**
+ * Count Blog records by custom conditions.
+ */
+export const countBlogsBy = async (conditions = {}, options = {}) => {
+    return await countBy(Blog, conditions, options);
+};
+
+/**
+ * Fetch a single Country record by custom conditions.
+ */
+export const getCountryBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(Country, conditions, select, populate, options);
+};
+
+/**
+ * Fetch a Country record by ID.
+ */
+export const getCountryById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(Country, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple Country records by custom conditions.
+ */
+export const getCountriesBy = async (conditions = {}, select = '', populate = null, sort = { name: 1 }, options = {}) => {
+    return await getManyBy(Country, conditions, select, populate, sort, options);
+};
+
+/**
+ * Fetch a single State record by custom conditions.
+ */
+export const getStateBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(State, conditions, select, populate, options);
+};
+
+/**
+ * Fetch a State record by ID.
+ */
+export const getStateById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(State, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple State records by custom conditions.
+ */
+export const getStatesBy = async (conditions = {}, select = '', populate = null, sort = { name: 1 }, options = {}) => {
+    return await getManyBy(State, conditions, select, populate, sort, options);
+};
+
+/**
+ * Fetch a single Inventory record by custom conditions.
+ */
+export const getInventoryBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(Inventory, conditions, select, populate, options);
+};
+
+/**
+ * Fetch an Inventory record by ID.
+ */
+export const getInventoryById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(Inventory, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple Inventory records by custom conditions.
+ */
+export const getInventoriesBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
+    return await getManyBy(Inventory, conditions, select, populate, sort, options);
+};
+
+/**
+ * Fetch a Setting record by custom conditions (default singleton {}).
+ */
+export const getSettingBy = async (conditions = {}, select = '', populate = null, options = {}) => {
+    return await getBy(Setting, conditions, select, populate, options);
+};
+
+/**
+ * Fetch a Setting record by ID.
+ */
+export const getSettingById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(Setting, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple Setting records by custom conditions.
+ */
+export const getSettingsBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
+    return await getManyBy(Setting, conditions, select, populate, sort, options);
+};
+
+/**
+ * Fetch a single Dispute record by custom conditions.
+ */
+export const getDisputeBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(Dispute, conditions, select, populate, options);
+};
+
+/**
+ * Fetch a Dispute record by ID.
+ */
+export const getDisputeById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(Dispute, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple Dispute records by custom conditions.
+ */
+export const getDisputesBy = async (conditions = {}, select = '', populate = null, sort = { createdAt: -1 }, options = {}) => {
+    return await getManyBy(Dispute, conditions, select, populate, sort, options);
+};
+
+/**
+ * Count Dispute records by custom conditions.
+ */
+export const countDisputesBy = async (conditions = {}, options = {}) => {
+    return await countBy(Dispute, conditions, options);
+};
+
+/**
+ * Fetch a single Dispute Message record by custom conditions.
+ */
+export const getDisputeMessageBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(Message, conditions, select, populate, options);
+};
+
+/**
+ * Fetch multiple Dispute Message records by custom conditions.
+ */
+export const getDisputeMessagesBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
+    return await getManyBy(Message, conditions, select, populate, sort, options);
+};
+
+/**
+ * Fetch a Wishlist record by custom conditions.
+ */
+export const getWishlistBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(Wishlist, conditions, select, populate, options);
+};
+
+/**
+ * Fetch a Wishlist record by ID.
+ */
+export const getWishlistById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(Wishlist, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple Wishlist records by custom conditions.
+ */
+export const getWishlistsBy = async (conditions = {}, select = '', populate = null, sort = null, options = {}) => {
+    return await getManyBy(Wishlist, conditions, select, populate, sort, options);
+};
+
+/**
+ * Fetch an EmergencyAlert record by custom conditions.
+ */
+export const getEmergencyAlertBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(EmergencyAlert, conditions, select, populate, options);
+};
+
+/**
+ * Fetch an EmergencyAlert record by ID.
+ */
+export const getEmergencyAlertById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(EmergencyAlert, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple EmergencyAlert records by custom conditions.
+ */
+export const getEmergencyAlertsBy = async (conditions = {}, select = '', populate = null, sort = { createdAt: -1 }, options = {}) => {
+    return await getManyBy(EmergencyAlert, conditions, select, populate, sort, options);
+};
+
+/**
+ * Count EmergencyAlert records by custom conditions.
+ */
+export const countEmergencyAlertsBy = async (conditions = {}, options = {}) => {
+    return await countBy(EmergencyAlert, conditions, options);
+};
+
+/**
+ * Fetch an Inquiry record by custom conditions.
+ */
+export const getInquiryBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(Inquiry, conditions, select, populate, options);
+};
+
+/**
+ * Fetch an Inquiry record by ID.
+ */
+export const getInquiryById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(Inquiry, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple Inquiry records by custom conditions.
+ */
+export const getInquiriesBy = async (conditions = {}, select = '', populate = null, sort = { createdAt: -1 }, options = {}) => {
+    return await getManyBy(Inquiry, conditions, select, populate, sort, options);
+};
+
+/**
+ * Count Inquiry records by custom conditions.
+ */
+export const countInquiriesBy = async (conditions = {}, options = {}) => {
+    return await countBy(Inquiry, conditions, options);
+};
+
+/**
+ * Fetch a Coupon record by custom conditions.
+ */
+export const getCouponBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(Coupon, conditions, select, populate, options);
+};
+
+/**
+ * Fetch a Coupon record by ID.
+ */
+export const getCouponById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(Coupon, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple Coupon records by custom conditions.
+ */
+export const getCouponsBy = async (conditions = {}, select = '', populate = null, sort = { createdAt: -1 }, options = {}) => {
+    return await getManyBy(Coupon, conditions, select, populate, sort, options);
+};
+
+/**
+ * Count Coupon records by custom conditions.
+ */
+export const countCouponsBy = async (conditions = {}, options = {}) => {
+    return await countBy(Coupon, conditions, options);
+};
+
+/**
+ * Fetch a Conversation record by custom conditions.
+ */
+export const getConversationBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(Conversation, conditions, select, populate, options);
+};
+
+/**
+ * Fetch a Conversation record by ID.
+ */
+export const getConversationById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(Conversation, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple Conversation records by custom conditions.
+ */
+export const getConversationsBy = async (conditions = {}, select = '', populate = null, sort = { updatedAt: -1 }, options = {}) => {
+    return await getManyBy(Conversation, conditions, select, populate, sort, options);
+};
+
+/**
+ * Count Conversation records by custom conditions.
+ */
+export const countConversationsBy = async (conditions = {}, options = {}) => {
+    return await countBy(Conversation, conditions, options);
+};
+
+/**
+ * Fetch a ChatMessage record by custom conditions.
+ */
+export const getChatMessageBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(ChatMessage, conditions, select, populate, options);
+};
+
+/**
+ * Fetch a ChatMessage record by ID.
+ */
+export const getChatMessageById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(ChatMessage, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple ChatMessage records by custom conditions.
+ */
+export const getChatMessagesBy = async (conditions = {}, select = '', populate = null, sort = { createdAt: 1 }, options = {}) => {
+    return await getManyBy(ChatMessage, conditions, select, populate, sort, options);
+};
+
+/**
+ * Count ChatMessage records by custom conditions.
+ */
+export const countChatMessagesBy = async (conditions = {}, options = {}) => {
+    return await countBy(ChatMessage, conditions, options);
+};
+
+/**
+ * Fetch a WebhookEvent record by custom conditions.
+ */
+export const getWebhookEventBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(WebhookEvent, conditions, select, populate, options);
+};
+
+/**
+ * Fetch a WebhookEvent record by ID.
+ */
+export const getWebhookEventById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(WebhookEvent, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple WebhookEvent records by custom conditions.
+ */
+export const getWebhookEventsBy = async (conditions = {}, select = '', populate = null, sort = { createdAt: -1 }, options = {}) => {
+    return await getManyBy(WebhookEvent, conditions, select, populate, sort, options);
+};
+
+/**
+ * Fetch an AuditLog record by custom conditions.
+ */
+export const getAuditLogBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(AuditLog, conditions, select, populate, options);
+};
+
+/**
+ * Fetch an AuditLog record by ID.
+ */
+export const getAuditLogById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(AuditLog, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple AuditLog records by custom conditions.
+ */
+export const getAuditLogsBy = async (conditions = {}, select = '', populate = null, sort = { createdAt: -1 }, options = {}) => {
+    return await getManyBy(AuditLog, conditions, select, populate, sort, options);
+};
+
+/**
+ * Count AuditLog records by custom conditions.
+ */
+export const countAuditLogsBy = async (conditions = {}, options = {}) => {
+    return await countBy(AuditLog, conditions, options);
+};
+
+/**
+ * Fetch a Banner record by custom conditions.
+ */
+export const getBannerBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(Banner, conditions, select, populate, options);
+};
+
+/**
+ * Fetch a Banner record by ID.
+ */
+export const getBannerById = async (id, select = '', populate = null, options = {}) => {
+    return await getById(Banner, id, select, populate, options);
+};
+
+/**
+ * Fetch multiple Banner records by custom conditions.
+ */
+export const getBannersBy = async (conditions = {}, select = '', populate = null, sort = { priority: -1 }, options = {}) => {
+    return await getManyBy(Banner, conditions, select, populate, sort, options);
+};
+
+/**
+ * Count Banner records by custom conditions.
+ */
+export const countBannersBy = async (conditions = {}, options = {}) => {
+    return await countBy(Banner, conditions, options);
+};
+
+/**
+ * Fetch a SearchLog record by custom conditions.
+ */
+export const getSearchLogBy = async (conditions, select = '', populate = null, options = {}) => {
+    return await getBy(SearchLog, conditions, select, populate, options);
+};
+
+/**
+ * Fetch multiple SearchLog records by custom conditions.
+ */
+export const getSearchLogsBy = async (conditions = {}, select = '', populate = null, sort = { createdAt: -1 }, options = {}) => {
+    return await getManyBy(SearchLog, conditions, select, populate, sort, options);
+};
+
+/**
+ * Count SearchLog records by custom conditions.
+ */
+export const countSearchLogsBy = async (conditions = {}, options = {}) => {
+    return await countBy(SearchLog, conditions, options);
 };
 
 /**
@@ -362,32 +942,127 @@ export default {
     getById,
     getBy,
     getManyBy,
+    countBy,
     updateById,
     deleteById,
+    // User
     getUserBy,
     getUserById,
     getUsersBy,
+    countUsersBy,
+    // Vendor
     getBusinessBy,
     getBusinessById,
     getBusinessByUserId,
     getBusinessByIdAndUserId,
     getVendorsBy,
+    countVendorsBy,
     getVendorDocumentsBy,
+    getVendorDocumentById,
+    getVendorDocumentBy,
+    getVendorClosureBy,
+    getVendorClosureById,
+    getVendorClosuresBy,
+    // Booking
     getBookingBy,
     getBookingById,
     getBookingsBy,
+    countBookingsBy,
+    // Package
     getPackageBy,
     getPackageById,
     getPackagesBy,
+    countPackagesBy,
     getPackageItemById,
+    // Category
     getCategoryBy,
     getCategoriesBy,
     getCategoryById,
     getCategoryBySlug,
+    countCategoriesBy,
+    getCategoryDocumentBy,
+    getCategoryDocumentById,
+    getCategoryDocumentsBy,
+    // Review
+    getReviewBy,
+    getReviewById,
     getReviewsBy,
+    countReviewsBy,
     getReviewsByItemId,
+    // Notification
     getNotificationBy,
     getNotificationById,
-    getNotificationsBy
+    getNotificationsBy,
+    countNotificationsBy,
+    // Policy
+    getPolicyBy,
+    getPolicyById,
+    getPoliciesBy,
+    // Blog
+    getBlogBy,
+    getBlogById,
+    getBlogsBy,
+    countBlogsBy,
+    // Location
+    getCountryBy,
+    getCountryById,
+    getCountriesBy,
+    getStateBy,
+    getStateById,
+    getStatesBy,
+    // Inventory
+    getInventoryBy,
+    getInventoryById,
+    getInventoriesBy,
+    // Setting
+    getSettingBy,
+    getSettingById,
+    getSettingsBy,
+    // Dispute & Messages
+    getDisputeBy,
+    getDisputeById,
+    getDisputesBy,
+    countDisputesBy,
+    getDisputeMessageBy,
+    getDisputeMessagesBy,
+    // Chat
+    getConversationBy,
+    getConversationById,
+    getConversationsBy,
+    countConversationsBy,
+    getChatMessageBy,
+    getChatMessageById,
+    getChatMessagesBy,
+    countChatMessagesBy,
+    // Emergency & Inquiry & Coupon
+    getWishlistBy,
+    getWishlistById,
+    getWishlistsBy,
+    getEmergencyAlertBy,
+    getEmergencyAlertById,
+    getEmergencyAlertsBy,
+    countEmergencyAlertsBy,
+    getInquiryBy,
+    getInquiryById,
+    getInquiriesBy,
+    countInquiriesBy,
+    getCouponBy,
+    getCouponById,
+    getCouponsBy,
+    countCouponsBy,
+    // Webhook & Audit & Banner & SearchLog
+    getWebhookEventBy,
+    getWebhookEventById,
+    getWebhookEventsBy,
+    getAuditLogBy,
+    getAuditLogById,
+    getAuditLogsBy,
+    countAuditLogsBy,
+    getBannerBy,
+    getBannerById,
+    getBannersBy,
+    countBannersBy,
+    getSearchLogBy,
+    getSearchLogsBy,
+    countSearchLogsBy
 };
-

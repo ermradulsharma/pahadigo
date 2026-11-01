@@ -7,7 +7,7 @@ import googleAuthLib from 'google-auth-library';
 const { OAuth2Client } = googleAuthLib;
 
 import { getAppConfig } from '@/core/Lib/appConfig.js';
-import { getBusinessBy } from "@/core/Helpers/queryHelpers.js";
+import { getBusinessBy, getUserBy } from "@/core/Helpers/queryHelpers.js";
 import { businessAuthResponse } from "@/core/Helpers/businessHelper.js";
 import { userAuthResponse } from "@/core/Helpers/userProfileHelper.js";
 import { USER_ROLES, AUTH_PROVIDERS, STATUS, RESPONSE_MESSAGES, VENDOR_STATUS, DEFAULTS } from '@/core/Constants/index.js';
@@ -32,7 +32,7 @@ async function getApplePublicKey(kid) {
 class AuthService {
 
     async initiateOTP({ identifier, role, termsAccepted }) {
-        const existingUser = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] }).lean();
+        const existingUser = await getUserBy({ $or: [{ email: identifier }, { phone: identifier }] });
         if (existingUser && existingUser.role !== role) throw AppError.forbidden(RESPONSE_MESSAGES.AUTH.ROLE_MISMATCH);
         if (existingUser && existingUser.role && [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.DEVELOPER].includes(existingUser.role)) throw AppError.forbidden(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
         if (existingUser && termsAccepted) {

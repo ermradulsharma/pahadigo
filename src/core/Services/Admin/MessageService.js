@@ -1,21 +1,24 @@
 import Message from '@/core/Models/Message.js';
-import Dispute from '@/core/Models/Dispute.js';
 import AppError from '@/core/Helpers/AppError.js';
+import { getDisputeMessageBy, getDisputeById } from '@/core/Helpers/queryHelpers.js';
 
 class MessageService {
     async getMessages(disputeId) {
-        const thread = await Message.findOne({ disputeId })
-            .populate({
+        const thread = await getDisputeMessageBy(
+            { disputeId },
+            '',
+            {
                 path: 'messages.sender',
                 select: 'name email image role'
-            }).lean();
+            }
+        );
 
         return thread ? thread.messages : [];
     }
 
     async sendMessage(disputeId, senderId, senderModel, messageText, target = 'all', attachments = []) {
         // Ensure dispute exists
-        const dispute = await Dispute.findById(disputeId).lean();
+        const dispute = await getDisputeById(disputeId);
         if (!dispute) throw new AppError('Dispute not found', 404);
 
         const newMessageEntry = {

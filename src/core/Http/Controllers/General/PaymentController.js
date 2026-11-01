@@ -2,6 +2,8 @@ import RazorpayService from '@/core/Services/General/RazorpayService.js';
 import BookingService from '@/core/Services/General/BookingService.js';
 import { HTTP_STATUS } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
+import { getWebhookEventBy } from '@/core/Helpers/queryHelpers.js';
+import WebhookEvent from '@/core/Models/WebhookEvent.js';
 
 const PAYMENT_EVENTS = new Set(['order.paid', 'payment.captured']);
 
@@ -30,8 +32,8 @@ class PaymentController extends Controller {
       // Replay Protection: Check if this event was already processed (via Header or Payload ID)
       const eventId = req.headers.get('x-razorpay-event-id') || body?.id || body?.event_id;
       if (eventId) {
-          const { default: WebhookEvent } = await import('@/core/Models/WebhookEvent.js');
-          const existingEvent = await WebhookEvent.findOne({ eventId }).lean();
+
+          const existingEvent = await getWebhookEventBy({ eventId });
           if (existingEvent) {
               return this.success(HTTP_STATUS.OK, 'Webhook already processed (Replay Protection)', { received: true });
           }

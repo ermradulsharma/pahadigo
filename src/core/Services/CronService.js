@@ -7,7 +7,7 @@ import { BOOKING_STATUS, PAYMENT_STATUS, STATUS } from '@/core/Constants/index.j
 import { getLogger } from '@/core/Lib/logger.js';
 import CacheService from '@/core/Services/CacheService.js';
 import InventoryService from '@/core/Services/Traveller/InventoryService.js';
-import { getBookingsBy } from '@/core/Helpers/queryHelpers.js';
+import { getBookingsBy, getDisputesBy } from '@/core/Helpers/queryHelpers.js';
 
 class CronService {
 
@@ -114,10 +114,10 @@ class CronService {
             const sevenDaysAgo = new Date();
             sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 7);
 
-            const inactiveDisputes = await Dispute.find({
+            const inactiveDisputes = await getDisputesBy({
                 status: { $in: ['open', 'investigating'] },
                 updatedAt: { $lt: sevenDaysAgo }
-            }).select('_id').lean();
+            }, '_id');
 
             if (inactiveDisputes.length === 0) return { matched: 0, modified: 0 };
 

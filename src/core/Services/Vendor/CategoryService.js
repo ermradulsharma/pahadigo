@@ -5,7 +5,7 @@ import VendorDocument from '@/core/Models/VendorDocument.js';
 import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
 import { RESPONSE_MESSAGES, VERIFICATION_STATUS } from '@/core/Constants/index.js';
 import CacheService from '@/core/Services/CacheService.js';
-import { getBusinessByUserId, getVendorDocumentsBy } from '@/core/Helpers/queryHelpers.js';
+import { getBusinessByUserId, getVendorDocumentsBy, getCategoriesBy, getCategoryBy, getCategoryDocumentsBy, getBusinessBy } from '@/core/Helpers/queryHelpers.js';
 import { evaluateCategoryDocumentStatus } from '@/core/Helpers/categoryHelper.js';
 import { AppError } from '@/core/Errors/AppError.js';
 
@@ -34,9 +34,9 @@ class CategoryService {
         if (!vendor || !vendor.category || vendor.category.length === 0) return [];
 
         const assignedSlugs = vendor.category.map(c => c.slug);
-        const dbCategories = await Category.find({ slug: { $in: assignedSlugs } }).select('_id name slug').lean();
+        const dbCategories = await getCategoriesBy({ slug: { $in: assignedSlugs } }, '_id name slug');
         const docs = await getVendorDocumentsBy({ user: userId, vendor: vendor._id }, 'category_slug document_slug url status rejection_reason issue_date expiry_date createdAt');
-        const categoryReqs = await CategoryDocument.find({ isActive: true }).select('name slug category_slug').lean();
+        const categoryReqs = await getCategoryDocumentsBy({ isActive: true }, 'name slug category_slug');
 
         return vendor.category.map(cat => {
             const dbCat = dbCategories.find(c => c.slug === cat.slug);
@@ -56,7 +56,7 @@ class CategoryService {
         const slug = categoryData.slug || categoryData;
 
         // Fetch category from database instead of constants
-        const categoryDoc = await Category.findOne({ slug, isActive: true }).lean();
+        const categoryDoc = await getCategoryBy({ slug, isActive: true });
         if (!categoryDoc) {
             throw AppError.badRequest(RESPONSE_MESSAGES.CATEGORY.INVALID);
         }
@@ -96,8 +96,8 @@ class CategoryService {
 
     // Get list of categories that the vendor hasn't chosen yet
     async getEligibleCategories(userId) {
-        const allCategories = await Category.find({ isActive: true }).select('name slug description').lean();
-        const vendor = await Vendor.findOne({ user: userId, deletedAt: null }).lean();
+        const allCategories = await getCategoriesBy({ isActive: true }, 'name slug description');
+        const vendor = await getBusinessBy({ user: userId, deletedAt: null });
         const assignedSlugs = vendor?.category?.map(c => c.slug) || [];
         return allCategories.filter(category => !assignedSlugs.includes(category.slug));
     }
@@ -114,7 +114,7 @@ class CategoryService {
 
     // Get list of required documents for any category (Bypasses assignment check)
     async getRequirementsBySlug(categorySlug) {
-        const dbDocs = await CategoryDocument.find({ category_slug: categorySlug, isActive: true }).select('name slug isMandatory').lean();
+        const dbDocs = await getCategoryDocumentsBy({ category_slug: categorySlug, isActive: true }, 'name slug isMandatory');
         return dbDocs;
     }
 
@@ -178,10 +178,10 @@ class CategoryService {
     async getUploadedDocuments(userId) {
         const vendor = await getBusinessByUserId(userId, '_id');
         if (!vendor) throw AppError.notFound(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
-        return await VendorDocument.find({
+        return await getVendorDocumentsBy({
             user: userId,
             vendor: vendor._id
-        }).select('category_slug document_slug url status rejection_reason createdAt').lean();
+        }, 'category_slug document_slug url status rejection_reason createdAt');
     }
 }
 

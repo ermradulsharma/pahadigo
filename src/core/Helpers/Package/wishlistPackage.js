@@ -9,10 +9,12 @@
 import mongoose from 'mongoose';
 import Wishlist from '@/core/Models/Wishlist.js';
 import Category from '@/core/Models/Category.js';
+import { getCategoriesBy } from '@/core/Helpers/queryHelpers.js';
 import { paginateArray } from '@/core/Helpers/queryUtils.js';
 import { packageItemResponse } from './packageResponse.js';
 import { normalizeCoordinates, calculateDistanceKm } from '@/core/Services/Shared/PackageCore.js';
 import { schemaKey } from './shared.js';
+import toObjectId from '../objectId.js';
 
 let cachedCategories = null;
 let lastCategoryFetch = 0;
@@ -49,7 +51,7 @@ async function getActiveCategories() {
     if (cachedCategories && (now - lastCategoryFetch < 5 * 60 * 1000)) {
         return cachedCategories;
     }
-    cachedCategories = await Category.find({ isActive: true }).lean();
+    cachedCategories = await getCategoriesBy({ isActive: true });
     lastCategoryFetch = now;
     return cachedCategories;
 }
@@ -79,9 +81,10 @@ export async function getWishlistPackages(options = {}) {
     const { userId, page = 1, limit = 10, minPrice = 0, maxPrice = null, format = 'grouped', sort = '', query = '', category = '', lat = null, lng = null, radius = null, address = '' } = options;
     let isFlat = true;
     if (format === '' || format === 'grouped') isFlat = false;
-    if (!userId) return isFlat ? paginateArray([], page, limit) : {};
 
-    const userObjectId = new mongoose.Types.ObjectId(userId);
+
+    const userObjectId = toObjectId(userId);
+    if (!userObjectId) return isFlat ? paginateArray([], page, limit) : {};
     const categories = await getActiveCategories();
 
     const pipeline = [

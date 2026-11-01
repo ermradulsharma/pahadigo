@@ -107,7 +107,6 @@
         "redis": "^6.3.1",
         "sharp": "^0.35.5",
         "tesseract.js": "^7.0.0",
-        "uuid": "^14.0.3",
         "zod": "^4.6.7"
     },
     "devDependencies": {
@@ -116,17 +115,13 @@
         "@tailwindcss/postcss": "^4.3.3",
         "@types/jest": "^30.0.0",
         "@types/node": "^26.6.6",
-        "autoprefixer": "^10.6.2",
         "chalk": "^6.0.1",
         "eslint": "^10.14.0",
         "eslint-config-next": "^16.4.3",
         "jest": "^30.5.2",
-        "mongodb": "^7.8.0",
         "mongodb-memory-server": "^11.3.0",
         "postcss": "^8.5.32",
-        "supertest": "^7.3.1",
-        "tailwindcss": "^4.3.3",
-        "nanoid": "^6.0.2"
+        "tailwindcss": "^4.3.3"
     },
     "engines": {
         "node": ">=18.17.0",
@@ -134,9 +129,7 @@
     },
     "overrides": {
         "sprintf-js": "^1.1.3",
-        "nanoid": "$nanoid",
         "postcss": "$postcss",
-        "uuid": "$uuid",
         "eslint": "$eslint",
         "sharp": "$sharp",
         "react-debounce-input": {

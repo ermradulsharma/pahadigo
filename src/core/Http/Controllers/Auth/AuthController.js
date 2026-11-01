@@ -5,6 +5,7 @@ import { parseNestedFormData } from '@/core/Helpers/parseNestedFormData.js';
 import { uploadToCloudinary } from '@/core/Helpers/cloudinary.js';
 import { schemas, validate } from '@/core/Helpers/validation.js';
 import User from '@/core/Models/User.js';
+import { getUserById } from '@/core/Helpers/queryHelpers.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, USER_ROLES } from '@/core/Constants/index.js';
 import { transformAuthResponse, userAuthResponse, businessAuthResponse } from '@/core/Helpers/index.js';
 import AuthEvents from '@/core/Events/AuthEvents.js';
@@ -268,7 +269,7 @@ class AuthController extends Controller {
     async initiateDeleteAccount(req) {
         try {
             if (!req.user?.id) return this.error(HTTP_STATUS.UNAUTHORIZED, RESPONSE_MESSAGES.AUTH.UNAUTHORIZED);
-            const user = await User.findById(req.user.id).lean();
+            const user = await getUserById(req.user.id);
             if (!user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.NOT_FOUND);
 
             const identifier = user.email || user.phone;
@@ -290,7 +291,7 @@ class AuthController extends Controller {
 
             if (!otp) return this.error(HTTP_STATUS.BAD_REQUEST, RESPONSE_MESSAGES.VALIDATION.REQUIRED_FIELDS);
 
-            const user = await User.findById(req.user.id).lean();
+            const user = await getUserById(req.user.id);
             if (!user) return this.error(HTTP_STATUS.NOT_FOUND, RESPONSE_MESSAGES.ERROR.NOT_FOUND);
 
             const identifier = user.email || user.phone;

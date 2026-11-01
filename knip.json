@@ -1,0 +1,44 @@
+{
+  "$schema": "https://unpkg.com/knip@5/schema.json",
+  "project": [
+    "src/**/*.{js,jsx,mjs,css}",
+    "tests/**/*.{js,jsx,mjs}"
+  ],
+  "ignore": [
+    "tests/load/**"
+  ],
+  "rules": {
+    "duplicates": "off"
+  },
+  "paths": {
+    "@/core/Controllers/*": ["./src/core/Http/Controllers/*"],
+    "@/core/Models/*": ["./src/core/Models/*"],
+    "@/core/Services/*": ["./src/core/Services/*"],
+    "@/core/Middleware/*": ["./src/core/Http/Middleware/*"],
+    "@/core/Routes/*": ["./src/core/Routes/*"],
+    "@/core/Config/*": ["./src/core/Config/*"],
+    "@/core/Helpers/*": ["./src/core/Helpers/*"],
+    "@/core/Constants/*": ["./src/core/Constants/*"],
+    "@/core/Constants": ["./src/core/Constants/index.js"],
+    "@/core/Seeders/*": ["./src/core/Database/Seeders/*"],
+    "@/core/Lib/*": ["./src/core/Lib/*"],
+    "@/controllers/*": ["./src/core/Http/Controllers/*"],
+    "@/models/*": ["./src/core/Models/*"],
+    "@/services/*": ["./src/core/Services/*"],
+    "@/helpers/*": ["./src/core/Helpers/*"],
+    "@/routes/*": ["./src/core/Routes/*"],
+    "@/config/*": ["./src/core/Config/*"],
+    "@/constants/*": ["./src/core/Constants/*"],
+    "@/constants": ["./src/core/Constants/index.js"],
+    "@/seeders/*": ["./src/core/Database/Seeders/*"],
+    "@/database/*": ["./src/core/Database/*"],
+    "@/middleware/*": ["./src/core/Http/Middleware/*"],
+    "@/lib/*": ["./src/core/Lib/*"],
+    "@/events/*": ["./src/core/Events/*"],
+    "@/components/*": ["./src/app/components/*"],
+    "@/*": ["./src/*"]
+  },
+  "ignoreBinaries": [
+    "del"
+  ]
+}

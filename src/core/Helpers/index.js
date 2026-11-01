@@ -56,6 +56,8 @@ export * from './userProfileHelper.js';
 // ============================================================================
 export * from './queryHelpers.js';
 export * from './queryUtils.js';
+export * from './objectId.js';
+export { default as toObjectId } from './objectId.js';
 
 // ============================================================================
 // 5. Request & Query String Parsing

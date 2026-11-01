@@ -1,6 +1,7 @@
 import { STATUS, RESPONSE_MESSAGES, DEFAULTS } from '@/core/Constants/index.js';
 import { verifyToken } from '@/core/Helpers/jwt.js';
 import User from '@/core/Models/User.js';
+import { getUserById } from '@/core/Helpers/queryHelpers.js';
 import CacheService from '@/core/Services/CacheService.js';
 import { getLogger } from '@/core/Lib/logger.js';
 
@@ -53,7 +54,7 @@ const authMiddleware = async (req) => {
             }
         }
 
-        const user = await User.findById(decoded.id).select('status deletedAt role preferences').lean();
+        const user = await getUserById(decoded.id, 'status deletedAt role preferences');
 
         const statusMap = {
             [STATUS.DELETED]: RESPONSE_MESSAGES.AUTH.ACCOUNT_DELETED,

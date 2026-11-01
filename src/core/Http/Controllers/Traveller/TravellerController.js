@@ -1,4 +1,5 @@
 import SearchLog from '@/core/Models/SearchLog.js';
+import { getSearchLogsBy } from '@/core/Helpers/queryHelpers.js';
 import Category from '@/core/Models/Category.js';
 import Wishlist from '@/core/Models/Wishlist.js';
 import PackageService from '@/core/Services/Traveller/PackageService.js';
@@ -17,10 +18,10 @@ class TravellerController extends Controller {
     // GET /traveller/recent-searches
     async getRecentSearches(req) {
         try {
-            const searches = await SearchLog.find({ user: req.user.id })
-                .sort({ lastSearched: -1 })
-                .limit(20)
-                .lean();
+            const searches = await getSearchLogsBy({ user: req.user.id }, '', null, { lastSearched: -1 }, { limit: 20 });
+
+
+
 
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SEARCH.FETCHED, searches);
         } catch (error) {

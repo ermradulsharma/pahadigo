@@ -2,6 +2,7 @@ import CategoryDocument from '@/core/Models/CategoryDocument.js';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import CacheService from '@/core/Services/CacheService.js';
 import AppError from '@/core/Helpers/AppError.js';
+import { getCategoryDocumentsBy, getCategoryDocumentById, countBy } from '@/core/Helpers/queryHelpers.js';
 
 /**
  * CategoryDocumentService (Admin Role)
@@ -28,13 +29,9 @@ class CategoryDocumentService {
     if (cached) return cached;
 
     const skip = (safePage - 1) * safeLimit;
-    const docs = await CategoryDocument.find(filter)
-      .sort({ category_slug: 1, name: 1 })
-      .skip(skip)
-      .limit(safeLimit)
-      .lean();
+    const docs = await getCategoryDocumentsBy(filter, '', null, { category_slug: 1, name: 1 }, { skip, limit: safeLimit });
 
-    const totalDocs = await CategoryDocument.countDocuments(filter);
+    const totalDocs = await countBy(CategoryDocument, filter);
 
     const result = {
       docs,
@@ -49,7 +46,7 @@ class CategoryDocumentService {
   }
 
   async getById(id) {
-    const document = await CategoryDocument.findById(id).lean();
+    const document = await getCategoryDocumentById(id);
     if (!document) throw new AppError(RESPONSE_MESSAGES.VENDOR.DOCUMENT_NOT_FOUND, 404);
     return document;
   }

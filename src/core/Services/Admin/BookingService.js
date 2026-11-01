@@ -8,7 +8,7 @@ import CacheService from '@/core/Services/CacheService.js';
 import AppError from '@/core/Helpers/AppError.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
 import { PAYMENT_STATUS, BOOKING_STATUS, REFUND_STATUS, HTTP_STATUS } from '@/core/Constants/index.js';
-import { getBookingById } from '@/core/Helpers/queryHelpers.js';
+import { getBookingById, getBookingsBy, countBookingsBy, getDisputesBy, countDisputesBy, updateById } from '@/core/Helpers/queryHelpers.js';
 import mongoose from 'mongoose';
 
 /**
@@ -34,15 +34,18 @@ class BookingService {
         const cached = await CacheService.get(cacheKey);
         if (cached) return cached;
 
-        const total = await Booking.countDocuments(query);
-        const bookings = await Booking.find(query)
-            .populate('user', 'name email')
-            .populate('vendor', 'businessName ownerName businessEmail')
-            .populate('package', 'title price')
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(limit)
-            .lean();
+        const total = await countBookingsBy(query);
+        const bookings = await getBookingsBy(
+            query,
+            '',
+            [
+                { path: 'user', select: 'name email' },
+                { path: 'vendor', select: 'businessName ownerName businessEmail' },
+                { path: 'package', select: 'title price' }
+            ],
+            { createdAt: -1 },
+            { skip: (page - 1) * limit, limit }
+        );
 
         const result = { bookings, total, totalPages: Math.ceil(total / limit) };
         await CacheService.set(cacheKey, result, 1800); // 30 mins
@@ -149,15 +152,17 @@ class BookingService {
             query.bookingCode = { $regex: filter.search, $options: 'i' };
         }
 
-        const total = await Booking.countDocuments(query);
-        const payments = await Booking.find(query)
-            .select('bookingCode user vendor item pricing payment status occupancy payout createdAt')
-            .populate('user', 'name email')
-            .populate('vendor', 'businessName ownerName businessEmail bankDetails')
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(limit)
-            .lean();
+        const total = await countBookingsBy(query);
+        const payments = await getBookingsBy(
+            query,
+            'bookingCode user vendor item pricing payment status occupancy payout createdAt',
+            [
+                { path: 'user', select: 'name email' },
+                { path: 'vendor', select: 'businessName ownerName businessEmail bankDetails' }
+            ],
+            { createdAt: -1 },
+            { skip: (page - 1) * limit, limit }
+        );
 
         return { payments, total, totalPages: Math.ceil(total / limit) };
     }
@@ -189,7 +194,7 @@ class BookingService {
                 adminNotes: note
             };
 
-            updatedBooking = await Booking.findByIdAndUpdate(bookingId, snapshot, { session, returnDocument: 'after', lean: true });
+            updatedBooking = await updateById(Booking, bookingId, snapshot, { session, lean: true });
 
             if (req && req.user) {
                 await AuditService.logAction(req.user.id, 'PAYOUT', 'BOOKING', bookingId, { amount, transactionId }, req);
@@ -245,7 +250,7 @@ class BookingService {
                 }
             };
 
-            booking = await Booking.findByIdAndUpdate(bookingId, updateData, { session, returnDocument: 'after', lean: true });
+            booking = await updateById(Booking, bookingId, updateData, { session, lean: true });
 
             if (req && req.user) {
                 await AuditService.logAction(req.user.id, 'REFUND', 'BOOKING', bookingId, { amount, reason, refundId: refundResponse.id }, req);
@@ -266,25 +271,28 @@ class BookingService {
         const cached = await CacheService.get(cacheKey);
         if (cached) return cached;
 
-        const total = await Dispute.countDocuments(query);
-        const disputes = await Dispute.find(query)
-            .populate({
-                path: 'bookingId',
-                populate: [
-                    { path: 'user', select: 'name email phone image' },
-                    { path: 'vendor', populate: { path: 'user', select: 'name email phone' } }
-                ]
-            })
-            .populate('user', 'name email phone image')
-            .populate('traveller', 'name email phone image')
-            .populate({
-                path: 'vendor',
-                populate: { path: 'user', select: 'name email phone' }
-            })
-            .sort({ createdAt: -1 })
-            .skip((page - 1) * limit)
-            .limit(limit)
-            .lean();
+        const total = await countDisputesBy(query);
+        const disputes = await getDisputesBy(
+            query,
+            '',
+            [
+                {
+                    path: 'bookingId',
+                    populate: [
+                        { path: 'user', select: 'name email phone image' },
+                        { path: 'vendor', populate: { path: 'user', select: 'name email phone' } }
+                    ]
+                },
+                { path: 'user', select: 'name email phone image' },
+                { path: 'traveller', select: 'name email phone image' },
+                {
+                    path: 'vendor',
+                    populate: { path: 'user', select: 'name email phone' }
+                }
+            ],
+            { createdAt: -1 },
+            { skip: (page - 1) * limit, limit }
+        );
 
         const result = { disputes, total, totalPages: Math.ceil(total / limit) };
         await CacheService.set(cacheKey, result, 1800);
@@ -296,12 +304,12 @@ class BookingService {
         let dispute = null;
 
         await session.withTransaction(async () => {
-            dispute = await Dispute.findByIdAndUpdate(disputeId, {
+            dispute = await updateById(Dispute, disputeId, {
                 status: decision,
                 adminNotes,
                 resolvedAt: new Date(),
                 resolvedBy: adminId
-            }, { session, returnDocument: 'after', lean: true });
+            }, { session, lean: true });
 
             if (!dispute) throw new AppError("Dispute not found", HTTP_STATUS.NOT_FOUND);
 

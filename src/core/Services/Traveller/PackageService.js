@@ -5,7 +5,7 @@ import Category from '@/core/Models/Category.js';
 import { CATEGORY_MAP } from '@/core/Constants/categories.js';
 import { STATUS } from '@/core/Constants/index.js';
 import MasterService from '@/core/Services/MasterService.js';
-import { getPackageItemById } from '@/core/Helpers/queryHelpers.js';
+import { getPackageItemById, getCategoriesBy } from '@/core/Helpers/queryHelpers.js';
 import {
     getItemDetailsPayload,
     getFlattenPackageItemsStages,
@@ -78,7 +78,7 @@ class PackageService {
 
     async getAvailablePackagesByCategory(query = '') {
         const flattened = await this.getAvailablePackages(query);
-        const categories = await Category.find({}).lean();
+        const categories = await getCategoriesBy({});
         const result = {};
 
         const taxes = await getTaxConfig();

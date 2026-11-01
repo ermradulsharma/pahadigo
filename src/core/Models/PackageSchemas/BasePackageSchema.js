@@ -5,8 +5,8 @@ import { ACTIVITY } from '../../Constants/Package/activity.js';
 import { TRANSPORT } from '../../Constants/Package/transport.js';
 import { PACKAGE as PACKAGE_CONSTANTS } from '../../Constants/Package/package.js';
 
-export const optionalPriceDecimal = { type: Number, default: DEFAULTS.COUNTS.ZERO, min: DEFAULTS.COUNTS.ZERO, get: (v) => Math.round(v * 100) / 100, set: (v) => Math.round(v * 100) / 100 };
-export const priceDecimalRequired = { type: Number, required: DEFAULTS.TRUE, default: DEFAULTS.COUNTS.ZERO, min: DEFAULTS.COUNTS.ZERO, get: (v) => Math.round(v * 100) / 100, set: (v) => Math.round(v * 100) / 100 };
+const optionalPriceDecimal = { type: Number, default: DEFAULTS.COUNTS.ZERO, min: DEFAULTS.COUNTS.ZERO, get: (v) => Math.round(v * 100) / 100, set: (v) => Math.round(v * 100) / 100 };
+const priceDecimalRequired = { type: Number, required: DEFAULTS.TRUE, default: DEFAULTS.COUNTS.ZERO, min: DEFAULTS.COUNTS.ZERO, get: (v) => Math.round(v * 100) / 100, set: (v) => Math.round(v * 100) / 100 };
 
 export const PointLocation = {
     name: { type: String, default: DEFAULTS.NULL },
@@ -19,7 +19,7 @@ export const PointLocation = {
 };
 
 // Policy:
-export const CommonPolicies = {
+const CommonPolicies = {
     cancellationPolicy: { type: String, default: DEFAULTS.NULL },
     instructions: { type: String, default: DEFAULTS.NULL }
 };
@@ -109,7 +109,7 @@ export const TransportPricing = {
     depositAmount: optionalPriceDecimal
 };
 
-export const AccommodationRoomDetails = {
+const AccommodationRoomDetails = {
     roomType: { type: String, enum: [...Object.values(PACKAGE.ACCOMMODATION.HOTEL.ROOM_TYPE), ...Object.values(PACKAGE.ACCOMMODATION.HOMESTAY.ROOM_TYPE)], default: PACKAGE.ACCOMMODATION.HOTEL.ROOM_TYPE.STANDARD_ROOM },
     bedType: { type: String, enum: Object.values(PACKAGE.ACCOMMODATION.COMMON.BED_TYPE), default: PACKAGE.ACCOMMODATION.COMMON.BED_TYPE.DOUBLE },
     bathroomType: { type: String, enum: Object.values(PACKAGE.BATHROOM_TYPE), default: PACKAGE.BATHROOM_TYPE.PRIVATE },
@@ -120,7 +120,7 @@ export const AccommodationRoomDetails = {
 export const range = {
     min: { type: Number, default: DEFAULTS.COUNTS.ZERO, min: DEFAULTS.COUNTS.ZERO },
     max: { type: Number, default: DEFAULTS.COUNTS.ZERO, min: DEFAULTS.COUNTS.ZERO },
-}
+};
 
 export const BasePackageOptions = {
     timestamps: DEFAULTS.TRUE,

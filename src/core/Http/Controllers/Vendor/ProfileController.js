@@ -1,4 +1,5 @@
 import User from '@/core/Models/User.js';
+import { getUserById } from '@/core/Helpers/queryHelpers.js';
 import Vendor from '@/core/Models/Vendor.js';
 import { BaseAuthService } from '@/core/Services/Auth/index.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, STATUS } from '@/core/Constants/index.js';
@@ -20,7 +21,7 @@ class ProfileController extends Controller {
     async getProfile(req) {
         try {
             const userId = req.user.id;
-            const user = await User.findById(userId);
+            const user = await getUserById(userId);
             const result = await userAuthResponse(user);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.SUCCESS.FETCHED, result);
         } catch (error) {

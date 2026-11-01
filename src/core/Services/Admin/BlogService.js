@@ -3,6 +3,7 @@ import Blog from '@/core/Models/Blog.js';
 import AppError from '@/core/Helpers/AppError.js';
 import { HTTP_STATUS } from '@/core/Constants/index.js';
 import CacheService from '@/core/Services/CacheService.js';
+import { getBlogBy, getBlogById, getBlogsBy, countBlogsBy } from '@/core/Helpers/queryHelpers.js';
 
 class BlogService {
     /**
@@ -16,7 +17,7 @@ class BlogService {
         while (true) {
             const query = { slug };
             if (excludeId) query._id = { $ne: excludeId };
-            const existing = await Blog.findOne(query, null, { session }).lean();
+            const existing = await getBlogBy(query, '', null, { session });
             if (!existing) break;
             slug = `${baseSlug}-${counter}`;
             counter++;
@@ -77,8 +78,8 @@ class BlogService {
 
         const skip = (page - 1) * limit;
         const [docs, total] = await Promise.all([
-            Blog.find(filters).populate('author', 'name email').sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
-            Blog.countDocuments(filters)
+            getBlogsBy(filters, '', { path: 'author', select: 'name email' }, { createdAt: -1 }, { skip, limit }),
+            countBlogsBy(filters)
         ]);
         
         const result = { docs, total, page, limit, totalPages: Math.ceil(total / limit) };
@@ -98,7 +99,7 @@ class BlogService {
         const cached = await CacheService.get(cacheKey);
         if (cached) return cached;
 
-        const blog = await Blog.findById(id).populate('author', 'name email').lean();
+        const blog = await getBlogById(id, '', { path: 'author', select: 'name email' });
         if (!blog) throw new AppError('Blog not found', HTTP_STATUS.NOT_FOUND);
 
         await CacheService.set(cacheKey, blog, 3600); // Cache for 1 hour
