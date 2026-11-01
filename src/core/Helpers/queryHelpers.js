@@ -108,7 +108,7 @@ export const getUserById = async (id, select = '', populate = null, options = {}
  */
 export const getBusinessBy = async (conditions, select = '', populate = null, options = {}) => {
     const vendor = await getBy(Vendor, conditions, select, populate, options);
-    if (vendor && vendor._id) {
+    if (vendor && vendor._id && mongoose.Types.ObjectId.isValid(vendor._id)) {
         try {
             const closures = await getManyBy(VendorClosure, { vendor: vendor._id, isActive: true }, '', null, { startDate: 1 }, options);
             if (closures) {
