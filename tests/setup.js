@@ -37,6 +37,9 @@ afterAll(async () => {
   } catch (err) {
     // ignore
   }
+  if (typeof global.gc === 'function') {
+    global.gc();
+  }
 });
 
 afterEach(async () => {

@@ -30,6 +30,7 @@ jobs:
               run: npm run test -- --coverage --forceExit
               env:
                   NODE_ENV: test
+                  NODE_OPTIONS: "--max-old-space-size=6144 --expose-gc"
                   MONGODB_URI: "mongodb://127.0.0.1:27017/test-ci"
                   JWT_SECRET: "workflow-secret-identity"
 

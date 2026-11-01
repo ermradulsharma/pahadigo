@@ -74,7 +74,7 @@
         "dev": "next dev",
         "lint": "eslint .",
         "start": "next start",
-        "test": "node --no-warnings --experimental-vm-modules node_modules/jest/bin/jest.js --runInBand --forceExit",
+        "test": "node --no-warnings --experimental-vm-modules --expose-gc node_modules/jest/bin/jest.js --runInBand --forceExit",
         "clean": "del *.txt && del *.log",
         "seed": "node src/core/Database/Seeders/ResetAndSeed.js",
         "seed:mass": "node src/core/Database/Seeders/MassSeeder.js"
