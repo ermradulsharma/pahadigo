@@ -6,7 +6,7 @@ import { businessAuthResponse, businessDetailsFormat } from '@/core/Helpers/busi
 import { userBusinessProfileById } from '@/core/Helpers/userProfileHelper.js';
 import Controller from '@/core/Controllers/Controller.js';
 import VendorEvents from '@/core/Events/VendorEvents.js';
-import { NOTIFICATION } from '@/core/Constants/notification';
+import { NOTIFICATION } from '@/core/Constants/notification.js';
 
 /**
  * BusinessController (Vendor Role) - Specialized management of

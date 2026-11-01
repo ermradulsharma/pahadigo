@@ -15,7 +15,7 @@ import CacheService from '@/core/Services/CacheService.js';
 import SOSService from '@/core/Services/General/SOSService.js';
 import NotificationService from '@/core/Services/General/NotificationService.js';
 import { getLogger } from '@/core/Lib/logger.js';
-import { NOTIFICATION } from '@/core/Constants/notification';
+import { NOTIFICATION } from '@/core/Constants/notification.js';
 
 /**
  * @file ProfileController.js
@@ -702,7 +702,7 @@ class ProfileController extends Controller {
 
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.VENDOR.FETCHED, responsePayload);
         } catch (error) {
-            console.log(error);
+            getLogger().error({ err: error }, 'Failed to fetch vendor business profile');
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, RESPONSE_MESSAGES.ERROR.SERVER_ERROR);
         }
     }

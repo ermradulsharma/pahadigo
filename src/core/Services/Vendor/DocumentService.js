@@ -26,31 +26,48 @@ class DocumentService {
         if (!vendor) throw AppError.notFound(RESPONSE_MESSAGES.VENDOR.NOT_FOUND);
 
         const updatePayload = {};
+        const uploadTasks = [];
 
+        // Parallel upload for Aadhar card files
         if (files.aadharCard) {
-            const tempAadhar = [];
             const aadharFiles = Array.isArray(files.aadharCard) ? files.aadharCard : [files.aadharCard];
-            for (let i = 0; i < aadharFiles.length; i++) {
-                if (typeof aadharFiles[i] === 'object' && aadharFiles[i].size) {
-                    const res = await uploadToCloudinary(aadharFiles[i], `vendor_documents/aadhar/${userId}`);
-                    tempAadhar.push({ url: res.url, publicId: res.publicId });
-                }
-            }
-            if (tempAadhar.length > 0) {
-                updatePayload['documents.aadharCard'] = tempAadhar;
+            const validAadharFiles = aadharFiles.filter(f => typeof f === 'object' && f?.size);
+            if (validAadharFiles.length > 0) {
+                uploadTasks.push(
+                    Promise.all(
+                        validAadharFiles.map(async (file) => {
+                            const res = await uploadToCloudinary(file, `vendor_documents/aadhar/${userId}`);
+                            return { url: res.url, publicId: res.publicId };
+                        })
+                    ).then((results) => {
+                        if (results.length > 0) {
+                            updatePayload['documents.aadharCard'] = results;
+                        }
+                    })
+                );
             }
         }
 
-        const processSingleDoc = async (key, folder) => {
-            if (files[key] && typeof files[key] === 'object' && files[key].size) {
-                const res = await uploadToCloudinary(files[key], `vendor_documents/${folder}/${userId}`);
-                updatePayload[`documents.${key}`] = { url: res.url, publicId: res.publicId };
-            }
-        };
+        // Parallel upload for single documents (PAN, Business Registration, GST)
+        const singleDocs = [
+            { key: 'panCard', folder: 'pan' },
+            { key: 'businessRegistration', folder: 'registration' },
+            { key: 'gstRegistration', folder: 'gst' }
+        ];
 
-        await processSingleDoc('panCard', 'pan');
-        await processSingleDoc('businessRegistration', 'registration');
-        await processSingleDoc('gstRegistration', 'gst');
+        for (const { key, folder } of singleDocs) {
+            if (files[key] && typeof files[key] === 'object' && files[key]?.size) {
+                uploadTasks.push(
+                    uploadToCloudinary(files[key], `vendor_documents/${folder}/${userId}`).then((res) => {
+                        updatePayload[`documents.${key}`] = { url: res.url, publicId: res.publicId };
+                    })
+                );
+            }
+        }
+
+        if (uploadTasks.length > 0) {
+            await Promise.all(uploadTasks);
+        }
 
         if (Object.keys(updatePayload).length > 0) {
             const updatedVendor = await Vendor.findOneAndUpdate(

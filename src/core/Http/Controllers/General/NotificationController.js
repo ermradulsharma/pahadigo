@@ -3,7 +3,7 @@ import Controller from '@/core/Controllers/Controller.js';
 import NotificationService, { notificationEmitter } from '@/core/Services/General/NotificationService.js';
 import { verifyToken } from '@/core/Helpers/jwt.js';
 import { notificationParseQuery } from '@/core/Helpers/search.js';
-import { getNotifications } from '@/core/Helpers/Notifications/notifications';
+import { getNotifications } from '@/core/Helpers/Notifications/notifications.js';
 
 /**
  * NotificationController - Unified HTTP presentation controller.

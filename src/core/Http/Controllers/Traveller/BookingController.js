@@ -6,7 +6,7 @@ import BookingService from '@/core/Services/Traveller/BookingService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES, PAYMENT_STATUS, BOOKING_STATUS } from '@/core/Constants/index.js';
 import Controller from '@/core/Controllers/Controller.js';
 import { getLogger } from '@/core/Lib/logger.js';
-import { initiateBooking } from '@/core/Helpers/Booking/booking';
+import { initiateBooking } from '@/core/Helpers/Booking/booking.js';
 
 /**
  * BookingController (Traveller Role) - Specialized management of customer-facing

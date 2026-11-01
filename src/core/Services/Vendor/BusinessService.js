@@ -9,7 +9,7 @@ import Dispute from '@/core/Models/Dispute.js';
 import VendorClosure from '@/core/Models/VendorClosure.js';
 import { STATUS } from '@/core/Constants/index.js';
 import CacheService from '@/core/Services/CacheService.js';
-import { userAuthResponse } from '@/core/Helpers/userProfileHelper';
+import { userAuthResponse } from '@/core/Helpers/userProfileHelper.js';
 
 class BusinessService {
     // Constructor

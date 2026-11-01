@@ -2,6 +2,8 @@ import { createNextRouter } from '@/core/Helpers/nextApiWrapper.js';
 import vendorRoutes from '@/core/Routes/Vendor/vendor.js';
 import publicRoutes from '@/core/Routes/Public/public.js';
 
+export const maxDuration = 60;
+
 const routerHandler = createNextRouter([...vendorRoutes, ...publicRoutes]);
 
 const deprecatedHandler = async (req, context) => {

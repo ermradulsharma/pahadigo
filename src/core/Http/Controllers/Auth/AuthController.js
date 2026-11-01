@@ -10,7 +10,7 @@ import { transformAuthResponse, userAuthResponse, businessAuthResponse } from '@
 import AuthEvents from '@/core/Events/AuthEvents.js';
 import Controller from '@/core/Controllers/Controller.js';
 import requestContextMiddleware from '@/core/Http/Middleware/requestContext.js';
-import { NOTIFICATION } from '@/core/Constants/notification';
+import { NOTIFICATION } from '@/core/Constants/notification.js';
 
 /**
  * AuthController - Handles all authentication related logic.

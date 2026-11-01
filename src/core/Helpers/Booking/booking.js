@@ -3,11 +3,11 @@ import mongoose from "mongoose";
 import AppError from "@/core/Helpers/AppError.js";
 import { getUserById } from "@/core/Helpers/queryHelpers.js";
 import InventoryService from "@/core/Services/Traveller/InventoryService.js";
-import Booking from "@/core/Models/Booking";
-import { bookingPayload } from "@/core/Helpers/bookingHelper";
+import Booking from "@/core/Models/Booking.js";
+import { bookingPayload } from "@/core/Helpers/bookingHelper.js";
 import NotificationService from "@/core/Services/General/NotificationService.js";
-import { getAppConfig } from "@/core/Lib/appConfig";
-import { Package } from "@/core/Models/index";
+import { getAppConfig } from "@/core/Lib/appConfig.js";
+import { Package } from "@/core/Models/index.js";
 import { RESPONSE_MESSAGES, BOOKING_STATUS, PAYMENT_STATUS } from "@/core/Constants/index.js";
 
 const generateNumericOTP = () => randomInt(100000, 1000000).toString();
@@ -142,8 +142,6 @@ export const initiateBooking = async ({ userId, body, itemId }) => {
 
             const pricingRules = packageItem.pricing || {};
 
-            console.log("config", config.tax);
-            console.log("pricingRules", pricingRules);
             // Price logic
             let itemBaseprice = pricingRules.basePrice || 0;
 

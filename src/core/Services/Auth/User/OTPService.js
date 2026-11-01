@@ -3,8 +3,7 @@ import { DEFAULTS, USER_ROLES } from '@/core/Constants/index.js';
 import User from '@/core/Models/User.js';
 import AuthEvents from '@/core/Events/AuthEvents.js';
 import { getAppConfig } from '@/core/Lib/appConfig.js';
-import { NOTIFICATION } from '@/core/Constants/notification';
-import { use } from 'react';
+import { NOTIFICATION } from '@/core/Constants/notification.js';
 
 /**
  * OTPService - Handles generation, storage, and verification of

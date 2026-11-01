@@ -60,7 +60,6 @@ export class PushNotificationService {
                     }
                 }
             };
-            // console.log(payload, '=====================>>>');
             const response = await messaging.send(payload);
             return { success: true, messageId: response };
         } catch (error) {

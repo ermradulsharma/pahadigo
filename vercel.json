@@ -1,4 +1,10 @@
 {
+    "functions": {
+        "src/app/api/**/*": {
+            "maxDuration": 60,
+            "memory": 1024
+        }
+    },
     "crons": [
         {
             "path": "/api/cron?job=dailyBookings",

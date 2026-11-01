@@ -422,7 +422,6 @@ export async function getBrowsePackages(options = {}) {
     const itemsByCategory = new Map();
 
     for (const item of items) {
-        // console.log("item 1111", item)
         const vId = item.vendor?.toString();
         const itemCatKey = item.category_slug;
         const catSlug = item.category_slug;

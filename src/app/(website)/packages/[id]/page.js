@@ -5,7 +5,7 @@ import PackageCard from '@/app/components/packages/PackageCard.js';
 import QuickStatsBar from '@/app/components/packages/QuickStatsBar.js';
 import connectDB from '@/core/Config/db.js';
 import Package from '@/core/Models/Package.js';
-import '@/core/Models/Vendor';
+import '@/core/Models/Vendor.js';
 import { MapPin, Clock, Mountain, CheckCircle, Info, ShieldCheck, Map, FileText, ShieldAlert, Check, UserCheck, Users, Home as HomeIcon, Key, Car, Fuel, Star } from 'lucide-react';
 
 async function getServiceDetails(id) {

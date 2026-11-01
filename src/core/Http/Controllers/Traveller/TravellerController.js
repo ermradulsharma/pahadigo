@@ -5,9 +5,9 @@ import PackageService from '@/core/Services/Traveller/PackageService.js';
 import { HTTP_STATUS, RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 import { paginateArray } from '@/core/Helpers/queryUtils.js';
 import Controller from '@/core/Controllers/Controller.js';
-import { getLocationPoint } from '@/core/Helpers/addressHelper';
-import { parseQuery } from '@/core/Helpers/search';
-import getWishlistPackages from '@/core/Helpers/Package/wishlistPackage';
+import { getLocationPoint } from '@/core/Helpers/addressHelper.js';
+import { parseQuery } from '@/core/Helpers/search.js';
+import getWishlistPackages from '@/core/Helpers/Package/wishlistPackage.js';
 
 /**
  * TravellerController (Traveller Role) - Handles Wishlist, Search History, and preferences.

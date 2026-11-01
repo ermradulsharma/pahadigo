@@ -4,8 +4,8 @@ import { HTTP_STATUS, RESPONSE_MESSAGES, APP_DETAILS } from '@/core/Constants/in
 import Controller from '@/core/Controllers/Controller.js';
 import { getBusinessByUserId, getReviewsByItemId } from '@/core/Helpers/queryHelpers.js';
 import { vendorPackageItem } from '@/core/Helpers/package.js';
-import { getVendorPackages, getVendorPackageItemById } from '@/core/Helpers/Package/vendorPackage';
-import { parseQuery } from '@/core/Helpers/search';
+import { getVendorPackages, getVendorPackageItemById } from '@/core/Helpers/Package/vendorPackage.js';
+import { parseQuery } from '@/core/Helpers/search.js';
 
 /**
  * PackageController (Vendor Role) - Comprehensive management of vendor catalogs and service items.
