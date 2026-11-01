@@ -203,9 +203,9 @@ export default async function ServiceDetailPage({ params }) {
                 <div className="absolute bottom-0 left-0 w-full px-4 sm:px-6 lg:px-8 pb-24 md:pb-32 text-white z-10">
                     <div className="max-w-7xl mx-auto">
                         <nav className="mb-4 flex items-center text-xs font-semibold text-white/80 gap-2">
-                            <a href="/" className="hover:text-white transition-colors">Home</a>
+                            <Link href="/" className="hover:text-white transition-colors">Home</Link>
                             <span>/</span>
-                            <a href="/packages" className="hover:text-white transition-colors">Packages</a>
+                            <Link href="/packages" className="hover:text-white transition-colors">Packages</Link>
                             <span>/</span>
                             <span className="text-white truncate max-w-[200px]">{title}</span>
                         </nav>
@@ -371,7 +371,7 @@ export default async function ServiceDetailPage({ params }) {
                                                 </span>
                                             )}
                                         </div>
-                                        <p className="text-sm text-gray-500 font-medium mb-4">{service.vendor.profileType || 'Local Business'} • Member since {new Date(service.vendor.createdAt || Date.now()).getFullYear()}</p>
+                                        <p className="text-sm text-gray-500 font-medium mb-4">{service.vendor.profileType || 'Local Business'} • Member since {service.vendor.createdAt ? new Date(service.vendor.createdAt).getFullYear() : 'Recent'}</p>
                                         {service.vendor.businessAbout && (
                                             <p className="text-gray-600 leading-relaxed text-sm bg-gray-50 p-4 rounded-xl border border-gray-100">{service.vendor.businessAbout}</p>
                                         )}

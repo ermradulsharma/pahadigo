@@ -49,7 +49,7 @@ export default function NotificationBell({ theme = 'dark', apiPrefix = '/api/adm
         } catch {
             // Silently handle network polling error
         }
-    }, []);
+    }, [apiPrefix]);
 
     // Fetch notifications list
     const fetchNotifications = useCallback(async () => {
@@ -78,14 +78,24 @@ export default function NotificationBell({ theme = 'dark', apiPrefix = '/api/adm
         } finally {
             setLoading(false);
         }
-    }, [activeTab]);
+    }, [activeTab, apiPrefix]);
 
     // Initial fetch on mount & establish true real-time SSE push stream (zero periodic polling!)
     useEffect(() => {
-        fetchUnreadCount();
-
         const token = getToken();
         if (!token) return;
+
+        let ignore = false;
+        fetch(`${apiPrefix}/unread-count`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(res => res.ok ? res.json() : null)
+            .then(data => {
+                if (!ignore && data?.data?.unreadCount !== undefined) {
+                    setUnreadCount(data.data.unreadCount);
+                }
+            })
+            .catch(() => {});
 
         let eventSource;
         try {
@@ -118,14 +128,36 @@ export default function NotificationBell({ theme = 'dark', apiPrefix = '/api/adm
                 eventSource.close();
             }
         };
-    }, [fetchUnreadCount]);
+    }, [fetchUnreadCount, apiPrefix]);
 
     // Fetch notifications when modal opens or tab changes
     useEffect(() => {
-        if (isOpen) {
-            fetchNotifications();
-        }
-    }, [isOpen, fetchNotifications]);
+        if (!isOpen) return;
+        const token = getToken();
+        if (!token) return;
+
+        let ignore = false;
+        const queryParam = activeTab === 'unread' ? '?filter=unread' : '';
+        fetch(`${apiPrefix}${queryParam}`, {
+            headers: { Authorization: `Bearer ${token}` }
+        })
+            .then(res => res.ok ? res.json() : null)
+            .then(result => {
+                if (!ignore && result) {
+                    const items = result?.data || [];
+                    setNotifications(Array.isArray(items) ? items : []);
+                    if (result?.pagination?.unreadCount !== undefined) {
+                        setUnreadCount(result.pagination.unreadCount);
+                    }
+                }
+            })
+            .catch(() => {})
+            .finally(() => {
+                if (!ignore) setLoading(false);
+            });
+
+        return () => { ignore = true; };
+    }, [isOpen, activeTab, apiPrefix]);
 
     // Click outside handler
     useEffect(() => {

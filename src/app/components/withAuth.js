@@ -52,7 +52,7 @@ export default function withAuth(Component, allowedRoles = []) {
         }
       };
       verifySession();
-    }, []);
+    }, [router]);
 
     if (!auth) {
       return (

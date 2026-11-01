@@ -18,16 +18,6 @@ export default function PackageFilters({ visibleCategories }) {
     const [query, setQuery] = useState(initialQuery);
     const [maxPrice, setMaxPrice] = useState(initialMaxPrice);
 
-    // Debounce search & price
-    useEffect(() => {
-        const handler = setTimeout(() => {
-            updateUrl({ q: query, maxPrice });
-        }, 500);
-
-        return () => clearTimeout(handler);
-        // eslint-disable-next-line react-hooks/exhaustive-deps
-    }, [query, maxPrice]);
-
     const updateUrl = (updates) => {
         const params = new URLSearchParams(searchParams.toString());
         let hasChanges = false;
@@ -57,6 +47,16 @@ export default function PackageFilters({ visibleCategories }) {
             router.push(`${pathname}?${params.toString()}`);
         }
     };
+
+    // Debounce search & price
+    useEffect(() => {
+        const handler = setTimeout(() => {
+            updateUrl({ q: query, maxPrice });
+        }, 500);
+
+        return () => clearTimeout(handler);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [query, maxPrice]);
 
     return (
         <aside className="w-full lg:w-[300px] flex-shrink-0">

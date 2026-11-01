@@ -6,6 +6,32 @@ import { DetailItem, MainPanelCard, VendorHeader, UnifiedStatusMenu, SidebarCard
 import { User, Layers, Building2, ShieldCheck, MapPin, Landmark, Check as CheckIcon } from 'lucide-react';
 import { useToast } from '@/components/ui/ToastContext.js';
 
+const getInitialBusinessFormData = (vendor) => ({
+    ownerName: vendor?.ownerName || '',
+    personalNumber: vendor?.personalNumber || '',
+    personalPanCard: vendor?.personalPanCard || '',
+    personalAbout: vendor?.personalAbout || '',
+    businessName: vendor?.businessName || '',
+    businessNumber: vendor?.businessNumber || '',
+    gstNumber: vendor?.gstNumber || '',
+    businessRegistration: vendor?.businessRegistration || '',
+    businessAbout: vendor?.businessAbout || '',
+    address: {
+        addressLine1: vendor?.address?.addressLine1 || '',
+        addressLine2: vendor?.address?.addressLine2 || '',
+        city: vendor?.address?.city || '',
+        state: vendor?.address?.state || '',
+        country: vendor?.address?.country || 'India',
+        pincode: vendor?.address?.pincode || ''
+    },
+    bankDetails: {
+        bankName: vendor?.bankDetails?.bankName || '',
+        accountNumber: vendor?.bankDetails?.accountNumber || '',
+        ifscCode: vendor?.bankDetails?.ifscCode || '',
+        accountHolderName: vendor?.bankDetails?.accountHolderName || ''
+    }
+});
+
 export default function BusinessTab({ vendor, setVendor, id, activeTab, setActiveTab, onRefresh }) {
     const router = useRouter();
     const [showMapModal, setShowMapModal] = useState(false);
@@ -13,61 +39,13 @@ export default function BusinessTab({ vendor, setVendor, id, activeTab, setActiv
     const [isEditing, setIsEditing] = useState(false);
     const [saving, setSaving] = useState(false);
     const toast = useToast();
-    const [formData, setFormData] = useState({
-        ownerName: '',
-        personalNumber: '',
-        personalPanCard: '',
-        personalAbout: '',
-        businessName: '',
-        businessNumber: '',
-        gstNumber: '',
-        businessRegistration: '',
-        businessAbout: '',
-        address: {
-            addressLine1: '',
-            addressLine2: '',
-            city: '',
-            state: '',
-            country: 'India',
-            pincode: ''
-        },
-        bankDetails: {
-            bankName: '',
-            accountNumber: '',
-            ifscCode: '',
-            accountHolderName: ''
-        }
-    });
+    const [formData, setFormData] = useState(() => getInitialBusinessFormData(vendor));
+    const [prevVendor, setPrevVendor] = useState(vendor);
 
-    useEffect(() => {
-        if (vendor) {
-            setFormData({
-                ownerName: vendor.ownerName || '',
-                personalNumber: vendor.personalNumber || '',
-                personalPanCard: vendor.personalPanCard || '',
-                personalAbout: vendor.personalAbout || '',
-                businessName: vendor.businessName || '',
-                businessNumber: vendor.businessNumber || '',
-                gstNumber: vendor.gstNumber || '',
-                businessRegistration: vendor.businessRegistration || '',
-                businessAbout: vendor.businessAbout || '',
-                address: {
-                    addressLine1: vendor.address?.addressLine1 || '',
-                    addressLine2: vendor.address?.addressLine2 || '',
-                    city: vendor.address?.city || '',
-                    state: vendor.address?.state || '',
-                    country: vendor.address?.country || 'India',
-                    pincode: vendor.address?.pincode || ''
-                },
-                bankDetails: {
-                    bankName: vendor.bankDetails?.bankName || '',
-                    accountNumber: vendor.bankDetails?.accountNumber || '',
-                    ifscCode: vendor.bankDetails?.ifscCode || '',
-                    accountHolderName: vendor.bankDetails?.accountHolderName || ''
-                }
-            });
-        }
-    }, [vendor]);
+    if (vendor !== prevVendor) {
+        setPrevVendor(vendor);
+        setFormData(getInitialBusinessFormData(vendor));
+    }
 
     const performAction = async (actionData) => {
         setSaving(true);

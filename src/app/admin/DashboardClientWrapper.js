@@ -32,9 +32,12 @@ export default function DashboardClientWrapper({ initialStats, initialPackages }
     };
 
     useEffect(() => {
-        setCurrentTime(new Date());
+        const initialTimer = setTimeout(() => setCurrentTime(new Date()), 0);
         const timer = setInterval(() => setCurrentTime(new Date()), 1000);
-        return () => clearInterval(timer);
+        return () => {
+            clearTimeout(initialTimer);
+            clearInterval(timer);
+        };
     }, []);
 
     // Analytics State

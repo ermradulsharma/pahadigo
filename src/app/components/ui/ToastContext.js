@@ -1,6 +1,6 @@
 'use client';
 
-import React, { createContext, useContext, useState, useCallback, useEffect } from 'react';
+import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { AlertCircle, CheckCircle2, Info, X } from 'lucide-react';
 
@@ -8,6 +8,10 @@ const ToastContext = createContext();
 
 export function ToastProvider({ children }) {
     const [toasts, setToasts] = useState([]);
+
+    const removeToast = useCallback((id) => {
+        setToasts((prev) => prev.filter((toast) => toast.id !== id));
+    }, []);
 
     const addToast = useCallback((message, type = 'info', duration = 4000) => {
         const id = typeof crypto !== 'undefined' && crypto.randomUUID ? crypto.randomUUID() : Date.now().toString(36) + Math.random().toString(36).substr(2);
@@ -18,14 +22,12 @@ export function ToastProvider({ children }) {
                 removeToast(id);
             }, duration);
         }
-    }, []);
+    }, [removeToast]);
 
-    const removeToast = useCallback((id) => {
-        setToasts((prev) => prev.filter((toast) => toast.id !== id));
-    }, []);
+    const contextValue = useMemo(() => ({ toast: addToast }), [addToast]);
 
     return (
-        <ToastContext.Provider value={{ toast: addToast }}>
+        <ToastContext.Provider value={contextValue}>
             {children}
             <div className="fixed bottom-4 right-4 z-[9999] flex flex-col gap-2 pointer-events-none">
                 <AnimatePresence>

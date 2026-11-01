@@ -1,10 +1,57 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/core/Api/index.js';
 import { User, Mail, Phone, MapPin, Shield, Camera, Save, CheckCircle, AlertTriangle, Lock, Eye, EyeOff, Briefcase, Globe, Hash, Terminal, Settings, HardDrive } from 'lucide-react';
 import Loading from '@/components/admin/Loading.js';
+
+const InputLabel = ({ children }) => (
+    <label className="block text-[10px] font-mono tracking-widest text-cyan-500/80 uppercase mb-2">
+        {children}
+    </label>
+);
+
+const TextInput = ({ name, value, type = 'text', placeholder, disabled, onChange }) => (
+    <input
+        type={type}
+        name={name}
+        value={value}
+        onChange={onChange}
+        disabled={disabled}
+        placeholder={placeholder}
+        className={`w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm outline-none transition-all placeholder:text-slate-600 font-mono tracking-wide
+            ${disabled ? 'text-slate-500 cursor-not-allowed border-white/5 opacity-70' : 'text-cyan-50 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 focus:bg-white/5'}`}
+    />
+);
+
+const SelectInput = ({ name, value, onChange, options, defaultOption }) => (
+    <select
+        name={name}
+        value={value}
+        onChange={onChange}
+        className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm outline-none transition-all text-cyan-50 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 focus:bg-white/5 font-mono tracking-wide appearance-none cursor-pointer"
+    >
+        <option value="" className="bg-[#111116]">{defaultOption}</option>
+        {options.map((opt, i) => (
+            <option key={i} value={opt.value} className="bg-[#111116]">{opt.label}</option>
+        ))}
+    </select>
+);
+
+const FormSection = ({ title, icon: Icon, children }) => (
+    <div className="mb-10 relative">
+        <div className="flex items-center gap-3 mb-6 pb-3 border-b border-white/10">
+            <div className="p-2 bg-white/5 rounded-lg border border-white/5 shadow-[inset_0_0_10px_rgba(255,255,255,0.02)]">
+                <Icon className="w-4 h-4 text-cyan-400" />
+            </div>
+            <h2 className="text-md font-bold text-white tracking-widest uppercase">{title}</h2>
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
+            {children}
+        </div>
+    </div>
+);
 
 export default function ProfileClientWrapper({ initialProfile }) {
     const router = useRouter();
@@ -52,20 +99,7 @@ export default function ProfileClientWrapper({ initialProfile }) {
         }
     });
 
-    useEffect(() => {
-        fetchCountries();
-    }, []);
-
-    useEffect(() => {
-        if (formData.address.country && countries.length > 0) {
-            const country = countries.find(c => c.name === formData.address.country);
-            if (country) {
-                fetchStates(country._id);
-            }
-        }
-    }, [formData.address.country, countries]);
-
-    const fetchCountries = async () => {
+    const fetchCountries = useCallback(async () => {
         try {
             const res = await fetch('/api/countries?limit=all');
             const data = await res.json();
@@ -73,9 +107,9 @@ export default function ProfileClientWrapper({ initialProfile }) {
                 setCountries(data.data.countries || []);
             }
         } catch (error) {}
-    };
+    }, []);
 
-    const fetchStates = async (countryId) => {
+    const fetchStates = useCallback(async (countryId) => {
         try {
             const res = await fetch(`/api/countries/${countryId}/states?limit=all`);
             const data = await res.json();
@@ -83,7 +117,38 @@ export default function ProfileClientWrapper({ initialProfile }) {
                 setStates(data.data.states || []);
             }
         } catch (error) {}
-    };
+    }, []);
+
+    useEffect(() => {
+        let ignore = false;
+        fetch('/api/countries?limit=all')
+            .then(res => res.json())
+            .then(data => {
+                if (!ignore && data.success) {
+                    setCountries(data.data.countries || []);
+                }
+            })
+            .catch(() => {});
+        return () => { ignore = true; };
+    }, []);
+
+    useEffect(() => {
+        if (formData.address.country && countries.length > 0) {
+            const country = countries.find(c => c.name === formData.address.country);
+            if (country) {
+                let ignore = false;
+                fetch(`/api/countries/${country._id}/states?limit=all`)
+                    .then(res => res.json())
+                    .then(data => {
+                        if (!ignore && data.success) {
+                            setStates(data.data.states || []);
+                        }
+                    })
+                    .catch(() => {});
+                return () => { ignore = true; };
+            }
+        }
+    }, [formData.address.country, countries]);
 
     const handleCountryChange = (e) => {
         const countryName = e.target.value;
@@ -149,53 +214,6 @@ export default function ProfileClientWrapper({ initialProfile }) {
             setSaving(false);
         }
     };
-
-    const InputLabel = ({ children }) => (
-        <label className="block text-[10px] font-mono tracking-widest text-cyan-500/80 uppercase mb-2">
-            {children}
-        </label>
-    );
-
-    const TextInput = ({ name, value, type = 'text', placeholder, disabled, onChange }) => (
-        <input
-            type={type}
-            name={name}
-            value={value}
-            onChange={onChange}
-            disabled={disabled}
-            placeholder={placeholder}
-            className={`w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm outline-none transition-all placeholder:text-slate-600 font-mono tracking-wide
-                ${disabled ? 'text-slate-500 cursor-not-allowed border-white/5 opacity-70' : 'text-cyan-50 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 focus:bg-white/5'}`}
-        />
-    );
-
-    const SelectInput = ({ name, value, onChange, options, defaultOption }) => (
-        <select
-            name={name}
-            value={value}
-            onChange={onChange}
-            className="w-full bg-black/40 border border-white/10 rounded-lg px-4 py-2.5 text-sm outline-none transition-all text-cyan-50 focus:border-cyan-500/50 focus:ring-1 focus:ring-cyan-500/20 focus:bg-white/5 font-mono tracking-wide appearance-none cursor-pointer"
-        >
-            <option value="" className="bg-[#111116]">{defaultOption}</option>
-            {options.map((opt, i) => (
-                <option key={i} value={opt.value} className="bg-[#111116]">{opt.label}</option>
-            ))}
-        </select>
-    );
-
-    const FormSection = ({ title, icon: Icon, children }) => (
-        <div className="mb-10 relative">
-            <div className="flex items-center gap-3 mb-6 pb-3 border-b border-white/10">
-                <div className="p-2 bg-white/5 rounded-lg border border-white/5 shadow-[inset_0_0_10px_rgba(255,255,255,0.02)]">
-                    <Icon className="w-4 h-4 text-cyan-400" />
-                </div>
-                <h2 className="text-md font-bold text-white tracking-widest uppercase">{title}</h2>
-            </div>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-6">
-                {children}
-            </div>
-        </div>
-    );
 
     return (
         <div className="p-6 mx-auto">

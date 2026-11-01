@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import api from '@/core/Api/index.js';
 import {
@@ -27,22 +27,28 @@ export default function SupportClientWrapper({ initialInquiries, initialDisputes
     }
   };
 
+  const loadMessages = useCallback(async (disputeId) => {
+    try {
+      const res = await api.admin.disputes.getMessages(disputeId);
+      if (res.success) setMessages(res.data || []);
+    } catch (e) { /* chat load failed */ }
+  }, []);
+
   useEffect(() => {
     scrollToBottom();
   }, [messages]);
 
   useEffect(() => {
     if (selectedItem && activeTab === 'disputes') {
-      loadMessages(selectedItem._id);
+      let ignore = false;
+      api.admin.disputes.getMessages(selectedItem._id)
+        .then(res => {
+          if (!ignore && res.success) setMessages(res.data || []);
+        })
+        .catch(() => {});
+      return () => { ignore = true; };
     }
   }, [selectedItem, activeTab]);
-
-  const loadMessages = async (disputeId) => {
-    try {
-      const res = await api.admin.disputes.getMessages(disputeId);
-      if (res.success) setMessages(res.data || []);
-    } catch (e) { /* chat load failed */ }
-  };
 
   const handleSendMessage = async (text, overrideTarget = null) => {
     if (!text.trim() || isSending) return;

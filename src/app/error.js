@@ -1,6 +1,7 @@
 'use client'; // Error components must be Client Components
 
 import { useEffect } from 'react';
+import Link from 'next/link';
 import { AlertTriangle } from 'lucide-react';
 
 export default function Error({ error, reset }) {
@@ -26,12 +27,12 @@ export default function Error({ error, reset }) {
                         >
                             Try again
                         </button>
-                        <a
+                        <Link
                             href="/"
                             className="inline-flex items-center justify-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md shadow-sm text-gray-700 bg-white hover:bg-gray-50 transition-colors"
                         >
                             Go back Home
-                        </a>
+                        </Link>
                     </div>
                 </div>
             </div>

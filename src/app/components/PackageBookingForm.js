@@ -6,10 +6,9 @@ import { User, Phone, Calendar, Users, Send, ShieldCheck } from 'lucide-react';
 
 export default function PackageBookingForm({ service, price }) {
     const [formData, setFormData] = useState({ name: '', phone: '', date: '', adults: 1, children: 0 });
-    const [totalPrice, setTotalPrice] = useState(price);
     const [isSubmitting, setIsSubmitting] = useState(false);
+    const totalPrice = (parseInt(formData.adults) || 0) * (price || 0);
 
-    useEffect(() => { setTotalPrice((parseInt(formData.adults) || 0) * price); }, [formData.adults, formData.children, price]);
     const handleChange = (e) => { const { name, value } = e.target; setFormData((prev) => ({ ...prev, [name]: value })); };
     const handleWhatsAppBooking = (e) => {
         e.preventDefault();

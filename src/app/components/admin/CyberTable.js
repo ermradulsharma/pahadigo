@@ -38,11 +38,14 @@ export default function CyberTable({
     const [showColPicker, setShowColPicker] = useState(false);
     const [expandedRows, setExpandedRows] = useState(new Set());
 
-    // Sync internal page if needed
-    useEffect(() => {
-        if (externalCurrentPage === null) setInternalPage(1);
-    }, [searchQuery, externalCurrentPage]);
-
+    // Reset internal page when search query changes
+    const [prevSearchQuery, setPrevSearchQuery] = useState(searchQuery);
+    if (searchQuery !== prevSearchQuery) {
+        setPrevSearchQuery(searchQuery);
+        if (externalCurrentPage === null) {
+            setInternalPage(1);
+        }
+    }
 
     useEffect(() => {
         if (onSelectionChange) {

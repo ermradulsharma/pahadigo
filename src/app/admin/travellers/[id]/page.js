@@ -1,5 +1,5 @@
 'use client';
-import { useEffect, useState, use } from 'react';
+import { useEffect, useState, useCallback, use } from 'react';
 import { useRouter } from 'next/navigation';
 
 import { DetailItem, StatusBadge, SidebarCard, MainPanelCard, VendorHeader, Modal, UnifiedStatusMenu } from '@/components/admin/VendorUIFragments.js';
@@ -66,7 +66,8 @@ export default function TravellerViewPage({ params }) {
         }
     });
 
-    const initFormData = (data) => {
+    const initFormData = useCallback((data) => {
+        if (!data) return;
         const ec = data.emergencyContacts?.[0] || {};
         setFormData({
             name: data.name || '',
@@ -116,7 +117,7 @@ export default function TravellerViewPage({ params }) {
                 }
             }
         });
-    };
+    }, []);
 
     useEffect(() => {
         let mounted = true;
@@ -137,7 +138,7 @@ export default function TravellerViewPage({ params }) {
         };
         if (id) load();
         return () => { mounted = false; };
-    }, [id]);
+    }, [id, initFormData]);
 
     const performAction = async (actionData) => {
         setSaving(true);
@@ -169,9 +170,15 @@ export default function TravellerViewPage({ params }) {
 
     useEffect(() => {
         if (showBookingModal && bookingPackages.length === 0) {
-            fetchPackagesForBooking();
+            let ignore = false;
+            api.admin.packages.getAll().then(data => {
+                if (!ignore && data.success && data.data?.packages) {
+                    setBookingPackages(data.data.packages);
+                }
+            }).catch(() => {});
+            return () => { ignore = true; };
         }
-    }, [showBookingModal]);
+    }, [showBookingModal, bookingPackages.length]);
 
     const handlePackageChange = (e) => {
         const pkgId = e.target.value;
@@ -190,15 +197,7 @@ export default function TravellerViewPage({ params }) {
         });
     };
 
-    // Auto calculate total when occupancy changes
-    useEffect(() => {
-        if (bookingData.basePrice > 0) {
-            setBookingData(prev => ({
-                ...prev,
-                total: prev.basePrice * (prev.adults || 1)
-            }));
-        }
-    }, [bookingData.adults]);
+    const calculatedTotal = (bookingData.basePrice || 0) * (bookingData.adults || 1);
 
     const handleCreateBooking = async (e) => {
         e.preventDefault();
@@ -228,8 +227,8 @@ export default function TravellerViewPage({ params }) {
                 },
                 pricing: {
                     basePrice: parseFloat(bookingData.basePrice),
-                    subTotal: parseFloat(bookingData.total),
-                    total: parseFloat(bookingData.total)
+                    subTotal: parseFloat(calculatedTotal),
+                    total: parseFloat(calculatedTotal)
                 },
                 paymentStatus: bookingData.paymentStatus
             };
@@ -753,7 +752,7 @@ export default function TravellerViewPage({ params }) {
                         <div className="space-y-2">
                             <label className="text-[10px] font-mono font-bold text-slate-500 uppercase tracking-widest">Total Price (INR)</label>
                             <div className="w-full bg-white/5 border border-white/10 rounded-xl px-4 py-3 text-white font-bold text-sm cursor-not-allowed flex items-center justify-between shadow-[inset_0_0_20px_rgba(34,211,238,0.05)]">
-                                <span>₹ {bookingData.total}</span>
+                                <span>₹ {calculatedTotal}</span>
                                 <span className="text-[9px] font-mono text-cyan-500/60 uppercase">Calculated</span>
                             </div>
                         </div>

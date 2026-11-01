@@ -186,7 +186,7 @@ export default function PackageItemClientWrapper({ initialItem, itemId }) {
                                 </div>
                                 <div className="pt-4 border-t border-white/5">
                                     <label className="text-[9px] font-mono tracking-widest text-slate-500 uppercase mb-1 block">Creation Timestamp</label>
-                                    <div className="text-xs text-slate-300 font-mono">{new Date(initialItem.createdAt || Date.now()).toLocaleString()}</div>
+                                    <div className="text-xs text-slate-300 font-mono">{initialItem.createdAt ? new Date(initialItem.createdAt).toLocaleString() : 'N/A'}</div>
                                 </div>
                             </div>
                         </motion.div>

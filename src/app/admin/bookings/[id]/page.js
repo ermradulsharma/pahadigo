@@ -1,5 +1,5 @@
 'use client';
-import { useState, useEffect, use } from 'react';
+import { useState, useEffect, useCallback, use } from 'react';
 import api from '@/core/Api/index.js';
 import { useToast } from '@/components/ui/ToastContext.js';
 import {
@@ -19,8 +19,30 @@ export default function BookingDetailPage({ params }) {
   const [sendingInvoice, setSendingInvoice] = useState(false);
   const toast = useToast();
 
+  const fetchBooking = useCallback(async () => {
+    setLoading(true);
+    try {
+      const data = await api.admin.bookings.getById(id);
+      if (data.success) {
+        setBooking(data.data.booking);
+      }
+    } catch (error) {
+      // fetch failed silently
+    } finally {
+      setLoading(false);
+    }
+  }, [id]);
+
   useEffect(() => {
-    fetchBooking();
+    let ignore = false;
+    api.admin.bookings.getById(id).then((data) => {
+      if (!ignore && data.success) {
+        setBooking(data.data.booking);
+      }
+    }).finally(() => {
+      if (!ignore) setLoading(false);
+    });
+    return () => { ignore = true; };
   }, [id]);
 
   const handleSendInvoice = async () => {
@@ -39,20 +61,6 @@ export default function BookingDetailPage({ params }) {
       toast(error.message || "Hardware/Network Failure during dispatch.", "error");
     } finally {
       setSendingInvoice(false);
-    }
-  };
-
-  const fetchBooking = async () => {
-    setLoading(true);
-    try {
-      const data = await api.admin.bookings.getById(id);
-      if (data.success) {
-        setBooking(data.data.booking);
-      }
-    } catch (error) {
-      // fetch failed silently
-    } finally {
-      setLoading(false);
     }
   };
 

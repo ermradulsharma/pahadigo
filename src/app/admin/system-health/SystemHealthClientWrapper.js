@@ -14,21 +14,21 @@ import { motion } from 'framer-motion';
 
 export default function SystemHealthClientWrapper({ initialHealth }) {
     const router = useRouter();
-    const [history, setHistory] = useState([]);
-    const [isPending, startTransition] = useTransition();
-
-    useEffect(() => {
-        // Initial history entry
+    const [history, setHistory] = useState(() => {
         if (initialHealth?.memory) {
-            setHistory([{
+            return [{
                 time: new Date().toLocaleTimeString(),
                 memory: initialHealth.memory.percentage,
                 cpu: Math.round((initialHealth.cpu?.load?.[0] || 0) * 100) / 10
-            }]);
+            }];
         }
-    }, []);
+        return [];
+    });
+    const [isPending, startTransition] = useTransition();
 
-    useEffect(() => {
+    const [prevHealth, setPrevHealth] = useState(initialHealth);
+    if (initialHealth !== prevHealth) {
+        setPrevHealth(initialHealth);
         if (initialHealth?.memory) {
             setHistory(prev => {
                 const newEntry = {
@@ -36,10 +36,10 @@ export default function SystemHealthClientWrapper({ initialHealth }) {
                     memory: initialHealth.memory.percentage,
                     cpu: Math.round((initialHealth.cpu?.load?.[0] || 0) * 100) / 10
                 };
-                return [...prev, newEntry].slice(-20); // Keep last 20 points
+                return [...prev, newEntry].slice(-20);
             });
         }
-    }, [initialHealth]);
+    }
 
     useEffect(() => {
         const interval = setInterval(() => {
@@ -206,7 +206,7 @@ export default function SystemHealthClientWrapper({ initialHealth }) {
                     <div className="hidden lg:block h-12 w-px bg-white/5"></div>
                     <div className="flex flex-col items-end">
                         <p className="text-[10px] font-mono uppercase tracking-[0.2em] text-indigo-400">Telemetry Stream</p>
-                        <p className="text-xs text-slate-500 mt-1">Last Update: {new Date(initialHealth?.timestamp || Date.now()).toLocaleTimeString()}</p>
+                        <p className="text-xs text-slate-500 mt-1">Last Update: {initialHealth?.timestamp ? new Date(initialHealth.timestamp).toLocaleTimeString() : 'Live'}</p>
                     </div>
                 </div>
             </motion.div>

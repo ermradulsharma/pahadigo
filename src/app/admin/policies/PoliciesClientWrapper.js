@@ -29,21 +29,31 @@ export default function PoliciesClientWrapper({ initialPolicies }) {
   const router = useRouter();
   const [target, setTarget] = useState('admin');
   const [type, setType] = useState('privacy_policy');
-  const [content, setContent] = useState('');
+  const [content, setContent] = useState(() => {
+    const cur = initialPolicies.find(p => p.target === 'admin' && p.type === 'privacy_policy');
+    return cur ? cur.content : '';
+  });
   const [saving, setSaving] = useState(false);
   const [isMounted, setIsMounted] = useState(false);
   const toast = useToast();
 
   useEffect(() => {
-    setIsMounted(true);
+    const timer = setTimeout(() => setIsMounted(true), 0);
+    return () => clearTimeout(timer);
   }, []);
 
-  useEffect(() => {
-    if (isMounted) {
-      const current = initialPolicies.find(p => p.target === target && p.type === type);
-      setContent(current ? current.content : '');
-    }
-  }, [target, type, isMounted, initialPolicies]);
+  const handleSelectTarget = (newTarget) => {
+    setTarget(newTarget);
+    setType('privacy_policy');
+    const cur = initialPolicies.find(p => p.target === newTarget && p.type === 'privacy_policy');
+    setContent(cur ? cur.content : '');
+  };
+
+  const handleSelectType = (newType) => {
+    setType(newType);
+    const cur = initialPolicies.find(p => p.target === target && p.type === newType);
+    setContent(cur ? cur.content : '');
+  };
 
   const handleSave = async () => {
     setSaving(true);
@@ -94,7 +104,7 @@ export default function PoliciesClientWrapper({ initialPolicies }) {
               {['admin', 'vendor', 'traveller'].map((t) => (
                 <button
                   key={t}
-                  onClick={() => { setTarget(t); setType('privacy_policy'); }}
+                  onClick={() => handleSelectTarget(t)}
                   className={`flex items-center gap-3 px-4 py-2.5 text-xs font-mono tracking-widest uppercase rounded-lg transition-all ${target === t ? 'bg-cyan-500/20 text-cyan-400 shadow-[0_0_15px_rgba(34,211,238,0.2)] border border-cyan-500/30' : 'text-slate-400 hover:text-slate-200 hover:bg-white/5 border border-transparent'}`}
                 >
                   {renderTargetIcon(t)} {t}
@@ -111,7 +121,7 @@ export default function PoliciesClientWrapper({ initialPolicies }) {
               {POLICY_TYPES[target]?.map((p) => (
                 <button
                   key={p.id}
-                  onClick={() => setType(p.id)}
+                  onClick={() => handleSelectType(p.id)}
                   className={`w-full text-left px-4 py-3 rounded-xl text-sm transition-all flex items-center gap-3 border ${type === p.id ? 'bg-indigo-500/10 text-indigo-300 border-indigo-500/30 shadow-[0_0_15px_rgba(99,102,241,0.15)]' : 'bg-transparent text-slate-500 border-transparent hover:bg-white/5 hover:text-slate-300'}`}
                 >
                   <div className={`w-1.5 h-1.5 rounded-full ${type === p.id ? 'bg-indigo-400 shadow-[0_0_8px_rgba(129,140,248,0.8)]' : 'bg-slate-600'}`}></div>

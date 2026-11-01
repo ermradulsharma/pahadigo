@@ -241,7 +241,7 @@ const InvoiceDocument = ({ booking, role = 'traveller' }) => {
                 <Text style={styles.watermarkText1}>TRIPDHARA</Text>
                 <Text style={styles.watermarkText2}>TRIPDHARA</Text>
                 <Text style={styles.watermarkText3}>TRIPDHARA</Text>
-                <Image src="/logo.png" style={styles.watermarkImage} />
+                <Image src="/logo.png" style={styles.watermarkImage} alt="TripDhara Logo" />
                 <View style={styles.headerBackground}>
                     <View style={styles.headerLeft}>
                         <View style={styles.headerTextWrapper}>

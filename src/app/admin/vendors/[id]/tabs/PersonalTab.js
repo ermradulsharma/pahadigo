@@ -7,6 +7,58 @@ import { DetailItem, StatusBadge, Badge, SidebarCard, UnifiedStatusMenu, Progres
 import { useToast } from '@/components/ui/ToastContext.js';
 import { AlertTriangle, ShieldCheck, UserCheck, Zap, Award, Search, Check as CheckIcon, MapPin, Link2, User, Activity, Fingerprint, Globe, Code, Share2 } from 'lucide-react';
 
+const getInitialPersonalFormData = (vendor) => {
+  const ec = vendor?.emergencyContacts?.[0] || {};
+  return {
+    name: vendor?.name || '',
+    phone: vendor?.phone || '',
+    gender: vendor?.gender || '',
+    dateOfBirth: vendor?.dateOfBirth ? new Date(vendor.dateOfBirth).toISOString().split('T')[0] : '',
+    designation: vendor?.designation || '',
+    bio: vendor?.bio || '',
+    website: vendor?.website || '',
+    socialLinks: {
+      linkedin: vendor?.socialLinks?.linkedin || '',
+      twitter: vendor?.socialLinks?.twitter || '',
+      instagram: vendor?.socialLinks?.instagram || '',
+      github: vendor?.socialLinks?.github || '',
+      youtube: vendor?.socialLinks?.youtube || '',
+      whatsapp: vendor?.socialLinks?.whatsapp || '',
+      telegram: vendor?.socialLinks?.telegram || '',
+      snapchat: vendor?.socialLinks?.snapchat || '',
+      tiktok: vendor?.socialLinks?.tiktok || '',
+      other: vendor?.socialLinks?.other || ''
+    },
+    emergencyContact: {
+      name: ec.name || '',
+      phone: ec.phone || '',
+      relationship: ec.relationship || ''
+    },
+    address: {
+      addressLine1: vendor?.address?.addressLine1 || '',
+      addressLine2: vendor?.address?.addressLine2 || '',
+      city: vendor?.address?.city || '',
+      state: vendor?.address?.state || '',
+      pincode: vendor?.address?.pincode || '',
+      country: vendor?.address?.country || 'India',
+      latitude: vendor?.address?.latitude || '',
+      longitude: vendor?.address?.longitude || ''
+    },
+    expertise: Array.isArray(vendor?.expertise) ? vendor.expertise.join(', ') : '',
+    bloodGroup: vendor?.bloodGroup || '',
+    medicalConditions: Array.isArray(vendor?.medicalConditions) ? vendor.medicalConditions.join(', ') : '',
+    preferences: {
+      language: vendor?.preferences?.language || 'en',
+      notifications: {
+        email: vendor?.preferences?.notifications?.email ?? true,
+        sms: vendor?.preferences?.notifications?.sms ?? true,
+        push: vendor?.preferences?.notifications?.push ?? true,
+        whatsapp: vendor?.preferences?.notifications?.whatsapp ?? true
+      }
+    }
+  };
+};
+
 export default function PersonalTab({ vendor, setVendor, id, activeTab, setActiveTab }) {
   const router = useRouter();
   const [showMapModal, setShowMapModal] = useState(false);
@@ -15,89 +67,13 @@ export default function PersonalTab({ vendor, setVendor, id, activeTab, setActiv
   const [saving, setSaving] = useState(false);
   const toast = useToast();
 
-  const [formData, setFormData] = useState({
-    name: '',
-    phone: '',
-    gender: '',
-    dateOfBirth: '',
-    designation: '',
-    bio: '',
-    website: '',
-    socialLinks: {
-      linkedin: '', twitter: '', instagram: '', github: '',
-      youtube: '', whatsapp: '', telegram: '', snapchat: '',
-      tiktok: '', other: ''
-    },
-    emergencyContact: {
-      name: '', phone: '', relationship: ''
-    },
-    address: {
-      addressLine1: '', addressLine2: '', city: '', state: '', pincode: '', country: 'India',
-      latitude: '', longitude: ''
-    },
-    expertise: '',
-    bloodGroup: '',
-    medicalConditions: '',
-    preferences: {
-      language: 'en',
-      notifications: { email: true, sms: true, push: true, whatsapp: true }
-    }
-  });
+  const [formData, setFormData] = useState(() => getInitialPersonalFormData(vendor));
+  const [prevVendor, setPrevVendor] = useState(vendor);
 
-  // Initialize formData when vendor is loaded or tab mounts
-  useEffect(() => {
-    if (vendor) {
-      const ec = vendor.emergencyContacts?.[0] || {};
-      setFormData({
-        name: vendor.name || '',
-        phone: vendor.phone || '',
-        gender: vendor.gender || '',
-        dateOfBirth: vendor.dateOfBirth ? new Date(vendor.dateOfBirth).toISOString().split('T')[0] : '',
-        designation: vendor.designation || '',
-        bio: vendor.bio || '',
-        website: vendor.website || '',
-        socialLinks: {
-          linkedin: vendor.socialLinks?.linkedin || '',
-          twitter: vendor.socialLinks?.twitter || '',
-          instagram: vendor.socialLinks?.instagram || '',
-          github: vendor.socialLinks?.github || '',
-          youtube: vendor.socialLinks?.youtube || '',
-          whatsapp: vendor.socialLinks?.whatsapp || '',
-          telegram: vendor.socialLinks?.telegram || '',
-          snapchat: vendor.socialLinks?.snapchat || '',
-          tiktok: vendor.socialLinks?.tiktok || '',
-          other: vendor.socialLinks?.other || ''
-        },
-        emergencyContact: {
-          name: ec.name || '',
-          phone: ec.phone || '',
-          relationship: ec.relationship || ''
-        },
-        address: {
-          addressLine1: vendor.address?.addressLine1 || '',
-          addressLine2: vendor.address?.addressLine2 || '',
-          city: vendor.address?.city || '',
-          state: vendor.address?.state || '',
-          pincode: vendor.address?.pincode || '',
-          country: vendor.address?.country || 'India',
-          latitude: vendor.address?.latitude || '',
-          longitude: vendor.address?.longitude || ''
-        },
-        expertise: Array.isArray(vendor.expertise) ? vendor.expertise.join(', ') : '',
-        bloodGroup: vendor.bloodGroup || '',
-        medicalConditions: Array.isArray(vendor.medicalConditions) ? vendor.medicalConditions.join(', ') : '',
-        preferences: {
-          language: vendor.preferences?.language || 'en',
-          notifications: {
-            email: vendor.preferences?.notifications?.email ?? true,
-            sms: vendor.preferences?.notifications?.sms ?? true,
-            push: vendor.preferences?.notifications?.push ?? true,
-            whatsapp: vendor.preferences?.notifications?.whatsapp ?? true
-          }
-        }
-      });
-    }
-  }, [vendor]);
+  if (vendor !== prevVendor) {
+    setPrevVendor(vendor);
+    setFormData(getInitialPersonalFormData(vendor));
+  }
 
   const performAction = async (actionData) => {
     setSaving(true);
