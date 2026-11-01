@@ -16,6 +16,14 @@ const mockVendor = {
     findByIdAndUpdate: jest.fn()
 };
 
+const mockVendorService = {
+    verifyDocumentOCR: jest.fn()
+};
+
+jest.unstable_mockModule('@/core/Services/Admin/VendorService.js', () => ({
+    default: mockVendorService
+}));
+
 jest.unstable_mockModule('@/core/Services/General/NotificationService.js', () => ({
     default: mockNotificationService
 }));
@@ -100,6 +108,26 @@ describe('Industry Standard: QStashWebhookController', () => {
         expect(res.status).toBe(HTTP_STATUS.OK);
         expect(mockOCRService.processDocument).toHaveBeenCalled();
         expect(mockVendor.findByIdAndUpdate).toHaveBeenCalledWith('vendor_101', expect.anything());
+    });
+
+    it('[Job: verify_vendor_ocr] should execute full VendorService document OCR verification asynchronously', async () => {
+        mockReq.validData = {
+            type: 'verify_vendor_ocr',
+            payload: {
+                vendorId: 'vendor_101',
+                documentField: 'pan',
+                index: 0,
+                userId: 'admin_123'
+            }
+        };
+        mockVendorService.verifyDocumentOCR.mockResolvedValue({ idNumber: 'ABCDE1234F' });
+
+        const res = await QStashWebhookController.processJob(mockReq);
+        expect(res.status).toBe(HTTP_STATUS.OK);
+        expect(mockVendorService.verifyDocumentOCR).toHaveBeenCalledWith(
+            { vendorId: 'vendor_101', documentField: 'pan', index: 0 },
+            { user: { id: 'admin_123' } }
+        );
     });
 
     it('[Validation] should reject unknown job type with 400', async () => {

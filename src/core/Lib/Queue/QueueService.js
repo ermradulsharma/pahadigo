@@ -151,10 +151,45 @@ export const enqueueOCRProcessing = async (vendorId, docType, imageBufferBase64)
     }
 };
 
+export const enqueueOCRVerification = async (vendorId, documentField, index = null, userId = null) => {
+    try {
+        const client = await getQStashClient();
+        if (!client) {
+            // Local fallback when QStash token is not configured (e.g. local development)
+            setImmediate(async () => {
+                try {
+                    const { default: VendorService } = await import('@/core/Services/Admin/VendorService.js');
+                    await VendorService.verifyDocumentOCR(
+                        { vendorId, documentField, index },
+                        userId ? { user: { id: userId } } : null
+                    );
+                } catch (err) {
+                    getLogger().error({ err, vendorId, documentField }, '[QueueService] Direct OCR verification error');
+                }
+            });
+            return true;
+        }
+
+        const url = await getWebhookUrl();
+        await client.publishJSON({
+            url,
+            body: {
+                type: 'verify_vendor_ocr',
+                payload: { vendorId, documentField, index, userId }
+            }
+        });
+        return true;
+    } catch (error) {
+        getLogger().error({ err: error, vendorId, documentField }, '[QueueService] enqueueOCRVerification failed');
+        return false;
+    }
+};
+
 export default {
     getQStashClient,
     enqueueInvoice,
     enqueuePushNotification,
     enqueueImageProcessing,
-    enqueueOCRProcessing
+    enqueueOCRProcessing,
+    enqueueOCRVerification
 };

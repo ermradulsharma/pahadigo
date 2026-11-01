@@ -102,9 +102,14 @@ class VendorController extends Controller {
     // POST /admin/trigger-ocr
     async verifyDocumentOCR(req) {
         try {
-            const data = req.payload;
-            const result = await VendorService.verifyDocumentOCR(data, req);
-            return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.ADMIN.OCR_SUCCESS, result);
+            const data = req.payload || req.validData || req.jsonBody || {};
+            if (data.sync) {
+                const result = await VendorService.verifyDocumentOCR(data, req);
+                return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.ADMIN.OCR_SUCCESS, result);
+            }
+
+            const result = await VendorService.triggerOCRVerification(data, req);
+            return this.success(HTTP_STATUS.ACCEPTED, RESPONSE_MESSAGES.ADMIN.OCR_QUEUED, result);
         } catch (error) {
             if (error instanceof AppError) return this.error(error.statusCode, error.message);
             return this.error(HTTP_STATUS.INTERNAL_SERVER_ERROR, error.message || RESPONSE_MESSAGES.ERROR.SERVER_ERROR);

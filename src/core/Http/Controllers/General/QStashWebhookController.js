@@ -59,6 +59,15 @@ class QStashWebhookController extends Controller {
 
         return this.success(HTTP_STATUS.OK, 'OCR document processing complete', { vendorId, ocrResult });
 
+      } else if (type === 'verify_vendor_ocr') {
+        const { default: VendorService } = await import('@/core/Services/Admin/VendorService.js');
+        const { vendorId, documentField, index, userId } = payload;
+        const result = await VendorService.verifyDocumentOCR(
+          { vendorId, documentField, index },
+          userId ? { user: { id: userId } } : null
+        );
+        return this.success(HTTP_STATUS.OK, 'Vendor document OCR verification completed', { vendorId, result });
+
       } else {
         getLogger().warn({ type }, `[QStash Webhook] Unknown job type received: ${type}`);
         return this.error(HTTP_STATUS.BAD_REQUEST, `Unknown job type: ${type}`);

@@ -8,6 +8,7 @@ import NotificationService from '@/core/Services/General/NotificationService.js'
 import BusinessService from '@/core/Services/Vendor/BusinessService.js';
 import CacheService from '@/core/Services/CacheService.js';
 import AuditService from '@/core/Services/Admin/AuditService.js';
+import { enqueueOCRVerification } from '@/core/Lib/Queue/QueueService.js';
 import AppError from '@/core/Helpers/AppError.js';
 import { RESPONSE_MESSAGES, USER_ROLES, STATUS, VERIFICATION_STATUS, HTTP_STATUS } from '@/core/Constants/index.js';
 import { mapToGeoJSON } from '@/core/Helpers/geoUtils.js';
@@ -337,6 +338,47 @@ class VendorService {
         NotificationService.notifyDocumentVerification(doc.vendor, "A Category Specific Document", status === 'approved' || status === 'verified');
         await this.invalidateVendorCaches(doc.vendor);
         return doc;
+    }
+
+    /**
+     * Trigger asynchronous OCR verification via QStash background worker.
+     * Offloads CPU-intensive Tesseract OCR compute from the main request lifecycle.
+     */
+    async triggerOCRVerification(data, req = null) {
+        const { vendorId, documentField, index, sync = false } = data;
+        
+        let vendor = await getBusinessById(vendorId, '', null, { lean: true });
+        if (!vendor) throw new AppError(RESPONSE_MESSAGES.VENDOR.NOT_FOUND, HTTP_STATUS.NOT_FOUND);
+
+        let doc = null;
+        if (Array.isArray(vendor.documents?.[documentField])) {
+            if (typeof index !== 'number') throw new AppError(RESPONSE_MESSAGES.ERROR.INDEX_REQUIRED, HTTP_STATUS.BAD_REQUEST);
+            doc = vendor.documents[documentField][index];
+        } else {
+            doc = vendor.documents?.[documentField];
+        }
+
+        if (!doc || !doc.url) throw new AppError(RESPONSE_MESSAGES.VENDOR.DOCUMENT_NOT_FOUND, HTTP_STATUS.NOT_FOUND);
+
+        if (sync) {
+            return await this.verifyDocumentOCR(data, req);
+        }
+
+        const updatePath = Array.isArray(vendor.documents[documentField])
+            ? `documents.${documentField}.${index}.status`
+            : `documents.${documentField}.status`;
+
+        await Vendor.findByIdAndUpdate(vendorId, { $set: { [updatePath]: 'processing' } });
+
+        await enqueueOCRVerification(vendorId, documentField, index, req?.user?.id);
+
+        return {
+            vendorId,
+            documentField,
+            index,
+            status: 'processing',
+            queued: true
+        };
     }
 
     async verifyDocumentOCR(data, req = null) {

@@ -10,6 +10,7 @@ jest.unstable_mockModule('@/core/Services/Admin/VendorService.js', () => ({
         deleteVendor: jest.fn(),
         updateVendorStatus: jest.fn(),
         verifyDocumentOCR: jest.fn(),
+        triggerOCRVerification: jest.fn(),
         verifyManualDocument: jest.fn(),
         verifyCategoryDocument: jest.fn()
     }
@@ -83,6 +84,44 @@ describe('Admin VendorController Unit Tests', () => {
 
             expect(response.status).toBe(HTTP_STATUS.OK);
             expect(VendorService.deleteVendor).toHaveBeenCalledWith('v1');
+        });
+    });
+
+    describe('verifyDocumentOCR', () => {
+        it('should offload OCR verification to background queue with 202 Accepted by default', async () => {
+            mockReq = createMockReq({
+                user: { role: 'admin', id: 'admin_1' },
+                jsonBody: { vendorId: 'v1', documentField: 'pan' }
+            });
+            VendorService.triggerOCRVerification.mockResolvedValue({
+                vendorId: 'v1',
+                status: 'processing',
+                queued: true
+            });
+
+            const response = await VendorController.verifyDocumentOCR(mockReq);
+            const body = await response.json();
+
+            expect(response.status).toBe(HTTP_STATUS.ACCEPTED);
+            expect(body.success).toBe(true);
+            expect(body.data.status).toBe('processing');
+            expect(VendorService.triggerOCRVerification).toHaveBeenCalledWith({ vendorId: 'v1', documentField: 'pan' }, mockReq);
+        });
+
+        it('should execute OCR synchronously when sync=true is requested', async () => {
+            mockReq = createMockReq({
+                user: { role: 'admin', id: 'admin_1' },
+                jsonBody: { vendorId: 'v1', documentField: 'pan', sync: true }
+            });
+            VendorService.verifyDocumentOCR.mockResolvedValue({ idNumber: 'ABCDE1234F' });
+
+            const response = await VendorController.verifyDocumentOCR(mockReq);
+            const body = await response.json();
+
+            expect(response.status).toBe(HTTP_STATUS.OK);
+            expect(body.success).toBe(true);
+            expect(body.data.idNumber).toBe('ABCDE1234F');
+            expect(VendorService.verifyDocumentOCR).toHaveBeenCalledWith({ vendorId: 'v1', documentField: 'pan', sync: true }, mockReq);
         });
     });
 });

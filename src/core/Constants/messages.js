@@ -27,6 +27,7 @@ export const RESPONSE_MESSAGES = {
     },
     ADMIN: {
         OCR_SUCCESS: 'Document scan and verification successful.',
+        OCR_QUEUED: 'Document scan and verification queued for background processing.',
         STATS_FETCHED: 'Platform statistics retrieved successfully.',
         PAYMENT_HISTORY_FETCHED: 'Financial records retrieved successfully.',
         BANNERS_FETCHED: 'Promotional banners retrieved.',
