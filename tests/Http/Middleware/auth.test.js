@@ -1,22 +1,5 @@
 import { jest } from '@jest/globals';
-
-jest.unstable_mockModule('@/core/Constants/index.js', () => ({
-    STATUS: { DELETED: 'deleted', BLOCKED: 'blocked', SUSPENDED: 'suspended' },
-    RESPONSE_MESSAGES: {
-        AUTH: {
-            NO_TOKEN: 'No token',
-            TOKEN_INVALID: 'Token invalid',
-            ACCOUNT_DELETED: 'Account deleted',
-            ACCOUNT_BLOCKED: 'Account blocked',
-            ACCOUNT_SUSPENDED: 'Account suspended',
-            AUTH_SERVICE_ERROR: 'Auth error'
-        }
-    },
-    DEFAULTS: { TRUE: true, FALSE: false },
-    APP_DETAILS: { NAME: 'PahadiGo', MAIL_FROM_EMAIL: 'info@pahadigo.co.in' },
-    APP_SECRETS: { JWT_SECRET: 'test_jwt_secret' },
-    SYSTEM_ENV: { NODE_ENV: 'test' }
-}));
+import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
 
 jest.unstable_mockModule('@/core/Services/CacheService.js', () => ({
     default: {
@@ -49,27 +32,27 @@ describe('Auth Middleware', () => {
 
     it('should return NO_TOKEN if header is missing', async () => {
         const result = await authMiddleware(createRequest(null));
-        expect(result).toEqual({ authorized: false, message: 'No token' });
+        expect(result).toEqual({ authorized: false, message: RESPONSE_MESSAGES.AUTH.NO_TOKEN });
     });
 
     it('should return TOKEN_INVALID if token verification fails', async () => {
         verifyToken.mockResolvedValue(null);
         const result = await authMiddleware(createRequest('Bearer invalidToken'));
-        expect(result).toEqual({ authorized: false, message: 'Token invalid' });
+        expect(result).toEqual({ authorized: false, message: RESPONSE_MESSAGES.AUTH.TOKEN_INVALID });
     });
 
     it('should return ACCOUNT_DELETED if user not found', async () => {
         verifyToken.mockResolvedValue({ id: 'u1' });
         User.findById.mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) });
         const result = await authMiddleware(createRequest('Bearer token'));
-        expect(result).toEqual({ authorized: false, message: 'Account deleted' });
+        expect(result).toEqual({ authorized: false, message: RESPONSE_MESSAGES.AUTH.ACCOUNT_DELETED });
     });
 
     it('should return ACCOUNT_BLOCKED if user is blocked', async () => {
         verifyToken.mockResolvedValue({ id: 'u1' });
         User.findById.mockReturnValue({ select: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue({ status: 'blocked' }) }) });
         const result = await authMiddleware(createRequest('Bearer token'));
-        expect(result).toEqual({ authorized: false, message: 'Account blocked' });
+        expect(result).toEqual({ authorized: false, message: RESPONSE_MESSAGES.AUTH.ACCOUNT_BLOCKED });
     });
 
     it('should return user if authorized', async () => {
@@ -108,6 +91,6 @@ describe('Auth Middleware', () => {
     it('should handle thrown errors gracefully', async () => {
         verifyToken.mockRejectedValue(new Error('crash'));
         const result = await authMiddleware(createRequest('Bearer token'));
-        expect(result).toEqual({ authorized: false, message: 'Auth error' });
+        expect(result).toEqual({ authorized: false, message: RESPONSE_MESSAGES.AUTH.AUTH_SERVICE_ERROR });
     });
 });

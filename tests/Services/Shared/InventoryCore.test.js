@@ -22,7 +22,27 @@ jest.unstable_mockModule('@/core/Models/index.js', () => ({
     VendorDocument: {},
     VendorClosure: {},
     Review: {},
-    Notification: {}
+    Notification: {},
+    AuditLog: {},
+    Banner: {},
+    Blog: {},
+    CategoryDocument: {},
+    ChatMessage: {},
+    Conversation: {},
+    Country: {},
+    Coupon: {},
+    Dispute: {},
+    EmergencyAlert: {},
+    Inquiry: {},
+    Message: {},
+    Policy: {},
+    RateLimit: {},
+    SearchLog: {},
+    Setting: {},
+    State: {},
+    VerifiedIdentity: {},
+    WebhookEvent: {},
+    Wishlist: {}
 }));
 
 jest.unstable_mockModule('@/core/Helpers/InventoryHelper.js', () => ({

@@ -87,6 +87,7 @@ const mockModelsIndex = {
     VendorClosure: {},
     Review: {},
     AuditLog: {},
+    Blog: {},
     Banner: {},
     CategoryDocument: {},
     Country: {},

@@ -112,7 +112,7 @@ describe('Admin PolicyService', () => {
         it('should update an inquiry', async () => {
             Inquiry.findByIdAndUpdate.mockResolvedValue({ _id: 'i1', status: 'resolved' });
             await PolicyService.updateInquiry('i1', { status: 'resolved' });
-            expect(Inquiry.findByIdAndUpdate).toHaveBeenCalledWith('i1', { status: 'resolved' }, { returnDocument: 'after' });
+            expect(Inquiry.findByIdAndUpdate).toHaveBeenCalledWith('i1', { status: 'resolved' }, expect.objectContaining({ returnDocument: 'after' }));
         });
 
         it('should throw if inquiry not found', async () => {
@@ -125,7 +125,7 @@ describe('Admin PolicyService', () => {
         it('should delete an inquiry', async () => {
             Inquiry.findByIdAndDelete.mockResolvedValue({ _id: 'i1' });
             await PolicyService.deleteInquiry('i1');
-            expect(Inquiry.findByIdAndDelete).toHaveBeenCalledWith('i1');
+            expect(Inquiry.findByIdAndDelete).toHaveBeenCalledWith('i1', expect.anything());
         });
 
         it('should throw if inquiry not found', async () => {

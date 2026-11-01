@@ -1,15 +1,11 @@
 import { jest } from '@jest/globals';
 import os from 'os';
+import mongoose from 'mongoose';
 
-jest.unstable_mockModule('mongoose', () => ({
-    default: {
-        connection: {
-            db: {
-                stats: jest.fn()
-            }
-        }
-    }
-}));
+const mockDbStats = jest.fn();
+if (!mongoose.connection) mongoose.connection = {};
+if (!mongoose.connection.db) mongoose.connection.db = {};
+mongoose.connection.db.stats = mockDbStats;
 
 const mockCount = jest.fn();
 const mockAggregate = jest.fn();
@@ -64,13 +60,7 @@ jest.unstable_mockModule('@/core/Helpers/dateUtils.js', () => ({
     getStartDateByPeriod: jest.fn(() => new Date('2023-01-01'))
 }));
 
-jest.unstable_mockModule('@/core/Constants/index.js', () => ({
-    STATUS: { ACTIVE: 'active' },
-    USER_ROLES: { TRAVELLER: 'traveller' }
-}));
-jest.unstable_mockModule('@/core/Constants/categories.js', () => ({
-    SCHEMA_KEYS: { HOTEL: 'hotel' }
-}));
+
 jest.unstable_mockModule('@/core/Services/CacheService.js', () => ({
     default: { get: jest.fn(), set: jest.fn() }
 }));
@@ -80,18 +70,20 @@ jest.unstable_mockModule('@/core/Helpers/AppError.js', () => ({
 
 const { default: DashboardService } = await import('@/core/Services/Admin/DashboardService.js');
 const { default: CacheService } = await import('@/core/Services/CacheService.js');
-const mongoose = (await import('mongoose')).default;
 
 describe('DashboardService', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockFind.mockReturnValue(chainableMock());
         mockLean.mockResolvedValue([]);
+        if (mongoose.connection?.db) {
+            jest.spyOn(mongoose.connection.db, 'stats').mockImplementation(mockDbStats);
+        }
     });
 
     describe('getSystemHealth', () => {
         it('should return system health metrics', async () => {
-            mongoose.connection.db.stats.mockResolvedValue({ collections: 5, dataSize: 100, storageSize: 200, objects: 50 });
+            mockDbStats.mockResolvedValue({ collections: 5, dataSize: 100, storageSize: 200, objects: 50 });
             mockCount.mockResolvedValue(10);
             
             const result = await DashboardService.getSystemHealth();
@@ -101,7 +93,7 @@ describe('DashboardService', () => {
         });
         
         it('should handle db stats error gracefully', async () => {
-            mongoose.connection.db.stats.mockRejectedValue(new Error('DB Error'));
+            mockDbStats.mockRejectedValue(new Error('DB Error'));
             const result = await DashboardService.getSystemHealth();
             expect(result.database.collections).toBe(0);
         });
@@ -123,7 +115,7 @@ describe('DashboardService', () => {
                 if (pipeline[0].$match?.isApproved) return Promise.resolve([{ _id: 'Delhi', count: 5 }]); // Territories
                 return Promise.resolve([]);
             });
-            mongoose.connection.db.stats.mockResolvedValue({ dataSize: 10, storageSize: 20 });
+            mockDbStats.mockResolvedValue({ dataSize: 10, storageSize: 20 });
             mockLean.mockResolvedValueOnce([{ user: { name: 'Test' }, item: { title: 'Trip' }, startDate: new Date() }]); // Departures
             mockLean.mockResolvedValueOnce([{ userId: { name: 'Admin' }, action: 'UPDATE', target: 'USER', createdAt: new Date() }]); // Audit logs
             mockLean.mockResolvedValueOnce([]); // recentBookings

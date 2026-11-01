@@ -17,10 +17,6 @@ jest.unstable_mockModule('@/core/Models/Category.js', () => ({
     }
 }));
 
-jest.unstable_mockModule('@/core/Constants/index.js', () => ({
-    RESPONSE_MESSAGES: { CATEGORY: { NOT_FOUND: 'Category not found' } }
-}));
-
 jest.unstable_mockModule('@/core/Services/CacheService.js', () => ({
     default: {
         get: jest.fn(),

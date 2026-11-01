@@ -131,19 +131,14 @@ describe('Industry Standard: User Profile Helper', () => {
         });
 
         it('should fetch lean user without password and format payload', async () => {
-            const mockChain = {
-                select: jest.fn().mockReturnThis(),
-                lean: jest.fn().mockResolvedValue({
-                    _id: 'db_user_1',
-                    name: 'DB User',
-                    email: 'db@user.com'
-                })
-            };
-            mockUserFindById.mockReturnValue(mockChain);
+            mockGetUserById.mockResolvedValue({
+                _id: 'db_user_1',
+                name: 'DB User',
+                email: 'db@user.com'
+            });
 
             const res = await userProfileById('db_user_1');
-            expect(mockUserFindById).toHaveBeenCalledWith('db_user_1');
-            expect(mockChain.select).toHaveBeenCalledWith('-password');
+            expect(mockGetUserById).toHaveBeenCalledWith('db_user_1', '-password');
             expect(res.id).toBe('db_user_1');
             expect(res.name).toBe('DB User');
         });
@@ -151,15 +146,11 @@ describe('Industry Standard: User Profile Helper', () => {
 
     describe('userBusinessProfileById & userBusinessPayload', () => {
         it('should return user with attached businessDetails', async () => {
-            const mockChain = {
-                select: jest.fn().mockReturnThis(),
-                lean: jest.fn().mockResolvedValue({
-                    _id: 'vendor_user_1',
-                    name: 'Vendor Owner',
-                    role: USER_ROLES.VENDOR
-                })
-            };
-            mockUserFindById.mockReturnValue(mockChain);
+            mockGetUserById.mockResolvedValue({
+                _id: 'vendor_user_1',
+                name: 'Vendor Owner',
+                role: USER_ROLES.VENDOR
+            });
 
             mockGetBusinessBy.mockResolvedValue({
                 _id: 'vendor_biz_1',

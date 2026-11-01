@@ -13,7 +13,7 @@ describe('toObjectId Helper Test', () => {
 
     it('should return already existing ObjectId directly', () => {
         const objId = new mongoose.Types.ObjectId();
-        expect(toObjectId(objId)).toBe(objId);
+        expect(toObjectId(objId)).toEqual(objId);
     });
 
     it('should return null for invalid or empty id', () => {

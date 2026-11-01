@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { createMockQueryHelpers } from '../../utils/mockHelpers.js';
 
 jest.unstable_mockModule('mongoose', () => {
     const mockMongoose = {
@@ -144,39 +145,8 @@ jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
     clearAppConfigCache: jest.fn()
 }));
 
-jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => ({
-    getPackageItemById: jest.fn(),
-    getUserById: jest.fn(),
-    getUserBy: jest.fn(),
-    getUsersBy: jest.fn(),
-    getBusinessById: jest.fn(),
-    getBusinessByUserId: jest.fn(),
-    getBusinessByIdAndUserId: jest.fn(),
-    getBookingBy: jest.fn(),
-    getBookingById: jest.fn(),
-    getBookingsBy: jest.fn(),
-    getBusinessBy: jest.fn(),
-    getVendorsBy: jest.fn(),
-    getVendorDocumentsBy: jest.fn(),
-    getPackageBy: jest.fn(),
-    getPackageById: jest.fn(),
-    getPackagesBy: jest.fn(),
-    getCategoryBy: jest.fn(),
-    getCategoriesBy: jest.fn(),
-    getCategoryById: jest.fn(),
-    getCategoryBySlug: jest.fn(),
-    getReviewsBy: jest.fn(),
-    getReviewsByItemId: jest.fn(),
-    getNotificationBy: jest.fn(),
-    getNotificationById: jest.fn(),
-    getNotificationsBy: jest.fn(),
-    getById: jest.fn(),
-    getBy: jest.fn(),
-    getManyBy: jest.fn(),
-    updateById: jest.fn(),
-    deleteById: jest.fn(),
-    default: {}
-}));
+const mockQHelpers = createMockQueryHelpers();
+jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => mockQHelpers);
 
 const { default: BookingService } = await import('@/core/Services/Traveller/BookingService.js');
 const { default: Booking } = await import('@/core/Models/Booking.js');

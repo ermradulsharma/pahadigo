@@ -17,6 +17,7 @@ const mockVendorDocument = {
 
 const mockQueryHelpers = {
     getPackageItemById: jest.fn(),
+    getPackageById: jest.fn(),
     getReviewsByItemId: jest.fn()
 };
 

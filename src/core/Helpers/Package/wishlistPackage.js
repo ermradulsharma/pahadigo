@@ -14,7 +14,7 @@ import { paginateArray } from '@/core/Helpers/queryUtils.js';
 import { packageItemResponse } from './packageResponse.js';
 import { normalizeCoordinates, calculateDistanceKm } from '@/core/Services/Shared/PackageCore.js';
 import { schemaKey } from './shared.js';
-import toObjectId from '../objectId.js';
+import { toObjectId } from '../index.js';
 
 let cachedCategories = null;
 let lastCategoryFetch = 0;

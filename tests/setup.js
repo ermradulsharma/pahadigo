@@ -6,6 +6,12 @@ process.env.NODE_ENV = 'test';
 import mongoose from 'mongoose';
 import { jest } from '@jest/globals';
 
+// Pre-register Admin model for backward compatibility in mocked tests
+if (!mongoose.models.Admin) {
+  const adminSchema = new mongoose.Schema({}, { strict: false });
+  mongoose.model('Admin', adminSchema);
+}
+
 // Increase timeout for global hooks (especially for slow teardowns on CI/large runs)
 jest.setTimeout(300000);
 

@@ -64,7 +64,7 @@ describe('Admin MarketingService', () => {
 
             await MarketingService.deleteCoupon('c1', req);
 
-            expect(Coupon.findByIdAndDelete).toHaveBeenCalledWith('c1');
+            expect(Coupon.findByIdAndDelete).toHaveBeenCalledWith('c1', expect.anything());
             expect(AuditService.logAction).toHaveBeenCalled();
         });
     });

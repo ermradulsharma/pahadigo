@@ -21,7 +21,7 @@ jest.unstable_mockModule('@/core/Helpers/objectId.js', () => ({
     toObjectId: (id) => (id && mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : null)
 }));
 
-jest.unstable_mockModule('../objectId.js', () => ({
+jest.unstable_mockModule('@/core/Helpers/objectId.js', () => ({
     default: (id) => (id && mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : null),
     toObjectId: (id) => (id && mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : null)
 }));

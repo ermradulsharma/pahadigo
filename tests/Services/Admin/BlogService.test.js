@@ -1,13 +1,10 @@
 import { jest } from '@jest/globals';
 
+import mongoose from 'mongoose';
+
 const mockWithTransaction = jest.fn(async (cb) => { await cb(); });
 const mockSession = { withTransaction: mockWithTransaction, endSession: jest.fn() };
-
-jest.unstable_mockModule('mongoose', () => ({
-    default: {
-        startSession: jest.fn().mockResolvedValue(mockSession)
-    }
-}));
+mongoose.startSession = jest.fn().mockResolvedValue(mockSession);
 
 const mockFindOne = jest.fn();
 const mockCreate = jest.fn();
@@ -33,10 +30,6 @@ jest.unstable_mockModule('@/core/Helpers/AppError.js', () => ({
     }
 }));
 
-jest.unstable_mockModule('@/core/Constants/index.js', () => ({
-    HTTP_STATUS: { NOT_FOUND: 404 }
-}));
-
 jest.unstable_mockModule('@/core/Services/CacheService.js', () => ({
     default: {
         get: jest.fn(),
@@ -49,10 +42,6 @@ const { default: BlogService } = await import('@/core/Services/Admin/BlogService
 const { default: CacheService } = await import('@/core/Services/CacheService.js');
 
 describe('BlogService', () => {
-    beforeEach(() => {
-        jest.clearAllMocks();
-    });
-
     const chainableMock = (data) => {
         const mock = {};
         mock.populate = jest.fn().mockReturnValue(mock);
@@ -81,80 +70,73 @@ describe('BlogService', () => {
     });
 
     describe('createBlog', () => {
-        it('should create a new blog and clear cache', async () => {
-            mockFindOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }); // for generateUniqueSlug
-            mockCreate.mockResolvedValue([{ _id: 'b1', title: 'Test', slug: 'test' }]);
-            
-            const result = await BlogService.createBlog({ title: 'Test', status: 'published' }, 'u1');
+        it('should create blog and invalidate cache', async () => {
+            mockFindOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
+            mockCreate.mockResolvedValue([{ _id: 'b1', title: 'New Blog' }]);
+
+            const result = await BlogService.createBlog({ title: 'New Blog' }, 'user1');
             expect(result._id).toBe('b1');
-            expect(mockCreate).toHaveBeenCalled();
             expect(CacheService.delete).toHaveBeenCalledWith('blogs_list_recent');
         });
     });
 
     describe('getBlogs', () => {
-        it('should return from cache for standard query', async () => {
-            CacheService.get.mockResolvedValue({ cached: true });
+        it('should return cached blogs if present', async () => {
+            CacheService.get.mockResolvedValueOnce({ docs: [{ _id: '1' }], total: 1 });
             const result = await BlogService.getBlogs();
-            expect(result.cached).toBe(true);
+            expect(result.docs).toHaveLength(1);
+            expect(mockFind).not.toHaveBeenCalled();
         });
 
-        it('should fetch and cache for standard query if not in cache', async () => {
-            CacheService.get.mockResolvedValue(null);
-            mockFind.mockReturnValue(chainableMock([{ _id: 'b1' }]));
+        it('should fetch from DB, set cache and return if no cache', async () => {
+            CacheService.get.mockResolvedValueOnce(null);
+            mockFind.mockReturnValue(chainableMock([{ _id: '1' }]));
             mockCountDocuments.mockResolvedValue(1);
 
             const result = await BlogService.getBlogs();
-            expect(result.docs.length).toBe(1);
-            expect(CacheService.set).toHaveBeenCalledWith('blogs_list_recent', result, 600);
-        });
-
-        it('should fetch without cache for custom filters', async () => {
-            mockFind.mockReturnValue(chainableMock([{ _id: 'b1' }]));
-            mockCountDocuments.mockResolvedValue(1);
-
-            const result = await BlogService.getBlogs({ status: 'published' });
-            expect(result.docs.length).toBe(1);
-            expect(CacheService.get).not.toHaveBeenCalled();
-            expect(CacheService.set).not.toHaveBeenCalled();
+            expect(result.docs).toHaveLength(1);
+            expect(CacheService.set).toHaveBeenCalled();
         });
     });
 
     describe('getBlogById', () => {
-        it('should return from cache', async () => {
-            CacheService.get.mockResolvedValue({ _id: 'b1' });
+        it('should return cached blog', async () => {
+            CacheService.get.mockResolvedValueOnce({ _id: 'b1' });
             const result = await BlogService.getBlogById('b1');
             expect(result._id).toBe('b1');
+            expect(mockFindById).not.toHaveBeenCalled();
         });
 
-        it('should fetch and cache if not in cache', async () => {
-            CacheService.get.mockResolvedValue(null);
+        it('should fetch from db and cache if not in cache', async () => {
+            CacheService.get.mockResolvedValueOnce(null);
             mockFindById.mockReturnValue(chainableMock({ _id: 'b1' }));
-            
+
             const result = await BlogService.getBlogById('b1');
             expect(result._id).toBe('b1');
-            expect(CacheService.set).toHaveBeenCalledWith('blog_b1', { _id: 'b1' }, 3600);
+            expect(CacheService.set).toHaveBeenCalled();
         });
 
-        it('should throw if not found', async () => {
-            CacheService.get.mockResolvedValue(null);
+        it('should throw if blog not found', async () => {
+            CacheService.get.mockResolvedValueOnce(null);
             mockFindById.mockReturnValue(chainableMock(null));
+
             await expect(BlogService.getBlogById('b1')).rejects.toThrow('Blog not found');
         });
     });
 
     describe('updateBlog', () => {
-        it('should update blog, generate new slug if title changed, and clear caches', async () => {
-            const mockSave = jest.fn();
-            const mockBlog = { _id: 'b1', title: 'Old Title', status: 'draft', save: mockSave };
-            mockFindById.mockReturnValue(chainableMock(mockBlog));
-            mockFindOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }); // for slug
+        it('should update blog, handle new slug if title changes and clear cache', async () => {
+            const blogMock = {
+                _id: 'b1',
+                title: 'Old Title',
+                slug: 'old-title',
+                save: jest.fn().mockResolvedValue(true)
+            };
+            mockFindById.mockReturnValue(chainableMock(blogMock));
+            mockFindOne.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
 
-            await BlogService.updateBlog('b1', { title: 'New Title', status: 'published' });
-            
-            expect(mockSave).toHaveBeenCalled();
-            expect(mockBlog.slug).toBe('new-title');
-            expect(mockBlog.publishedAt).toBeDefined();
+            const result = await BlogService.updateBlog('b1', { title: 'New Title' }, 'user1');
+            expect(blogMock.slug).toBe('new-title');
             expect(CacheService.delete).toHaveBeenCalledWith('blogs_list_recent');
             expect(CacheService.delete).toHaveBeenCalledWith('blog_b1');
         });

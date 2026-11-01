@@ -12,10 +12,6 @@ jest.unstable_mockModule('@/core/Models/CategoryDocument.js', () => ({
     }
 }));
 
-jest.unstable_mockModule('@/core/Constants/index.js', () => ({
-    RESPONSE_MESSAGES: { VENDOR: { DOCUMENT_NOT_FOUND: 'Document not found' } }
-}));
-
 jest.unstable_mockModule('@/core/Services/CacheService.js', () => ({
     default: { get: jest.fn(), set: jest.fn(), deletePattern: jest.fn() }
 }));
@@ -81,7 +77,7 @@ describe('CategoryDocumentService', () => {
 
         it('should throw if not found', async () => {
             CategoryDocument.findById.mockReturnValue({ lean: jest.fn().mockResolvedValue(null) });
-            await expect(CategoryDocumentService.getById('d1')).rejects.toThrow('Document not found');
+            await expect(CategoryDocumentService.getById('d1')).rejects.toThrow('Verification document not found');
         });
     });
 
@@ -89,7 +85,7 @@ describe('CategoryDocumentService', () => {
         it('should update document and clear cache', async () => {
             const mockDoc = { _id: 'd1', name: 'Old', save: mockSave };
             CategoryDocument.findById.mockResolvedValue(mockDoc);
-            
+
             const result = await CategoryDocumentService.update('d1', { name: 'New' });
             expect(result.name).toBe('New');
             expect(mockSave).toHaveBeenCalled();
@@ -98,7 +94,7 @@ describe('CategoryDocumentService', () => {
 
         it('should throw if not found', async () => {
             CategoryDocument.findById.mockResolvedValue(null);
-            await expect(CategoryDocumentService.update('d1', {})).rejects.toThrow('Document not found');
+            await expect(CategoryDocumentService.update('d1', {})).rejects.toThrow('Verification document not found');
         });
     });
 

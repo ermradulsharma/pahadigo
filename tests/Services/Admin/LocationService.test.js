@@ -37,10 +37,6 @@ jest.unstable_mockModule('@/core/Helpers/AppError.js', () => ({
     }
 }));
 
-jest.unstable_mockModule('@/core/Constants/index.js', () => ({
-    RESPONSE_MESSAGES: {}
-}));
-
 const { default: LocationService } = await import('@/core/Services/Admin/LocationService.js');
 const { default: Country } = await import('@/core/Models/Country.js');
 const { default: State } = await import('@/core/Models/State.js');
@@ -73,7 +69,7 @@ describe('Admin LocationService', () => {
             const result = await LocationService.updateCountry('c1', mockData);
             
             expect(result._id).toBe('c1');
-            expect(Country.findByIdAndUpdate).toHaveBeenCalledWith('c1', mockData, { returnDocument: 'after' });
+            expect(Country.findByIdAndUpdate).toHaveBeenCalledWith('c1', mockData, expect.objectContaining({ returnDocument: 'after' }));
             expect(CacheService.delete).toHaveBeenCalledWith('admin:locations:countries');
         });
 
@@ -89,7 +85,7 @@ describe('Admin LocationService', () => {
             
             await LocationService.deleteCountry('c1');
             
-            expect(Country.findByIdAndDelete).toHaveBeenCalledWith('c1');
+            expect(Country.findByIdAndDelete).toHaveBeenCalledWith('c1', expect.anything());
             expect(CacheService.delete).toHaveBeenCalledWith('admin:locations:countries');
         });
     });

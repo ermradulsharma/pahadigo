@@ -8,7 +8,11 @@ jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => ({
     getBookingById: jest.fn(),
     getUserById: jest.fn(),
     getBusinessById: jest.fn(),
-    getBusinessBy: jest.fn()
+    getBusinessBy: jest.fn(),
+    getBookingById: jest.fn(),
+    getUserById: jest.fn(),
+    getConversationById: jest.fn(),
+    getChatMessagesBy: jest.fn().mockResolvedValue([])
 }));
 
 const createPopulateMock = (val) => {
@@ -170,19 +174,20 @@ describe('ChatController (Root/General)', () => {
         });
 
         test('should return 404 if conversation is not found', async () => {
-            jest.spyOn(Conversation, 'findById').mockReturnValue(createPopulateMock(null));
+            queryHelpers.getConversationById.mockResolvedValue(null);
             const response = await ChatController.getMessages(mockReq, { params: { id: 'convo123' } });
             expect(response.status).toBe(HTTP_STATUS.NOT_FOUND);
         });
 
         test('should return 403 if user not in conversation', async () => {
-            jest.spyOn(Conversation, 'findById').mockReturnValue(createPopulateMock({ traveller: 'other', vendor: 'other' }));
+            queryHelpers.getConversationById.mockResolvedValue({ traveller: 'other', vendor: 'other' });
             const response = await ChatController.getMessages(mockReq, { params: { id: 'convo123' } });
             expect(response.status).toBe(HTTP_STATUS.FORBIDDEN);
         });
 
         test('should support pagination and return 200', async () => {
-            jest.spyOn(Conversation, 'findById').mockReturnValue(createPopulateMock({ traveller: 'user123', vendor: 'vendor123' }));
+            queryHelpers.getConversationById.mockResolvedValue({ _id: 'convo123', traveller: 'user123', vendor: 'vendor123' });
+            queryHelpers.getChatMessagesBy.mockResolvedValue([{ _id: 'msg1', message: 'hello' }]);
             const mockFind = {
                 populate: jest.fn().mockReturnThis(),
                 sort: jest.fn().mockReturnThis(),
@@ -197,7 +202,7 @@ describe('ChatController (Root/General)', () => {
         });
 
         test('should return 500 on error', async () => {
-            jest.spyOn(Conversation, 'findById').mockImplementation(() => { throw new Error('fail'); });
+            queryHelpers.getConversationById.mockRejectedValue(new Error('fail'));
             const response = await ChatController.getMessages(mockReq, { params: { id: '1' } });
             expect(response.status).toBe(HTTP_STATUS.INTERNAL_SERVER_ERROR);
         });
@@ -235,10 +240,11 @@ describe('ChatController (Root/General)', () => {
             };
             jest.spyOn(Conversation, 'findById').mockResolvedValue(mockConvo);
             jest.spyOn(ChatMessage, 'create').mockResolvedValue({ _id: 'msg1', message: 'hi' });
-            jest.spyOn(User, 'findById').mockReturnValue({
-                select: jest.fn().mockReturnThis(),
-                lean: jest.fn().mockResolvedValue({ fcmToken: 'token123', name: 'John' })
-            });
+            queryHelpers.getUserById.mockResolvedValue({ fcmToken: 'token123', name: 'John' });
+
+
+
+
 
             const response = await ChatController.sendMessage(mockReq, { params: { id: 'convo123' } });
             expect(response.status).toBe(HTTP_STATUS.CREATED);

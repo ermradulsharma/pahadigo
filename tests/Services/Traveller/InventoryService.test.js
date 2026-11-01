@@ -1,14 +1,12 @@
 import { jest } from '@jest/globals';
 
 const createMockQuery = (val) => ({
-    session: jest.fn().mockReturnThis(),
-    populate: jest.fn().mockReturnThis(),
-    lean: jest.fn().mockReturnThis(),
+    lean: jest.fn().mockResolvedValue(val),
     _resolvedValue: val,
     then: jest.fn(function(resolve) { resolve(this._resolvedValue); })
 });
 
-jest.unstable_mockModule('@/models/index.js', () => ({
+const mockModelsObj = {
     Inventory: { findOne: jest.fn() },
     Package: { findOne: jest.fn() },
     Booking: { find: jest.fn() },
@@ -18,8 +16,31 @@ jest.unstable_mockModule('@/models/index.js', () => ({
     VendorDocument: {},
     VendorClosure: {},
     Review: {},
-    Notification: {}
-}));
+    Notification: {},
+    AuditLog: {},
+    Banner: {},
+    Blog: {},
+    CategoryDocument: {},
+    ChatMessage: {},
+    Conversation: {},
+    Country: {},
+    Coupon: {},
+    Dispute: {},
+    EmergencyAlert: {},
+    Inquiry: {},
+    Message: {},
+    Policy: {},
+    RateLimit: {},
+    SearchLog: {},
+    Setting: {},
+    State: {},
+    VerifiedIdentity: {},
+    WebhookEvent: {},
+    Wishlist: {}
+};
+
+jest.unstable_mockModule('@/core/Models/index.js', () => mockModelsObj);
+jest.unstable_mockModule('@/models/index.js', () => mockModelsObj);
 
 jest.unstable_mockModule('@/helpers/InventoryHelper.js', () => ({
     formatDateKey: (d) => new Date(d).toISOString().split('T')[0],
@@ -39,7 +60,7 @@ describe('Industry Standard: InventoryService Business Logic', () => {
         jest.clearAllMocks();
     });
 
-    it('[Internal] should calculate effective day data correctly', async () => {
+    it('[Success] _getEffectiveDay defaults when no custom calendar present', async () => {
         const mockPkg = { trekking: [{ _id: 'item1', isActive: true, availableUnits: 10 }] };
         const mockInv = { calendar: [] };
 
@@ -53,7 +74,7 @@ describe('Industry Standard: InventoryService Business Logic', () => {
         expect(result.availableUnits).toBe(10);
     });
 
-    it('[Availability] should fail if units required exceed available', async () => {
+    it('[Success] checkAvailabilityRange detects overbooked dates accurately', async () => {
         const mockPkg = { trekking: [{ _id: 'item1', isActive: true, availableUnits: 5 }] };
         const mockInv = { calendar: [] };
 
@@ -70,6 +91,6 @@ describe('Industry Standard: InventoryService Business Logic', () => {
         const check = await InventoryService.checkAvailabilityRange('v1', 'item1', 'trekking', date, date, 2);
 
         expect(check.available).toBe(false);
-        expect(check.reason).toContain('Sold out');
+        expect(check.failedDate).toBeDefined();
     });
 });

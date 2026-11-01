@@ -1,24 +1,19 @@
 import { jest } from '@jest/globals';
+import mongoose from 'mongoose';
+import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
+import { createMockQueryHelpers } from '../../utils/mockHelpers.js';
 
-jest.unstable_mockModule('mongoose', () => {
-    const mockMongoose = {
-        startSession: jest.fn(() => ({
-            withTransaction: jest.fn(async (cb) => {
-                return await cb();
-            }),
-            endSession: jest.fn()
-        })),
-        Types: {
-            ObjectId: jest.fn().mockImplementation((id) => id)
-        }
-    };
-    mockMongoose.Types.ObjectId.isValid = jest.fn(() => true);
-    return {
-        __esModule: true,
-        default: mockMongoose,
-        Types: mockMongoose.Types
-    };
-});
+const mockSession = {
+    withTransaction: jest.fn(async (cb) => {
+        return await cb();
+    }),
+    endSession: jest.fn()
+};
+mongoose.startSession = jest.fn().mockResolvedValue(mockSession);
+
+const s1 = '507f1f77bcf86cd799439011';
+const v1 = '507f1f77bcf86cd799439012';
+const p1 = '507f1f77bcf86cd799439013';
 
 jest.unstable_mockModule('@/core/Models/Package.js', () => ({
     default: {
@@ -48,11 +43,6 @@ jest.unstable_mockModule('@/core/Services/CacheService.js', () => ({
     }
 }));
 
-jest.unstable_mockModule('@/core/Constants/index.js', () => ({
-    RESPONSE_MESSAGES: { PACKAGE: { NOT_FOUND: 'Not found' }, ITEM: { NOT_FOUND: 'Item not found' } },
-    HTTP_STATUS: { NOT_FOUND: 404, BAD_REQUEST: 400 }
-}));
-
 jest.unstable_mockModule('@/core/Helpers/AppError.js', () => ({
     default: class AppError extends Error {
         constructor(message, statusCode) {
@@ -62,9 +52,17 @@ jest.unstable_mockModule('@/core/Helpers/AppError.js', () => ({
     }
 }));
 
+const mockQHelpers = createMockQueryHelpers({
+    getPackageBy: jest.fn(() => ({
+        session: jest.fn().mockResolvedValue(null)
+    }))
+});
+jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => mockQHelpers);
+
 const { default: PackageService } = await import('@/core/Services/Admin/PackageService.js');
 const { default: Package } = await import('@/core/Models/Package.js');
 const { default: CacheService } = await import('@/core/Services/CacheService.js');
+const { getPackageBy, getPackagesBy } = await import('@/core/Helpers/queryHelpers.js');
 
 describe('Admin PackageService', () => {
     beforeEach(() => {
@@ -73,10 +71,10 @@ describe('Admin PackageService', () => {
 
     describe('invalidatePackageCaches', () => {
         it('should invalidate specific caches based on provided parameters', async () => {
-            await PackageService.invalidatePackageCaches('v1', 's1');
+            await PackageService.invalidatePackageCaches(v1, s1);
             expect(CacheService.del).toHaveBeenCalledWith('admin:packages:all');
-            expect(CacheService.del).toHaveBeenCalledWith('admin:packages:vendor:v1');
-            expect(CacheService.del).toHaveBeenCalledWith('admin:packages:item:s1');
+            expect(CacheService.del).toHaveBeenCalledWith(`admin:packages:vendor:${v1}`);
+            expect(CacheService.del).toHaveBeenCalledWith(`admin:packages:item:${s1}`);
         });
     });
 
@@ -85,7 +83,7 @@ describe('Admin PackageService', () => {
             CacheService.get.mockResolvedValue([{ id: 1 }]);
             const result = await PackageService.getAllServices();
             expect(result).toHaveLength(1);
-            expect(Package.find).not.toHaveBeenCalled();
+            expect(getPackagesBy).not.toHaveBeenCalled();
         });
 
         it('should fetch from DB, transform, set cache, and return', async () => {
@@ -93,17 +91,13 @@ describe('Admin PackageService', () => {
             
             const mockPackages = [
                 {
-                    _id: 'p1',
-                    vendor: { _id: 'v1', name: 'Vendor' },
+                    _id: p1,
+                    vendor: { _id: v1, name: 'Vendor' },
                     hotels: [{ _id: 'h1', name: 'Hotel 1' }],
                     activities: [{ _id: 'a1', name: 'Activity 1' }]
                 }
             ];
-            Package.find.mockReturnValue({
-                populate: jest.fn().mockReturnValue({
-                    lean: jest.fn().mockResolvedValue(mockPackages)
-                })
-            });
+            getPackagesBy.mockResolvedValue(mockPackages);
 
             const result = await PackageService.getAllServices();
             expect(result).toHaveLength(2); // 1 hotel + 1 activity
@@ -116,19 +110,19 @@ describe('Admin PackageService', () => {
     describe('toggleServiceStatus', () => {
         it('should throw if item not found via direct query or service id', async () => {
             Package.findOne.mockReturnValue({ session: jest.fn().mockResolvedValue(null) });
-            await expect(PackageService.toggleServiceStatus('s1', true, 'hotels', 'v1'))
-                .rejects.toThrow('Not found');
+            await expect(PackageService.toggleServiceStatus(s1, true, 'hotels', v1))
+                .rejects.toThrow(RESPONSE_MESSAGES.PACKAGE.NOT_FOUND);
         });
 
         it('should toggle status if item is found', async () => {
             const mockPkg = {
-                hotels: [{ _id: 's1', isActive: false }],
+                hotels: [{ _id: s1, isActive: false }],
                 markModified: jest.fn(),
                 save: jest.fn()
             };
             Package.findOne.mockReturnValue({ session: jest.fn().mockResolvedValue(mockPkg) });
             
-            const result = await PackageService.toggleServiceStatus('s1', true, 'hotels', 'v1');
+            const result = await PackageService.toggleServiceStatus(s1, true, 'hotels', v1);
             expect(mockPkg.hotels[0].isActive).toBe(true);
             expect(mockPkg.save).toHaveBeenCalled();
             expect(result.isActive).toBe(true);
@@ -138,25 +132,21 @@ describe('Admin PackageService', () => {
 
     describe('getPackageItem', () => {
         it('should return cached item if available', async () => {
-            CacheService.get.mockResolvedValue({ _id: 's1', name: 'Cached' });
-            const result = await PackageService.getPackageItem('s1');
+            CacheService.get.mockResolvedValue({ _id: s1, name: 'Cached' });
+            const result = await PackageService.getPackageItem(s1);
             expect(result.name).toBe('Cached');
         });
 
         it('should fetch and format item if not cached', async () => {
             CacheService.get.mockResolvedValue(null);
             const mockPkg = {
-                _id: 'p1',
-                vendor: { _id: 'v1' },
-                hotels: [{ _id: 's1', name: 'DB Hotel' }]
+                _id: p1,
+                vendor: { _id: v1 },
+                hotels: [{ _id: s1, name: 'DB Hotel' }]
             };
-            Package.findOne.mockReturnValue({
-                populate: jest.fn().mockReturnValue({
-                    lean: jest.fn().mockResolvedValue(mockPkg)
-                })
-            });
+            getPackageBy.mockResolvedValue(mockPkg);
 
-            const result = await PackageService.getPackageItem('s1');
+            const result = await PackageService.getPackageItem(s1);
             expect(result.name).toBe('DB Hotel');
             expect(result.serviceType).toBe('hotels');
             expect(CacheService.set).toHaveBeenCalled();
@@ -166,11 +156,12 @@ describe('Admin PackageService', () => {
     describe('updatePackageItem', () => {
         it('should throw if package not found', async () => {
             Package.findOne.mockReturnValue({ session: jest.fn().mockResolvedValue(null) });
-            await expect(PackageService.updatePackageItem('s1', {})).rejects.toThrow('Item not found');
+            getPackageBy.mockReturnValue({ session: jest.fn().mockResolvedValue(null) });
+            await expect(PackageService.updatePackageItem(s1, {})).rejects.toThrow(RESPONSE_MESSAGES.ITEM.NOT_FOUND);
         });
 
         it('should update item and invalidate cache', async () => {
-            const mockItem = { _id: 's1', name: 'Old' };
+            const mockItem = { _id: s1, name: 'Old' };
             const mockPkg = {
                 hotels: { id: jest.fn().mockReturnValue(mockItem) },
                 toObject: jest.fn().mockReturnValue({ hotels: [mockItem] }),
@@ -178,8 +169,9 @@ describe('Admin PackageService', () => {
                 save: jest.fn()
             };
             Package.findOne.mockReturnValue({ session: jest.fn().mockResolvedValue(mockPkg) });
+            getPackageBy.mockReturnValue({ session: jest.fn().mockResolvedValue(mockPkg) });
 
-            const result = await PackageService.updatePackageItem('s1', { name: 'New' });
+            const result = await PackageService.updatePackageItem(s1, { name: 'New' });
             expect(result.name).toBe('New');
             expect(mockPkg.save).toHaveBeenCalled();
         });
@@ -188,26 +180,26 @@ describe('Admin PackageService', () => {
     describe('createPackage', () => {
         it('should create a new package if vendor does not have one', async () => {
             Package.findOne.mockReturnValue({ session: jest.fn().mockResolvedValue(null) });
-            Package.create.mockResolvedValue([{ vendor: 'v1' }]);
+            Package.create.mockResolvedValue([{ vendor: v1 }]);
             
-            const result = await PackageService.createPackage('v1', {});
+            const result = await PackageService.createPackage(v1, {});
             expect(Package.create).toHaveBeenCalled();
-            expect(result.vendor).toBe('v1');
+            expect(result.vendor).toBe(v1);
         });
     });
 
     describe('deletePackage', () => {
         it('should delete package and invalidate cache', async () => {
-            Package.findByIdAndDelete.mockReturnValue({ session: jest.fn().mockResolvedValue({ _id: 'p1', vendor: 'v1' }) });
-            await PackageService.deletePackage('p1');
-            expect(CacheService.del).toHaveBeenCalledWith('admin:packages:vendor:v1');
+            Package.findByIdAndDelete.mockReturnValue({ session: jest.fn().mockResolvedValue({ _id: p1, vendor: v1 }) });
+            await PackageService.deletePackage(p1);
+            expect(CacheService.del).toHaveBeenCalledWith(`admin:packages:vendor:${v1}`);
         });
     });
 
     describe('getVendorPackages', () => {
         it('should return from cache if available', async () => {
             CacheService.get.mockResolvedValue([]);
-            const result = await PackageService.getVendorPackages('v1');
+            const result = await PackageService.getVendorPackages(v1);
             expect(result).toEqual([]);
         });
 
@@ -216,18 +208,14 @@ describe('Admin PackageService', () => {
             
             const mockPackages = [
                 {
-                    _id: 'p1',
-                    vendor: { _id: 'v1' },
+                    _id: p1,
+                    vendor: { _id: v1 },
                     hotels: [{ _id: 'h1', name: 'Hotel 1' }]
                 }
             ];
-            Package.find.mockReturnValue({
-                populate: jest.fn().mockReturnValue({
-                    lean: jest.fn().mockResolvedValue(mockPackages)
-                })
-            });
+            getPackagesBy.mockResolvedValue(mockPackages);
 
-            const result = await PackageService.getVendorPackages('v1');
+            const result = await PackageService.getVendorPackages(v1);
             expect(result).toHaveLength(1);
             expect(result[0].serviceType).toBe('hotels');
         });
