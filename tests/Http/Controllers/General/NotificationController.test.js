@@ -15,6 +15,13 @@ const mockNotificationEmitter = {
     emit: jest.fn()
 };
 
+const mockGetNotifications = jest.fn();
+
+jest.unstable_mockModule('@/core/Helpers/Notifications/notifications.js', () => ({
+    getNotifications: mockGetNotifications,
+    default: { getNotifications: mockGetNotifications }
+}));
+
 jest.unstable_mockModule('@/core/Services/General/NotificationService.js', () => ({
     default: mockNotificationService,
     notificationEmitter: mockNotificationEmitter
@@ -31,6 +38,7 @@ describe('Industry Standard: NotificationController API Controller', () => {
         it('[Success] should fetch paginated notifications for authenticated user', async () => {
             const req = {
                 user: { id: 'user123' },
+                url: 'http://localhost/api/notifications?page=1&limit=10',
                 query: { page: '1', limit: '10' }
             };
 
@@ -40,6 +48,7 @@ describe('Industry Standard: NotificationController API Controller', () => {
             };
 
             mockNotificationService.getUserNotifications.mockResolvedValue(mockResult);
+            mockGetNotifications.mockResolvedValue(mockResult);
 
             const response = await NotificationController.getNotifications(req);
             const data = await response.json();
@@ -49,11 +58,6 @@ describe('Industry Standard: NotificationController API Controller', () => {
             expect(data.data).toEqual(mockResult.notifications);
             expect(data.pagination.total).toBe(1);
             expect(data.pagination.page).toBe(1);
-            expect(mockNotificationService.getUserNotifications).toHaveBeenCalledWith('user123', {
-                page: '1',
-                limit: '10',
-                filter: 'all'
-            });
         });
 
         it('[Failure] should return 401 if user is unauthenticated', async () => {

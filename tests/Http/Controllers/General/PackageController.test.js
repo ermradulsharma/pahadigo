@@ -7,11 +7,21 @@ jest.unstable_mockModule('@/core/Lib/appConfig.js', () => ({
     clearAppConfigCache: jest.fn()
 }));
 
+jest.unstable_mockModule('@/core/Helpers/Package/testBrowsePackages.js', () => ({
+    getPackageItemById: jest.fn(),
+    getTestBrowsePackages: jest.fn(),
+    default: {
+        getPackageItemById: jest.fn(),
+        getTestBrowsePackages: jest.fn()
+    }
+}));
+
 const { default: PackageController } = await import('@/core/Http/Controllers/General/PackageController.js');
 const { default: PackageService } = await import('@/core/Services/General/PackageService.js');
 const { default: Wishlist } = await import('@/core/Models/Wishlist.js');
 const { default: Category } = await import('@/core/Models/Category.js');
 const { default: Review } = await import('@/core/Models/Review.js');
+const { getPackageItemById } = await import('@/core/Helpers/Package/testBrowsePackages.js');
 
 describe('Industry Standard: PackageController API Controller', () => {
     beforeEach(() => {
@@ -143,6 +153,27 @@ describe('Industry Standard: PackageController API Controller', () => {
     });
 
     describe('getPackageDetails', () => {
+        beforeEach(() => {
+            getPackageItemById.mockImplementation(async (itemId, userId) => {
+                const pkg = await PackageService.getAvailablePackageItem(itemId);
+                if (!pkg) return null;
+                let wishlist = false;
+                let wishlistId = null;
+                if (userId) {
+                    const findQuery = Wishlist.findOne({ itemId, user: userId });
+                    const entry = findQuery?.lean ? await findQuery.lean() : await findQuery;
+                    if (entry) {
+                        wishlist = true;
+                        wishlistId = entry._id;
+                    }
+                }
+                return {
+                    ...pkg,
+                    wishlist,
+                    wishlistId
+                };
+            });
+        });
         test('should return package details with wishlist entry id when authenticated and wishlisted', async () => {
             const req = createMockReq({
                 user: { id: 'user123' },

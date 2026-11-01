@@ -44,6 +44,9 @@ jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => ({
     getCategoryBySlug: jest.fn(),
     getReviewsBy: jest.fn(),
     getReviewsByItemId: jest.fn(),
+    getNotificationBy: jest.fn(),
+    getNotificationById: jest.fn(),
+    getNotificationsBy: jest.fn(),
     updateById: jest.fn(),
     deleteById: jest.fn(),
     default: {}
