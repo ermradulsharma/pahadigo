@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { createMockQueryHelpers } from '../../../utils/mockHelpers.js';
 
 jest.unstable_mockModule('@/core/Services/Vendor/BusinessService.js', () => ({
     default: {
@@ -10,13 +11,8 @@ jest.unstable_mockModule('@/core/Services/Vendor/BusinessService.js', () => ({
     }
 }));
 
-jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => ({
-    getBusinessByUserId: jest.fn(),
-    getBusinessById: jest.fn(),
-    getBusinessByIdAndUserId: jest.fn(),
-    getBusinessBy: jest.fn()
-}));
-
+const mockQueryHelpers = createMockQueryHelpers();
+jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => mockQueryHelpers);
 jest.unstable_mockModule('@/core/Helpers/userProfileHelper.js', () => ({
     userBusinessProfileById: jest.fn(),
     userPayload: jest.fn(),

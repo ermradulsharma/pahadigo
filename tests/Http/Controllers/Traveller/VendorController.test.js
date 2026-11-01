@@ -1,12 +1,7 @@
 import { jest } from '@jest/globals';
+import { createMockQueryHelpers } from '../../../utils/mockHelpers.js';
 
-const mockQueryHelpers = {
-    getUserById: jest.fn(),
-    getBusinessByUserId: jest.fn(),
-    getPackageBy: jest.fn(),
-    getBusinessById: jest.fn(),
-    getBusinessByIdAndUserId: jest.fn()
-};
+const mockQueryHelpers = createMockQueryHelpers();
 
 const mockPackageHelpers = {
     itemsFormate: jest.fn()
@@ -44,7 +39,7 @@ describe('Industry Standard: Traveller VendorController', () => {
         const fakeBusiness = { _id: 'biz_101', businessName: 'Mountain Travels' };
         mockQueryHelpers.getUserById.mockResolvedValue(fakeUser);
         mockQueryHelpers.getBusinessByUserId.mockResolvedValue(fakeBusiness);
-        
+
         const initialPayload = {
             id: 'u_101',
             name: 'Vendor Guide',

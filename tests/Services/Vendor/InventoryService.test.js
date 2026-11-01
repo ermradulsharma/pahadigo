@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { createMockModels } from '../../utils/mockHelpers.js';
 
 const mockInventoryInstance = {
     calendar: [],
@@ -14,71 +15,14 @@ MockInventory.prototype.save = mockInventoryInstance.save;
 
 const mockQuery = { lean: jest.fn() };
 
-jest.unstable_mockModule('@/models/index.js', () => ({
+const mockModels = createMockModels({
     Inventory: MockInventory,
     Package: { findOne: jest.fn(() => mockQuery) },
-    Booking: { find: jest.fn(() => mockQuery) },
-    Category: {},
-    User: {},
-    Vendor: {},
-    VendorDocument: {},
-    VendorClosure: {},
-    Review: {},
-    Notification: {},
-    AuditLog: {},
-    Banner: {},
-    Blog: {},
-    CategoryDocument: {},
-    ChatMessage: {},
-    Conversation: {},
-    Country: {},
-    Coupon: {},
-    Dispute: {},
-    EmergencyAlert: {},
-    Inquiry: {},
-    Message: {},
-    Policy: {},
-    RateLimit: {},
-    SearchLog: {},
-    Setting: {},
-    State: {},
-    VerifiedIdentity: {},
-    WebhookEvent: {},
-    Wishlist: {}
-}));
+    Booking: { find: jest.fn(() => mockQuery) }
+});
 
-jest.unstable_mockModule('@/core/Models/index.js', () => ({
-    Inventory: MockInventory,
-    Package: { findOne: jest.fn(() => mockQuery) },
-    Booking: { find: jest.fn(() => mockQuery) },
-    Category: {},
-    User: {},
-    Vendor: {},
-    VendorDocument: {},
-    VendorClosure: {},
-    Review: {},
-    Notification: {},
-    AuditLog: {},
-    Banner: {},
-    Blog: {},
-    CategoryDocument: {},
-    ChatMessage: {},
-    Conversation: {},
-    Country: {},
-    Coupon: {},
-    Dispute: {},
-    EmergencyAlert: {},
-    Inquiry: {},
-    Message: {},
-    Policy: {},
-    RateLimit: {},
-    SearchLog: {},
-    Setting: {},
-    State: {},
-    VerifiedIdentity: {},
-    WebhookEvent: {},
-    Wishlist: {}
-}));
+jest.unstable_mockModule('@/models/index.js', () => mockModels);
+jest.unstable_mockModule('@/core/Models/index.js', () => mockModels);
 
 const { default: InventoryService } = await import('@/services/Vendor/InventoryService.js');
 const { Inventory, Package, Booking } = await import('@/models/index.js');

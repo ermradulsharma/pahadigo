@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { createMockModels } from '../../utils/mockHelpers.js';
 
 const createMockQuery = (val) => ({
     lean: jest.fn().mockResolvedValue(val),
@@ -6,38 +7,11 @@ const createMockQuery = (val) => ({
     then: jest.fn(function(resolve) { resolve(this._resolvedValue); })
 });
 
-const mockModelsObj = {
+const mockModelsObj = createMockModels({
     Inventory: { findOne: jest.fn() },
     Package: { findOne: jest.fn() },
-    Booking: { find: jest.fn() },
-    Category: {},
-    User: {},
-    Vendor: {},
-    VendorDocument: {},
-    VendorClosure: {},
-    Review: {},
-    Notification: {},
-    AuditLog: {},
-    Banner: {},
-    Blog: {},
-    CategoryDocument: {},
-    ChatMessage: {},
-    Conversation: {},
-    Country: {},
-    Coupon: {},
-    Dispute: {},
-    EmergencyAlert: {},
-    Inquiry: {},
-    Message: {},
-    Policy: {},
-    RateLimit: {},
-    SearchLog: {},
-    Setting: {},
-    State: {},
-    VerifiedIdentity: {},
-    WebhookEvent: {},
-    Wishlist: {}
-};
+    Booking: { find: jest.fn() }
+});
 
 jest.unstable_mockModule('@/core/Models/index.js', () => mockModelsObj);
 jest.unstable_mockModule('@/models/index.js', () => mockModelsObj);

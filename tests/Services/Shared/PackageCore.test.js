@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { createMockQueryHelpers } from '../../utils/mockHelpers.js';
 
 const mockAppConfig = {
     tax: {
@@ -15,11 +16,7 @@ const mockVendorDocument = {
     findOne: jest.fn()
 };
 
-const mockQueryHelpers = {
-    getPackageItemById: jest.fn(),
-    getPackageById: jest.fn(),
-    getReviewsByItemId: jest.fn()
-};
+const mockQueryHelpers = createMockQueryHelpers();
 
 const mockHelpers = {
     businessPayload: jest.fn(),

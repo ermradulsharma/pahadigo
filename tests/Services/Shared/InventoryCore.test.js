@@ -1,9 +1,8 @@
 import { jest } from '@jest/globals';
+import { createMockModels } from '../../utils/mockHelpers.js';
 
 const mockFindOne = jest.fn();
 const mockFind = jest.fn();
-const mockLean = jest.fn();
-const mockSession = jest.fn();
 
 const chainableMock = (data) => {
     const mock = {};
@@ -12,38 +11,13 @@ const chainableMock = (data) => {
     return mock;
 };
 
-jest.unstable_mockModule('@/core/Models/index.js', () => ({
+const mockModels = createMockModels({
     Inventory: { findOne: mockFindOne },
     Package: { findOne: mockFindOne },
-    Booking: { find: mockFind },
-    Category: {},
-    User: {},
-    Vendor: {},
-    VendorDocument: {},
-    VendorClosure: {},
-    Review: {},
-    Notification: {},
-    AuditLog: {},
-    Banner: {},
-    Blog: {},
-    CategoryDocument: {},
-    ChatMessage: {},
-    Conversation: {},
-    Country: {},
-    Coupon: {},
-    Dispute: {},
-    EmergencyAlert: {},
-    Inquiry: {},
-    Message: {},
-    Policy: {},
-    RateLimit: {},
-    SearchLog: {},
-    Setting: {},
-    State: {},
-    VerifiedIdentity: {},
-    WebhookEvent: {},
-    Wishlist: {}
-}));
+    Booking: { find: mockFind }
+});
+
+jest.unstable_mockModule('@/core/Models/index.js', () => mockModels);
 
 jest.unstable_mockModule('@/core/Helpers/InventoryHelper.js', () => ({
     formatDateKey: jest.fn((date) => {
@@ -56,7 +30,6 @@ jest.unstable_mockModule('@/core/Helpers/InventoryHelper.js', () => ({
 }));
 
 const { getEffectiveDay } = await import('@/core/Services/Shared/InventoryCore.js');
-const InventoryHelper = await import('@/core/Helpers/InventoryHelper.js');
 
 describe('InventoryCore', () => {
     beforeEach(() => {

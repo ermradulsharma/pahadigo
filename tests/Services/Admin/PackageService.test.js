@@ -1,14 +1,13 @@
 import { jest } from '@jest/globals';
 import mongoose from 'mongoose';
 import { RESPONSE_MESSAGES } from '@/core/Constants/index.js';
-import { createMockQueryHelpers } from '../../utils/mockHelpers.js';
+import {
+    createMockQueryHelpers,
+    createMockCacheService,
+    createMockSession
+} from '../../utils/mockHelpers.js';
 
-const mockSession = {
-    withTransaction: jest.fn(async (cb) => {
-        return await cb();
-    }),
-    endSession: jest.fn()
-};
+const mockSession = createMockSession();
 mongoose.startSession = jest.fn().mockResolvedValue(mockSession);
 
 const s1 = '507f1f77bcf86cd799439011';
@@ -35,21 +34,9 @@ jest.unstable_mockModule('@/core/Models/User.js', () => ({
     default: {}
 }));
 
+const mockCache = createMockCacheService();
 jest.unstable_mockModule('@/core/Services/CacheService.js', () => ({
-    default: {
-        get: jest.fn(),
-        set: jest.fn(),
-        del: jest.fn()
-    }
-}));
-
-jest.unstable_mockModule('@/core/Helpers/AppError.js', () => ({
-    default: class AppError extends Error {
-        constructor(message, statusCode) {
-            super(message);
-            this.statusCode = statusCode;
-        }
-    }
+    default: mockCache
 }));
 
 const mockQHelpers = createMockQueryHelpers({
