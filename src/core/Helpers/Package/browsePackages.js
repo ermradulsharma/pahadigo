@@ -466,12 +466,12 @@ export async function getBrowsePackages(options = {}) {
     let finalResult;
 
     if (isFlat) {
-        const allItems = Object.values(itemsByCategory).flat();
+        const allItems = Array.from(itemsByCategory.values()).flat();
         finalResult = paginateItems(allItems, options);
     } else {
         finalResult = {};
-        for (const slug in itemsByCategory) {
-            finalResult[slug] = paginateItems(itemsByCategory[slug], options);
+        for (const [slug, list] of itemsByCategory.entries()) {
+            finalResult[slug] = paginateItems(list, options);
         }
     }
 
