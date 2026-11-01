@@ -1,3 +1,5 @@
+import mongoose from 'mongoose';
+import { getLogger } from '@/core/Lib/logger.js';
 import { User, Vendor, Booking, Package, Category, VendorDocument, VendorClosure, Review, Notification } from '@/core/Models/index.js';
 import { SCHEMA_KEYS, CATEGORY_MAP } from '@/core/Constants/categories.js';
 
@@ -112,7 +114,9 @@ export const getBusinessBy = async (conditions, select = '', populate = null, op
             if (closures) {
                 vendor.closurePeriods = closures;
             }
-        } catch (e) { }
+        } catch (e) {
+            getLogger().warn({ err: e, vendorId: vendor._id }, '[queryHelpers:getBusinessBy] Failed to load vendor closures');
+        }
     }
     return vendor;
 };
@@ -251,7 +255,9 @@ export const getReviewsByItemId = async (itemId, populate = [{ path: 'user', sel
         if (typeof itemId === 'string' && itemId.length === 24) {
             queryId = new mongoose.Types.ObjectId(itemId);
         }
-    } catch (e) { }
+    } catch (e) {
+        getLogger().warn({ err: e, itemId }, '[queryHelpers:getReviewsByItemId] Failed to cast itemId to ObjectId');
+    }
 
     return await getReviewsBy({
         $or: [

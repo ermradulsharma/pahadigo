@@ -40,15 +40,19 @@ class ClosureService {
   }
 
   async updateClosurePeriod(userId, closureId, updateData) {
-    const closure = await VendorClosure.findOne({ _id: closureId, user: userId });
-    if (!closure) throw AppError.notFound(RESPONSE_MESSAGES.CLOSURE.NOT_FOUND);
+    const updateFields = {};
+    if (updateData.startDate) updateFields.startDate = updateData.startDate;
+    if (updateData.endDate) updateFields.endDate = updateData.endDate;
+    if (updateData.reason) updateFields.reason = updateData.reason;
 
-    if (updateData.startDate) closure.startDate = updateData.startDate;
-    if (updateData.endDate) closure.endDate = updateData.endDate;
-    if (updateData.reason) closure.reason = updateData.reason;
+    const saved = await VendorClosure.findOneAndUpdate(
+      { _id: closureId, user: userId },
+      { $set: updateFields },
+      { new: true, runValidators: true }
+    ).lean();
+    if (!saved) throw AppError.notFound(RESPONSE_MESSAGES.CLOSURE.NOT_FOUND);
 
-    const saved = await closure.save();
-    await this.invalidateVendorCaches(userId, closure.vendor);
+    await this.invalidateVendorCaches(userId, saved.vendor);
     return saved;
   }
 

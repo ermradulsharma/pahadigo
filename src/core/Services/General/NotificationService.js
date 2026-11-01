@@ -8,7 +8,7 @@ import { getBookingById, getUserById, getBusinessById, getBy, getNotificationBy,
 import { formatIST } from '@/core/Helpers/dateUtils.js';
 import AppError from '@/core/Errors/AppError.js';
 import { NOTIFICATION } from '@/core/Constants/notification.js';
-import { STATUS } from '@/core/Constants/index.js';
+import { STATUS, SYSTEM_ENV } from '@/core/Constants/index.js';
 import Notification from '@/core/Models/Notification.js';
 import CacheService from '@/core/Services/CacheService.js';
 import { EventEmitter } from 'events';
@@ -68,7 +68,7 @@ class NotificationService {
         const smtpKey = `${host}:${port}:${user}:${pass}`;
 
         // In serverless environments (Vercel / AWS Lambda), connection pooling causes stale, broken TCP sockets
-        const isServerless = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
+        const isServerless = SYSTEM_ENV.IS_SERVERLESS;
 
         if (!isServerless && this._cachedTransporter && this._lastSmtpKey === smtpKey) return this._cachedTransporter;
 

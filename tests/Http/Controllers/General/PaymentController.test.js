@@ -96,6 +96,25 @@ describe('PaymentController (General/Public Role)', () => {
         expect(mockUpdatePaymentStatus).toHaveBeenCalledWith('order_123', 'pay_123', 'WEBHOOK_VERIFIED');
     });
 
+    it('gracefully handles concurrent race condition duplicate key error (E11000) as replay protection', async () => {
+        const duplicateError = new Error('E11000 duplicate key error');
+        duplicateError.code = 11000;
+        WebhookEvent.create.mockRejectedValueOnce(duplicateError);
+
+        const response = await PaymentController.webhook(buildWebhookRequest({
+            event: 'order.paid',
+            payload: {
+                order: { entity: { id: 'order_123' } },
+                payment: { entity: { id: 'pay_123' } }
+            }
+        }, 'valid', 'evt_concurrent'));
+        const result = await parseResponse(response);
+
+        expect(result.status).toBe(200);
+        expect(result.body.message).toContain('already processed');
+        expect(mockUpdatePaymentStatus).not.toHaveBeenCalled();
+    });
+
     it('rejects missing or invalid payload structure', async () => {
         const response = await PaymentController.webhook(buildWebhookRequest({ event: 'order.paid' }));
         const result = await parseResponse(response);

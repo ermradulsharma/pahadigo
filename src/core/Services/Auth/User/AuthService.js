@@ -32,13 +32,14 @@ async function getApplePublicKey(kid) {
 class AuthService {
 
     async initiateOTP({ identifier, role, termsAccepted }) {
-        const existingUser = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] });
+        const existingUser = await User.findOne({ $or: [{ email: identifier }, { phone: identifier }] }).lean();
         if (existingUser && existingUser.role !== role) throw AppError.forbidden(RESPONSE_MESSAGES.AUTH.ROLE_MISMATCH);
         if (existingUser && existingUser.role && [USER_ROLES.ADMIN, USER_ROLES.SUPER_ADMIN, USER_ROLES.DEVELOPER].includes(existingUser.role)) throw AppError.forbidden(RESPONSE_MESSAGES.AUTH.DIFFERENT_METHOD);
         if (existingUser && termsAccepted) {
-            existingUser.termsAccepted = DEFAULTS.TRUE;
-            existingUser.termsAcceptedAt = new Date();
-            await existingUser.save();
+            await User.updateOne(
+                { _id: existingUser._id },
+                { $set: { termsAccepted: DEFAULTS.TRUE, termsAcceptedAt: new Date() } }
+            );
         }
         return await OTPService.generateOTP(identifier, role, { termsAccepted });
     }

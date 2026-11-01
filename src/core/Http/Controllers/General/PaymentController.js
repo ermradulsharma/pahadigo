@@ -35,7 +35,14 @@ class PaymentController extends Controller {
           if (existingEvent) {
               return this.success(HTTP_STATUS.OK, 'Webhook already processed (Replay Protection)', { received: true });
           }
-          await WebhookEvent.create({ eventId, gateway: 'razorpay' });
+          try {
+              await WebhookEvent.create({ eventId, gateway: 'razorpay' });
+          } catch (createErr) {
+              if (createErr?.code === 11000) {
+                  return this.success(HTTP_STATUS.OK, 'Webhook already processed (Replay Protection)', { received: true });
+              }
+              throw createErr;
+          }
       }
 
       const { event, payload } = body || {};

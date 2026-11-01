@@ -11,6 +11,7 @@ import AuthEvents from '@/core/Events/AuthEvents.js';
 import Controller from '@/core/Controllers/Controller.js';
 import requestContextMiddleware from '@/core/Http/Middleware/requestContext.js';
 import { NOTIFICATION } from '@/core/Constants/notification.js';
+import { getLogger } from '@/core/Lib/logger.js';
 
 /**
  * AuthController - Handles all authentication related logic.
@@ -183,13 +184,13 @@ class AuthController extends Controller {
             const token = req.headers.get('authorization')?.split(' ')[1];
             if (!token) return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGOUT_SUCCESS);
 
-            let body = {};
-            try { body = req.payload || {}; } catch (e) { }
+            const body = req.payload || {};
             const refreshToken = body?.refreshToken || null;
 
             await BaseAuthService.logout(token, refreshToken, req.user?.id);
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGOUT_SUCCESS);
         } catch (error) {
+            getLogger().warn({ err: error, userId: req.user?.id }, '[AuthController:logout] Non-fatal error during logout cleanup');
             return this.success(HTTP_STATUS.OK, RESPONSE_MESSAGES.AUTH.LOGOUT_SUCCESS);
         }
     }

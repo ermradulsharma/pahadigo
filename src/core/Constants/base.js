@@ -148,6 +148,7 @@ export const THIRD_PARTY_APIS = {
 };
 
 export const SYSTEM_ENV = {
+    IS_SERVERLESS: Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME),
     MONGODB_URI: process.env.MONGODB_URI,
     TERMS_CONDITIONS: process.env.TERMS_CONDITIONS,
     PRIVACY_POLICY: process.env.PRIVACY_POLICY,

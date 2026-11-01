@@ -92,7 +92,9 @@ class ProfileController extends Controller {
             try {
                 await CacheService.del(`user:profile:${req.user.id}`);
                 await CacheService.del(`user:profile:full:${req.user.id}`);
-            } catch (cacheError) { }
+            } catch (cacheError) {
+                getLogger().warn({ err: cacheError, userId: req.user.id }, '[ProfileController:toggleStatus] Cache invalidation failed');
+            }
 
             const message = status ? RESPONSE_MESSAGES.AUTH.ACTIVATED : RESPONSE_MESSAGES.AUTH.DEACTIVATED;
             return this.success(HTTP_STATUS.OK, message, { status: newStatus });
@@ -400,12 +402,16 @@ class ProfileController extends Controller {
                 let vendorObjectId = vendor._id;
                 try {
                     vendorObjectId = new mongoose.Types.ObjectId(vendor._id);
-                } catch (e) { }
+                } catch (e) {
+                    getLogger().warn({ err: e, vendorId: vendor._id }, '[ProfileController:getDashboardStats] Failed to cast vendorId to ObjectId');
+                }
 
                 let userObjectId = userId;
                 try {
                     userObjectId = new mongoose.Types.ObjectId(userId);
-                } catch (e) { }
+                } catch (e) {
+                    getLogger().warn({ err: e, userId }, '[ProfileController:getDashboardStats] Failed to cast userId to ObjectId');
+                }
 
                 const startOfToday = new Date();
                 startOfToday.setHours(0, 0, 0, 0);
