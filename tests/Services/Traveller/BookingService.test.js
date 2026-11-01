@@ -66,6 +66,9 @@ jest.unstable_mockModule('@/core/Models/Coupon.js', () => ({
 }));
 
 jest.unstable_mockModule('@/core/Constants/index.js', () => ({
+    APP_DETAILS: { APP_NAME: 'PahadiGo', APP_URL: 'http://localhost:3000' },
+    APP_SECRETS: {},
+    APP_CONSTANTS: {},
     RESPONSE_MESSAGES: {
         BOOKING: { NOT_FOUND: 'Booking not found', NOT_FOUND_OR_UNAUTHORIZED: 'Booking not found', SLOTS_NOT_AVAILABLE: 'Slots not available' },
         PACKAGE: { NOT_FOUND: 'Package not found' },
