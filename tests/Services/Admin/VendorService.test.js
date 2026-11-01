@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { createMockModels } from '../../utils/mockHelpers.js';
 
 jest.unstable_mockModule('mongoose', () => {
     const mockObjectId = Object.assign(
@@ -76,33 +77,19 @@ jest.unstable_mockModule('@/core/Models/VendorDocument.js', () => ({ default: mo
 jest.unstable_mockModule('@/core/Models/Package.js', () => ({ default: mockPackage }));
 jest.unstable_mockModule('@/core/Models/VerifiedIdentity.js', () => ({ default: mockVerifiedIdentity }));
 
-const mockModelsIndex = {
+const mockModelsIndex = createMockModels({
     User: mockUser,
     Vendor: mockVendor,
     VendorDocument: mockVendorDocument,
     Package: mockPackage,
-    VerifiedIdentity: mockVerifiedIdentity,
-    Booking: {},
-    Category: {},
-    VendorClosure: {},
-    Review: {},
-    AuditLog: {},
-    Blog: {},
-    Banner: {},
-    CategoryDocument: {},
-    Country: {},
-    Coupon: {},
-    Dispute: {},
-    EmergencyAlert: {},
-    Inquiry: {},
-    Inventory: {},
-    Policy: {},
-    RateLimit: {},
-    SearchLog: {},
-    Setting: {},
-    State: {},
-    Wishlist: {},
-    Notification: {}
+    VerifiedIdentity: mockVerifiedIdentity
+});
+const oldModels = {
+    User: mockUser,
+    Vendor: mockVendor,
+    VendorDocument: mockVendorDocument,
+    Package: mockPackage,
+    VerifiedIdentity: mockVerifiedIdentity
 };
 
 jest.unstable_mockModule('@/core/Models/index.js', () => mockModelsIndex);
@@ -279,7 +266,7 @@ describe('Admin VendorService', () => {
         it('should throw if vendor already exists', async () => {
             User.findOne.mockReturnValue({ session: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue({ _id: 'u1', role: 'vendor' }) }) });
             Vendor.findOne.mockReturnValue({ session: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue({ _id: 'v1' }) }) });
-            
+
             await expect(VendorService.createVendor({})).rejects.toThrow('Already exists');
         });
     });
@@ -289,7 +276,7 @@ describe('Admin VendorService', () => {
             Vendor.findById.mockReturnValue({ session: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) });
             User.findById.mockReturnValue({ session: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) });
             Vendor.findOne.mockReturnValue({ session: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(null) }) });
-            
+
             await expect(VendorService.updateVendor('v1', {})).rejects.toThrow('Vendor not found');
         });
     });
@@ -300,7 +287,7 @@ describe('Admin VendorService', () => {
             Vendor.findById.mockReturnValue({ session: jest.fn().mockResolvedValue(mockVendor) });
             User.findByIdAndUpdate.mockReturnValue({ session: jest.fn().mockResolvedValue({}) });
             User.findById.mockReturnValue({ populate: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue({ name: 'User' }) }) });
-            
+
             const result = await VendorService.updateVendorStatus('v1', 'active');
             expect(mockVendor.isApproved).toBe(true);
             expect(mockVendor.status).toBe('active');
@@ -314,9 +301,9 @@ describe('Admin VendorService', () => {
         it('should mark user as deleted and vendor as not approved', async () => {
             const mockVendor = { _id: 'v1', user: 'u1' };
             Vendor.findById.mockReturnValue({ session: jest.fn().mockReturnValue({ lean: jest.fn().mockResolvedValue(mockVendor) }) });
-            
+
             await VendorService.deleteVendor('v1', 'admin1');
-            
+
             expect(User.findByIdAndUpdate).toHaveBeenCalledWith('u1', expect.objectContaining({ status: 'deleted', deletedBy: 'admin1' }), expect.any(Object));
             expect(Vendor.findByIdAndUpdate).toHaveBeenCalledWith('v1', { isApproved: false }, expect.any(Object));
         });
@@ -326,7 +313,7 @@ describe('Admin VendorService', () => {
         it('should verify document and notify', async () => {
             const mockDoc = { _id: 'd1', vendor: 'v1', save: jest.fn() };
             VendorDocument.findById.mockReturnValue({ session: jest.fn().mockResolvedValue(mockDoc) });
-            
+
             const result = await VendorService.verifyCategoryDocument({ documentId: 'd1', status: 'approved' });
             expect(mockDoc.status).toBe('approved');
             expect(mockDoc.save).toHaveBeenCalled();
@@ -343,15 +330,15 @@ describe('Admin VendorService', () => {
                 markModified: jest.fn(),
                 save: jest.fn()
             };
-            
+
             const mockQuery = Promise.resolve(mockVendor);
             mockQuery.session = jest.fn().mockResolvedValue(mockVendor);
             Vendor.findById.mockReturnValue(mockQuery);
-            
+
             OCRService.processDocument.mockResolvedValue({ idType: 'PAN', identifiedId: 'ABCDE1234F', name: 'Test', dob: '01/01/1990', text: 'raw' });
-            
+
             const result = await VendorService.verifyDocumentOCR({ vendorId: 'v1', documentField: 'pan' });
-            
+
             expect(global.fetch).toHaveBeenCalled();
             expect(OCRService.processDocument).toHaveBeenCalled();
             expect(mockVendor.documents.pan.status).toBe('verified');
@@ -369,9 +356,9 @@ describe('Admin VendorService', () => {
                 save: jest.fn()
             };
             Vendor.findById.mockReturnValue({ session: jest.fn().mockResolvedValue(mockVendor) });
-            
+
             await VendorService.verifyManualDocument({ vendorId: 'v1', documentField: 'adhaar', status: 'approved' });
-            
+
             expect(mockVendor.documents.adhaar.status).toBe('approved');
             expect(mockVendor.markModified).toHaveBeenCalledWith('documents.adhaar');
             expect(mockVendor.save).toHaveBeenCalled();

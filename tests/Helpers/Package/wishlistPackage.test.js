@@ -21,11 +21,6 @@ jest.unstable_mockModule('@/core/Helpers/objectId.js', () => ({
     toObjectId: (id) => (id && mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : null)
 }));
 
-jest.unstable_mockModule('@/core/Helpers/objectId.js', () => ({
-    default: (id) => (id && mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : null),
-    toObjectId: (id) => (id && mongoose.Types.ObjectId.isValid(id) ? new mongoose.Types.ObjectId(id) : null)
-}));
-
 const { default: getWishlistPackages } = await import('@/core/Helpers/Package/wishlistPackage.js');
 
 describe('Helpers: Package/wishlistPackage.js', () => {
@@ -100,11 +95,19 @@ describe('Helpers: Package/wishlistPackage.js', () => {
             ])
         });
 
-        mockWishlistAggregate.mockResolvedValueOnce([]);
+        const mockItem = {
+            _id: new mongoose.Types.ObjectId(),
+            title: 'Mountain Retreat',
+            category_slug: 'homestay',
+            category_name: 'Homestay',
+            pricing: { sellingPrice: 3000 }
+        };
+        mockWishlistAggregate.mockResolvedValueOnce([mockItem]);
 
         const result = await getWishlistPackages({ userId, format: 'grouped' });
 
-        expect(result).toHaveProperty('categories');
-        expect(Array.isArray(result.categories)).toBe(true);
+        expect(result).toHaveProperty('homestay');
+        expect(Array.isArray(result.homestay.items)).toBe(true);
+        expect(result.homestay.items.length).toBe(1);
     });
 });

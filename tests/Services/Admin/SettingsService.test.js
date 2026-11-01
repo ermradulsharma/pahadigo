@@ -1,4 +1,5 @@
 import { jest } from '@jest/globals';
+import { createMockQueryHelpers } from '../../utils/mockHelpers.js';
 
 const mockQuery = {
     _resolvedValue: null,
@@ -9,6 +10,9 @@ const mockQuery = {
         return Promise.resolve(mockQuery._resolvedValue).then(resolve, reject);
     })
 };
+
+const mockQueryHelpers = createMockQueryHelpers();
+jest.unstable_mockModule('@/core/Helpers/queryHelpers.js', () => mockQueryHelpers);
 
 jest.unstable_mockModule('@/models/Setting.js', () => {
     const mockSettingInstance = (data) => ({
@@ -42,12 +46,13 @@ describe('Industry Standard: SettingsService Business Logic Service', () => {
     beforeEach(() => {
         jest.clearAllMocks();
         mockQuery._resolvedValue = null;
+        mockQueryHelpers.getSettingBy.mockResolvedValue(null);
     });
 
     describe('[getSettings]', () => {
         it('[Success] should return existing settings', async () => {
             const mockSetting = { _id: 's1', maintenanceMode: false };
-            mockQuery._resolvedValue = mockSetting;
+            mockQueryHelpers.getSettingBy.mockResolvedValue(mockSetting);
 
             const result = await SettingsService.getSettings();
 
@@ -55,7 +60,7 @@ describe('Industry Standard: SettingsService Business Logic Service', () => {
         });
 
         it('[Success] should create new settings if none exist', async () => {
-            mockQuery._resolvedValue = null;
+            mockQueryHelpers.getSettingBy.mockResolvedValue(null);
             const mockNewSetting = { _id: 'snew', toObject: jest.fn().mockReturnThis() };
             Setting.create.mockResolvedValue(mockNewSetting);
 
