@@ -141,7 +141,8 @@
             "react-dom": "$react-dom"
         },
         "glob": "^14.0.3",
-        "minimatch": "^11.0.3"
+        "minimatch": "^11.0.3",
+        "deepmerge": "4.1.2"
     },
     "allowScripts": {
         "@firebase/util@1.15.3": true,
