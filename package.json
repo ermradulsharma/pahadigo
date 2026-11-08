@@ -89,7 +89,7 @@
         "country-state-city": "^3.2.1",
         "find-my-way": "^9.10.0",
         "firebase-admin": "^14.5.0",
-        "framer-motion": "^14.9.0",
+        "framer-motion": "^14.9.1",
         "google-auth-library": "^11.3.2",
         "js-cookie": "^3.0.8",
         "jsonwebtoken": "^9.0.3",
