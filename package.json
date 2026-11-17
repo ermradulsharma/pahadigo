@@ -95,7 +95,7 @@
         "jsonwebtoken": "^9.0.3",
         "lucide-react": "^1.66.0",
         "mongoose": "^9.11.4",
-        "next": "^16.4.3",
+        "next": "^16.4.5",
         "nodemailer": "^10.3.1",
         "pino": "^10.4.0",
         "pino-pretty": "^13.2.0",
